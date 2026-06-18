@@ -1,22 +1,36 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, BookOpen } from "lucide-react";
 import Button from "@/components/Button";
 import SectionHeader from "@/components/SectionHeader";
 import CourseCard from "@/components/CourseCard";
 import FadeIn from "@/components/FadeIn";
+import PhotoSlot from "@/components/PhotoSlot";
 import { courses, courseIncludes, firstBuildRoadmap } from "@/data/courses";
 
 export default function CurriculumPage() {
   return (
     <>
-      <section className="bg-grain px-6 pt-16 pb-12 lg:px-8 lg:pt-24">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="font-display text-4xl font-medium leading-tight text-navy-900 sm:text-5xl">
-            Everyday Curriculum
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-700/80">
-            Modern, classroom-ready courses, units, textbooks, activities, and visuals
-            designed to be useful, beautiful, and free at the core.
-          </p>
+      <section className="bg-grain relative overflow-hidden px-6 pt-16 pb-12 lg:px-8 lg:pt-24">
+        <div className="absolute -left-20 top-10 -z-10 h-72 w-72 rounded-full bg-teal-400/15 blur-[110px]" />
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="text-center lg:text-left">
+              <h1 className="font-display text-4xl font-medium leading-tight text-navy-900 sm:text-5xl">
+                Everyday Curriculum
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-700/80 lg:mx-0">
+                Modern, classroom-ready courses, units, textbooks, activities, and visuals
+                designed to be useful, beautiful, and free at the core.
+              </p>
+            </div>
+            <div className="hidden lg:block">
+              <PhotoSlot
+                variant="teal"
+                icon={BookOpen}
+                alt="A teacher reviewing curriculum materials"
+                className="aspect-[4/3]"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -84,7 +98,7 @@ export default function CurriculumPage() {
           <FadeIn delay={0.25}>
             <div className="mt-12 flex justify-center">
               <Button href="/">
-                <ArrowLeft size={16} />
+                <ArrowLeft size={16} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
                 Back to Home
               </Button>
             </div>

@@ -5,10 +5,11 @@ type Variant = "primary" | "secondary" | "ghost";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-amber-500 text-navy-950 hover:bg-amber-400 shadow-sm shadow-amber-900/10",
+    "bg-amber-500 text-navy-950 shadow-md shadow-amber-900/15 hover:bg-amber-400 hover:shadow-lg hover:shadow-amber-900/20 hover:-translate-y-0.5",
   secondary:
-    "bg-white text-navy-900 border border-navy-900/15 hover:border-teal-600/40 hover:text-teal-700",
-  ghost: "bg-transparent text-cream-50 border border-cream-50/30 hover:bg-cream-50/10",
+    "bg-white text-navy-900 border border-navy-900/15 hover:border-teal-600/40 hover:text-teal-700 hover:-translate-y-0.5 hover:shadow-md",
+  ghost:
+    "bg-transparent text-cream-50 border border-cream-50/30 hover:border-cream-50/50 hover:bg-cream-50/10",
 };
 
 interface SharedProps {
@@ -38,7 +39,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all duration-200 whitespace-nowrap";
+    "group inline-flex items-center justify-center gap-2 rounded-full font-medium transition-all duration-200 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50";
   const sizeClasses = size === "sm" ? "px-4 py-2 text-sm" : "px-6 py-3 text-base";
   const classes = `${base} ${sizeClasses} ${variantClasses[variant]} ${className}`;
 

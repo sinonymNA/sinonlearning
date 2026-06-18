@@ -10,6 +10,7 @@ import SectionHeader from "@/components/SectionHeader";
 import HeroDashboard from "@/components/HeroDashboard";
 import EmailSignup from "@/components/EmailSignup";
 import FadeIn from "@/components/FadeIn";
+import PhotoSlot from "@/components/PhotoSlot";
 import { homeRoadmap } from "@/data/courses";
 
 const ecosystem = [
@@ -36,21 +37,30 @@ const ecosystem = [
   },
 ];
 
+const principleTint = {
+  teal: "bg-teal-400/15 text-teal-300",
+  rose: "bg-rose-400/15 text-rose-300",
+  amber: "bg-amber-400/15 text-amber-300",
+};
+
 const principles = [
   {
     icon: HeartHandshake,
     title: "Free core learning resources",
     description: "The essential curriculum library stays free, always.",
+    tint: "teal" as const,
   },
   {
     icon: GraduationCap,
     title: "Built by a real teacher",
     description: "Designed from real classroom experience, not guesswork.",
+    tint: "rose" as const,
   },
   {
     icon: School,
     title: "Designed for real classrooms",
     description: "Practical, usable, and ready for the way teachers actually teach.",
+    tint: "amber" as const,
   },
 ];
 
@@ -58,7 +68,9 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-grain overflow-hidden bg-cream-50">
+      <section className="bg-grain relative overflow-hidden bg-cream-50">
+        <div className="absolute left-1/2 top-0 -z-10 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-teal-400/15 blur-[120px]" />
+        <div className="absolute -right-20 top-40 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-[100px]" />
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:px-8 lg:pt-24">
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="font-display text-4xl font-medium leading-[1.1] text-navy-900 sm:text-5xl lg:text-6xl">
@@ -72,7 +84,7 @@ export default function Home() {
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button href="/curriculum">
                 Explore Everyday Curriculum
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
               </Button>
               <Button href="/tools" variant="secondary">
                 View Classroom Tools
@@ -117,29 +129,41 @@ export default function Home() {
       </section>
 
       {/* Mission */}
-      <section id="mission" className="bg-navy-950 px-6 py-20 text-cream-50 lg:px-8">
-        <div className="mx-auto max-w-4xl text-center">
-          <FadeIn>
-            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-teal-300">
-              Mission
-            </p>
-            <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
-              The mission is simple: great learning should be accessible.
-            </h2>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-cream-100/75">
-              Teachers should not have to spend their own money just to give students
-              thoughtful, beautiful, engaging resources. Students should not have their
-              learning limited by the resources their school can afford. Sinon Learning
-              exists to build useful curriculum and classroom tools that teachers and
-              students can actually use.
-            </p>
-          </FadeIn>
+      <section id="mission" className="relative overflow-hidden bg-navy-950 px-6 py-20 text-cream-50 lg:px-8">
+        <div className="absolute left-1/4 top-0 -z-10 h-96 w-96 -translate-y-1/2 rounded-full bg-teal-400/10 blur-[120px]" />
+        <div className="mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+            <FadeIn>
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-teal-300">
+                Mission
+              </p>
+              <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
+                The mission is simple: great learning should be accessible.
+              </h2>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream-100/75">
+                Teachers should not have to spend their own money just to give students
+                thoughtful, beautiful, engaging resources. Students should not have their
+                learning limited by the resources their school can afford. Sinon Learning
+                exists to build useful curriculum and classroom tools that teachers and
+                students can actually use.
+              </p>
+            </FadeIn>
+
+            <FadeIn delay={0.1} className="hidden lg:block">
+              <PhotoSlot
+                variant="navy"
+                icon={GraduationCap}
+                alt="A teacher working with students in a classroom"
+                className="aspect-[4/5]"
+              />
+            </FadeIn>
+          </div>
 
           <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {principles.map((principle, i) => (
               <FadeIn key={principle.title} delay={i * 0.1}>
                 <div className="rounded-2xl border border-cream-50/10 bg-cream-50/5 p-6 text-left">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-400/15 text-teal-300">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${principleTint[principle.tint]}`}>
                     <principle.icon size={17} />
                   </span>
                   <p className="mt-4 text-sm font-semibold text-cream-50">
@@ -209,7 +233,8 @@ export default function Home() {
       {/* Final CTA */}
       <section className="px-6 py-20 lg:px-8">
         <FadeIn>
-          <div className="mx-auto max-w-3xl rounded-[28px] bg-navy-950 px-8 py-14 text-center text-cream-50 sm:px-16">
+          <div className="relative mx-auto max-w-3xl overflow-hidden rounded-[28px] bg-navy-950 px-8 py-14 text-center text-cream-50 sm:px-16">
+            <div className="absolute left-1/2 top-1/2 -z-10 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/15 blur-[100px]" />
             <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
               A better classroom library, built one resource at a time.
             </h2>

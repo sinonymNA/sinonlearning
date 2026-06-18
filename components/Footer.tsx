@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import Logo from "./Logo";
 
 const columns = [
   {
@@ -34,13 +34,12 @@ const columns = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-navy-900/8 bg-navy-950 text-cream-200">
+    <footer className="relative overflow-hidden border-t border-navy-900/8 bg-navy-950 text-cream-200">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500/40 to-transparent" />
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-          <div className="col-span-2 sm:col-span-4 mb-4 flex items-center gap-2 sm:mb-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-400/15 text-teal-300">
-              <BookOpen size={16} strokeWidth={2.25} />
-            </span>
+          <div className="col-span-2 sm:col-span-4 mb-4 flex items-center gap-2.5 sm:mb-2">
+            <Logo size={28} />
             <span className="font-display text-lg font-medium text-cream-50">
               Sinon Learning
             </span>

@@ -17,6 +17,7 @@ import {
   GraduationCap,
   FileText,
 } from "lucide-react";
+import Logo from "./Logo";
 
 const curriculumItems = [
   { label: "Economics", icon: Landmark },
@@ -53,10 +54,16 @@ const resources = [
 const badges = ["Free Core Library", "Teacher Built", "In Development"];
 
 const panelGroups = [
-  { title: "Everyday Curriculum", items: curriculumItems },
-  { title: "Classroom Tools", items: toolItems },
-  { title: "Coming Next", items: comingNextItems },
+  { title: "Everyday Curriculum", items: curriculumItems, tint: "teal" as const },
+  { title: "Classroom Tools", items: toolItems, tint: "amber" as const },
+  { title: "Coming Next", items: comingNextItems, tint: "outline" as const },
 ];
+
+const tintClasses = {
+  teal: { icon: "bg-teal-50 text-teal-600", dot: "bg-teal-500" },
+  amber: { icon: "bg-amber-50 text-amber-600", dot: "bg-amber-500" },
+  outline: { icon: "bg-navy-900/5 text-navy-600", dot: "bg-navy-700/40" },
+};
 
 export default function HeroDashboard() {
   return (
@@ -81,18 +88,32 @@ export default function HeroDashboard() {
         ))}
       </div>
 
+      {/* Ambient glow */}
+      <div className="absolute left-1/2 top-1/2 -z-10 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/15 blur-[100px]" />
+      <div className="absolute -right-10 bottom-0 -z-10 h-64 w-64 rounded-full bg-amber-400/10 blur-[90px]" />
+
       <motion.div
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         className="relative overflow-hidden rounded-[28px] border border-navy-900/10 bg-white shadow-[0_30px_60px_-15px_rgba(13,27,46,0.25)]"
       >
+        {/* Browser chrome bar */}
+        <div className="flex items-center gap-3 border-b border-navy-900/8 bg-cream-100/60 px-4 py-2.5">
+          <div className="flex gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-full bg-navy-900/15" />
+            <span className="h-2.5 w-2.5 rounded-full bg-navy-900/15" />
+            <span className="h-2.5 w-2.5 rounded-full bg-navy-900/15" />
+          </div>
+          <div className="flex-1 truncate rounded-full bg-white px-3 py-1 text-center text-[11px] text-navy-700/50">
+            app.sinonlearning.org
+          </div>
+        </div>
+
         <div className="grid sm:grid-cols-[180px_1fr]">
           {/* Sidebar */}
           <div className="hidden flex-col gap-1 bg-navy-950 p-5 sm:flex">
             <div className="mb-6 flex items-center gap-2 px-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-400/15 text-teal-300">
-                <BookOpen size={14} />
-              </span>
+              <Logo size={24} />
               <span className="font-display text-sm font-medium text-cream-50">
                 Sinon Learning
               </span>
@@ -133,16 +154,23 @@ export default function HeroDashboard() {
                       : "border-navy-900/8 bg-white"
                   }`}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-navy-700/60">
-                    {group.title}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${tintClasses[group.tint].dot}`} />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-navy-700/60">
+                      {group.title}
+                    </p>
+                  </div>
                   <ul className="mt-3 space-y-2">
                     {group.items.map((item) => (
                       <li
                         key={item.label}
                         className="flex items-center gap-2 text-sm text-navy-800/85"
                       >
-                        <item.icon size={14} className="text-teal-600" />
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${tintClasses[group.tint].icon}`}
+                        >
+                          <item.icon size={12} />
+                        </span>
                         {item.label}
                       </li>
                     ))}
