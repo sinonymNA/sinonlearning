@@ -1,0 +1,96 @@
+import { ArrowLeft } from "lucide-react";
+import Button from "@/components/Button";
+import SectionHeader from "@/components/SectionHeader";
+import CourseCard from "@/components/CourseCard";
+import FadeIn from "@/components/FadeIn";
+import { courses, courseIncludes, firstBuildRoadmap } from "@/data/courses";
+
+export default function CurriculumPage() {
+  return (
+    <>
+      <section className="bg-grain px-6 pt-16 pb-12 lg:px-8 lg:pt-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="font-display text-4xl font-medium leading-tight text-navy-900 sm:text-5xl">
+            Everyday Curriculum
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-700/80">
+            Modern, classroom-ready courses, units, textbooks, activities, and visuals
+            designed to be useful, beautiful, and free at the core.
+          </p>
+        </div>
+      </section>
+
+      {/* Course family cards */}
+      <section className="px-6 py-16 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {courses.map((course, i) => (
+              <FadeIn key={course.name} delay={(i % 3) * 0.08}>
+                <CourseCard course={course} />
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* What each course will include */}
+      <section className="bg-cream-100 px-6 py-20 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <SectionHeader title="What each course will include" />
+          </FadeIn>
+          <FadeIn delay={0.1}>
+            <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {courseIncludes.map((item) => (
+                <div
+                  key={item}
+                  className="rounded-2xl border border-navy-900/8 bg-white px-4 py-5 text-center text-sm font-medium text-navy-800"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* First build spotlight */}
+      <section className="px-6 py-20 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <FadeIn>
+            <SectionHeader
+              eyebrow="Spotlight"
+              title="Building first: Economics and Personal Finance"
+              subtitle="These two subjects shape how students understand the world and manage their lives. The first Everyday Curriculum library will give teachers a complete, classroom-ready path through both."
+            />
+          </FadeIn>
+
+          <FadeIn delay={0.15}>
+            <ol className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {firstBuildRoadmap.map((step, i) => (
+                <li
+                  key={step}
+                  className="flex items-center gap-3 rounded-2xl border border-navy-900/8 bg-white px-5 py-4 text-sm font-medium text-navy-800"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-semibold text-teal-700">
+                    {i + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </FadeIn>
+
+          <FadeIn delay={0.25}>
+            <div className="mt-12 flex justify-center">
+              <Button href="/">
+                <ArrowLeft size={16} />
+                Back to Home
+              </Button>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+    </>
+  );
+}

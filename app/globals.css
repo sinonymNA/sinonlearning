@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fdfbf6;
+  --foreground: #0d1b2e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-fraunces);
+
+  --color-navy-950: #070f1c;
+  --color-navy-900: #0d1b2e;
+  --color-navy-800: #142a45;
+  --color-navy-700: #1c3a5e;
+  --color-navy-600: #294f78;
+
+  --color-cream-50: #fdfbf6;
+  --color-cream-100: #f8f2e6;
+  --color-cream-200: #f0e7d3;
+  --color-cream-300: #e6d9bd;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+@layer utilities {
+  .bg-grain {
+    background-image: radial-gradient(circle at 1px 1px, rgba(13, 27, 46, 0.06) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+}
