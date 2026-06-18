@@ -20,7 +20,7 @@ const columns = [
     title: "Classroom Tools",
     links: [
       { label: "Explore Tools", href: "/tools" },
-      { label: "Classroom Screen", href: "/tools" },
+      { label: "Classboard", href: "/classboard" },
     ],
   },
   {

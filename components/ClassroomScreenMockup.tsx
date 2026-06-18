@@ -31,7 +31,7 @@ export default function ClassroomScreenMockup() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.04] to-transparent" />
         <div className="mb-4 flex items-center justify-between px-1">
           <span className="text-xs font-medium uppercase tracking-wide text-cream-200/50">
-            Classroom Screen
+            Classboard
           </span>
           <span className="flex items-center gap-1.5 text-xs font-medium text-teal-300">
             <span className="relative flex h-1.5 w-1.5">

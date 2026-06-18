@@ -1,42 +1,24 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  MonitorPlay,
-  TimerIcon,
-  Shuffle,
-  Users,
-  BarChart3,
-  QrCode,
-  ClipboardCheck,
-  Rocket,
-} from "lucide-react";
+import { MonitorPlay, Users, QrCode, Rocket } from "lucide-react";
 
-export type ToolStatus = "Prototype" | "Planned" | "Coming Later";
+export type ToolStatus = "Live" | "Prototype" | "Planned" | "Coming Later";
 
 export interface Tool {
   name: string;
   status: ToolStatus;
   description: string;
   icon: LucideIcon;
+  href?: string;
 }
 
 export const tools: Tool[] = [
   {
-    name: "Classroom Screen",
-    status: "Prototype",
-    description: "An all-in-one front-of-room display with agenda, timer, and more.",
+    name: "Classboard",
+    status: "Live",
+    description:
+      "An all-in-one front-of-room display: live agenda, timer, student randomizer, polls, exit tickets, and ambient YouTube backgrounds.",
     icon: MonitorPlay,
-  },
-  {
-    name: "Timer & Agenda",
-    status: "Prototype",
-    description: "A simple, visible timer paired with the day's plan for students.",
-    icon: TimerIcon,
-  },
-  {
-    name: "Random Student Picker",
-    status: "Planned",
-    description: "Fair, fast random selection for questions, tasks, and turns.",
-    icon: Shuffle,
+    href: "/classboard",
   },
   {
     name: "Group Maker",
@@ -45,22 +27,10 @@ export const tools: Tool[] = [
     icon: Users,
   },
   {
-    name: "Polls",
-    status: "Planned",
-    description: "Quick live polls to check understanding or gather opinions.",
-    icon: BarChart3,
-  },
-  {
     name: "QR Code Generator",
     status: "Coming Later",
     description: "Generate a classroom QR code for any link in one click.",
     icon: QrCode,
-  },
-  {
-    name: "Exit Ticket Builder",
-    status: "Coming Later",
-    description: "Create a simple exit ticket to close out any lesson.",
-    icon: ClipboardCheck,
   },
   {
     name: "Lesson Launcher",

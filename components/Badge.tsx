@@ -20,6 +20,7 @@ const dotClasses: Record<Tone, string> = {
 
 const statusTone: Record<string, Tone> = {
   "First Build": "amber",
+  Live: "teal",
   Prototype: "amber",
   Planned: "teal",
   "Coming Later": "outline",
