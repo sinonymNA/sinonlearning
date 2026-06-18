@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   HeartHandshake,
   GraduationCap,
   School,
@@ -7,6 +6,7 @@ import {
 import Button from "@/components/Button";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
+import HeroIntro from "@/components/HeroIntro";
 import HeroDashboard from "@/components/HeroDashboard";
 import EmailSignup from "@/components/EmailSignup";
 import FadeIn from "@/components/FadeIn";
@@ -72,29 +72,7 @@ export default function Home() {
         <div className="absolute left-1/2 top-0 -z-10 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-teal-400/15 blur-[120px]" />
         <div className="absolute -right-20 top-40 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-[100px]" />
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:px-8 lg:pt-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-display text-4xl font-medium leading-[1.1] text-navy-900 sm:text-5xl lg:text-6xl">
-              Free curriculum and classroom tools for better learning.
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-700/80">
-              Sinon Learning is building a free library of modern curriculum, digital
-              textbooks, visual resources, and simple classroom tools—created for real
-              teachers and real students.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button href="/curriculum">
-                Explore Everyday Curriculum
-                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-              </Button>
-              <Button href="/tools" variant="secondary">
-                View Classroom Tools
-              </Button>
-            </div>
-            <p className="mx-auto mt-6 max-w-xl text-sm text-navy-700/60">
-              Core learning resources will be free because great learning should not be
-              locked behind a paywall.
-            </p>
-          </div>
+          <HeroIntro />
 
           <div className="mt-16">
             <HeroDashboard />
@@ -103,7 +81,7 @@ export default function Home() {
       </section>
 
       {/* Ecosystem */}
-      <section className="px-6 py-20 lg:px-8">
+      <section id="ecosystem" className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <FadeIn>
             <SectionHeader title="Start simple. Grow with purpose." />
