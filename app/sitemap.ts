@@ -3,6 +3,8 @@ import { getPublishedPosts } from "@/lib/blog";
 import { simulations } from "@/data/simulations";
 import { SITE_URL } from "@/lib/seo";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
