@@ -22,6 +22,13 @@ const ecosystem = [
     href: "/curriculum",
   },
   {
+    title: "Learn About AI",
+    description:
+      "Flagship courses on the science and ethical use of artificial intelligence, built for real classrooms.",
+    cta: "Explore AI Courses",
+    href: "/ai",
+  },
+  {
     title: "Classroom Tools",
     description:
       "Simple teacher web apps like classroom screens, timers, randomizers, group makers, and lesson helpers.",
@@ -86,7 +93,7 @@ export default function Home() {
           <FadeIn>
             <SectionHeader title="Start simple. Grow with purpose." />
           </FadeIn>
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {ecosystem.map((item, i) => (
               <FadeIn key={item.title} delay={i * 0.1}>
                 <Card className="flex h-full flex-col">

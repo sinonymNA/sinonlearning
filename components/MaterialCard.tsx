@@ -1,7 +1,18 @@
-import { FileText, Presentation, ExternalLink } from "lucide-react";
+import { FileText, Presentation, ExternalLink, ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import type { Material } from "@/lib/material";
 
-export default function MaterialCard({ material }: { material: Material }) {
+interface MaterialCardProps {
+  material: Material;
+  admin?: {
+    onMoveUp: () => void;
+    onMoveDown: () => void;
+    onDelete: () => void;
+    disableUp: boolean;
+    disableDown: boolean;
+  };
+}
+
+export default function MaterialCard({ material, admin }: MaterialCardProps) {
   const Icon = material.kind === "slides" ? Presentation : FileText;
   const embedUrl =
     material.kind === "slides"
@@ -17,15 +28,44 @@ export default function MaterialCard({ material }: { material: Material }) {
           <Icon size={16} className="shrink-0 text-teal-700" />
           <span className="truncate text-sm font-medium text-navy-900">{material.title}</span>
         </div>
-        <a
-          href={material.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 text-navy-700/50 transition-colors hover:text-navy-900"
-          aria-label={`Open ${material.title} in a new tab`}
-        >
-          <ExternalLink size={15} />
-        </a>
+        <div className="flex shrink-0 items-center gap-2">
+          {admin && (
+            <>
+              <button
+                onClick={admin.onMoveUp}
+                disabled={admin.disableUp}
+                aria-label={`Move ${material.title} up`}
+                className="text-navy-700/50 transition-colors hover:text-navy-900 disabled:opacity-25 disabled:hover:text-navy-700/50"
+              >
+                <ChevronUp size={16} />
+              </button>
+              <button
+                onClick={admin.onMoveDown}
+                disabled={admin.disableDown}
+                aria-label={`Move ${material.title} down`}
+                className="text-navy-700/50 transition-colors hover:text-navy-900 disabled:opacity-25 disabled:hover:text-navy-700/50"
+              >
+                <ChevronDown size={16} />
+              </button>
+              <button
+                onClick={admin.onDelete}
+                aria-label={`Delete ${material.title}`}
+                className="text-navy-700/50 transition-colors hover:text-rose-600"
+              >
+                <Trash2 size={15} />
+              </button>
+            </>
+          )}
+          <a
+            href={material.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-navy-700/50 transition-colors hover:text-navy-900"
+            aria-label={`Open ${material.title} in a new tab`}
+          >
+            <ExternalLink size={15} />
+          </a>
+        </div>
       </div>
 
       <div className="aspect-[4/3] w-full bg-cream-50">

@@ -17,6 +17,13 @@ const columns = [
     ],
   },
   {
+    title: "Learn About AI",
+    links: [
+      { label: "Explore AI Courses", href: "/ai" },
+      { label: "AI Foundations", href: "/ai/ai-foundations" },
+    ],
+  },
+  {
     title: "Classroom Tools",
     links: [
       { label: "Explore Tools", href: "/tools" },
@@ -37,8 +44,8 @@ export default function Footer() {
     <footer className="bg-grain relative overflow-hidden border-t border-navy-900/8 bg-cream-100 text-navy-700">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500/50 to-transparent" />
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-          <div className="col-span-2 sm:col-span-4 mb-4 flex items-center gap-2.5 sm:mb-2">
+        <div className="grid grid-cols-2 gap-10 sm:grid-cols-5">
+          <div className="col-span-2 sm:col-span-5 mb-4 flex items-center gap-2.5 sm:mb-2">
             <Logo size={28} />
             <span className="font-display text-lg font-medium text-navy-900">
               Sinon Learning

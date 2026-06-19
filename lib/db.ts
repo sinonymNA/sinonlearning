@@ -27,9 +27,18 @@ export function ensureSchema(): Promise<void> {
         url TEXT NOT NULL,
         kind TEXT NOT NULL,
         file_id TEXT NOT NULL,
+        course_slug TEXT NOT NULL DEFAULT '',
+        position INTEGER NOT NULL DEFAULT 0,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`
-    ).then(() => undefined);
+    )
+      .then(() =>
+        query(`ALTER TABLE materials ADD COLUMN IF NOT EXISTS course_slug TEXT NOT NULL DEFAULT ''`)
+      )
+      .then(() =>
+        query(`ALTER TABLE materials ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0`)
+      )
+      .then(() => undefined);
   }
   return schemaReady;
 }

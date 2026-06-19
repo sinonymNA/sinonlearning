@@ -1,6 +1,7 @@
 export type CourseStatus = "First Build" | "Planned" | "Coming Later";
 
 export interface Course {
+  slug: string;
   name: string;
   status: CourseStatus;
   description: string;
@@ -9,6 +10,7 @@ export interface Course {
 
 export const courses: Course[] = [
   {
+    slug: "everyday-economics",
     name: "Everyday Economics",
     status: "First Build",
     description:
@@ -16,6 +18,7 @@ export const courses: Course[] = [
     includes: ["Digital textbook", "Daily lessons", "Slides & activities"],
   },
   {
+    slug: "everyday-personal-finance",
     name: "Everyday Personal Finance",
     status: "First Build",
     description:
@@ -23,6 +26,7 @@ export const courses: Course[] = [
     includes: ["Complete units", "Assessments", "Visual resources"],
   },
   {
+    slug: "everyday-government",
     name: "Everyday Government",
     status: "Planned",
     description:
@@ -30,6 +34,7 @@ export const courses: Course[] = [
     includes: ["Digital textbook", "Daily lessons", "Teacher guides"],
   },
   {
+    slug: "everyday-world-history",
     name: "Everyday World History",
     status: "Planned",
     description:
@@ -37,6 +42,7 @@ export const courses: Course[] = [
     includes: ["Visual resources", "Complete units", "Activities"],
   },
   {
+    slug: "everyday-us-history",
     name: "Everyday U.S. History",
     status: "Coming Later",
     description:
@@ -44,6 +50,7 @@ export const courses: Course[] = [
     includes: ["Digital textbook", "Slides", "Assessments"],
   },
   {
+    slug: "everyday-geography",
     name: "Everyday Geography",
     status: "Coming Later",
     description:
@@ -51,6 +58,10 @@ export const courses: Course[] = [
     includes: ["Visual resources", "Daily lessons", "Activities"],
   },
 ];
+
+export function getCourseBySlug(slug: string): Course | undefined {
+  return courses.find((course) => course.slug === slug);
+}
 
 export const courseIncludes = [
   "Digital textbook chapters",

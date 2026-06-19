@@ -42,4 +42,18 @@ html {
     background-image: radial-gradient(circle at 1px 1px, rgba(13, 27, 46, 0.06) 1px, transparent 0);
     background-size: 22px 22px;
   }
+
+  .bg-circuit {
+    background-image:
+      linear-gradient(rgba(94, 234, 212, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(94, 234, 212, 0.08) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+
+  .text-gradient-ai {
+    background-image: linear-gradient(90deg, #5eead4 0%, #a78bfa 50%, #f0abfc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }

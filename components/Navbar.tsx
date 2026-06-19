@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import Button from "./Button";
 import Logo from "./Logo";
 
 const links = [
   { href: "/", label: "Home" },
   { href: "/curriculum", label: "Everyday Curriculum" },
+  { href: "/ai", label: "Learn About AI" },
   { href: "/tools", label: "Classroom Tools" },
-  { href: "/materials", label: "Course Materials" },
   { href: "/#mission", label: "Mission" },
 ];
 
@@ -55,12 +54,6 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="hidden lg:block">
-          <Button href="/curriculum" size="sm">
-            Browse Free Curriculum
-          </Button>
-        </div>
-
         <button
           className="flex items-center justify-center rounded-full p-2 text-navy-900 lg:hidden"
           onClick={() => setOpen((v) => !v)}
@@ -90,9 +83,6 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <Button href="/curriculum" size="sm" className="mt-2 w-full">
-                Browse Free Curriculum
-              </Button>
             </div>
           </motion.div>
         )}
