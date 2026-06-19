@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import LessonVideoBlock from "@/components/ai/LessonVideoBlock";
+import LessonSandbox from "@/components/ai/LessonSandbox";
 import LessonActivity from "@/components/ai/LessonActivity";
 import LessonProgressNav from "@/components/ai/LessonProgressNav";
 import TeacherLessonPlanDetail from "@/components/ai/TeacherLessonPlanDetail";
@@ -52,14 +53,8 @@ export default async function AILessonPage({
 
       <section className="px-6 pb-24 lg:px-8">
         <div className="mx-auto max-w-3xl space-y-10">
-          {lesson.videos && lesson.videos.length > 0 && (
-            <FadeIn>
-              <LessonVideoBlock videos={lesson.videos} />
-            </FadeIn>
-          )}
-
           {lesson.narrative && (
-            <FadeIn delay={0.05}>
+            <FadeIn>
               <div className="space-y-4">
                 {lesson.narrative.map((paragraph, i) => (
                   <p key={i} className="text-base leading-relaxed text-white/75">
@@ -70,9 +65,26 @@ export default async function AILessonPage({
             </FadeIn>
           )}
 
+          {lesson.sandbox && (
+            <FadeIn delay={0.05}>
+              <LessonSandbox sandbox={lesson.sandbox} />
+            </FadeIn>
+          )}
+
           {lesson.activity && (
             <FadeIn delay={0.1}>
               <LessonActivity courseSlug={course.slug} lessonSlug={lesson.slug} activity={lesson.activity} />
+            </FadeIn>
+          )}
+
+          {lesson.videos && lesson.videos.length > 0 && (
+            <FadeIn delay={0.12}>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-white/35">
+                  Want to go deeper?
+                </p>
+                <LessonVideoBlock videos={lesson.videos} />
+              </div>
             </FadeIn>
           )}
 

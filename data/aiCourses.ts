@@ -37,6 +37,14 @@ export interface AILessonActivity {
   checklist?: AIChecklistItem[];
 }
 
+export type AISandboxType = "decision-boundary" | "neural-network" | "bias-detective" | "calibration";
+
+export interface AILessonSandbox {
+  type: AISandboxType;
+  title: string;
+  description: string;
+}
+
 export interface AILesson {
   day: number;
   slug: string;
@@ -48,6 +56,7 @@ export interface AILesson {
   assessment: string;
   narrative?: string[];
   videos?: AILessonVideo[];
+  sandbox?: AILessonSandbox;
   activity?: AILessonActivity;
 }
 
@@ -299,6 +308,12 @@ export const aiCourses: AIFlagshipCourse[] = [
             videos: [
               { title: "Supervised Learning — Crash Course AI #2", url: "https://www.youtube.com/watch?v=4qVRBYAdLAo" },
             ],
+            sandbox: {
+              type: "decision-boundary",
+              title: "Train a Real Classifier",
+              description:
+                "This isn't a simulation of training — it's the actual perceptron learning rule running in your browser. Drag the boundary yourself, then watch the same algorithm converge on its own, one labeled example at a time.",
+            },
             activity: {
               type: "guess-the-rule",
               title: "Guess the Rule",
@@ -364,6 +379,12 @@ export const aiCourses: AIFlagshipCourse[] = [
             videos: [
               { title: "Neural Networks and Deep Learning — Crash Course AI #3", url: "https://www.youtube.com/watch?v=oV3ZY6tJiA0" },
             ],
+            sandbox: {
+              type: "neural-network",
+              title: "Build a Brain That Can't Be Fooled",
+              description:
+                "A real 2-input, 3-hidden-neuron network learning live in your browser. Try to teach a single neuron the \"exactly one sensor\" rule and watch it fail — then add the hidden layer and watch it succeed.",
+            },
             activity: {
               type: "quiz",
               title: "Inside the Black Box",
@@ -568,6 +589,12 @@ export const aiCourses: AIFlagshipCourse[] = [
             videos: [
               { title: "Algorithmic Bias and Fairness — Crash Course AI #18", url: "https://www.youtube.com/watch?v=gV0_raKR2UQ" },
             ],
+            sandbox: {
+              type: "bias-detective",
+              title: "Bias Detective",
+              description:
+                "Toggle which features a hiring model is allowed to use and watch the ranking shift in real time. Turning off one biased feature isn't always enough — find out why.",
+            },
             activity: {
               type: "reflection",
               title: "Who's Responsible?",
@@ -620,6 +647,12 @@ export const aiCourses: AIFlagshipCourse[] = [
             videos: [
               { title: "Why Large Language Models Hallucinate", url: "https://www.youtube.com/watch?v=cfqtFvWOfg0" },
             ],
+            sandbox: {
+              type: "calibration",
+              title: "Calibration Check",
+              description:
+                "Twelve confidently-stated claims — some true, some myths, all delivered in the same flat, authoritative tone an AI would use. Rate your confidence on each one and see whether your certainty actually tracks your accuracy.",
+            },
             activity: {
               type: "quiz",
               title: "Spot the Hallucination",

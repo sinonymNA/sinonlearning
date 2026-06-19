@@ -1,4 +1,5 @@
-import { BrainCircuit, ShieldCheck, Scale } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BrainCircuit, FlaskConical, ShieldCheck, Scale } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import FlagshipCourseCard from "@/components/ai/FlagshipCourseCard";
 import { aiCourses } from "@/data/aiCourses";
@@ -63,6 +64,26 @@ export default function AIMissionPage() {
                 <p className="mt-1.5 text-xs leading-relaxed text-white/50">{pillar.description}</p>
               </div>
             ))}
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.2}>
+          <div className="mx-auto mt-10 max-w-3xl">
+            <Link
+              href="/ai/sandboxes"
+              className="group flex items-center justify-between gap-4 rounded-2xl border border-purple-300/25 bg-purple-300/5 p-5 transition-colors hover:border-purple-300/40 hover:bg-purple-300/10"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-purple-300/30 bg-purple-300/10 text-purple-200">
+                  <FlaskConical size={18} />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-white">Try the Interactive Sandboxes</p>
+                  <p className="text-xs text-white/50">Train a real classifier and neural network, right in your browser.</p>
+                </div>
+              </div>
+              <ArrowRight size={16} className="flex-shrink-0 text-purple-300 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
           </div>
         </FadeIn>
       </section>
