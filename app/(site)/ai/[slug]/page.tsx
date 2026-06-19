@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Sparkles, Target, Hourglass, Users } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
-import LessonExplorer from "@/components/ai/LessonExplorer";
+import CourseSyllabus from "@/components/ai/CourseSyllabus";
+import CourseProgressBar from "@/components/ai/CourseProgressBar";
 import { getAICourseBySlug } from "@/data/aiCourses";
 
 export default async function AICoursePage({
@@ -94,8 +95,14 @@ export default async function AICoursePage({
           <section className="px-6 pb-24 lg:px-8">
             <div className="mx-auto max-w-4xl">
               <FadeIn>
-                <LessonExplorer units={course.units} />
+                <CourseProgressBar
+                  courseSlug={course.slug}
+                  lessonSlugs={course.units.flatMap((unit) => unit.lessons.map((lesson) => lesson.slug))}
+                />
               </FadeIn>
+              <div className="mt-10">
+                <CourseSyllabus course={course} />
+              </div>
             </div>
           </section>
         </>
