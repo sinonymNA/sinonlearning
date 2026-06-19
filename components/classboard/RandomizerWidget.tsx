@@ -65,7 +65,7 @@ export default function RandomizerWidget() {
 
   return (
     <div className="w-64">
-      <div className="flex h-20 items-center justify-center rounded-xl border border-navy-900/10 bg-white px-3">
+      <div className="flex h-20 items-center justify-center rounded-xl border border-navy-900/10 bg-cream-50 px-3">
         <span
           className={`font-display text-xl font-medium text-navy-900 ${spinning ? "opacity-70" : ""}`}
         >
@@ -119,7 +119,7 @@ export default function RandomizerWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addName()}
           placeholder="Add student..."
-          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={addName}

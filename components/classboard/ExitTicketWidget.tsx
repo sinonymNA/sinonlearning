@@ -19,12 +19,12 @@ export default function ExitTicketWidget() {
           onBlur={() => setEditing(false)}
           autoFocus
           rows={3}
-          className="w-full resize-none rounded-lg border border-navy-900/12 bg-white px-2.5 py-2 text-sm text-navy-900 focus:border-teal-500/50 focus:outline-none"
+          className="w-full resize-none rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-2 text-sm text-navy-900 focus:border-teal-500/50 focus:outline-none"
         />
       ) : (
         <button
           onClick={() => setEditing(true)}
-          className="w-full rounded-xl border border-dashed border-navy-900/15 bg-white px-4 py-6 text-center font-display text-lg leading-snug text-navy-900 transition-colors hover:border-teal-500/40"
+          className="w-full rounded-xl border border-dashed border-navy-900/15 bg-cream-50 px-4 py-6 text-center font-display text-lg leading-snug text-navy-900 transition-colors hover:border-teal-500/40"
         >
           {prompt}
         </button>

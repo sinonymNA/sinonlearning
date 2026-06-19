@@ -86,7 +86,7 @@ export default function AgendaWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addItem()}
           placeholder="Add agenda item..."
-          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={addItem}

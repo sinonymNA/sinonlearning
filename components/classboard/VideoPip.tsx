@@ -49,11 +49,11 @@ export default function VideoPip({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
       style={{ position: "absolute", top: 0, left: 0, zIndex, width: size.width }}
-      className="overflow-hidden rounded-2xl border border-navy-900/10 bg-cream-50/95 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)]"
+      className="overflow-hidden rounded-2xl border border-navy-900/10 bg-white/95 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)]"
     >
       <div
         onPointerDown={(e) => dragControls.start(e)}
-        className="flex cursor-grab items-center justify-between gap-2 border-b border-navy-900/8 bg-navy-900/[0.03] px-3 py-1.5 active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-between gap-2 border-b border-navy-900/8 bg-cream-100/60 px-3 py-1.5 active:cursor-grabbing"
       >
         <span className="text-xs font-medium text-navy-800">Video</span>
         <div className="flex items-center gap-2 text-navy-700/40">

@@ -40,7 +40,7 @@ export default function VideoMenu({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-navy-900/10 bg-cream-50/98 p-4 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)] backdrop-blur-xl"
+      className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-navy-900/10 bg-white/98 p-4 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)] backdrop-blur-xl"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-navy-900">
@@ -56,7 +56,7 @@ export default function VideoMenu({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Paste a YouTube link..."
-        className="mt-3 w-full rounded-lg border border-navy-900/12 bg-white px-2.5 py-2 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+        className="mt-3 w-full rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-2 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
       />
       {error && <p className="mt-1.5 text-xs text-rose-600">{error}</p>}
 

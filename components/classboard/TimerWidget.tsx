@@ -134,7 +134,7 @@ export default function TimerWidget() {
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && applyCustom()}
           placeholder="Custom min"
-          className="w-24 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1 text-center text-xs text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="w-24 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1 text-center text-xs text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={applyCustom}

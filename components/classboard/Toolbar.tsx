@@ -68,7 +68,7 @@ export default function Toolbar({
   };
 
   return (
-    <div className="relative z-40 flex items-center justify-between gap-3 border-b border-navy-900/8 bg-cream-50/85 px-4 py-2.5 backdrop-blur-md">
+    <div className="relative z-40 flex items-center justify-between gap-3 border-b border-navy-900/8 bg-cream-50/90 px-4 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <Link
           href="/tools"
