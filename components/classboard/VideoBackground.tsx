@@ -18,15 +18,16 @@ export default function VideoBackground({ videoId }: { videoId: string }) {
   const src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&modestbranding=1&playsinline=1&enablejsapi=1`;
 
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden bg-navy-950">
+    <div className="absolute inset-0 -z-10 overflow-hidden bg-navy-950">
       <iframe
         ref={iframeRef}
         key={videoId}
         src={src}
         title="Classboard ambient background video"
         allow="autoplay; encrypted-media"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[150vh] w-[150vw] -translate-x-1/2 -translate-y-1/2 sm:h-[120vh] sm:w-[120vw]"
-        style={{ minHeight: "100%", minWidth: "100%" }}
+        width="100%"
+        height="100%"
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2"
       />
       <div className="absolute inset-0 bg-navy-950/35" />
 

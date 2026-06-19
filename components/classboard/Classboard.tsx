@@ -95,7 +95,7 @@ export default function Classboard() {
   };
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-navy-950 text-cream-50">
+    <div className="relative z-0 h-screen w-screen overflow-hidden bg-navy-950 text-cream-50">
       {backgroundVideoId && <VideoBackground videoId={backgroundVideoId} />}
       {!backgroundVideoId && (
         <div className="absolute inset-0 -z-10">
