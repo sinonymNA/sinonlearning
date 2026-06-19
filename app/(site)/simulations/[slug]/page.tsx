@@ -4,8 +4,14 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import LemonadeStandSim from "@/components/simulations/LemonadeStandSim";
+import StackedSim from "@/components/simulations/StackedSim";
 import { getSimulationBySlug, simulations } from "@/data/simulations";
 import { SITE_URL } from "@/lib/seo";
+
+const SIMULATION_COMPONENTS: Record<string, React.ComponentType> = {
+  "lemonade-stand-economics": LemonadeStandSim,
+  "stacked-build-wealth": StackedSim,
+};
 
 export async function generateMetadata({
   params,
@@ -31,6 +37,8 @@ export default async function SimulationPage({
   const { slug } = await params;
   const simulation = getSimulationBySlug(slug);
   if (!simulation) notFound();
+
+  const SimComponent = SIMULATION_COMPONENTS[simulation.slug];
 
   return (
     <div className="bg-navy-950">
@@ -71,11 +79,11 @@ export default async function SimulationPage({
         </div>
       </section>
 
-      {simulation.status === "Available" ? (
+      {simulation.status === "Available" && SimComponent ? (
         <section className="px-6 pb-24 lg:px-8">
           <div className="mx-auto max-w-5xl">
             <FadeIn>
-              <LemonadeStandSim />
+              <SimComponent />
             </FadeIn>
           </div>
         </section>

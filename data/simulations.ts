@@ -20,8 +20,18 @@ export const simulations: SimulationCatalogEntry[] = [
     status: "Available",
   },
   {
-    slug: "budgeting-basics",
+    slug: "stacked-build-wealth",
     number: 2,
+    title: "STACKED: Build Wealth. Buy Assets. Create Freedom.",
+    tagline: "Live 30 years of financial decisions in fifteen minutes flat.",
+    description:
+      "Start at 22 with a starting salary and a blank slate. Every turn brings a life event and a choice: save it, invest it, spend it, or put it toward your first rental property. Watch compound interest, lifestyle inflation, and cash flow quietly shape who you become decades later.",
+    subject: "Personal Finance",
+    status: "Available",
+  },
+  {
+    slug: "budgeting-basics",
+    number: 3,
     title: "Build a Budget: A Personal Finance Simulator",
     tagline: "Balance rent, bills, and surprises on a real monthly paycheck.",
     description:
@@ -31,7 +41,7 @@ export const simulations: SimulationCatalogEntry[] = [
   },
   {
     slug: "stock-market-basics",
-    number: 3,
+    number: 4,
     title: "Build a Portfolio: A Stock Market Simulator",
     tagline: "Invest across a simulated market and learn what actually drives returns.",
     description:
