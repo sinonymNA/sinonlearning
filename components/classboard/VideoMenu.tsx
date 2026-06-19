@@ -40,14 +40,14 @@ export default function VideoMenu({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-cream-50/15 bg-navy-950/95 p-4 shadow-2xl backdrop-blur-xl"
+      className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-navy-900/10 bg-cream-50/98 p-4 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)] backdrop-blur-xl"
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium text-cream-50">
-          <Film size={15} className="text-teal-300" />
+        <div className="flex items-center gap-2 text-sm font-medium text-navy-900">
+          <Film size={15} className="text-teal-600" />
           Add a YouTube video
         </div>
-        <button onClick={onClose} className="text-cream-50/40 hover:text-cream-50" aria-label="Close">
+        <button onClick={onClose} className="text-navy-700/40 hover:text-navy-900" aria-label="Close">
           <X size={15} />
         </button>
       </div>
@@ -56,9 +56,9 @@ export default function VideoMenu({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Paste a YouTube link..."
-        className="mt-3 w-full rounded-lg border border-cream-50/15 bg-cream-50/5 px-2.5 py-2 text-sm text-cream-50 placeholder:text-cream-50/30 focus:border-teal-400/50 focus:outline-none"
+        className="mt-3 w-full rounded-lg border border-navy-900/12 bg-white px-2.5 py-2 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
       />
-      {error && <p className="mt-1.5 text-xs text-rose-300">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-rose-600">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button
@@ -69,18 +69,18 @@ export default function VideoMenu({
         </button>
         <button
           onClick={() => handleSubmit("pip")}
-          className="flex-1 rounded-lg border border-cream-50/15 py-2 text-xs font-medium text-cream-50 transition-colors hover:border-teal-400/40"
+          className="flex-1 rounded-lg border border-navy-900/12 py-2 text-xs font-medium text-navy-800 transition-colors hover:border-teal-500/40"
         >
           Open as PIP
         </button>
       </div>
 
-      <p className="mt-3 text-xs text-cream-50/40">Try searching for on YouTube:</p>
+      <p className="mt-3 text-xs text-navy-700/40">Try searching for on YouTube:</p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {suggestions.map((s) => (
           <span
             key={s.label}
-            className="rounded-full border border-cream-50/10 px-2.5 py-1 text-xs text-cream-50/50"
+            className="rounded-full border border-navy-900/10 px-2.5 py-1 text-xs text-navy-700/55"
           >
             {s.label}
           </span>

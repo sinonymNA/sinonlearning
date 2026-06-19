@@ -49,19 +49,19 @@ export default function VideoPip({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
       style={{ position: "absolute", top: 0, left: 0, zIndex, width: size.width }}
-      className="overflow-hidden rounded-2xl border border-cream-50/15 bg-navy-950 shadow-2xl"
+      className="overflow-hidden rounded-2xl border border-navy-900/10 bg-cream-50/95 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.2)]"
     >
       <div
         onPointerDown={(e) => dragControls.start(e)}
-        className="flex cursor-grab items-center justify-between gap-2 bg-cream-50/5 px-3 py-1.5 active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-between gap-2 border-b border-navy-900/8 bg-navy-900/[0.03] px-3 py-1.5 active:cursor-grabbing"
       >
-        <span className="text-xs font-medium text-cream-50/80">Video</span>
-        <div className="flex items-center gap-2 text-cream-50/40">
+        <span className="text-xs font-medium text-navy-800">Video</span>
+        <div className="flex items-center gap-2 text-navy-700/40">
           <GripHorizontal size={12} />
           <button
             onClick={onClose}
             aria-label="Close video"
-            className="rounded-full p-0.5 transition-colors hover:bg-cream-50/10 hover:text-cream-50"
+            className="rounded-full p-0.5 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
           >
             <X size={13} />
           </button>
@@ -82,7 +82,7 @@ export default function VideoPip({
           onPointerUp={onResizePointerUp}
           className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize touch-none"
         >
-          <svg viewBox="0 0 16 16" className="h-full w-full text-cream-50/40">
+          <svg viewBox="0 0 16 16" className="h-full w-full text-cream-50/70">
             <path d="M14 2L2 14M14 8L8 14M14 14L14 14" stroke="currentColor" strokeWidth="1.5" />
           </svg>
         </div>

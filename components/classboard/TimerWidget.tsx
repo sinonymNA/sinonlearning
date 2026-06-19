@@ -76,7 +76,7 @@ export default function TimerWidget() {
     <div className="w-64 text-center">
       <div className="relative mx-auto flex h-32 w-32 items-center justify-center">
         <svg className="absolute h-full w-full -rotate-90">
-          <circle cx="50%" cy="50%" r="56" fill="none" stroke="rgba(253,251,246,0.1)" strokeWidth="6" />
+          <circle cx="50%" cy="50%" r="56" fill="none" stroke="rgba(13,27,46,0.08)" strokeWidth="6" />
           <circle
             cx="50%"
             cy="50%"
@@ -90,7 +90,7 @@ export default function TimerWidget() {
             className="transition-[stroke-dashoffset] duration-1000 ease-linear"
           />
         </svg>
-        <span className="font-display text-3xl font-medium tabular-nums text-cream-50">
+        <span className="font-display text-3xl font-medium tabular-nums text-navy-900">
           {mins}:{secs}
         </span>
       </div>
@@ -109,7 +109,7 @@ export default function TimerWidget() {
             setRemaining(totalSeconds);
             setRunning(false);
           }}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-cream-50/15 text-cream-50/70 transition-colors hover:text-cream-50"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-navy-900/15 text-navy-700/70 transition-colors hover:text-navy-900"
           aria-label="Reset"
         >
           <RotateCcw size={14} />
@@ -121,7 +121,7 @@ export default function TimerWidget() {
           <button
             key={p}
             onClick={() => setMinutes(p)}
-            className="rounded-full border border-cream-50/15 px-2.5 py-1 text-xs text-cream-50/70 transition-colors hover:border-teal-400/50 hover:text-cream-50"
+            className="rounded-full border border-navy-900/15 px-2.5 py-1 text-xs text-navy-700/70 transition-colors hover:border-teal-500/50 hover:text-navy-900"
           >
             {p}m
           </button>
@@ -134,11 +134,11 @@ export default function TimerWidget() {
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && applyCustom()}
           placeholder="Custom min"
-          className="w-24 rounded-lg border border-cream-50/15 bg-cream-50/5 px-2.5 py-1 text-center text-xs text-cream-50 placeholder:text-cream-50/30 focus:border-teal-400/50 focus:outline-none"
+          className="w-24 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1 text-center text-xs text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={applyCustom}
-          className="rounded-lg border border-cream-50/15 px-2.5 py-1 text-xs text-cream-50/70 transition-colors hover:text-cream-50"
+          className="rounded-lg border border-navy-900/15 px-2.5 py-1 text-xs text-navy-700/70 transition-colors hover:text-navy-900"
         >
           Set
         </button>

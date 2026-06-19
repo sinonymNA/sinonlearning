@@ -47,21 +47,21 @@ export default function AgendaWidget() {
         {items.map((item) => (
           <li
             key={item.id}
-            className="group flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-cream-50/5"
+            className="group flex items-center gap-2 rounded-lg px-1.5 py-1 transition-colors hover:bg-navy-900/5"
           >
-            <GripVertical size={12} className="shrink-0 text-cream-50/20" />
+            <GripVertical size={12} className="shrink-0 text-navy-700/20" />
             <button
               onClick={() => toggleItem(item.id)}
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                 item.done
-                  ? "border-teal-400 bg-teal-400"
-                  : "border-cream-50/30 hover:border-teal-300"
+                  ? "border-teal-500 bg-teal-500"
+                  : "border-navy-900/25 hover:border-teal-500"
               }`}
               aria-label={item.done ? "Mark incomplete" : "Mark complete"}
             />
             <span
               className={`flex-1 text-sm ${
-                item.done ? "text-cream-50/35 line-through" : "text-cream-50/90"
+                item.done ? "text-navy-700/35 line-through" : "text-navy-900/90"
               }`}
             >
               {item.text}
@@ -69,14 +69,14 @@ export default function AgendaWidget() {
             <button
               onClick={() => removeItem(item.id)}
               aria-label="Remove item"
-              className="shrink-0 rounded p-0.5 text-cream-50/0 transition-colors group-hover:text-cream-50/40 hover:text-cream-50"
+              className="shrink-0 rounded p-0.5 text-navy-700/0 transition-colors group-hover:text-navy-700/40 hover:text-navy-900"
             >
               <X size={12} />
             </button>
           </li>
         ))}
         {items.length === 0 && (
-          <li className="px-1.5 py-2 text-sm text-cream-50/40">No items yet.</li>
+          <li className="px-1.5 py-2 text-sm text-navy-700/40">No items yet.</li>
         )}
       </ul>
 
@@ -86,7 +86,7 @@ export default function AgendaWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addItem()}
           placeholder="Add agenda item..."
-          className="min-w-0 flex-1 rounded-lg border border-cream-50/15 bg-cream-50/5 px-2.5 py-1.5 text-sm text-cream-50 placeholder:text-cream-50/30 focus:border-teal-400/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={addItem}

@@ -39,28 +39,28 @@ export default function Panel({
       transition={{ duration: 0.2 }}
       onPointerDown={onFocus}
       style={{ width, zIndex, position: "absolute", top: 0, left: 0 }}
-      className="overflow-hidden rounded-2xl border border-cream-50/15 bg-navy-950/90 shadow-2xl backdrop-blur-xl"
+      className="overflow-hidden rounded-2xl border border-navy-900/10 bg-cream-50/95 shadow-[0_20px_45px_-15px_rgba(13,27,46,0.18)] backdrop-blur-xl"
     >
       <div
         onPointerDown={(e) => dragControls.start(e)}
-        className="flex cursor-grab items-center justify-between gap-2 border-b border-cream-50/10 bg-cream-50/5 px-4 py-2.5 active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-between gap-2 border-b border-navy-900/8 bg-navy-900/[0.03] px-4 py-2.5 active:cursor-grabbing"
       >
-        <div className="flex items-center gap-2 text-sm font-medium text-cream-50">
-          <Icon size={15} className="text-teal-300" />
+        <div className="flex items-center gap-2 text-sm font-medium text-navy-900">
+          <Icon size={15} className="text-teal-600" />
           {title}
         </div>
-        <div className="flex items-center gap-2 text-cream-50/40">
+        <div className="flex items-center gap-2 text-navy-700/40">
           <GripHorizontal size={14} />
           <button
             onClick={onClose}
             aria-label={`Close ${title}`}
-            className="rounded-full p-1 transition-colors hover:bg-cream-50/10 hover:text-cream-50"
+            className="rounded-full p-1 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
           >
             <X size={14} />
           </button>
         </div>
       </div>
-      <div className="p-4 text-cream-50">{children}</div>
+      <div className="p-4 text-navy-900">{children}</div>
     </motion.div>
   );
 }

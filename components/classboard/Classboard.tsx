@@ -83,7 +83,7 @@ export default function Classboard() {
   };
 
   if (!mounted) {
-    return <div className="fixed inset-0 bg-navy-950" />;
+    return <div className="fixed inset-0 bg-cream-100" />;
   }
 
   const widgetContent: Record<keyof WidgetState, React.ReactNode> = {
@@ -95,12 +95,12 @@ export default function Classboard() {
   };
 
   return (
-    <div className="relative z-0 h-screen w-screen overflow-hidden bg-navy-950 text-cream-50">
+    <div className="bg-grain relative z-0 h-screen w-screen overflow-hidden bg-cream-100 text-navy-900">
       {backgroundVideoId && <VideoBackground videoId={backgroundVideoId} />}
       {!backgroundVideoId && (
         <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-teal-400/10 blur-[140px]" />
-          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-amber-400/10 blur-[120px]" />
+          <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-teal-400/15 blur-[140px]" />
+          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-amber-400/15 blur-[120px]" />
         </div>
       )}
 

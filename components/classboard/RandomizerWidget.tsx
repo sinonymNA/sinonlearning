@@ -65,9 +65,9 @@ export default function RandomizerWidget() {
 
   return (
     <div className="w-64">
-      <div className="flex h-20 items-center justify-center rounded-xl border border-cream-50/10 bg-cream-50/5 px-3">
+      <div className="flex h-20 items-center justify-center rounded-xl border border-navy-900/10 bg-white px-3">
         <span
-          className={`font-display text-xl font-medium text-cream-50 ${spinning ? "opacity-70" : ""}`}
+          className={`font-display text-xl font-medium text-navy-900 ${spinning ? "opacity-70" : ""}`}
         >
           {picked ?? (roster.length > 0 ? "Ready to pick" : "Add names below")}
         </span>
@@ -82,7 +82,7 @@ export default function RandomizerWidget() {
         Pick a student
       </button>
 
-      <label className="mt-3 flex items-center gap-2 text-xs text-cream-50/60">
+      <label className="mt-3 flex items-center gap-2 text-xs text-navy-700/60">
         <input
           type="checkbox"
           checked={noRepeat}
@@ -90,7 +90,7 @@ export default function RandomizerWidget() {
             setNoRepeat(e.target.checked);
             setRemaining([]);
           }}
-          className="accent-teal-400"
+          className="accent-teal-500"
         />
         Don&apos;t repeat until everyone&apos;s picked
       </label>
@@ -99,13 +99,13 @@ export default function RandomizerWidget() {
         {roster.map((name) => (
           <div
             key={name}
-            className="group flex items-center justify-between rounded-lg px-2 py-1 text-sm text-cream-50/80 hover:bg-cream-50/5"
+            className="group flex items-center justify-between rounded-lg px-2 py-1 text-sm text-navy-800/80 hover:bg-navy-900/5"
           >
             {name}
             <button
               onClick={() => removeName(name)}
               aria-label={`Remove ${name}`}
-              className="text-cream-50/0 group-hover:text-cream-50/40 hover:text-cream-50"
+              className="text-navy-700/0 group-hover:text-navy-700/40 hover:text-navy-900"
             >
               <X size={12} />
             </button>
@@ -119,7 +119,7 @@ export default function RandomizerWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addName()}
           placeholder="Add student..."
-          className="min-w-0 flex-1 rounded-lg border border-cream-50/15 bg-cream-50/5 px-2.5 py-1.5 text-sm text-cream-50 placeholder:text-cream-50/30 focus:border-teal-400/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-white px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
         />
         <button
           onClick={addName}

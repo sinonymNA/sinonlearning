@@ -27,13 +27,12 @@ export default function ClassroomScreenMockup() {
     >
       <div className="absolute left-1/2 top-1/2 -z-10 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/15 blur-[100px]" />
 
-      <div className="relative overflow-hidden rounded-[28px] border border-navy-900/10 bg-navy-950 p-4 shadow-[0_30px_60px_-15px_rgba(13,27,46,0.3)] sm:p-6">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/[0.04] to-transparent" />
+      <div className="bg-grain relative overflow-hidden rounded-[28px] border border-navy-900/10 bg-cream-200 p-4 shadow-[0_30px_60px_-15px_rgba(13,27,46,0.18)] sm:p-6">
         <div className="mb-4 flex items-center justify-between px-1">
-          <span className="text-xs font-medium uppercase tracking-wide text-cream-200/50">
+          <span className="text-xs font-medium uppercase tracking-wide text-navy-700/50">
             Classboard
           </span>
-          <span className="flex items-center gap-1.5 text-xs font-medium text-teal-300">
+          <span className="flex items-center gap-1.5 text-xs font-medium text-teal-700">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-400" />

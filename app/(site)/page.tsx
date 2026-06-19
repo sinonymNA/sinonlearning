@@ -38,9 +38,9 @@ const ecosystem = [
 ];
 
 const principleTint = {
-  teal: "bg-teal-400/15 text-teal-300",
-  rose: "bg-rose-400/15 text-rose-300",
-  amber: "bg-amber-400/15 text-amber-300",
+  teal: "bg-teal-50 text-teal-700",
+  rose: "bg-rose-50 text-rose-700",
+  amber: "bg-amber-50 text-amber-700",
 };
 
 const principles = [
@@ -107,18 +107,18 @@ export default function Home() {
       </section>
 
       {/* Mission */}
-      <section id="mission" className="relative overflow-hidden bg-navy-950 px-6 py-20 text-cream-50 lg:px-8">
+      <section id="mission" className="bg-grain relative overflow-hidden bg-cream-100 px-6 py-20 lg:px-8">
         <div className="absolute left-1/4 top-0 -z-10 h-96 w-96 -translate-y-1/2 rounded-full bg-teal-400/10 blur-[120px]" />
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
             <FadeIn>
-              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-teal-300">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.14em] text-teal-700">
                 Mission
               </p>
-              <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
+              <h2 className="font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
                 The mission is simple: great learning should be accessible.
               </h2>
-              <p className="mt-6 max-w-xl text-lg leading-relaxed text-cream-100/75">
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-navy-700/80">
                 Teachers should not have to spend their own money just to give students
                 thoughtful, beautiful, engaging resources. Students should not have their
                 learning limited by the resources their school can afford. Sinon Learning
@@ -140,14 +140,14 @@ export default function Home() {
           <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {principles.map((principle, i) => (
               <FadeIn key={principle.title} delay={i * 0.1}>
-                <div className="rounded-2xl border border-cream-50/10 bg-cream-50/5 p-6 text-left">
+                <div className="rounded-2xl border border-navy-900/8 bg-white p-6 text-left shadow-[0_1px_2px_rgba(13,27,46,0.04)]">
                   <span className={`flex h-9 w-9 items-center justify-center rounded-full ${principleTint[principle.tint]}`}>
                     <principle.icon size={17} />
                   </span>
-                  <p className="mt-4 text-sm font-semibold text-cream-50">
+                  <p className="mt-4 text-sm font-semibold text-navy-900">
                     {principle.title}
                   </p>
-                  <p className="mt-1.5 text-sm text-cream-100/65">{principle.description}</p>
+                  <p className="mt-1.5 text-sm text-navy-700/70">{principle.description}</p>
                 </div>
               </FadeIn>
             ))}
@@ -211,14 +211,14 @@ export default function Home() {
       {/* Final CTA */}
       <section className="px-6 py-20 lg:px-8">
         <FadeIn>
-          <div className="relative mx-auto max-w-3xl overflow-hidden rounded-[28px] bg-navy-950 px-8 py-14 text-center text-cream-50 sm:px-16">
+          <div className="relative mx-auto max-w-3xl overflow-hidden rounded-[28px] border border-navy-900/8 bg-white px-8 py-14 text-center shadow-[0_30px_60px_-15px_rgba(13,27,46,0.12)] sm:px-16">
             <div className="absolute left-1/2 top-1/2 -z-10 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/15 blur-[100px]" />
-            <h2 className="font-display text-3xl font-medium leading-tight sm:text-4xl">
+            <h2 className="font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
               A better classroom library, built one resource at a time.
             </h2>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button href="/curriculum">Explore Curriculum</Button>
-              <Button href="/tools" variant="ghost">
+              <Button href="/tools" variant="secondary">
                 View Tools
               </Button>
             </div>

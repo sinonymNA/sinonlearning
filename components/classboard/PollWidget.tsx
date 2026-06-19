@@ -50,7 +50,7 @@ export default function PollWidget() {
       <input
         value={poll.question}
         onChange={(e) => setPoll((prev) => ({ ...prev, question: e.target.value }))}
-        className="w-full rounded-lg border border-cream-50/15 bg-cream-50/5 px-2.5 py-1.5 text-sm font-medium text-cream-50 focus:border-teal-400/50 focus:outline-none"
+        className="w-full rounded-lg border border-navy-900/12 bg-white px-2.5 py-1.5 text-sm font-medium text-navy-900 focus:border-teal-500/50 focus:outline-none"
       />
 
       <div className="mt-3 space-y-2">
@@ -60,7 +60,7 @@ export default function PollWidget() {
             <button
               key={i}
               onClick={() => vote(i)}
-              className="relative w-full overflow-hidden rounded-lg border border-cream-50/15 bg-cream-50/5 px-3 py-2 text-left transition-colors hover:border-teal-400/40"
+              className="relative w-full overflow-hidden rounded-lg border border-navy-900/12 bg-white px-3 py-2 text-left transition-colors hover:border-teal-500/40"
             >
               <div
                 className="absolute inset-y-0 left-0 bg-teal-400/20 transition-[width] duration-300"
@@ -71,9 +71,9 @@ export default function PollWidget() {
                   value={option.label}
                   onChange={(e) => updateLabel(i, e.target.value)}
                   onClick={(e) => e.stopPropagation()}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-cream-50 focus:outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-navy-900 focus:outline-none"
                 />
-                <span className="shrink-0 text-xs font-medium text-cream-50/60">
+                <span className="shrink-0 text-xs font-medium text-navy-700/60">
                   {option.votes} · {pct}%
                 </span>
               </div>
@@ -84,7 +84,7 @@ export default function PollWidget() {
 
       <button
         onClick={reset}
-        className="mt-3 flex items-center gap-1.5 text-xs text-cream-50/50 transition-colors hover:text-cream-50"
+        className="mt-3 flex items-center gap-1.5 text-xs text-navy-700/50 transition-colors hover:text-navy-900"
       >
         <RotateCcw size={12} />
         Reset votes

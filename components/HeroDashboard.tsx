@@ -128,10 +128,10 @@ export default function HeroDashboard() {
 
           <div className="grid sm:grid-cols-[180px_1fr]">
             {/* Sidebar */}
-            <div className="hidden flex-col gap-1 bg-navy-950 p-5 sm:flex">
+            <div className="hidden flex-col gap-1 border-r border-navy-900/8 bg-cream-200/60 p-5 sm:flex">
               <div className="mb-6 flex items-center gap-2 px-2">
                 <Logo size={24} />
-                <span className="font-display text-sm font-medium text-cream-50">
+                <span className="font-display text-sm font-medium text-navy-900">
                   Sinon Learning
                 </span>
               </div>
@@ -140,8 +140,8 @@ export default function HeroDashboard() {
                   key={link.label}
                   className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors ${
                     link.active
-                      ? "bg-teal-400/15 text-teal-200"
-                      : "text-cream-200/60 hover:text-cream-100"
+                      ? "bg-teal-500/15 text-teal-700"
+                      : "text-navy-700/60 hover:text-navy-900"
                   }`}
                 >
                   <link.icon size={16} />

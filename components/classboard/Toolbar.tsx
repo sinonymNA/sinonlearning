@@ -68,16 +68,16 @@ export default function Toolbar({
   };
 
   return (
-    <div className="relative z-40 flex items-center justify-between gap-3 border-b border-cream-50/10 bg-navy-950/70 px-4 py-2.5 backdrop-blur-md">
+    <div className="relative z-40 flex items-center justify-between gap-3 border-b border-navy-900/8 bg-cream-50/85 px-4 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <Link
           href="/tools"
-          className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-cream-50/60 transition-colors hover:bg-cream-50/10 hover:text-cream-50"
+          className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
         >
           <ArrowLeft size={13} />
           Exit
         </Link>
-        <span className="ml-1 hidden font-display text-sm font-medium text-cream-50 sm:inline">
+        <span className="ml-1 hidden font-display text-sm font-medium text-navy-900 sm:inline">
           Classboard
         </span>
       </div>
@@ -89,8 +89,8 @@ export default function Toolbar({
             onClick={() => onToggleWidget(key)}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               widgets[key]
-                ? "bg-teal-400/15 text-teal-200"
-                : "text-cream-50/60 hover:bg-cream-50/10 hover:text-cream-50"
+                ? "bg-teal-500/15 text-teal-700"
+                : "text-navy-700/60 hover:bg-navy-900/5 hover:text-navy-900"
             }`}
           >
             <Icon size={13} />
@@ -103,7 +103,7 @@ export default function Toolbar({
         <div className="relative">
           <button
             onClick={() => setVideoMenuOpen((v) => !v)}
-            className="flex items-center gap-1.5 rounded-full bg-cream-50/10 px-3 py-1.5 text-xs font-medium text-cream-50 transition-colors hover:bg-cream-50/15"
+            className="flex items-center gap-1.5 rounded-full bg-navy-900/5 px-3 py-1.5 text-xs font-medium text-navy-800 transition-colors hover:bg-navy-900/10"
           >
             <Film size={13} />
             <span className="hidden sm:inline">Video</span>
@@ -123,20 +123,20 @@ export default function Toolbar({
           <button
             onClick={onClearBackground}
             aria-label="Remove background video"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-cream-50/60 transition-colors hover:bg-cream-50/10 hover:text-cream-50"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
           >
             <ImageOff size={14} />
           </button>
         )}
 
-        <span className="hidden text-xs tabular-nums text-cream-50/50 md:inline">
+        <span className="hidden text-xs tabular-nums text-navy-700/50 md:inline">
           {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
         </span>
 
         <button
           onClick={toggleFullscreen}
           aria-label="Toggle fullscreen"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-cream-50/60 transition-colors hover:bg-cream-50/10 hover:text-cream-50"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
         >
           {fullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
         </button>
