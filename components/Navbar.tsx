@@ -11,6 +11,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/curriculum", label: "Everyday Curriculum" },
   { href: "/tools", label: "Classroom Tools" },
+  { href: "/materials", label: "Course Materials" },
   { href: "/#mission", label: "Mission" },
 ];
 
