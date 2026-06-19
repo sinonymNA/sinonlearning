@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Fraunces } from "next/font/google";
+import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,6 +15,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Sinon Learning — Free Curriculum & Classroom Tools",
   description:
     "Sinon Learning is building a free library of modern curriculum, digital textbooks, visual resources, and simple classroom tools for real teachers and real students.",

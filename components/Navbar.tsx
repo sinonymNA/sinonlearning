@@ -10,7 +10,9 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/curriculum", label: "Everyday Curriculum" },
   { href: "/ai", label: "Learn About AI" },
+  { href: "/simulations", label: "Simulations & Games" },
   { href: "/tools", label: "Classroom Tools" },
+  { href: "/educational-theory", label: "Educational Theory" },
   { href: "/#mission", label: "Mission" },
 ];
 
