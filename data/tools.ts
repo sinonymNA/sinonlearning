@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { MonitorPlay, Users, QrCode, Rocket } from "lucide-react";
+import { MonitorPlay, Users, QrCode, Rocket, Gamepad2 } from "lucide-react";
 
 export type ToolStatus = "Live" | "Prototype" | "Planned" | "Coming Later";
 
@@ -19,6 +19,14 @@ export const tools: Tool[] = [
       "An all-in-one front-of-room display: live agenda, timer, student randomizer, polls, exit tickets, and ambient YouTube backgrounds.",
     icon: MonitorPlay,
     href: "/classboard",
+  },
+  {
+    name: "Game Show Generator",
+    status: "Live",
+    description:
+      "Turn any vocab list, study guide, or set of standards into a trivia grid, mystery wheel, answers showdown, and more—ready to project in minutes.",
+    icon: Gamepad2,
+    href: "/game-shows",
   },
   {
     name: "Group Maker",
