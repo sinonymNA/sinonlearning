@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getPublishedPosts } from "@/lib/blog";
+import { getPublishedTextbooks } from "@/lib/textbooks";
 import { simulations } from "@/data/simulations";
 import { SITE_URL } from "@/lib/seo";
 
@@ -14,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/classboard",
     "/educational-theory",
     "/simulations",
+    "/textbooks",
   ].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(),
@@ -30,5 +32,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
   }));
 
-  return [...staticRoutes, ...postRoutes, ...simulationRoutes];
+  const textbooks = await getPublishedTextbooks();
+  const textbookRoutes = textbooks.map((book) => ({
+    url: `${SITE_URL}/textbooks/${book.slug}`,
+    lastModified: new Date(book.updated_at),
+  }));
+
+  return [...staticRoutes, ...postRoutes, ...simulationRoutes, ...textbookRoutes];
 }

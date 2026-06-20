@@ -11,6 +11,7 @@ const links = [
   { href: "/curriculum", label: "Everyday Curriculum" },
   { href: "/ai", label: "Learn About AI" },
   { href: "/simulations", label: "Simulations & Games" },
+  { href: "/textbooks", label: "Textbooks" },
   { href: "/tools", label: "Classroom Tools" },
   { href: "/educational-theory", label: "Educational Theory" },
   { href: "/#mission", label: "Mission" },

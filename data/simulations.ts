@@ -43,11 +43,11 @@ export const simulations: SimulationCatalogEntry[] = [
     slug: "stock-market-basics",
     number: 4,
     title: "Build a Portfolio: A Stock Market Simulator",
-    tagline: "Invest across a simulated market and learn what actually drives returns.",
+    tagline: "Invest using real, live stock prices and learn what actually drives returns.",
     description:
-      "Coming soon: build a portfolio across simulated companies and market cycles to learn the basics of risk, diversification, and time horizon.",
+      "Start with $10,000 in cash and trade a watchlist of well-known companies, priced from the real market in near real-time. Track your net worth over time, learn the basics of risk and diversification, and save your progress with a passcode you choose—no account needed.",
     subject: "Investing",
-    status: "Coming Soon",
+    status: "Available",
   },
 ];
 

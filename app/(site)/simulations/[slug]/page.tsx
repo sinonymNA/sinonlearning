@@ -5,12 +5,14 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import LemonadeStandSim from "@/components/simulations/LemonadeStandSim";
 import StackedSim from "@/components/simulations/StackedSim";
+import StockMarketSim from "@/components/simulations/StockMarketSim";
 import { getSimulationBySlug, simulations } from "@/data/simulations";
 import { SITE_URL } from "@/lib/seo";
 
 const SIMULATION_COMPONENTS: Record<string, React.ComponentType> = {
   "lemonade-stand-economics": LemonadeStandSim,
   "stacked-build-wealth": StackedSim,
+  "stock-market-basics": StockMarketSim,
 };
 
 export async function generateMetadata({
