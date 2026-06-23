@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import Button from "./Button";
 
@@ -39,20 +40,19 @@ export default function HeroIntro() {
         variants={item}
         className="font-display text-4xl font-medium leading-[1.1] text-navy-900 sm:text-5xl lg:text-6xl"
       >
-        Free curriculum and classroom tools for{" "}
+        Free curriculum, tools, and{" "}
         <span className="bg-gradient-to-r from-teal-600 via-rose-400 to-amber-500 bg-clip-text text-transparent">
-          better learning
-        </span>
-        .
+          learning resources
+        </span>{" "}
+        for every classroom.
       </motion.h1>
 
       <motion.p
         variants={item}
         className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-navy-700/80"
       >
-        Sinon Learning is building a free library of modern curriculum, digital
-        textbooks, visual resources, and simple classroom tools—created for real
-        teachers and real students.
+        Sinon Learning is building a free library of modern curriculum, classroom
+        tools, and teacher-first AI—created for real teachers and real students.
       </motion.p>
 
       <motion.div
@@ -60,12 +60,19 @@ export default function HeroIntro() {
         className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row"
       >
         <Button href="/curriculum">
-          Explore Everyday Curriculum
+          Explore Curriculum
           <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
         </Button>
-        <Button href="/tools" variant="secondary">
-          View Classroom Tools
+        <Button href="/teacher-tools" variant="secondary">
+          See Teacher Tools
         </Button>
+        <Link
+          href="/research/kora-model"
+          className="group inline-flex items-center gap-1.5 px-2 py-3 text-sm font-medium text-navy-700/70 transition-colors hover:text-teal-700"
+        >
+          Meet KORA
+          <ArrowRight size={14} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+        </Link>
       </motion.div>
 
       <motion.p variants={item} className="mx-auto mt-6 max-w-xl text-sm text-navy-700/60">
@@ -76,7 +83,7 @@ export default function HeroIntro() {
       <motion.button
         variants={item}
         onClick={() =>
-          document.getElementById("ecosystem")?.scrollIntoView({ behavior: "smooth" })
+          document.getElementById("start-here")?.scrollIntoView({ behavior: "smooth" })
         }
         className="mx-auto mt-14 flex flex-col items-center gap-1.5 text-navy-700/40 transition-colors hover:text-teal-600"
         aria-label="Scroll to explore"

@@ -8,13 +8,12 @@ import Logo from "./Logo";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/curriculum", label: "Everyday Curriculum" },
-  { href: "/ai", label: "Learn About AI" },
-  { href: "/simulations", label: "Simulations & Games" },
-  { href: "/textbooks", label: "Textbooks" },
-  { href: "/tools", label: "Classroom Tools" },
-  { href: "/educational-theory", label: "Educational Theory" },
-  { href: "/#mission", label: "Mission" },
+  { href: "/curriculum", label: "Curriculum" },
+  { href: "/teacher-tools", label: "Teacher Tools" },
+  { href: "/students", label: "Students" },
+  { href: "/teaching-lab", label: "Teaching Lab" },
+  { href: "/research", label: "Research" },
+  { href: "/mission", label: "Mission" },
 ];
 
 export default function Navbar() {

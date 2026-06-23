@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, BrainCircuit, FlaskConical, ShieldCheck, Scale } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import FlagshipCourseCard from "@/components/ai/FlagshipCourseCard";
+import RelatedResources from "@/components/RelatedResources";
 import { aiCourses } from "@/data/aiCourses";
 
 const pillars = [
@@ -107,6 +108,37 @@ export default function AIMissionPage() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-20 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <RelatedResources
+            theme="dark"
+            title="Keep exploring"
+            links={[
+              { label: "Students", href: "/students" },
+              { label: "Curriculum", href: "/curriculum" },
+              { label: "Simulations & Games", href: "/simulations" },
+            ]}
+          />
+        </div>
+      </section>
+
+      <section className="px-6 pb-24 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <FadeIn>
+            <h2 className="font-display text-2xl font-medium text-white sm:text-3xl">
+              Ready to bring AI literacy into your classroom?
+            </h2>
+            <Link
+              href="/teacher-tools"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal-300 px-6 py-3 text-sm font-medium text-navy-950 transition-colors hover:bg-teal-200"
+            >
+              See Teacher Tools
+              <ArrowRight size={14} />
+            </Link>
+          </FadeIn>
         </div>
       </section>
     </div>

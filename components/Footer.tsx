@@ -3,52 +3,48 @@ import Logo from "./Logo";
 
 const columns = [
   {
-    title: "Sinon Learning",
-    links: [
-      { label: "Home", href: "/" },
-      { label: "Mission", href: "/#mission" },
-    ],
-  },
-  {
-    title: "Everyday Curriculum",
+    title: "Curriculum",
     links: [
       { label: "Explore Curriculum", href: "/curriculum" },
-      { label: "Economics & Finance", href: "/curriculum" },
+      { label: "AI Literacy", href: "/ai" },
     ],
   },
   {
-    title: "Learn About AI",
+    title: "Teacher Tools",
     links: [
-      { label: "Explore AI Courses", href: "/ai" },
-      { label: "AI Foundations", href: "/ai/ai-foundations" },
+      { label: "Explore Teacher Tools", href: "/teacher-tools" },
+      { label: "Teacher Studio", href: "/teacher-tools/teacher-studio" },
+      { label: "Classroom Tools", href: "/tools" },
     ],
   },
   {
-    title: "Simulations & Games",
+    title: "Students",
     links: [
-      { label: "Explore Simulations", href: "/simulations" },
-      { label: "Lemonade Stand", href: "/simulations/lemonade-stand-economics" },
+      { label: "Explore Student Resources", href: "/students" },
+      { label: "Simulations & Games", href: "/simulations" },
+      { label: "Digital Textbooks", href: "/textbooks" },
     ],
   },
   {
-    title: "Classroom Tools",
+    title: "Teaching Lab",
     links: [
-      { label: "Explore Tools", href: "/tools" },
-      { label: "Classboard", href: "/classboard" },
+      { label: "Explore Teaching Lab", href: "/teaching-lab" },
+      { label: "AI for Teachers", href: "/teaching-lab/ai-for-teachers" },
     ],
   },
   {
-    title: "Educational Theory",
+    title: "Research",
     links: [
-      { label: "Read the Blog", href: "/educational-theory" },
-      { label: "Why Sinon Learning", href: "/#mission" },
+      { label: "Explore Research", href: "/research" },
+      { label: "KORA Model", href: "/research/kora-model" },
+      { label: "Educational Theory", href: "/educational-theory" },
     ],
   },
   {
     title: "Mission",
     links: [
-      { label: "Why Sinon Learning", href: "/#mission" },
-      { label: "First Focus", href: "/curriculum" },
+      { label: "Why Sinon Learning", href: "/mission" },
+      { label: "KORA Constitution", href: "/mission/kora-constitution" },
     ],
   },
 ];
@@ -58,12 +54,17 @@ export default function Footer() {
     <footer className="bg-grain relative overflow-hidden border-t border-navy-900/8 bg-cream-100 text-navy-700">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500/50 to-transparent" />
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4 lg:grid-cols-7">
-          <div className="col-span-2 sm:col-span-4 lg:col-span-7 mb-4 flex items-center gap-2.5 sm:mb-2">
-            <Logo size={28} />
-            <span className="font-display text-lg font-medium text-navy-900">
-              Sinon Learning
-            </span>
+        <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-6 mb-4 sm:mb-2">
+            <div className="flex items-center gap-2.5">
+              <Logo size={28} />
+              <span className="font-display text-lg font-medium text-navy-900">
+                Sinon Learning
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-navy-700/60">
+              Free education. Human teachers. Powerful tools.
+            </p>
           </div>
 
           {columns.map((column) => (

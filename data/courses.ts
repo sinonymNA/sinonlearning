@@ -57,6 +57,22 @@ export const courses: Course[] = [
       "Maps, regions, and global thinking skills presented in a clean, visual format.",
     includes: ["Visual resources", "Daily lessons", "Activities"],
   },
+  {
+    slug: "everyday-lessons",
+    name: "Everyday Lessons",
+    status: "Planned",
+    description:
+      "Grab-and-go daily lessons that pull from across the curriculum library for whenever you need something fast.",
+    includes: ["Daily lessons", "Slides & activities", "Teacher guides"],
+  },
+  {
+    slug: "full-course-packs",
+    name: "Full Course Packs",
+    status: "Coming Later",
+    description:
+      "Complete, bundled course packs—textbook, units, slides, and assessments together—once individual courses are built out.",
+    includes: ["Digital textbook", "Complete units", "Assessments"],
+  },
 ];
 
 export function getCourseBySlug(slug: string): Course | undefined {

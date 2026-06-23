@@ -1,9 +1,11 @@
-import { ArrowLeft, BookOpen } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import Button from "@/components/Button";
 import SectionHeader from "@/components/SectionHeader";
 import CourseCard from "@/components/CourseCard";
 import FadeIn from "@/components/FadeIn";
 import PhotoSlot from "@/components/PhotoSlot";
+import RelatedResources from "@/components/RelatedResources";
 import { courses, courseIncludes, firstBuildRoadmap } from "@/data/courses";
 
 export default function CurriculumPage() {
@@ -65,6 +67,18 @@ export default function CurriculumPage() {
               ))}
             </div>
           </FadeIn>
+          <FadeIn delay={0.18}>
+            <Link
+              href="/ai"
+              className="group mt-6 flex items-center justify-between gap-3 rounded-2xl border border-navy-900/8 bg-white px-6 py-5 text-sm font-medium text-navy-800 transition-colors hover:border-teal-600/30 hover:text-teal-700"
+            >
+              <span>
+                Looking for AI Literacy? It lives under{" "}
+                <span className="font-semibold">Learn About AI</span>, our dedicated AI curriculum.
+              </span>
+              <ArrowRight size={16} className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
+          </FadeIn>
         </div>
       </section>
 
@@ -95,7 +109,20 @@ export default function CurriculumPage() {
             </ol>
           </FadeIn>
 
-          <FadeIn delay={0.25}>
+          <FadeIn delay={0.2}>
+            <div className="mt-12">
+              <RelatedResources
+                title="Keep exploring"
+                links={[
+                  { label: "Teaching Lab", href: "/teaching-lab" },
+                  { label: "Teacher Tools", href: "/teacher-tools" },
+                  { label: "Research", href: "/research" },
+                ]}
+              />
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.28}>
             <div className="mt-12 flex justify-center">
               <Button href="/">
                 <ArrowLeft size={16} className="transition-transform duration-200 group-hover:-translate-x-0.5" />
