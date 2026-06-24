@@ -43,7 +43,7 @@ export default function StudioCanvas({
       ? project.imagePlaceholders.find((p) => p.id === slide.imagePlaceholderId)
       : undefined;
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
+      <div className="mx-auto max-w-4xl px-4 py-10">
         <SlidePreview
           slide={slide}
           audience={audience}

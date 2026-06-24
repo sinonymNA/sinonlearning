@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
+import DocPage from "./DocPage";
 import type { TeacherGuide } from "@/lib/studioTypes";
 
 interface TeacherGuidePreviewProps {
@@ -28,48 +29,65 @@ export default function TeacherGuidePreview({ guide, onChange }: TeacherGuidePre
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-navy-900/8 p-6 sm:p-8">
-      <h2 className="font-display text-2xl text-navy-900">Teacher Guide</h2>
+    <DocPage>
+      <h2 className="font-display text-3xl text-navy-900">Teacher Guide</h2>
 
-      <label className="mt-5 block">
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-navy-700/50">
-          Overview
-        </span>
+      <Section label="Overview">
         <textarea
           value={guide.overview}
           onChange={(e) => onChange({ overview: e.target.value })}
+          placeholder="What's this lesson about, at a glance?"
           rows={3}
-          className="w-full resize-none rounded-xl border border-navy-900/10 bg-white/60 p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          className="w-full resize-none bg-transparent text-base leading-relaxed text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
         />
-      </label>
+      </Section>
 
-      <EditableList
-        label="Objectives"
-        items={guide.objectives}
-        onItemChange={(i, v) => updateListItem("objectives", i, v)}
-        onAdd={() => addListItem("objectives")}
-        onRemove={(i) => removeListItem("objectives", i)}
-      />
+      <Section label="Objectives">
+        <EditableList
+          label="objective"
+          items={guide.objectives}
+          onItemChange={(i, v) => updateListItem("objectives", i, v)}
+          onAdd={() => addListItem("objectives")}
+          onRemove={(i) => removeListItem("objectives", i)}
+        />
+      </Section>
 
-      <EditableList
-        label="Materials"
-        items={guide.materials}
-        onItemChange={(i, v) => updateListItem("materials", i, v)}
-        onAdd={() => addListItem("materials")}
-        onRemove={(i) => removeListItem("materials", i)}
-      />
+      <Section label="Materials">
+        <EditableList
+          label="material"
+          items={guide.materials}
+          onItemChange={(i, v) => updateListItem("materials", i, v)}
+          onAdd={() => addListItem("materials")}
+          onRemove={(i) => removeListItem("materials", i)}
+        />
+      </Section>
 
-      <label className="mt-5 block">
-        <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-navy-700/50">
-          Timing notes
-        </span>
+      <Section label="Timing notes" last>
         <textarea
           value={guide.timingNotes}
           onChange={(e) => onChange({ timingNotes: e.target.value })}
           rows={2}
-          className="w-full resize-none rounded-xl border border-navy-900/10 bg-white/60 p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
+          placeholder="How should the class period be paced?"
+          className="w-full resize-none bg-transparent text-base leading-relaxed text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
         />
-      </label>
+      </Section>
+    </DocPage>
+  );
+}
+
+function Section({
+  label,
+  children,
+  last,
+}: {
+  label: string;
+  children: React.ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <div className={`mt-6 border-b border-navy-900/6 pb-6 ${last ? "border-0 pb-0" : ""}`}>
+      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-navy-700/45">{label}</h3>
+      {children}
     </div>
   );
 }
@@ -88,24 +106,21 @@ function EditableList({
   onRemove: (index: number) => void;
 }) {
   return (
-    <div className="mt-5">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-navy-700/50">
-        {label}
-      </span>
+    <div>
       <div className="space-y-1.5">
         {items.map((item, index) => (
-          <div key={index} className="flex items-center gap-2">
+          <div key={index} className="group flex items-center gap-2">
             <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-teal-400" />
             <input
               value={item}
               onChange={(e) => onItemChange(index, e.target.value)}
-              className="w-full bg-transparent text-sm text-navy-800 focus-visible:outline-none"
+              className="w-full bg-transparent text-base text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
             />
             <button
               type="button"
               onClick={() => onRemove(index)}
-              aria-label={`Remove ${label.toLowerCase()} item`}
-              className="text-navy-700/30 hover:text-rose-600"
+              aria-label={`Remove ${label}`}
+              className="text-navy-700/0 transition group-hover:text-navy-700/30 hover:text-rose-600"
             >
               <Trash2 size={12} />
             </button>
@@ -117,7 +132,7 @@ function EditableList({
         onClick={onAdd}
         className="mt-1.5 flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-800"
       >
-        <Plus size={12} /> Add {label.toLowerCase()} item
+        <Plus size={12} /> Add {label}
       </button>
     </div>
   );

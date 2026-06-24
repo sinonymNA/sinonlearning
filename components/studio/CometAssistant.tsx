@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import CometCharacter from "./CometCharacter";
 import { QUICK_ACTIONS } from "@/lib/studioTransforms";
 import type { CometEditOutcome } from "@/lib/cometEditValidation";
@@ -14,12 +15,18 @@ interface CometAssistantProps {
 
 type AskStatus = "idle" | "loading" | "error";
 
+const DEFAULT_VISIBLE_ACTIONS = 4;
+
 export default function CometAssistant({ project, onApply, onApplyCometEdit }: CometAssistantProps) {
   const [toast, setToast] = useState<string | null>(null);
   const [instruction, setInstruction] = useState("");
   const [status, setStatus] = useState<AskStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [pendingEdit, setPendingEdit] = useState<CometEditOutcome | null>(null);
+  const [showAllActions, setShowAllActions] = useState(false);
+
+  const visibleActions = showAllActions ? QUICK_ACTIONS : QUICK_ACTIONS.slice(0, DEFAULT_VISIBLE_ACTIONS);
+  const hiddenCount = QUICK_ACTIONS.length - DEFAULT_VISIBLE_ACTIONS;
 
   const handleClick = (actionId: string, available: boolean) => {
     if (!available) {
@@ -147,7 +154,7 @@ export default function CometAssistant({ project, onApply, onApplyCometEdit }: C
         <p className="text-xs text-navy-700/50">Local edits, applied instantly. No AI call.</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {QUICK_ACTIONS.map((action) => (
+        {visibleActions.map((action) => (
           <button
             key={action.id}
             type="button"
@@ -164,6 +171,23 @@ export default function CometAssistant({ project, onApply, onApplyCometEdit }: C
           </button>
         ))}
       </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAllActions((v) => !v)}
+          className="mt-2 flex items-center gap-1 text-[11px] font-medium text-navy-700/45 hover:text-teal-700"
+        >
+          {showAllActions ? (
+            <>
+              <ChevronUp size={12} /> Show fewer
+            </>
+          ) : (
+            <>
+              <ChevronDown size={12} /> {hiddenCount} more action{hiddenCount === 1 ? "" : "s"}
+            </>
+          )}
+        </button>
+      )}
       {toast && (
         <p className="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-800">{toast}</p>
       )}

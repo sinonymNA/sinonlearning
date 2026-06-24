@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
+import DocPage from "./DocPage";
 import { createWorksheetQuestion } from "@/lib/studioDefaults";
 import type {
   PreviewAudience,
@@ -49,35 +50,35 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
   };
 
   return (
-    <div className="glass-panel rounded-3xl border border-navy-900/8 p-6 sm:p-8">
+    <DocPage>
       <input
         value={section.title}
         onChange={(e) => onChange({ title: e.target.value })}
         placeholder="Section title"
-        className="w-full bg-transparent font-display text-2xl text-navy-900 focus-visible:outline-none"
+        className="w-full bg-transparent font-display text-3xl text-navy-900 placeholder:text-navy-900/25 focus-visible:outline-none"
       />
       <textarea
         value={section.directions}
         onChange={(e) => onChange({ directions: e.target.value })}
         placeholder="Directions for students"
         rows={2}
-        className="mt-2 w-full resize-none bg-transparent text-sm text-navy-700/70 focus-visible:outline-none"
+        className="mt-2 w-full resize-none bg-transparent text-sm italic text-navy-700/70 placeholder:text-navy-700/30 focus-visible:outline-none"
       />
 
-      <div className="mt-3 flex flex-wrap gap-3 text-xs">
-        <label className="flex items-center gap-1.5 text-navy-700/60">
+      <div className="mt-3 flex flex-wrap gap-4 border-b border-navy-900/8 pb-5 text-xs text-navy-700/50">
+        <label className="flex items-center gap-1.5">
           Difficulty
           <select
             value={section.difficulty}
             onChange={(e) => onChange({ difficulty: e.target.value as WorksheetDifficulty })}
-            className="rounded-lg border border-navy-900/10 bg-white px-2 py-1"
+            className="rounded-md border border-navy-900/10 bg-white px-1.5 py-0.5"
           >
             <option value="easy">Easy</option>
             <option value="medium">Medium</option>
             <option value="hard">Hard</option>
           </select>
         </label>
-        <label className="flex items-center gap-1.5 text-navy-700/60">
+        <label className="flex items-center gap-1.5">
           Response lines
           <input
             type="number"
@@ -85,23 +86,72 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
             max={20}
             value={section.responseSpaceLines}
             onChange={(e) => onChange({ responseSpaceLines: Number(e.target.value) || 0 })}
-            className="w-14 rounded-lg border border-navy-900/10 bg-white px-2 py-1"
+            className="w-12 rounded-md border border-navy-900/10 bg-white px-1.5 py-0.5"
           />
         </label>
       </div>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-6 space-y-6">
         {section.questions.map((question, index) => (
-          <div key={question.id} className="rounded-2xl border border-navy-900/8 bg-white/60 p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium text-navy-700/50">Question {index + 1}</span>
-              <div className="flex items-center gap-2">
+          <div key={question.id} className="group border-b border-navy-900/6 pb-5 last:border-0">
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 flex-shrink-0 text-sm font-medium text-navy-700/50">{index + 1}.</span>
+              <div className="min-w-0 flex-1">
+                <textarea
+                  value={question.prompt}
+                  onChange={(e) => updateQuestion(question.id, { prompt: e.target.value })}
+                  rows={1}
+                  placeholder="Question prompt"
+                  className="w-full resize-none bg-transparent text-base text-navy-900 placeholder:text-navy-700/30 focus-visible:outline-none"
+                />
+
+                {question.type === "multipleChoice" ? (
+                  <div className="mt-2 space-y-1 pl-1">
+                    {(question.choices ?? ["", "", "", ""]).map((choice, ci) => (
+                      <div key={ci} className="flex items-center gap-2">
+                        <span className="text-sm text-navy-700/50">{String.fromCharCode(65 + ci)}.</span>
+                        <input
+                          value={choice}
+                          onChange={(e) => {
+                            const choices = [...(question.choices ?? ["", "", "", ""])];
+                            choices[ci] = e.target.value;
+                            updateQuestion(question.id, { choices });
+                          }}
+                          placeholder={`Choice ${String.fromCharCode(65 + ci)}`}
+                          className="w-full bg-transparent text-sm text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-3 pl-1">
+                    {Array.from({ length: Math.max(1, Math.min(section.responseSpaceLines, 4)) }).map((_, li) => (
+                      <div key={li} className="h-px w-full bg-navy-900/10" />
+                    ))}
+                  </div>
+                )}
+
+                {audience === "teacher" && (
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <span className="flex-shrink-0 font-medium text-amber-700/70">Answer key:</span>
+                    <input
+                      value={section.answerKey[question.id] ?? question.correctAnswer ?? ""}
+                      onChange={(e) => {
+                        updateQuestion(question.id, { correctAnswer: e.target.value });
+                        setAnswer(question.id, e.target.value);
+                      }}
+                      placeholder="…"
+                      className="flex-1 rounded bg-amber-50 px-1.5 py-0.5 text-amber-900 placeholder:text-amber-700/30 focus-visible:outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-shrink-0 items-center gap-2 opacity-0 transition group-hover:opacity-100">
                 <select
                   value={question.type}
-                  onChange={(e) =>
-                    updateQuestion(question.id, { type: e.target.value as WorksheetQuestionType })
-                  }
-                  className="rounded-lg border border-navy-900/10 bg-white px-2 py-1 text-xs"
+                  onChange={(e) => updateQuestion(question.id, { type: e.target.value as WorksheetQuestionType })}
+                  className="rounded-md border border-navy-900/10 bg-white px-1.5 py-0.5 text-[11px]"
                 >
                   {QUESTION_TYPES.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -119,43 +169,6 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
                 </button>
               </div>
             </div>
-            <textarea
-              value={question.prompt}
-              onChange={(e) => updateQuestion(question.id, { prompt: e.target.value })}
-              rows={2}
-              placeholder="Question prompt"
-              className="w-full resize-none rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-            />
-            {question.type === "multipleChoice" && (
-              <div className="mt-2 space-y-1">
-                {(question.choices ?? ["", "", "", ""]).map((choice, ci) => (
-                  <input
-                    key={ci}
-                    value={choice}
-                    onChange={(e) => {
-                      const choices = [...(question.choices ?? ["", "", "", ""])];
-                      choices[ci] = e.target.value;
-                      updateQuestion(question.id, { choices });
-                    }}
-                    placeholder={`Choice ${String.fromCharCode(65 + ci)}`}
-                    className="w-full rounded-lg border border-navy-900/10 bg-white px-3 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
-                  />
-                ))}
-              </div>
-            )}
-            {audience === "teacher" && (
-              <div className="mt-2 flex items-center gap-2">
-                <label className="text-xs font-medium text-navy-700/50">Correct answer / key</label>
-                <input
-                  value={section.answerKey[question.id] ?? question.correctAnswer ?? ""}
-                  onChange={(e) => {
-                    updateQuestion(question.id, { correctAnswer: e.target.value });
-                    setAnswer(question.id, e.target.value);
-                  }}
-                  className="flex-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900 focus-visible:outline-none"
-                />
-              </div>
-            )}
           </div>
         ))}
         <button
@@ -166,6 +179,6 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
           <Plus size={12} /> Add question
         </button>
       </div>
-    </div>
+    </DocPage>
   );
 }
