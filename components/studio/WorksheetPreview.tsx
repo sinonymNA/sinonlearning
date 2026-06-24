@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import DocPage from "./DocPage";
 import { createWorksheetQuestion } from "@/lib/studioDefaults";
 import type {
   PreviewAudience,
@@ -50,7 +49,7 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
   };
 
   return (
-    <DocPage>
+    <div>
       <input
         value={section.title}
         onChange={(e) => onChange({ title: e.target.value })}
@@ -179,6 +178,6 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
           <Plus size={12} /> Add question
         </button>
       </div>
-    </DocPage>
+    </div>
   );
 }

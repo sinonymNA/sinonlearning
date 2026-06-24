@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { GripVertical, Plus } from "lucide-react";
 import StudioTopBar from "./StudioTopBar";
 import SlidePreview from "./SlidePreview";
 import SlideThumb from "./SlideThumb";
@@ -28,6 +28,7 @@ interface SlidesEditorProps {
   onRemoveSlide: (slideId: string) => void;
   onDuplicateSlide: (slideId: string) => void;
   onReorderSlide: (slideId: string, direction: "up" | "down") => void;
+  onReorderSlideTo: (slideId: string, toIndex: number) => void;
   onAddImagePlaceholder: (slideId: string) => void;
   onUpdatePlaceholder: (placeholderId: string, patch: Partial<ImagePlaceholder>) => void;
   onRemovePlaceholder: (placeholderId: string, slideId: string) => void;
@@ -50,6 +51,7 @@ export default function SlidesEditor({
   onRemoveSlide,
   onDuplicateSlide,
   onReorderSlide,
+  onReorderSlideTo,
   onAddImagePlaceholder,
   onUpdatePlaceholder,
   onRemovePlaceholder,
@@ -63,6 +65,39 @@ export default function SlidesEditor({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const activeIndex = slides.length ? Math.min(selectedIndex, slides.length - 1) : -1;
   const selectedSlide = activeIndex >= 0 ? slides[activeIndex] : null;
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => () => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedIndex === null || index === draggedIndex) return;
+    setDragOverIndex(index);
+  };
+
+  const handleDrop = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const slideId = slides[draggedIndex].id;
+    onReorderSlideTo(slideId, index);
+    const insertAt = Math.max(0, Math.min(draggedIndex < index ? index - 1 : index, slides.length - 1));
+    setSelectedIndex(insertAt);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   const handleAddSlide = () => {
     onAddSlide();
@@ -114,8 +149,19 @@ export default function SlidesEditor({
             <button
               key={slide.id}
               type="button"
+              draggable
+              onDragStart={handleDragStart(index)}
+              onDragOver={handleDragOver(index)}
+              onDrop={handleDrop(index)}
+              onDragEnd={handleDragEnd}
               onClick={() => setSelectedIndex(index)}
-              className="group flex shrink-0 items-start gap-1.5 text-left lg:w-full"
+              className={`group flex shrink-0 cursor-grab items-start gap-1.5 text-left active:cursor-grabbing lg:w-full ${
+                draggedIndex === index ? "opacity-40" : ""
+              } ${
+                dragOverIndex === index && draggedIndex !== null && draggedIndex !== index
+                  ? "border-l-2 border-teal-500 pl-1 lg:border-l-0 lg:border-t-2 lg:pl-0 lg:pt-1"
+                  : ""
+              }`}
             >
               <span
                 className={`mt-1 hidden w-4 text-[10px] font-semibold lg:block ${
@@ -125,13 +171,17 @@ export default function SlidesEditor({
                 {index + 1}
               </span>
               <span
-                className={`flex aspect-[16/9] w-32 overflow-hidden rounded-[4px] border bg-white shadow-sm transition lg:w-full ${
+                className={`relative flex aspect-[16/9] w-32 overflow-hidden rounded-[4px] border bg-white shadow-sm transition lg:w-full ${
                   activeIndex === index
                     ? "border-teal-500 ring-1 ring-teal-500"
                     : "border-navy-900/15 group-hover:border-navy-900/30"
                 }`}
               >
                 <SlideThumb slide={slide} />
+                <GripVertical
+                  size={12}
+                  className="absolute right-0.5 top-0.5 text-navy-900/20 opacity-0 transition group-hover:opacity-100"
+                />
               </span>
             </button>
           ))}

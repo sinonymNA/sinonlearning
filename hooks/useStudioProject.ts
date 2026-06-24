@@ -33,6 +33,16 @@ function moveItem<T>(items: T[], index: number, direction: "up" | "down"): T[] {
   return next;
 }
 
+/** Drag-and-drop reorder: drops before `toIndex` as measured in the original array. */
+function moveItemToIndex<T>(items: T[], fromIndex: number, toIndex: number): T[] {
+  if (fromIndex < 0 || fromIndex >= items.length) return items;
+  const next = [...items];
+  const [moved] = next.splice(fromIndex, 1);
+  const insertAt = Math.max(0, Math.min(fromIndex < toIndex ? toIndex - 1 : toIndex, next.length));
+  next.splice(insertAt, 0, moved);
+  return next;
+}
+
 export function useStudioProject(projectId: string, initialProject: TeacherStudioProject) {
   const [project, setProject] = useLocalStorageState<TeacherStudioProject>(
     projectKey(projectId),
@@ -133,6 +143,17 @@ export function useStudioProject(projectId: string, initialProject: TeacherStudi
     [mutate]
   );
 
+  const reorderSlideTo = useCallback(
+    (slideId: string, toIndex: number) => {
+      mutate((p) => {
+        const index = p.slides.findIndex((s) => s.id === slideId);
+        if (index === -1) return p;
+        return { ...p, slides: moveItemToIndex(p.slides, index, toIndex) };
+      });
+    },
+    [mutate]
+  );
+
   const addSection = useCallback(
     (initial: Partial<WorksheetSection> = {}) => {
       mutate((p) => ({
@@ -196,6 +217,17 @@ export function useStudioProject(projectId: string, initialProject: TeacherStudi
         const index = p.worksheetSections.findIndex((s) => s.id === sectionId);
         if (index === -1) return p;
         return { ...p, worksheetSections: moveItem(p.worksheetSections, index, direction) };
+      });
+    },
+    [mutate]
+  );
+
+  const reorderSectionTo = useCallback(
+    (sectionId: string, toIndex: number) => {
+      mutate((p) => {
+        const index = p.worksheetSections.findIndex((s) => s.id === sectionId);
+        if (index === -1) return p;
+        return { ...p, worksheetSections: moveItemToIndex(p.worksheetSections, index, toIndex) };
       });
     },
     [mutate]
@@ -288,11 +320,13 @@ export function useStudioProject(projectId: string, initialProject: TeacherStudi
     removeSlide,
     duplicateSlide,
     reorderSlide,
+    reorderSlideTo,
     addSection,
     updateSection,
     removeSection,
     duplicateSection,
     reorderSection,
+    reorderSectionTo,
     addImagePlaceholder,
     updateImagePlaceholder,
     removeImagePlaceholder,

@@ -68,10 +68,13 @@ function StudioWorkspaceEditor({
     removeSlide,
     duplicateSlide,
     reorderSlide,
+    reorderSlideTo,
     addSection,
     updateSection,
     removeSection,
+    duplicateSection,
     reorderSection,
+    reorderSectionTo,
     addImagePlaceholder,
     updateImagePlaceholder,
     removeImagePlaceholder,
@@ -134,6 +137,7 @@ function StudioWorkspaceEditor({
           onRemoveSlide={removeSlide}
           onDuplicateSlide={duplicateSlide}
           onReorderSlide={reorderSlide}
+          onReorderSlideTo={reorderSlideTo}
           onAddImagePlaceholder={(slideId) => addImagePlaceholder({}, slideId)}
           onUpdatePlaceholder={updateImagePlaceholder}
           onRemovePlaceholder={(placeholderId) => removeImagePlaceholder(placeholderId)}
@@ -149,7 +153,9 @@ function StudioWorkspaceEditor({
           onChangeSection={updateSection}
           onAddSection={() => addSection()}
           onRemoveSection={removeSection}
+          onDuplicateSection={duplicateSection}
           onReorderSection={reorderSection}
+          onReorderSectionTo={reorderSectionTo}
           onChangeGuide={updateTeacherGuide}
         />
       )}
