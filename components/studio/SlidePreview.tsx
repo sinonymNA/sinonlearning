@@ -12,6 +12,8 @@ interface SlidePreviewProps {
   onAddImagePlaceholder: () => void;
   onUpdatePlaceholder: (patch: Partial<ImagePlaceholder>) => void;
   onRemovePlaceholder: () => void;
+  /** Tailwind max-width class for the slide frame. Defaults to a comfortable reading width. */
+  frameMaxWidth?: string;
 }
 
 export default function SlidePreview({
@@ -22,6 +24,7 @@ export default function SlidePreview({
   onAddImagePlaceholder,
   onUpdatePlaceholder,
   onRemovePlaceholder,
+  frameMaxWidth = "max-w-3xl",
 }: SlidePreviewProps) {
   const updateBullet = (bulletId: string, text: string) => {
     onChange({ bullets: slide.bullets.map((b) => (b.id === bulletId ? { ...b, text } : b)) });
@@ -41,7 +44,7 @@ export default function SlidePreview({
   const twoColumn = slide.layout === "twoColumn";
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className={`mx-auto w-full ${frameMaxWidth}`}>
       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-navy-900/10 bg-white shadow-[0_10px_30px_rgba(13,27,46,0.12)]">
         <span className="absolute right-3 top-3 z-10 rounded-full bg-navy-900/[0.04] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-navy-700/40">
           {slide.type}

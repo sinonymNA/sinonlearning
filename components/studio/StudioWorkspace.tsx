@@ -6,13 +6,10 @@ import { useRouter } from "next/navigation";
 import { useStudioProject } from "@/hooks/useStudioProject";
 import { loadProject } from "@/lib/studioStorage";
 import StudioTopBar from "./StudioTopBar";
-import StudioSidebar from "./StudioSidebar";
-import StudioCanvas from "./StudioCanvas";
-import StudioRightPanel from "./StudioRightPanel";
-import StudioMobileTabs from "./StudioMobileTabs";
+import StudioProjectHub from "./StudioProjectHub";
+import SlidesEditor from "./SlidesEditor";
+import DocsEditor from "./DocsEditor";
 import ExportModal from "./ExportModal";
-import type { SelectedItem } from "./StudioSidebar";
-import type { MobileTab } from "./StudioMobileTabs";
 import type { PreviewAudience, TeacherStudioProject } from "@/lib/studioTypes";
 
 interface StudioWorkspaceProps {
@@ -51,6 +48,8 @@ export default function StudioWorkspace({ projectId }: StudioWorkspaceProps) {
   return <StudioWorkspaceEditor projectId={projectId} initialProject={initialProject} />;
 }
 
+type WorkspaceView = "hub" | "slides" | "worksheet" | "guide";
+
 function StudioWorkspaceEditor({
   projectId,
   initialProject,
@@ -72,7 +71,6 @@ function StudioWorkspaceEditor({
     addSection,
     updateSection,
     removeSection,
-    duplicateSection,
     reorderSection,
     addImagePlaceholder,
     updateImagePlaceholder,
@@ -83,114 +81,85 @@ function StudioWorkspaceEditor({
     saveAs,
   } = useStudioProject(projectId, initialProject);
 
-  const [selected, setSelected] = useState<SelectedItem>(null);
+  const [view, setView] = useState<WorkspaceView>("hub");
   const [audience, setAudience] = useState<PreviewAudience>("teacher");
   const [exportOpen, setExportOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<MobileTab>("pages");
 
   const handleDuplicateProject = () => {
     const copy = saveAs();
     if (copy) router.push(`/studio/${copy.id}`);
   };
 
-  const canvas = (
-    <StudioCanvas
-      project={project}
-      selected={selected}
-      audience={audience}
-      onChangeSlide={updateSlide}
-      onChangeSection={updateSection}
-      onChangeGuide={updateTeacherGuide}
-      onAddImagePlaceholder={(slideId) => addImagePlaceholder({}, slideId)}
-      onUpdatePlaceholder={updateImagePlaceholder}
-      onRemovePlaceholder={(placeholderId) => removeImagePlaceholder(placeholderId)}
-    />
-  );
+  const goHub = () => setView("hub");
+
+  const sharedBarProps = {
+    project,
+    audience,
+    onAudienceChange: setAudience,
+    onRename: renameProject,
+    onUpdateMeta: updateMeta,
+    onOpenExport: () => setExportOpen(true),
+    onDuplicate: handleDuplicateProject,
+  };
+
+  const cometProps = {
+    onApplyQuickAction: applyTransform,
+    onApplyCometEdit: applyCometEdit,
+    onToggleChecklistItem: setChecklistItemPassed,
+  };
 
   return (
-    <div className="flex h-screen flex-col bg-studio-canvas">
-      <StudioTopBar
+    <>
+      {view === "hub" && (
+        <div className="flex min-h-screen flex-col bg-studio-canvas">
+          <StudioTopBar {...sharedBarProps} />
+          <div className="flex-1 overflow-y-auto">
+            <StudioProjectHub
+              project={project}
+              onOpenSlides={() => setView("slides")}
+              onOpenWorksheet={() => setView("worksheet")}
+              onOpenGuide={() => setView("guide")}
+            />
+          </div>
+        </div>
+      )}
+
+      {view === "slides" && (
+        <SlidesEditor
+          {...sharedBarProps}
+          {...cometProps}
+          onBack={goHub}
+          onAddSlide={() => addSlide()}
+          onUpdateSlide={updateSlide}
+          onRemoveSlide={removeSlide}
+          onDuplicateSlide={duplicateSlide}
+          onReorderSlide={reorderSlide}
+          onAddImagePlaceholder={(slideId) => addImagePlaceholder({}, slideId)}
+          onUpdatePlaceholder={updateImagePlaceholder}
+          onRemovePlaceholder={(placeholderId) => removeImagePlaceholder(placeholderId)}
+        />
+      )}
+
+      {(view === "worksheet" || view === "guide") && (
+        <DocsEditor
+          {...sharedBarProps}
+          {...cometProps}
+          target={view}
+          onBack={goHub}
+          onChangeSection={updateSection}
+          onAddSection={() => addSection()}
+          onRemoveSection={removeSection}
+          onReorderSection={reorderSection}
+          onChangeGuide={updateTeacherGuide}
+        />
+      )}
+
+      <ExportModal
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
         project={project}
         audience={audience}
-        onAudienceChange={setAudience}
-        onRename={renameProject}
-        onUpdateMeta={updateMeta}
-        onOpenExport={() => setExportOpen(true)}
-        onDuplicate={handleDuplicateProject}
       />
-
-      <div className="hidden flex-1 overflow-hidden lg:grid lg:grid-cols-[240px_minmax(0,1fr)_300px]">
-        <div className="overflow-y-auto border-r border-navy-900/8 bg-white">
-          <StudioSidebar
-            project={project}
-            selected={selected}
-            onSelect={setSelected}
-            onAddSlide={() => addSlide()}
-            onRemoveSlide={removeSlide}
-            onDuplicateSlide={duplicateSlide}
-            onReorderSlide={reorderSlide}
-            onAddSection={() => addSection()}
-            onRemoveSection={removeSection}
-            onDuplicateSection={duplicateSection}
-            onReorderSection={reorderSection}
-          />
-        </div>
-        <div className="overflow-y-auto">{canvas}</div>
-        <div className="overflow-y-auto border-l border-navy-900/8 bg-white">
-          <StudioRightPanel
-            project={project}
-            onApplyQuickAction={applyTransform}
-            onApplyCometEdit={applyCometEdit}
-            onToggleChecklistItem={setChecklistItemPassed}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col overflow-hidden lg:hidden">
-        <div className="flex-1 overflow-y-auto">
-          {mobileTab === "pages" && (
-            <StudioSidebar
-              project={project}
-              selected={selected}
-              onSelect={(item) => {
-                setSelected(item);
-                setMobileTab("editor");
-              }}
-              onAddSlide={() => addSlide()}
-              onRemoveSlide={removeSlide}
-              onDuplicateSlide={duplicateSlide}
-              onReorderSlide={reorderSlide}
-              onAddSection={() => addSection()}
-              onRemoveSection={removeSection}
-              onDuplicateSection={duplicateSection}
-              onReorderSection={reorderSection}
-            />
-          )}
-          {mobileTab === "editor" && canvas}
-          {mobileTab === "comet" && (
-            <StudioRightPanel
-              project={project}
-              onApplyQuickAction={applyTransform}
-              onApplyCometEdit={applyCometEdit}
-              onToggleChecklistItem={setChecklistItemPassed}
-            />
-          )}
-          {mobileTab === "export" && (
-            <div className="flex h-full items-center justify-center p-6">
-              <button
-                type="button"
-                onClick={() => setExportOpen(true)}
-                className="rounded-full bg-amber-500 px-6 py-3 text-sm font-semibold text-navy-950"
-              >
-                Open export options
-              </button>
-            </div>
-          )}
-        </div>
-        <StudioMobileTabs active={mobileTab} onChange={setMobileTab} />
-      </div>
-
-      <ExportModal open={exportOpen} onClose={() => setExportOpen(false)} project={project} audience={audience} />
-    </div>
+    </>
   );
 }
