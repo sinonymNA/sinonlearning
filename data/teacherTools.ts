@@ -58,10 +58,11 @@ export const teacherTools: TeacherToolEntry[] = [
   {
     slug: "google-docs-slides-export",
     title: "Google Docs & Slides Export",
-    tagline: "Take Sinon Learning materials straight into your own Drive.",
+    tagline: "Take Teacher Studio projects straight into your own Drive.",
     description:
-      "A planned export option for sending lessons, slides, and activities directly into Google Docs and Slides. This is in development and not yet available.",
-    status: "Coming Soon",
+      "Sign into your own Google account just long enough to send a finished Teacher Studio project into a real, editable Google Doc or Slides presentation.",
+    status: "Available",
+    externalHref: "/studio",
   },
   {
     slug: "teach-this-tomorrow",

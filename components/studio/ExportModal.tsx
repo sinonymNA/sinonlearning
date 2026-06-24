@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, Clipboard, Download, Printer } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, Clipboard, Download, FileText, Presentation, Printer } from "lucide-react";
 import StudioModal from "./StudioModal";
 import ComingSoonBadge from "@/components/ComingSoonBadge";
 import { downloadTextFile, projectToJSON, projectToMarkdown, slugifyFilename } from "@/lib/studioExport";
@@ -16,16 +16,31 @@ interface ExportModalProps {
 }
 
 const COMING_SOON_TARGETS = [
-  { name: "Google Docs", note: "Export straight into a teacher's Google Drive." },
-  { name: "Google Slides", note: "Push the slide deck into Google Slides." },
   { name: "PowerPoint (.pptx)", note: "Download an editable PowerPoint file." },
   { name: "Word (.docx)", note: "Download an editable Word document." },
 ];
 
+type GoogleExportTarget = "docs" | "slides";
+
+interface GoogleExportMessage {
+  source?: string;
+  error?: string;
+  accessToken?: string;
+  target?: GoogleExportTarget;
+}
+
 export default function ExportModal({ open, onClose, project, audience }: ExportModalProps) {
   const [copied, setCopied] = useState(false);
-  const filename = slugifyFilename(project.title);
+  const [googleLoading, setGoogleLoading] = useState<GoogleExportTarget | null>(null);
+  const [googleError, setGoogleError] = useState<string | null>(null);
+  const projectRef = useRef(project);
   const includeAnswerKey = audience === "teacher";
+  const includeAnswerKeyRef = useRef(includeAnswerKey);
+  useEffect(() => {
+    projectRef.current = project;
+    includeAnswerKeyRef.current = includeAnswerKey;
+  }, [project, includeAnswerKey]);
+  const filename = slugifyFilename(project.title);
 
   const handleCopy = async () => {
     const markdown = projectToMarkdown(project, { includeAnswerKey });
@@ -47,19 +62,77 @@ export default function ExportModal({ open, onClose, project, audience }: Export
     window.print();
   };
 
+  const handleGoogleExport = (target: GoogleExportTarget) => {
+    setGoogleError(null);
+    const popup = window.open(`/api/google/auth?target=${target}`, "sinon-google-export", "width=480,height=640");
+    if (!popup) {
+      setGoogleError("Please allow popups for this site to export to Google.");
+      return;
+    }
+    setGoogleLoading(target);
+
+    const handleMessage = async (event: MessageEvent<GoogleExportMessage>) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data;
+      if (!data || data.source !== "sinon-google-export") return;
+      window.removeEventListener("message", handleMessage);
+
+      if (data.error || !data.accessToken) {
+        setGoogleLoading(null);
+        setGoogleError(data.error || "Couldn't sign in with Google.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/google/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            accessToken: data.accessToken,
+            target: data.target,
+            project: projectRef.current,
+            includeAnswerKey: includeAnswerKeyRef.current,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Export failed.");
+        window.open(json.url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        setGoogleError(err instanceof Error ? err.message : "Export failed.");
+      } finally {
+        setGoogleLoading(null);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+  };
+
   return (
     <StudioModal open={open} onClose={onClose} title="Export your project" maxWidthClassName="max-w-lg">
       <div className="no-print space-y-5">
         <p className="text-sm text-navy-700/70">
-          Everything below works fully offline — no account, no upload. Exporting the{" "}
+          Copy, download, and print work fully offline — no account, no upload. Google export signs you into your
+          own Google account just long enough to create the file, then forgets it. Exporting the{" "}
           <strong>{audience}</strong> view {includeAnswerKey ? "includes" : "hides"} the answer key.
         </p>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <ExportButton icon={<Clipboard size={16} />} label={copied ? "Copied!" : "Copy text"} onClick={handleCopy} />
           <ExportButton icon={<Download size={16} />} label="Download .md" onClick={handleDownloadMarkdown} />
           <ExportButton icon={<Download size={16} />} label="Download .json" onClick={handleDownloadJSON} />
           <ExportButton icon={<Printer size={16} />} label="Print / Save PDF" onClick={handlePrint} />
+          <ExportButton
+            icon={<FileText size={16} />}
+            label={googleLoading === "docs" ? "Connecting…" : "Google Docs"}
+            onClick={() => handleGoogleExport("docs")}
+            disabled={googleLoading !== null}
+          />
+          <ExportButton
+            icon={<Presentation size={16} />}
+            label={googleLoading === "slides" ? "Connecting…" : "Google Slides"}
+            onClick={() => handleGoogleExport("slides")}
+            disabled={googleLoading !== null}
+          />
         </div>
 
         {copied && (
@@ -67,6 +140,7 @@ export default function ExportModal({ open, onClose, project, audience }: Export
             <Check size={13} /> Markdown copied to your clipboard.
           </p>
         )}
+        {googleError && <p className="text-xs font-medium text-rose-600">{googleError}</p>}
 
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-wide text-navy-700/50">
@@ -98,16 +172,19 @@ function ExportButton({
   icon,
   label,
   onClick,
+  disabled,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 rounded-xl border border-navy-900/10 bg-white px-3 py-3 text-xs font-medium text-navy-800 transition hover:border-teal-400/60 hover:bg-teal-50"
+      disabled={disabled}
+      className="flex flex-col items-center gap-1.5 rounded-xl border border-navy-900/10 bg-white px-3 py-3 text-xs font-medium text-navy-800 transition hover:border-teal-400/60 hover:bg-teal-50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-navy-900/10 disabled:hover:bg-white"
     >
       {icon}
       {label}

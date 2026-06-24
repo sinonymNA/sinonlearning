@@ -7,7 +7,6 @@ import FadeIn from "@/components/FadeIn";
 import { SITE_URL } from "@/lib/seo";
 import {
   ArrowRight,
-  FileText,
   ImageIcon,
   Sparkles,
   Users,
@@ -34,16 +33,11 @@ const howItWorks = [
   {
     title: "Export when ready",
     description:
-      "Copy as text, download Markdown or JSON, or print straight to PDF. No account, no upload — it stays on your device.",
+      "Copy as text, download Markdown or JSON, send straight to Google Docs or Slides, or print to PDF. No account required for any of it.",
   },
 ];
 
 const futureFeatures = [
-  {
-    title: "Google Docs & Slides Export",
-    description: "Send a finished project straight into a teacher's Google Drive.",
-    icon: FileText,
-  },
   {
     title: "Image Upload",
     description: "Upload your own images instead of working from placeholders.",
