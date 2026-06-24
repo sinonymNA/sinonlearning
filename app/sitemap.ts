@@ -24,6 +24,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/textbooks",
     "/teacher-tools",
     "/teacher-tools/teacher-studio",
+    "/studio",
+    "/studio/templates",
     "/students",
     "/teaching-lab",
     "/research",

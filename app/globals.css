@@ -56,4 +56,36 @@ html {
     background-clip: text;
     color: transparent;
   }
+
+  .bg-studio-canvas {
+    background-color: #f6f8fb;
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(94, 234, 212, 0.16) 0%, transparent 55%),
+      radial-gradient(circle at 85% 12%, rgba(167, 139, 250, 0.14) 0%, transparent 50%),
+      radial-gradient(circle at 50% 95%, rgba(245, 191, 110, 0.14) 0%, transparent 55%);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(13, 27, 46, 0.08);
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .print-page-break {
+    break-after: page;
+  }
 }

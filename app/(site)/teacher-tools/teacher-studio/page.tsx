@@ -1,56 +1,64 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import PageHero from "@/components/PageHero";
 import FeatureCard from "@/components/FeatureCard";
 import RelatedResources from "@/components/RelatedResources";
 import FadeIn from "@/components/FadeIn";
 import { SITE_URL } from "@/lib/seo";
 import {
-  NotebookPen,
-  Sparkles,
-  ClipboardList,
-  MessageSquareText,
+  ArrowRight,
   FileText,
+  ImageIcon,
+  Sparkles,
+  Users,
   Wand2,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Teacher Studio — Sinon Learning",
   description:
-    "An upcoming AI workspace for teachers, built to remove the dirty work around teaching—not the thinking, judgment, and relationships that make teaching matter.",
+    "A free workspace where teachers build slides, worksheets, lessons, and assessments — fully editable, exportable, and stored on your device.",
   alternates: { canonical: `${SITE_URL}/teacher-tools/teacher-studio` },
 };
 
+const howItWorks = [
+  {
+    title: "Start your way",
+    description:
+      "Build from a blank document, pick from 36 templates, or answer a few quick questions with Comet to get a full first draft.",
+  },
+  {
+    title: "Edit everything",
+    description:
+      "Every slide, question, and instruction is yours to rewrite. Reorder, duplicate, or delete anything — nothing is locked.",
+  },
+  {
+    title: "Export when ready",
+    description:
+      "Copy as text, download Markdown or JSON, or print straight to PDF. No account, no upload — it stays on your device.",
+  },
+];
+
 const futureFeatures = [
   {
-    title: "Lesson Drafting",
-    description:
-      "Start a lesson from a topic and standard, then shape it yourself—Teacher Studio drafts, you decide what stays.",
-    icon: NotebookPen,
-  },
-  {
-    title: "Slide & Activity Generation",
-    description: "Turn a lesson outline into a first-pass slide deck and activity set you can edit freely.",
-    icon: Sparkles,
-  },
-  {
-    title: "Differentiation Drafts",
-    description: "Generate alternate versions of an assignment for different reading levels or supports, for you to review.",
-    icon: ClipboardList,
-  },
-  {
-    title: "Feedback Assistance",
-    description: "Draft first-pass feedback on student work for you to revise and personalize before it goes out.",
-    icon: MessageSquareText,
-  },
-  {
-    title: "Document Templates",
-    description: "Generate a starting syllabus, rubric, or parent letter instead of starting from a blank page.",
+    title: "Google Docs & Slides Export",
+    description: "Send a finished project straight into a teacher's Google Drive.",
     icon: FileText,
   },
   {
-    title: "Quick Revisions",
-    description: "Ask for a faster version, a harder version, or a shorter version of something you already built.",
+    title: "Image Upload",
+    description: "Upload your own images instead of working from placeholders.",
+    icon: ImageIcon,
+  },
+  {
+    title: "Real AI Drafting",
+    description: "Optional live AI assistance layered on top of today's local, deterministic drafts.",
     icon: Wand2,
+  },
+  {
+    title: "Collaboration",
+    description: "Share a project with a co-teacher or department and edit it together.",
+    icon: Users,
   },
 ];
 
@@ -58,21 +66,45 @@ export default function TeacherStudioPage() {
   return (
     <div className="bg-cream-50">
       <PageHero
-        eyebrow="Coming Soon"
+        eyebrow="Available Now"
         backHref="/teacher-tools"
         backLabel="All Teacher Tools"
         title="Teacher Studio"
-        description="A future AI workspace built around one rule: it removes the dirty, repetitive work around teaching, not the thinking, judgment, and relationships that make teaching matter in the first place."
-      />
+        description="A free workspace for building slides, worksheets, lessons, and assessments — fully editable, exportable, and yours to keep. No account, no AI black box, no dirty work."
+      >
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/studio"
+            className="inline-flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-navy-950 transition-colors hover:bg-teal-400"
+          >
+            Open Teacher Studio
+            <ArrowRight size={14} />
+          </Link>
+          <Link
+            href="/studio/templates"
+            className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:border-teal-400/50 hover:bg-teal-50"
+          >
+            Browse Templates
+          </Link>
+          <Link
+            href="/studio"
+            className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:border-teal-400/50 hover:bg-teal-50"
+          >
+            <Sparkles size={14} />
+            Try Teach This Tomorrow
+          </Link>
+        </div>
+      </PageHero>
 
       <section className="px-6 pb-16 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <FadeIn>
             <div className="rounded-3xl border border-navy-900/8 bg-white p-8 shadow-[0_1px_2px_rgba(13,27,46,0.04)] sm:p-10">
               <p className="text-lg leading-relaxed text-navy-700/85">
-                Teacher Studio is not being built to replace a teacher&rsquo;s planning—it&rsquo;s being built to remove
-                the dirty work around it. Every draft it produces stays a draft until a teacher reviews it. The
-                decisions about what a classroom needs stay with the teacher, every time.
+                Teacher Studio is not built to replace a teacher&rsquo;s planning &mdash; it&rsquo;s built to remove
+                the dirty work around it. Everything it produces is editable from the first second, runs
+                fully on your device, and never asks for an account. The decisions about what a classroom
+                needs stay with the teacher, every time.
               </p>
             </div>
           </FadeIn>
@@ -83,10 +115,33 @@ export default function TeacherStudioPage() {
         <div className="mx-auto max-w-6xl">
           <FadeIn>
             <p className="mb-8 text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-700">
-              What&rsquo;s planned
+              How it works
             </p>
           </FadeIn>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            {howItWorks.map((step, i) => (
+              <FadeIn key={step.title} delay={i * 0.05}>
+                <div className="h-full rounded-3xl border border-navy-900/8 bg-white p-7">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-50 text-sm font-semibold text-teal-700">
+                    {i + 1}
+                  </span>
+                  <h3 className="mt-4 font-display text-lg text-navy-900">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-navy-700/75">{step.description}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 pb-24 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <FadeIn>
+            <p className="mb-8 text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-700">
+              What&rsquo;s next
+            </p>
+          </FadeIn>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {futureFeatures.map((feature) => (
               <FadeIn key={feature.title}>
                 <FeatureCard

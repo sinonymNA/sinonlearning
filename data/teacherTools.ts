@@ -13,10 +13,11 @@ export const teacherTools: TeacherToolEntry[] = [
   {
     slug: "teacher-studio",
     title: "Teacher Studio",
-    tagline: "Teacher-first AI that removes the dirty work, not the teaching.",
+    tagline: "Build slides, worksheets, and activities — free, local, and yours to edit.",
     description:
-      "An upcoming workspace where teachers plan, draft, and refine classroom materials with AI support that stays under the teacher's control from start to finish.",
-    status: "Coming Soon",
+      "A free workspace where teachers build slide decks, worksheets, lessons, and assessments from scratch, from a template, or with Comet's guided build flow — fully editable, exportable, and stored on your device.",
+    status: "Available",
+    externalHref: "/studio",
   },
   {
     slug: "simulations-and-games",
@@ -39,18 +40,20 @@ export const teacherTools: TeacherToolEntry[] = [
   {
     slug: "assessment-builder",
     title: "Assessment Builder",
-    tagline: "Build quizzes and assessments aligned to your lessons.",
+    tagline: "Build quizzes and assessments with the answer key filled in.",
     description:
-      "A planned tool for assembling quizzes, exit tickets, and unit assessments directly from Sinon Learning curriculum as the library grows.",
-    status: "Coming Soon",
+      "Build quizzes, exit tickets, and study guides inside Teacher Studio, with answer keys auto-filled for multiple choice and true/false questions.",
+    status: "Available",
+    externalHref: "/studio",
   },
   {
     slug: "templates",
     title: "Templates",
-    tagline: "Ready-made templates for planning and classroom documents.",
+    tagline: "36 ready-made templates for planning and classroom documents.",
     description:
-      "A future library of lesson plan templates, syllabi, and classroom document starters teachers can copy and adapt in minutes.",
-    status: "Coming Soon",
+      "A library of lesson plan templates, worksheets, activities, and assessments teachers can copy and adapt in minutes inside Teacher Studio.",
+    status: "Available",
+    externalHref: "/studio/templates",
   },
   {
     slug: "google-docs-slides-export",
@@ -65,8 +68,9 @@ export const teacherTools: TeacherToolEntry[] = [
     title: "Teach This Tomorrow",
     tagline: "Grab-and-go lessons for when you need something fast.",
     description:
-      "A future shortcut from the curriculum library straight to a ready-to-teach lesson for the next day, built for substitutes and busy mornings.",
-    status: "Coming Soon",
+      "A few quick questions in Teacher Studio build a ready-to-teach draft right now — no waiting, built for substitutes and busy mornings.",
+    status: "Available",
+    externalHref: "/studio",
   },
 ];
 
