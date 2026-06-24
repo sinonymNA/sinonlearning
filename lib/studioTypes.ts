@@ -103,7 +103,15 @@ export interface FreeformShapeElement extends Rect {
   z: number;
 }
 
-export type FreeformElement = FreeformTextElement | FreeformShapeElement;
+/** A picture positioned directly on the canvas, pointing at an entry in `project.imagePlaceholders` — lets a slide carry more than one image (the `imagePlaceholderId`/`image` role only supports one). */
+export interface FreeformImageElement extends Rect {
+  id: string;
+  kind: "image";
+  placeholderId: string;
+  z: number;
+}
+
+export type FreeformElement = FreeformTextElement | FreeformShapeElement | FreeformImageElement;
 
 export interface StudioSlide {
   id: string;

@@ -1,4 +1,5 @@
 import type {
+  FreeformImageElement,
   FreeformShapeElement,
   FreeformTextElement,
   ImagePlaceholder,
@@ -80,6 +81,21 @@ export function createFreeformShapeElement(
     y: 35,
     width: 30,
     height: 24,
+    z: 3,
+    ...overrides,
+  };
+}
+
+export function createFreeformImageElement(
+  overrides: Partial<FreeformImageElement> & { placeholderId: string }
+): FreeformImageElement {
+  return {
+    id: newId(),
+    kind: "image",
+    x: 20,
+    y: 20,
+    width: 40,
+    height: 30,
     z: 3,
     ...overrides,
   };

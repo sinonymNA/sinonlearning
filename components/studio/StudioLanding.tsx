@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, FilePlus2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, FilePlus2, Sparkles, Trash2, Upload } from "lucide-react";
 import CometCharacter from "./CometCharacter";
 import ProjectTypeSelector from "./ProjectTypeSelector";
 import CometBuildFlow from "./CometBuildFlow";
 import TeachThisTomorrow from "./TeachThisTomorrow";
 import AssessmentBuilder from "./AssessmentBuilder";
 import ActivityBuilder from "./ActivityBuilder";
-import { deleteProject, duplicateProject, listProjects } from "@/lib/studioStorage";
+import { importPptxFile } from "@/lib/pptxImport";
+import { deleteProject, duplicateProject, listProjects, saveProject } from "@/lib/studioStorage";
 import { STUDIO_DOC_TYPES } from "@/lib/studioTypes";
 import type { StudioIndexEntry } from "@/lib/studioTypes";
 
@@ -37,6 +38,9 @@ export default function StudioLanding() {
   const [projects, setProjects] = useState<StudioIndexEntry[]>([]);
   const [scratchOpen, setScratchOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalKey>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- project list can't be read until after hydration (localStorage)
@@ -57,6 +61,30 @@ export default function StudioLanding() {
     }
     deleteProject(id);
     refresh();
+  };
+
+  const handleImportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const { project, warnings } = await importPptxFile(file);
+      saveProject(project);
+      if (warnings.length > 0) {
+        const shown = warnings.slice(0, 10);
+        window.alert(
+          `Imported "${project.title}". ${warnings.length} item(s) couldn't be converted and were skipped:\n\n${shown.join("\n")}${
+            warnings.length > shown.length ? `\n…and ${warnings.length - shown.length} more.` : ""
+          }`
+        );
+      }
+      router.push(`/studio/${project.id}`);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Couldn't import this file.");
+      setImporting(false);
+    }
   };
 
   return (
@@ -117,7 +145,26 @@ export default function StudioLanding() {
             description="Standalone practice activities sized to your class period."
             onClick={() => setActiveModal("activity")}
           />
+          <QuickCreateCard
+            icon={<Upload size={20} />}
+            title={importing ? "Importing…" : "Import PowerPoint"}
+            description="Upload a .pptx and edit it like any other deck — converted locally, nothing leaves your device."
+            onClick={() => !importing && fileInputRef.current?.click()}
+          />
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pptx"
+          className="hidden"
+          onChange={handleImportChange}
+        />
+        {importError && (
+          <p className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {importError}
+          </p>
+        )}
 
         {scratchOpen && (
           <div className="mb-12 rounded-3xl border border-navy-900/8 bg-white/70 p-6">

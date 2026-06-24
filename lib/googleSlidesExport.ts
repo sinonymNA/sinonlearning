@@ -161,6 +161,13 @@ export function buildCoreSlideRequests(project: TeacherStudioProject): {
         }
         return;
       }
+      if (el.kind === "image") {
+        const extraPlaceholder = placeholderById.get(el.placeholderId);
+        if (extraPlaceholder?.link) {
+          imageJobs.push({ slideId, rect: el, url: extraPlaceholder.link });
+        }
+        return;
+      }
       const shapeId = nextShapeId(`${slideId}_shape`);
       requests.push({
         createShape: {

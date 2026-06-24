@@ -18,10 +18,12 @@ interface SlideCanvasProps {
   slide: StudioSlide;
   audience: PreviewAudience;
   linkedPlaceholder?: ImagePlaceholder;
+  placeholders: ImagePlaceholder[];
   onChange: (patch: Partial<StudioSlide>) => void;
   onAddImagePlaceholder: () => void;
   onUpdatePlaceholder: (patch: Partial<ImagePlaceholder>) => void;
   onRemovePlaceholder: () => void;
+  onUpdateExtraPlaceholder: (placeholderId: string, patch: Partial<ImagePlaceholder>) => void;
 }
 
 type DragMode = "move" | "resize";
@@ -34,10 +36,12 @@ export default function SlideCanvas({
   slide,
   audience,
   linkedPlaceholder,
+  placeholders,
   onChange,
   onAddImagePlaceholder,
   onUpdatePlaceholder,
   onRemovePlaceholder,
+  onUpdateExtraPlaceholder,
 }: SlideCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -304,6 +308,23 @@ export default function SlideCanvas({
                 className="h-full w-full resize-none bg-transparent p-1.5 text-sm text-navy-800 outline-none"
                 style={{ textAlign: el.align ?? "left" }}
               />
+            ) : el.kind === "image" ? (
+              (() => {
+                const placeholder = placeholders.find((p) => p.id === el.placeholderId);
+                return placeholder ? (
+                  <div className="h-full w-full overflow-y-auto p-1">
+                    <ImagePlaceholderCard
+                      placeholder={placeholder}
+                      onChange={(patch) => onUpdateExtraPlaceholder(placeholder.id, patch)}
+                      onRemove={() => removeExtra(el.id)}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center rounded-sm border border-dashed border-navy-900/20 bg-navy-900/[0.02] text-[10px] text-navy-700/40">
+                    Missing image
+                  </div>
+                );
+              })()
             ) : (
               <div
                 className={`h-full w-full ${el.shapeType === "ellipse" ? "rounded-full" : "rounded-sm"}`}

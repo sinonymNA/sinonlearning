@@ -202,6 +202,7 @@ export default function SlidesEditor({
               slide={selectedSlide}
               audience={audience}
               linkedPlaceholder={linkedPlaceholder}
+              placeholders={project.imagePlaceholders}
               frameMaxWidth="max-w-4xl"
               onChange={(patch) => onUpdateSlide(selectedSlide.id, patch)}
               onAddImagePlaceholder={() => onAddImagePlaceholder(selectedSlide.id)}
@@ -213,6 +214,7 @@ export default function SlidesEditor({
                 selectedSlide.imagePlaceholderId &&
                 onRemovePlaceholder(selectedSlide.imagePlaceholderId, selectedSlide.id)
               }
+              onUpdateExtraPlaceholder={onUpdatePlaceholder}
             />
           ) : (
             <div className="mx-auto flex h-full max-w-4xl flex-col items-center justify-center gap-3 text-center">

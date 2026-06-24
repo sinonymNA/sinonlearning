@@ -68,6 +68,15 @@ export function projectToMarkdown(
       lines.push("");
       extraText.forEach((el) => lines.push(el.kind === "text" ? el.text : ""));
     }
+    const extraImages = (slide.extraElements ?? []).filter((el) => el.kind === "image");
+    if (extraImages.length > 0) {
+      lines.push("");
+      extraImages.forEach((el) => {
+        if (el.kind !== "image") return;
+        const placeholder = project.imagePlaceholders.find((p) => p.id === el.placeholderId);
+        lines.push(`*[Image: ${placeholder?.description || "untitled image"}]*`);
+      });
+    }
     if (slide.studentInstructions) {
       lines.push("");
       lines.push(`**Student instructions:** ${slide.studentInstructions}`);
