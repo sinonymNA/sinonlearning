@@ -11,7 +11,6 @@ import {
   ImageIcon,
   Sparkles,
   Users,
-  Wand2,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -28,9 +27,9 @@ const howItWorks = [
       "Build from a blank document, pick from 36 templates, or answer a few quick questions with Comet to get a full first draft.",
   },
   {
-    title: "Edit everything",
+    title: "Edit everything, ask Comet for help",
     description:
-      "Every slide, question, and instruction is yours to rewrite. Reorder, duplicate, or delete anything — nothing is locked.",
+      "Every slide, question, and instruction is yours to rewrite. Use instant local quick actions, or ask Comet to make a live AI edit — you always review and approve before it's applied.",
   },
   {
     title: "Export when ready",
@@ -49,11 +48,6 @@ const futureFeatures = [
     title: "Image Upload",
     description: "Upload your own images instead of working from placeholders.",
     icon: ImageIcon,
-  },
-  {
-    title: "Real AI Drafting",
-    description: "Optional live AI assistance layered on top of today's local, deterministic drafts.",
-    icon: Wand2,
   },
   {
     title: "Collaboration",

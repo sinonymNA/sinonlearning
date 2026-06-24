@@ -19,6 +19,7 @@ import type {
   TeacherStudioProject,
   WorksheetSection,
 } from "@/lib/studioTypes";
+import type { CometEditOutcome } from "@/lib/cometEditValidation";
 
 function projectKey(id: string): string {
   return `studio:project:${id}`;
@@ -260,6 +261,18 @@ export function useStudioProject(projectId: string, initialProject: TeacherStudi
     [mutate]
   );
 
+  const applyCometEdit = useCallback(
+    (edit: CometEditOutcome) => {
+      mutate((p) => ({
+        ...p,
+        slides: edit.slides,
+        worksheetSections: edit.worksheetSections,
+        teacherGuide: edit.teacherGuide,
+      }));
+    },
+    [mutate]
+  );
+
   const saveAs = useCallback(() => {
     saveProject(project);
     return duplicateProject(project.id);
@@ -285,6 +298,7 @@ export function useStudioProject(projectId: string, initialProject: TeacherStudi
     removeImagePlaceholder,
     setChecklistItemPassed,
     applyTransform,
+    applyCometEdit,
     saveAs,
   };
 }

@@ -79,6 +79,7 @@ function StudioWorkspaceEditor({
     removeImagePlaceholder,
     setChecklistItemPassed,
     applyTransform,
+    applyCometEdit,
     saveAs,
   } = useStudioProject(projectId, initialProject);
 
@@ -137,8 +138,9 @@ function StudioWorkspaceEditor({
         <div className="overflow-y-auto">{canvas}</div>
         <div className="overflow-y-auto border-l border-navy-900/8 bg-white">
           <StudioRightPanel
-            checklist={project.qualityChecklist}
+            project={project}
             onApplyQuickAction={applyTransform}
+            onApplyCometEdit={applyCometEdit}
             onToggleChecklistItem={setChecklistItemPassed}
           />
         </div>
@@ -167,8 +169,9 @@ function StudioWorkspaceEditor({
           {mobileTab === "editor" && canvas}
           {mobileTab === "comet" && (
             <StudioRightPanel
-              checklist={project.qualityChecklist}
+              project={project}
               onApplyQuickAction={applyTransform}
+              onApplyCometEdit={applyCometEdit}
               onToggleChecklistItem={setChecklistItemPassed}
             />
           )}
