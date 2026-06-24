@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Copy, FilePlus2, Sparkles, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, FilePlus2, Sparkles, Trash2, Upload } from "lucide-react";
 import CometCharacter from "./CometCharacter";
 import ProjectTypeSelector from "./ProjectTypeSelector";
 import CometBuildFlow from "./CometBuildFlow";
@@ -108,6 +108,43 @@ export default function StudioLanding() {
           </div>
         </div>
 
+        <div className="mb-10 rounded-3xl border border-teal-400/20 bg-gradient-to-br from-teal-50 via-white to-purple-50/40 p-6 sm:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">New</p>
+          <h2 className="mt-2 font-display text-2xl text-navy-900 sm:text-3xl">
+            Turn lesson content into polished Google Docs and Slides.
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm text-navy-700/70">
+            Paste your notes, choose a classroom template, add images if you want, and Teacher Studio will format
+            everything into editable Google materials.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/studio/anchored-notes")}
+              className="inline-flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-navy-950 transition hover:bg-teal-400"
+            >
+              Create Anchored Notes
+              <ArrowRight size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/studio/anchored-notes")}
+              className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition hover:border-teal-400/50 hover:bg-teal-50"
+            >
+              Create Slides
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/studio/anchored-notes?sample=1")}
+              className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition hover:border-teal-400/50 hover:bg-teal-50"
+            >
+              <Sparkles size={14} />
+              Try a Sample
+            </button>
+          </div>
+        </div>
+
+        <h2 className="mb-4 font-display text-xl text-navy-900">More ways to build</h2>
         <div className="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <QuickCreateCard
             icon={<FilePlus2 size={20} />}

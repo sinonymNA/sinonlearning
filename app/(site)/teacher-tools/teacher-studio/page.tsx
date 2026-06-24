@@ -21,26 +21,36 @@ export const metadata: Metadata = {
 
 const howItWorks = [
   {
-    title: "Start your way",
+    title: "Paste your lesson content",
     description:
-      "Build from a blank document, pick from 36 templates, or answer a few quick questions with Comet to get a full first draft.",
+      "Drop in the notes, outline, or text you already have — or start from a sample lesson to see how it works first.",
   },
   {
-    title: "Edit everything, ask Comet for help",
+    title: "Choose a classroom template",
     description:
-      "Every slide, question, and instruction is yours to rewrite. Use instant local quick actions, or ask Comet to make a live AI edit — you always review and approve before it's applied.",
+      "Pick a layout like APWH Anchored Notes or Clean Printable Notes, add image links if you want them, and structure your content into an editable outline.",
   },
   {
-    title: "Export when ready",
+    title: "Generate your Google material",
     description:
-      "Copy as text, download Markdown or JSON, send straight to Google Docs or Slides, or print to PDF. No account required for any of it.",
+      "Send it straight into a real, editable Google Doc — or copy, download, and print it fully offline. We are not replacing Google Docs or Slides; Teacher Studio is the formatter, structurer, and generator.",
   },
 ];
 
 const futureFeatures = [
   {
+    title: "Full Google Slides Generation",
+    description: "Beyond the basic outline export, a fully templated Slides deck generator is on the way.",
+    icon: Sparkles,
+  },
+  {
+    title: "Answer Key & Teacher Guide Docs",
+    description: "Generate a separate teacher-only answer key or pacing/teacher-guide document alongside the handout.",
+    icon: ArrowRight,
+  },
+  {
     title: "Image Upload",
-    description: "Upload your own images instead of working from placeholders.",
+    description: "Upload your own images instead of pasting direct links to existing ones.",
     icon: ImageIcon,
   },
   {
@@ -57,29 +67,29 @@ export default function TeacherStudioPage() {
         eyebrow="Available Now"
         backHref="/teacher-tools"
         backLabel="All Teacher Tools"
-        title="Teacher Studio"
-        description="A free workspace for building slides, worksheets, lessons, and assessments — fully editable, exportable, and yours to keep. No account, no AI black box, no dirty work."
+        title="Turn lesson content into polished Google Docs and Slides."
+        description="Paste your notes, choose a classroom template, add images if you want, and Teacher Studio will format everything into editable Google materials."
       >
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/studio"
+            href="/studio/anchored-notes"
             className="inline-flex items-center gap-2 rounded-full bg-teal-500 px-5 py-2.5 text-sm font-semibold text-navy-950 transition-colors hover:bg-teal-400"
           >
-            Open Teacher Studio
+            Create Anchored Notes
             <ArrowRight size={14} />
           </Link>
           <Link
-            href="/studio/templates"
+            href="/studio/anchored-notes"
             className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:border-teal-400/50 hover:bg-teal-50"
           >
-            Browse Templates
+            Create Slides
           </Link>
           <Link
-            href="/studio"
+            href="/studio/anchored-notes?sample=1"
             className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 bg-white px-5 py-2.5 text-sm font-medium text-navy-800 transition-colors hover:border-teal-400/50 hover:bg-teal-50"
           >
             <Sparkles size={14} />
-            Try Teach This Tomorrow
+            Try a Sample
           </Link>
         </div>
       </PageHero>
@@ -89,10 +99,10 @@ export default function TeacherStudioPage() {
           <FadeIn>
             <div className="rounded-3xl border border-navy-900/8 bg-white p-8 shadow-[0_1px_2px_rgba(13,27,46,0.04)] sm:p-10">
               <p className="text-lg leading-relaxed text-navy-700/85">
-                Teacher Studio is not built to replace a teacher&rsquo;s planning &mdash; it&rsquo;s built to remove
-                the dirty work around it. Everything it produces is editable from the first second, runs
-                fully on your device, and never asks for an account. The decisions about what a classroom
-                needs stay with the teacher, every time.
+                We are not replacing Google Docs or Google Slides &mdash; you&rsquo;ll still edit, share, and
+                grade in the tools you already know. Teacher Studio is the formatter, structurer, and
+                generator: it takes the content you&rsquo;ve already written and turns it into a polished,
+                ready-to-teach Google Doc, with the dirty formatting work done for you.
               </p>
             </div>
           </FadeIn>

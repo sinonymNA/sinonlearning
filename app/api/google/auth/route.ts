@@ -26,7 +26,9 @@ export async function GET(request: NextRequest) {
     return popupErrorResponse("Missing export target.");
   }
   if (!isGoogleExportConfigured()) {
-    return popupErrorResponse("Google export isn't set up yet.");
+    return popupErrorResponse(
+      "Google export isn't set up yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to your environment to enable it."
+    );
   }
 
   const state = buildAuthState(target as GoogleExportTarget);

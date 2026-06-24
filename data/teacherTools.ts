@@ -13,11 +13,20 @@ export const teacherTools: TeacherToolEntry[] = [
   {
     slug: "teacher-studio",
     title: "Teacher Studio",
-    tagline: "Build slides, worksheets, and activities — free, local, and yours to edit.",
+    tagline: "Turn lesson content into polished Google Docs and Slides.",
     description:
-      "A free workspace where teachers build slide decks, worksheets, lessons, and assessments from scratch, from a template, or with Comet's guided build flow — fully editable, exportable, and stored on your device.",
+      "Paste your notes, choose a classroom template, add images if you want, and Teacher Studio formats everything into editable Google materials — plus a full workspace for building slides, worksheets, and activities from scratch or from a template.",
     status: "Available",
     externalHref: "/studio",
+  },
+  {
+    slug: "anchored-notes",
+    title: "Anchored Notes",
+    tagline: "Paste your lesson content, pick a template, generate a Google Doc.",
+    description:
+      "Paste lesson content, choose a classroom template like APWH Anchored Notes or Clean Printable Notes, add image links if you want them, and generate a polished student handout as a real Google Doc — or export it locally.",
+    status: "Available",
+    externalHref: "/studio/anchored-notes",
   },
   {
     slug: "simulations-and-games",
