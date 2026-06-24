@@ -1,4 +1,6 @@
 import type {
+  FreeformShapeElement,
+  FreeformTextElement,
   ImagePlaceholder,
   QualityChecklistItem,
   StudioDocType,
@@ -45,6 +47,40 @@ export function createSlide(overrides: Partial<StudioSlide> = {}): StudioSlide {
     studentInstructions: "",
     layout: "titleBullets",
     tags: [],
+    extraElements: [],
+    ...overrides,
+  };
+}
+
+export function createFreeformTextElement(
+  overrides: Partial<FreeformTextElement> = {}
+): FreeformTextElement {
+  return {
+    id: newId(),
+    kind: "text",
+    text: "New text",
+    x: 20,
+    y: 40,
+    width: 50,
+    height: 16,
+    z: 3,
+    ...overrides,
+  };
+}
+
+export function createFreeformShapeElement(
+  overrides: Partial<FreeformShapeElement> = {}
+): FreeformShapeElement {
+  return {
+    id: newId(),
+    kind: "shape",
+    shapeType: "rectangle",
+    color: "#5eead4",
+    x: 30,
+    y: 35,
+    width: 30,
+    height: 24,
+    z: 3,
     ...overrides,
   };
 }

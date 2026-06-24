@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import { createWorksheetQuestion } from "@/lib/studioDefaults";
+import RichTextEditor from "./RichTextEditor";
 import type {
   PreviewAudience,
   WorksheetDifficulty,
@@ -56,12 +57,12 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
         placeholder="Section title"
         className="w-full bg-transparent font-display text-3xl text-navy-900 placeholder:text-navy-900/25 focus-visible:outline-none"
       />
-      <textarea
+      <RichTextEditor
         value={section.directions}
-        onChange={(e) => onChange({ directions: e.target.value })}
+        onChange={(html) => onChange({ directions: html })}
         placeholder="Directions for students"
-        rows={2}
-        className="mt-2 w-full resize-none bg-transparent text-sm italic text-navy-700/70 placeholder:text-navy-700/30 focus-visible:outline-none"
+        className="mt-2"
+        minHeightClassName="min-h-[1.5rem] text-sm italic text-navy-700/70"
       />
 
       <div className="mt-3 flex flex-wrap gap-4 border-b border-navy-900/8 pb-5 text-xs text-navy-700/50">
@@ -96,12 +97,11 @@ export default function WorksheetPreview({ section, audience, onChange }: Worksh
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex-shrink-0 text-sm font-medium text-navy-700/50">{index + 1}.</span>
               <div className="min-w-0 flex-1">
-                <textarea
+                <RichTextEditor
                   value={question.prompt}
-                  onChange={(e) => updateQuestion(question.id, { prompt: e.target.value })}
-                  rows={1}
+                  onChange={(html) => updateQuestion(question.id, { prompt: html })}
                   placeholder="Question prompt"
-                  className="w-full resize-none bg-transparent text-base text-navy-900 placeholder:text-navy-700/30 focus-visible:outline-none"
+                  minHeightClassName="min-h-[1.5rem] text-base text-navy-900"
                 />
 
                 {question.type === "multipleChoice" ? (

@@ -1,3 +1,4 @@
+import { richTextToMarkdown } from "./richText";
 import type { TeacherStudioProject } from "./studioTypes";
 
 export interface StudioExportFile {
@@ -31,7 +32,7 @@ export function projectToMarkdown(
 
   if (project.teacherGuide.overview || project.teacherGuide.objectives.length > 0) {
     lines.push("## Teacher Guide");
-    if (project.teacherGuide.overview) lines.push(project.teacherGuide.overview);
+    if (project.teacherGuide.overview) lines.push(richTextToMarkdown(project.teacherGuide.overview));
     if (project.teacherGuide.objectives.length > 0) {
       lines.push("");
       lines.push("**Objectives:**");
@@ -44,7 +45,7 @@ export function projectToMarkdown(
     }
     if (project.teacherGuide.timingNotes) {
       lines.push("");
-      lines.push(`**Timing notes:** ${project.teacherGuide.timingNotes}`);
+      lines.push(`**Timing notes:** ${richTextToMarkdown(project.teacherGuide.timingNotes)}`);
     }
     lines.push("");
   }
@@ -60,6 +61,13 @@ export function projectToMarkdown(
       lines.push("");
       slide.bullets.forEach((b) => lines.push(`- ${b.text}`));
     }
+    const extraText = (slide.extraElements ?? []).filter(
+      (el) => el.kind === "text" && el.text.trim().length > 0
+    );
+    if (extraText.length > 0) {
+      lines.push("");
+      extraText.forEach((el) => lines.push(el.kind === "text" ? el.text : ""));
+    }
     if (slide.studentInstructions) {
       lines.push("");
       lines.push(`**Student instructions:** ${slide.studentInstructions}`);
@@ -73,10 +81,10 @@ export function projectToMarkdown(
 
   project.worksheetSections.forEach((section) => {
     lines.push(`## ${section.title}`);
-    if (section.directions) lines.push(section.directions);
+    if (section.directions) lines.push(richTextToMarkdown(section.directions));
     lines.push("");
     section.questions.forEach((q, i) => {
-      lines.push(`${i + 1}. ${q.prompt}`);
+      lines.push(`${i + 1}. ${richTextToMarkdown(q.prompt)}`);
       if (q.choices && q.choices.length > 0) {
         q.choices.forEach((choice, ci) =>
           lines.push(`   ${String.fromCharCode(65 + ci)}. ${choice}`)
@@ -90,7 +98,7 @@ export function projectToMarkdown(
     const sectionKeyEntries = project.worksheetSections.flatMap((section) =>
       Object.entries(section.answerKey).map(([qId, answer]) => {
         const question = section.questions.find((q) => q.id === qId);
-        return `${question?.prompt ?? qId}: ${answer}`;
+        return `${question ? richTextToMarkdown(question.prompt) : qId}: ${answer}`;
       })
     );
     const globalKeyEntries = Object.entries(project.answerKey).map(

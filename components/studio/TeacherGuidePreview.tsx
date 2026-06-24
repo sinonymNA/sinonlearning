@@ -2,6 +2,7 @@
 
 import { Plus, Trash2 } from "lucide-react";
 import DocPage from "./DocPage";
+import RichTextEditor from "./RichTextEditor";
 import type { TeacherGuide } from "@/lib/studioTypes";
 
 interface TeacherGuidePreviewProps {
@@ -33,12 +34,11 @@ export default function TeacherGuidePreview({ guide, onChange }: TeacherGuidePre
       <h2 className="font-display text-3xl text-navy-900">Teacher Guide</h2>
 
       <Section label="Overview">
-        <textarea
+        <RichTextEditor
           value={guide.overview}
-          onChange={(e) => onChange({ overview: e.target.value })}
+          onChange={(html) => onChange({ overview: html })}
           placeholder="What's this lesson about, at a glance?"
-          rows={3}
-          className="w-full resize-none bg-transparent text-base leading-relaxed text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
+          minHeightClassName="min-h-[3rem] text-base leading-relaxed text-navy-800"
         />
       </Section>
 
@@ -63,12 +63,11 @@ export default function TeacherGuidePreview({ guide, onChange }: TeacherGuidePre
       </Section>
 
       <Section label="Timing notes" last>
-        <textarea
+        <RichTextEditor
           value={guide.timingNotes}
-          onChange={(e) => onChange({ timingNotes: e.target.value })}
-          rows={2}
+          onChange={(html) => onChange({ timingNotes: html })}
           placeholder="How should the class period be paced?"
-          className="w-full resize-none bg-transparent text-base leading-relaxed text-navy-800 placeholder:text-navy-700/30 focus-visible:outline-none"
+          minHeightClassName="min-h-[2rem] text-base leading-relaxed text-navy-800"
         />
       </Section>
     </DocPage>

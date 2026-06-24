@@ -11,7 +11,11 @@ function wordCount(text: string | undefined): number {
 function slideWordCount(slide: StudioSlide): number {
   return (
     wordCount(slide.body) +
-    slide.bullets.reduce((sum, bullet) => sum + wordCount(bullet.text), 0)
+    slide.bullets.reduce((sum, bullet) => sum + wordCount(bullet.text), 0) +
+    (slide.extraElements ?? []).reduce(
+      (sum, el) => sum + (el.kind === "text" ? wordCount(el.text) : 0),
+      0
+    )
   );
 }
 

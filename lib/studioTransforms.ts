@@ -4,6 +4,7 @@ import {
   createWorksheetQuestion,
   createWorksheetSection,
 } from "./studioDefaults";
+import { richTextToPlainText } from "./richText";
 import type { StudioSlide, TeacherStudioProject, WorksheetSection } from "./studioTypes";
 
 /**
@@ -53,7 +54,9 @@ function shortenIt(project: TeacherStudioProject): TeacherStudioProject {
   }));
   const worksheetSections = project.worksheetSections.map((section) => ({
     ...section,
-    directions: section.directions ? truncateWords(section.directions, 14) : section.directions,
+    directions: section.directions
+      ? truncateWords(richTextToPlainText(section.directions), 14)
+      : section.directions,
   }));
   return touch({ ...project, slides, worksheetSections });
 }
@@ -109,7 +112,9 @@ function lowerReadingLevel(project: TeacherStudioProject): TeacherStudioProject 
   const worksheetSections = project.worksheetSections.map((section) => ({
     ...section,
     readingLevel: "below" as const,
-    directions: section.directions ? truncateWords(section.directions, 14) : section.directions,
+    directions: section.directions
+      ? truncateWords(richTextToPlainText(section.directions), 14)
+      : section.directions,
   }));
   const slides = project.slides.map((slide) => ({
     ...slide,

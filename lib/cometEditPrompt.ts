@@ -1,3 +1,4 @@
+import { richTextToPlainText } from "./richText";
 import type { StudioSlide, TeacherGuide, WorksheetSection } from "./studioTypes";
 
 interface CometEditContext {
@@ -29,9 +30,9 @@ function stripIds(slides: StudioSlide[]) {
 function stripSectionIds(sections: WorksheetSection[]) {
   return sections.map((section) => ({
     title: section.title,
-    directions: section.directions,
+    directions: richTextToPlainText(section.directions),
     questions: section.questions.map((q) => ({
-      prompt: q.prompt,
+      prompt: richTextToPlainText(q.prompt),
       type: q.type,
       choices: q.choices,
       correctAnswer: q.correctAnswer,
@@ -60,7 +61,11 @@ Current worksheet sections (JSON array):
 ${JSON.stringify(stripSectionIds(project.worksheetSections))}
 
 Current teacher guide (JSON object):
-${JSON.stringify(project.teacherGuide)}
+${JSON.stringify({
+    ...project.teacherGuide,
+    overview: richTextToPlainText(project.teacherGuide.overview),
+    timingNotes: richTextToPlainText(project.teacherGuide.timingNotes),
+  })}
 
 The teacher's request: "${instruction}"
 

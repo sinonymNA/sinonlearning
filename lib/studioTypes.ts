@@ -74,6 +74,37 @@ export interface SlideBullet {
   text: string;
 }
 
+/** A percentage-based box (0-100), resolution-independent so it scales with any slide frame size. */
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** The two slide regions a teacher can drag/resize on the freeform canvas. */
+export type SlideElementRole = "content" | "image";
+
+export type FreeformShapeKind = "rectangle" | "ellipse";
+
+export interface FreeformTextElement extends Rect {
+  id: string;
+  kind: "text";
+  text: string;
+  align?: "left" | "center" | "right";
+  z: number;
+}
+
+export interface FreeformShapeElement extends Rect {
+  id: string;
+  kind: "shape";
+  shapeType: FreeformShapeKind;
+  color: string;
+  z: number;
+}
+
+export type FreeformElement = FreeformTextElement | FreeformShapeElement;
+
 export interface StudioSlide {
   id: string;
   type: SlideType;
@@ -87,6 +118,10 @@ export interface StudioSlide {
   timingMinutes?: number;
   layout: SlideLayout;
   tags: string[];
+  /** Freeform position/size overrides for the content block and image, dragged/resized on the canvas. Defaults (derived from `layout`) apply when absent. */
+  layoutOverrides?: Partial<Record<SlideElementRole, Rect>>;
+  /** Freestanding text boxes and shapes added directly on the canvas — content with no legacy-field equivalent. */
+  extraElements?: FreeformElement[];
 }
 
 export type WorksheetQuestionType =

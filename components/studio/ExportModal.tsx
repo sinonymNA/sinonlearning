@@ -5,6 +5,7 @@ import { Check, Clipboard, Download, Printer } from "lucide-react";
 import StudioModal from "./StudioModal";
 import ComingSoonBadge from "@/components/ComingSoonBadge";
 import { downloadTextFile, projectToJSON, projectToMarkdown, slugifyFilename } from "@/lib/studioExport";
+import { richTextToPlainText } from "@/lib/richText";
 import type { PreviewAudience, TeacherStudioProject } from "@/lib/studioTypes";
 
 interface ExportModalProps {
@@ -153,11 +154,16 @@ function PrintableProject({
       {project.worksheetSections.map((section) => (
         <div key={section.id} className="print-page-break mb-6">
           <h2 className="font-display text-xl">{section.title}</h2>
-          {section.directions && <p className="text-sm text-navy-700/70">{section.directions}</p>}
+          {section.directions && (
+            <div
+              className="text-sm text-navy-700/70"
+              dangerouslySetInnerHTML={{ __html: section.directions }}
+            />
+          )}
           <ol className="mt-2 list-decimal pl-5 text-sm">
             {section.questions.map((q) => (
               <li key={q.id} className="mb-2">
-                {q.prompt}
+                <span dangerouslySetInnerHTML={{ __html: q.prompt }} />
                 {q.choices && q.choices.length > 0 && (
                   <ul className="mt-1 list-none pl-4">
                     {q.choices.map((choice, ci) => (
@@ -176,7 +182,7 @@ function PrintableProject({
               {Object.entries(section.answerKey)
                 .map(([qId, answer]) => {
                   const q = section.questions.find((question) => question.id === qId);
-                  return `${q?.prompt ?? qId}: ${answer}`;
+                  return `${q ? richTextToPlainText(q.prompt) : qId}: ${answer}`;
                 })
                 .join(" · ")}
             </div>
