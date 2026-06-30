@@ -1,0 +1,17 @@
+# KORA model training pipeline dependencies.
+#
+# NOTE: bitsandbytes is Linux/CUDA-only. It is only required for the `train`
+# and `eval` subcommands of train_kora.py (QLoRA fine-tuning + adapter
+# inference). The `bootstrap`, `synthesize`, and `validate` subcommands do
+# not import it and will run fine on a CPU-only / non-CUDA machine.
+
+torch>=2.2,<3.0
+transformers>=4.43,<5.0
+datasets>=2.20,<3.0
+trl>=0.9,<0.12
+peft>=0.11,<0.14
+accelerate>=0.32,<1.0
+bitsandbytes>=0.43,<0.45
+pydantic>=2.7,<3.0
+rich>=13.7,<14.0
+scikit-learn>=1.5,<2.0

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "opportunity-cost",
+    "concept": "Opportunity Cost",
+    "subject": "Economics",
+    "grade_band": "9-10",
+    "source_content": "Opportunity cost is the value of the next-best alternative you give up when you make a choice. Every decision -- spending money, spending time, allocating resources -- involves a trade-off, and the opportunity cost is whatever you would have gotten from the option you didn't choose. It is not the same as the total cost of all alternatives, only the single best one foregone.",
+    "standard": "HS.Econ.2.3 - Analyze the role of opportunity cost in decision-making.",
+    "teacher_goal": "Students should be able to identify the next-best alternative in a decision and explain why opportunity cost is about trade-offs, not just money spent."
+  },
+  {
+    "id": "inflation",
+    "concept": "Inflation",
+    "subject": "Economics",
+    "grade_band": "9-10",
+    "source_content": "Inflation is a sustained increase in the general price level of goods and services in an economy over time, which reduces the purchasing power of money. It is typically measured using a price index, such as the Consumer Price Index (CPI). Moderate inflation is normal in a growing economy, but high or unpredictable inflation erodes savings and makes planning difficult.",
+    "standard": "HS.Econ.4.1 - Explain how inflation affects purchasing power and economic decision-making.",
+    "teacher_goal": "Students should distinguish inflation (a sustained rise in the general price level) from a single price increase, and connect it to purchasing power."
+  },
+  {
+    "id": "supply-and-demand",
+    "concept": "Supply and Demand",
+    "subject": "Economics",
+    "grade_band": "9-10",
+    "source_content": "Supply and demand describes how the price and quantity of a good are determined in a market. Demand is the relationship between price and the quantity buyers are willing to purchase; supply is the relationship between price and the quantity sellers are willing to produce. The market price tends toward equilibrium, where quantity supplied equals quantity demanded. A shift in either curve -- not just a movement along it -- changes the equilibrium price and quantity.",
+    "standard": "HS.Econ.1.2 - Explain how supply and demand determine market price and quantity.",
+    "teacher_goal": "Students should distinguish a shift in a supply/demand curve from a movement along it, and explain how each changes equilibrium."
+  },
+  {
+    "id": "separation-of-powers",
+    "concept": "Separation of Powers",
+    "subject": "Civics",
+    "grade_band": "11-12",
+    "source_content": "Separation of powers divides government authority among independent branches -- legislative, executive, and judicial -- so that no single branch can dominate the others. Each branch is given distinct powers, and a system of checks and balances allows each branch to limit the others, for example through veto power, judicial review, or the power to impeach. The goal is to prevent the concentration and abuse of power.",
+    "standard": "HS.Civics.3.1 - Analyze how separation of powers and checks and balances limit government authority.",
+    "teacher_goal": "Students should explain not just what the three branches do, but how specific checks-and-balances mechanisms prevent any one branch from becoming too powerful."
+  },
+  {
+    "id": "silk-roads",
+    "concept": "Silk Roads",
+    "subject": "World History",
+    "grade_band": "9-10",
+    "source_content": "The Silk Roads were a network of overland and maritime trade routes connecting East Asia, Central Asia, South Asia, the Middle East, and Europe from roughly 200 BCE to 1450 CE. Goods such as silk, spices, and precious metals were exchanged, but the routes also enabled the spread of religions, technologies, art, and diseases such as the Black Death. No single merchant typically traveled the entire route; goods and ideas passed through many hands across interconnected regional networks.",
+    "standard": "HS.WH.2.4 - Explain how trade networks facilitated the exchange of goods, ideas, and disease across Afro-Eurasia.",
+    "teacher_goal": "Students should explain the Silk Roads as a network that transmitted more than goods -- including ideas, religion, and disease -- not as a single fixed road."
+  },
+  {
+    "id": "photosynthesis",
+    "concept": "Photosynthesis",
+    "subject": "Biology",
+    "grade_band": "9-10",
+    "source_content": "Photosynthesis is the process by which plants, algae, and some bacteria convert light energy into chemical energy stored in glucose. Using carbon dioxide and water, and capturing light energy with chlorophyll in the chloroplasts, the overall reaction produces glucose and oxygen: 6CO2 + 6H2O + light -> C6H12O6 + 6O2. Photosynthesis is the foundation of most food chains and is the primary source of atmospheric oxygen.",
+    "standard": "HS.LS.1.5 - Use a model to illustrate that photosynthesis transforms light energy into stored chemical energy.",
+    "teacher_goal": "Students should explain photosynthesis as an energy transformation (light to chemical energy) with specific inputs and outputs, not just 'plants make food from sunlight.'"
+  }
+]

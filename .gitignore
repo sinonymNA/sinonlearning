@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# kora_model (Python ML pipeline)
+kora_model/.venv/
+kora_model/__pycache__/
+**/__pycache__/
+*.pyc
+kora_model/outputs/*
+!kora_model/outputs/.gitkeep
+*.safetensors
+*.bin
+*.pt
+*.ckpt
