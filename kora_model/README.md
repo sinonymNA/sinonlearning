@@ -2,7 +2,7 @@
 
 KORA is Sinon Learning's pedagogical understanding engine. Given lesson content and/or a student response, KORA returns structured JSON that makes student understanding visible to the teacher. It is **not a tutor**, it does **not replace the teacher**, and it does not give answers to students.
 
-This folder contains the first runnable version of KORA: a self-contained Python pipeline that synthesizes structured training data, fine-tunes a small open-source LLM with LoRA/QLoRA, and evaluates the result.
+This folder contains the training pipeline for KORA: a self-contained Python pipeline that synthesizes structured training data across **9 task types**, fine-tunes a small open-source LLM with LoRA/QLoRA, and evaluates the result.
 
 ## What this is
 
@@ -72,8 +72,12 @@ python train_kora.py synthesize
 Generates synthetic KORA training examples from the seed concepts using
 template-based string interpolation — no external API calls. Writes:
 
-- `data/kora_train.jsonl` — ≥300 training examples
-- `data/kora_eval.jsonl`  — ≥50 held-out evaluation examples (no overlap)
+- `data/kora_train.jsonl` — ≥600 training examples (9 task types)
+- `data/kora_eval.jsonl`  — ≥100 held-out evaluation examples (no overlap)
+
+The two application-facing task types added in v2:
+- `notes_generation` — lesson content → structured notes sheet designed for learner understanding
+- `game_response_eval` — typed student response → points + understanding level + misconception flag + feedback
 
 The train/eval split is deterministic (SHA-256 hash of a stable per-example
 key) and fully reproducible.

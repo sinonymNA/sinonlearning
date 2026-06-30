@@ -143,6 +143,15 @@ def build_user_message(task_type):
             f"Current student evidence profile:\n{evidence_lines}\n\n"
             f"Task: Suggest the next best probe to move student understanding of \"{concept_name}\" forward."
         )
+    elif task_type == "game_response_eval":
+        probe = input("\nProbe question for the game: ").strip()
+        response = input("Student typed response: ").strip()
+        user_text = (
+            f"{preamble}\n\n"
+            f"Probe: \"{probe}\"\n\n"
+            f"Student response:\n\"{response}\"\n\n"
+            f"Task: Evaluate this student response for the game. Return a KORA game evaluation."
+        )
     else:
         user_text = (
             f"{preamble}\n\n"
@@ -156,6 +165,7 @@ def _task_instruction(task_type, concept_name):
         "anchor": f"Build a conceptual anchor for \"{concept_name}\" including core understanding, prerequisite ideas, common misconceptions, examples, non-examples, and transfer contexts.",
         "graph": f"Build an understanding graph for \"{concept_name}\" with labeled nodes and typed edges.",
         "evidence_events": f"Generate 4 to 5 evidence-gathering events for \"{concept_name}\" spanning different cognitive demands.",
+        "notes_generation": f"Generate a KORA notes sheet for \"{concept_name}\" designed to maximize learner understanding, not just content coverage.",
     }
     return instructions.get(task_type, f"Run KORA task '{task_type}' for the concept \"{concept_name}\".")
 

@@ -99,7 +99,7 @@ ANSWER_VARIANTS = [
     "application_without_vocab",
 ]
 
-# The 7 KORA tasks this pipeline teaches.
+# The 9 KORA tasks this pipeline teaches.
 TASK_TYPES = [
     "anchor",
     "graph",
@@ -108,6 +108,8 @@ TASK_TYPES = [
     "evaluate",
     "next_probe",
     "diagnosis",
+    "notes_generation",
+    "game_response_eval",
 ]
 
 EVIDENCE_DIMENSIONS = ["accuracy", "causality", "application", "transfer", "model_quality"]
@@ -1048,6 +1050,172 @@ def gen_diagnosis(concept, variant, rng):
     return user_text, assistant_obj
 
 
+
+def gen_notes_generation(concept, variant, rng):
+    facts = CONCEPT_FACTS[concept["id"]]
+    cname = concept["concept"]
+    task_prompts = [
+        "Generate a KORA notes sheet for \"" + cname + "\" designed to maximize learner understanding, not just content coverage.",
+        "Build structured notes for \"" + cname + "\" that a teacher can give students. Each section should build toward genuine understanding.",
+        "A teacher has finished a lesson on \"" + cname + "\". Generate KORA-structured notes that help students consolidate deep understanding.",
+        "Generate notes for \"" + cname + "\" that address common misconceptions and include self-check questions targeting key evidence dimensions.",
+        "Build a KORA notes sheet for \"" + cname + "\" with sections that differentiate surface recall from conceptual understanding.",
+        "Generate student-facing notes for \"" + cname + "\" that include a misconception alert, example analysis, and a transfer challenge.",
+        "Create structured notes for \"" + cname + "\" that are more than fill-in-the-blank — each section builds a specific type of understanding.",
+        "Build notes for \"" + cname + "\" that make the example vs. non-example distinction explicit and include vocabulary with concrete examples.",
+    ]
+    prompt_text = rng.choice(task_prompts)
+    prereqs = list(facts["prerequisites"]); rng.shuffle(prereqs)
+    misconceptions = list(facts["misconceptions"]); rng.shuffle(misconceptions)
+    examples = list(facts["examples"]); rng.shuffle(examples)
+    transfer_contexts = list(facts["transfer_contexts"]); rng.shuffle(transfer_contexts)
+    core = list(facts["core_understanding"]); rng.shuffle(core)
+    evidence_skills = list(facts["evidence_skills"]); rng.shuffle(evidence_skills)
+    sections = [
+        {"heading": "What is " + cname + "?", "type": "anchor",
+         "content": facts["anchor_statement"],
+         "understanding_focus": "Establish the core idea before any detail."},
+        {"heading": "Before This Concept", "type": "prerequisite_check",
+         "content": "Make sure you are comfortable with: " + "; ".join(prereqs) + ".",
+         "understanding_focus": "Activate prerequisite knowledge so the new concept has somewhere to anchor."},
+        {"heading": "The Core Idea", "type": "core_idea",
+         "content": " ".join(core),
+         "understanding_focus": "Build accurate declarative understanding of the concept."},
+        {"heading": "Examples in Action", "type": "example_analysis",
+         "content": "\n".join("- " + ex for ex in examples[:2]),
+         "understanding_focus": "Ground the concept in concrete cases so it is not just a definition."},
+        {"heading": "Common Mistake: " + misconceptions[0]["label"], "type": "misconception_alert",
+         "content": misconceptions[0]["description"] + " Example of this error: " + misconceptions[0]["student_response"],
+         "understanding_focus": "Pre-empt the most common misconception before it takes hold."},
+        {"heading": "Apply It Further", "type": "transfer_challenge",
+         "content": rng.choice(transfer_contexts),
+         "understanding_focus": "Push beyond the classroom example to check for flexible, transferable understanding."},
+    ]
+    vocabulary_words = [{"term": cname, "definition": facts["anchor_statement"], "example": examples[0]}]
+    if len(misconceptions) > 1:
+        vocabulary_words.append({
+            "term": misconceptions[1]["label"],
+            "definition": misconceptions[1]["description"],
+            "example": misconceptions[1]["student_response"],
+        })
+    dim_targets = ["accuracy", "causality", "application", "transfer", "model_quality"]
+    rng.shuffle(dim_targets)
+    self_check_questions = []
+    for i, skill in enumerate(evidence_skills):
+        q = skill
+        for verb in ["Identify", "Explain", "Distinguish", "Apply", "Evaluate", "Trace", "State", "Connect"]:
+            if q.startswith(verb):
+                q = "Can you " + q[0].lower() + q[1:]
+                break
+        if not q.endswith("?"):
+            q += "?"
+        self_check_questions.append({
+            "question": q,
+            "target_dimension": dim_targets[i % len(dim_targets)],
+            "what_strong_answer_includes": core[i % len(core)],
+        })
+    user_text = _concept_context(concept) + "\n\nTask: " + prompt_text
+    assistant_obj = {
+        "concept": cname,
+        "title": "Notes: " + cname,
+        "learning_objective": concept["teacher_goal"],
+        "essential_question": "What does it actually mean to understand " + cname + " — not just recall it?",
+        "sections": sections,
+        "key_vocabulary": vocabulary_words,
+        "common_pitfalls": [m["label"] for m in misconceptions],
+        "self_check_questions": self_check_questions,
+    }
+    return user_text, assistant_obj
+
+
+_POINTS_BY_LEVEL = {"Not Yet Shown": 10, "Emerging": 35, "Solid": 70, "Strong": 95}
+
+_FEEDBACK_TEMPLATES = {
+    "strong": [
+        "Strong answer — you identified the mechanism precisely and gave a solid example.",
+        "Excellent. You connected {concept} to its real-world effect accurately.",
+        "Great work. You moved beyond the definition to explain the causal logic.",
+    ],
+    "partial": [
+        "Good start — you have the core idea. Can you explain why it works that way, not just what it is?",
+        "You are on the right track. Push further: what is the causal mechanism behind {concept}?",
+        "Solid foundation. Now try applying it to an unfamiliar context.",
+    ],
+    "vague": [
+        "You have shown some familiarity. Give me a specific example of {concept} in action.",
+        "I can see you have heard of this. Can you describe exactly what happens with {concept}?",
+        "Try to be more precise — what specifically is the trade-off or mechanism in {concept}?",
+    ],
+    "confidently_wrong": [
+        "That is a confident answer, but there is an error here. Reconsider: what is the definition of {concept}?",
+        "Check your reasoning — the answer contains a misconception about {concept}. Start from the definition.",
+        "Not quite. The key distinction you are missing is what {concept} actually measures.",
+    ],
+    "misconception_based": [
+        "You are close but a misconception is embedded in your answer. Look at your reasoning again.",
+        "Partially correct — but there is a common error here about {concept}. What exactly is being traded off?",
+        "Good attempt. Watch out for the misconception embedded in your response about {concept}.",
+    ],
+    "transfer_failure": [
+        "You have got the classroom version right. Now apply that same logic to a new context.",
+        "Correct for the example we covered. How would {concept} work in a situation you have not seen before?",
+        "Great on the familiar case. The transfer challenge: apply {concept} somewhere new.",
+    ],
+    "vocab_without_application": [
+        "You are using the right vocabulary. Now show me {concept} in action with a concrete example.",
+        "The terminology is correct — prove you understand it by giving a specific real-world case.",
+        "Good use of terms. What does {concept} actually look like when you encounter it?",
+    ],
+    "application_without_vocab": [
+        "You clearly understand how this works. Can you name the technical term for what you just described?",
+        "Excellent intuition. The formal name for what you are describing is {concept} — can you articulate why?",
+        "You have described it correctly without the terminology. What is the academic term for this phenomenon?",
+    ],
+}
+
+
+def gen_game_response_eval(concept, variant, rng):
+    facts = CONCEPT_FACTS[concept["id"]]
+    cname = concept["concept"]
+    profile = VARIANT_PROFILES[variant]
+    student_response = _build_student_response(concept, variant, facts, rng)
+    probe_questions = [
+        "In your own words, explain what " + cname + " means and give a real-life example.",
+        "What is " + cname + "? Give an example different from what we covered in class.",
+        "Explain why " + cname + " matters. What would happen if people ignored it?",
+        "A friend does not understand " + cname + ". How would you explain it to them?",
+        "Apply " + cname + " to this situation: " + rng.choice(facts["examples"]),
+        "How does " + cname + " apply in this new context: " + rng.choice(facts["transfer_contexts"]) + "?",
+    ]
+    bad_claim = rng.choice(facts["misconceptions"])["student_response"]
+    probe_questions.append("Respond to this claim: '" + bad_claim + "' — is it correct? Why or why not?")
+    probe = rng.choice(probe_questions)
+    level_order = ["Not Yet Shown", "Emerging", "Solid", "Strong"]
+    dominant_evidence = max(profile["evidence"].values(), key=lambda v: level_order.index(v))
+    points = max(5, min(100, _POINTS_BY_LEVEL[dominant_evidence] + rng.randint(-5, 5)))
+    misconception_detected = profile["misconception_mode"] in ("present", "dominant")
+    misconception_label = rng.choice(facts["misconceptions"])["label"] if misconception_detected else None
+    feedback = rng.choice(_FEEDBACK_TEMPLATES[variant]).replace("{concept}", cname)
+    user_text = (
+        _concept_context(concept) + "\n\n"
+        "Probe: \"" + probe + "\"\n\n"
+        "Student response:\n\"" + student_response + "\"\n\n"
+        "Task: Evaluate this student response for the game. Return a KORA game evaluation."
+    )
+    assistant_obj = {
+        "concept": cname,
+        "probe": probe,
+        "student_response": student_response,
+        "points": points,
+        "understanding_level": dominant_evidence,
+        "misconception_detected": misconception_detected,
+        "misconception_label": misconception_label,
+        "feedback": feedback,
+        "advance": profile["advance"],
+    }
+    return user_text, assistant_obj
+
+
 TASK_GENERATORS = {
     "anchor": gen_anchor,
     "graph": gen_graph,
@@ -1056,10 +1224,12 @@ TASK_GENERATORS = {
     "evaluate": gen_evaluate,
     "next_probe": gen_next_probe,
     "diagnosis": gen_diagnosis,
+    "notes_generation": gen_notes_generation,
+    "game_response_eval": gen_game_response_eval,
 }
 
-NON_VARIANT_TASKS = ["anchor", "graph", "evidence_events", "misconception_sim", "next_probe"]
-VARIANT_TASKS = ["evaluate", "diagnosis"]
+NON_VARIANT_TASKS = ["anchor", "graph", "evidence_events", "misconception_sim", "next_probe", "notes_generation"]
+VARIANT_TASKS = ["evaluate", "diagnosis", "game_response_eval"]
 K_NON_VARIANT = 8
 K_VARIANT = 3
 EVAL_FRACTION_DENOM = 7
@@ -1181,6 +1351,10 @@ def _infer_task_type(obj):
         return "graph"
     if "events" in keys:
         return "evidence_events"
+    if "sections" in keys:
+        return "notes_generation"
+    if "points" in keys:
+        return "game_response_eval"
     if "misconception_label" in keys:
         return "misconception_sim"
     if "advance" in keys:
@@ -1299,6 +1473,48 @@ def _check_diagnosis_schema(obj):
     return None
 
 
+def _check_notes_generation_schema(obj):
+    for f in ["concept", "title", "learning_objective", "essential_question",
+              "sections", "key_vocabulary", "common_pitfalls", "self_check_questions"]:
+        if f not in obj:
+            return f"Missing field: '{f}'"
+    valid_section_types = {"anchor", "prerequisite_check", "core_idea", "example_analysis",
+                           "misconception_alert", "transfer_challenge"}
+    for sec in obj["sections"]:
+        for sf in ["heading", "type", "content", "understanding_focus"]:
+            if sf not in sec:
+                return f"Section missing field: '{sf}'"
+        if sec["type"] not in valid_section_types:
+            return f"Section type '{sec['type']}' not in allowed section types"
+    for vocab in obj["key_vocabulary"]:
+        for vf in ["term", "definition", "example"]:
+            if vf not in vocab:
+                return f"Vocabulary entry missing field: '{vf}'"
+    for q in obj["self_check_questions"]:
+        for qf in ["question", "target_dimension", "what_strong_answer_includes"]:
+            if qf not in q:
+                return f"Self-check question missing field: '{qf}'"
+        if q["target_dimension"] not in EVIDENCE_DIMENSIONS:
+            return f"Self-check target_dimension '{q['target_dimension']}' not in EVIDENCE_DIMENSIONS"
+    return None
+
+
+def _check_game_response_eval_schema(obj):
+    for f in ["concept", "probe", "student_response", "points", "understanding_level",
+              "misconception_detected", "misconception_label", "feedback", "advance"]:
+        if f not in obj:
+            return f"Missing field: '{f}'"
+    if not isinstance(obj["points"], int) or not (0 <= obj["points"] <= 100):
+        return f"'points' must be an int in [0, 100], got {obj['points']!r}"
+    if obj["understanding_level"] not in EVIDENCE_LEVELS:
+        return f"understanding_level '{obj['understanding_level']}' not in EVIDENCE_LEVELS"
+    if not isinstance(obj["misconception_detected"], bool):
+        return "'misconception_detected' must be a bool"
+    if not isinstance(obj["advance"], bool):
+        return "'advance' must be a bool"
+    return None
+
+
 SCHEMA_CHECKERS = {
     "anchor": _check_anchor_schema,
     "graph": _check_graph_schema,
@@ -1307,6 +1523,8 @@ SCHEMA_CHECKERS = {
     "evaluate": _check_evaluate_schema,
     "next_probe": _check_next_probe_schema,
     "diagnosis": _check_diagnosis_schema,
+    "notes_generation": _check_notes_generation_schema,
+    "game_response_eval": _check_game_response_eval_schema,
 }
 
 
