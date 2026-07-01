@@ -1742,7 +1742,8 @@ def cmd_train(_args):
     )
 
     print("\n[KORA] Starting training...")
-    trainer.train()
+    resume_ckpt = os.environ.get("KORA_RESUME") or None
+    trainer.train(resume_from_checkpoint=resume_ckpt)
 
     output_path = Path(OUTPUT_DIR)
     output_path.mkdir(parents=True, exist_ok=True)
