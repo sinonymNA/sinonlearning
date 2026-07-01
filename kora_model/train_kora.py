@@ -1649,8 +1649,8 @@ def cmd_train(_args):
         )
         sys.exit(0)
 
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from peft import LoraConfig, get_peft_model
     from datasets import load_dataset
     from trl import SFTConfig, SFTTrainer
 
@@ -1679,19 +1679,13 @@ def cmd_train(_args):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-    )
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
-        quantization_config=bnb_config,
+        torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
     )
-    model = prepare_model_for_kbit_training(model)
+    model.enable_input_require_grads()
 
     target_modules = resolve_target_modules(model)
     print(f"[KORA] LoRA target modules: {target_modules}")
@@ -1938,7 +1932,7 @@ def cmd_eval(_args):
         )
         sys.exit(0)
 
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+    from transformers import AutoModelForCausalLM, AutoTokenizer
     from peft import PeftModel
 
     BASE_MODEL = os.environ.get("BASE_MODEL", DEFAULT_BASE_MODEL)
@@ -1953,15 +1947,9 @@ def cmd_eval(_args):
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_compute_dtype=torch.float16,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-    )
     base_model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
-        quantization_config=bnb_config,
+        torch_dtype=torch.float16,
         device_map="auto",
         trust_remote_code=True,
     )
