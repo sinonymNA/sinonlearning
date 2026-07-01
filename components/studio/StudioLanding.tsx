@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Copy, FilePlus2, Sparkles, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, Copy, FilePlus2, Gamepad2, NotebookText, Sparkles, Trash2, Upload } from "lucide-react";
 import CometCharacter from "./CometCharacter";
 import ProjectTypeSelector from "./ProjectTypeSelector";
 import CometBuildFlow from "./CometBuildFlow";
@@ -187,6 +187,18 @@ export default function StudioLanding() {
             title={importing ? "Importing…" : "Import PowerPoint"}
             description="Upload a .pptx and edit it like any other deck — converted locally, nothing leaves your device."
             onClick={() => !importing && fileInputRef.current?.click()}
+          />
+          <QuickCreateCard
+            icon={<NotebookText size={20} />}
+            title="Notes from Slideshow"
+            description="Upload a .pptx — KORA structures notes for deep understanding, not fill-in-the-blank."
+            onClick={() => router.push("/studio/kora-notes")}
+          />
+          <QuickCreateCard
+            icon={<Gamepad2 size={20} />}
+            title="KORA Game"
+            description="Students type real answers. KORA evaluates understanding live — you see exactly who gets it."
+            onClick={() => router.push("/studio/kora-game")}
           />
         </div>
 
