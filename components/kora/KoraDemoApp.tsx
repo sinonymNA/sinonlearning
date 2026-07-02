@@ -22,8 +22,8 @@ type AppPhase =
   | "remediation"
   | "complete";
 
-const MAX_ASSESSMENT = 10;
-const MAX_REMEDIATION = 7;
+const MAX_ASSESSMENT = 5;
+const MAX_REMEDIATION = 5;
 
 const LEVEL_CONFIG: Record<
   string,
@@ -241,6 +241,7 @@ function AssessmentPanel({
   concept,
   answeredCount,
   currentQuestion,
+  currentReaction,
   dimension,
   onSubmit,
   loading,
@@ -248,6 +249,7 @@ function AssessmentPanel({
   concept: KoraConcept;
   answeredCount: number;
   currentQuestion: string;
+  currentReaction: string;
   dimension: string;
   onSubmit: (response: string) => void;
   loading: boolean;
@@ -268,8 +270,16 @@ function AssessmentPanel({
     setAnswer("");
   }
 
-  const pillClass =
-    "text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-navy-100 text-navy-500";
+  const contextText =
+    answeredCount === 0
+      ? "First probe — your mental model is empty."
+      : answeredCount === 1
+      ? "One ring in. Keep going."
+      : answeredCount === 2
+      ? "Getting a picture of your thinking."
+      : answeredCount === 3
+      ? "Almost there."
+      : "Last one.";
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -283,33 +293,35 @@ function AssessmentPanel({
         </h2>
       </div>
 
-      {/* Atom + context */}
+      {/* Atom */}
       <div className="flex flex-col items-center gap-1">
         <AtomProgress
           answered={answeredCount}
           total={MAX_ASSESSMENT}
-          label="understanding probes"
+          label="probes complete"
         />
-        <p className="text-sm text-navy-500 text-center max-w-xs">
-          {answeredCount === 0
-            ? "Your mental model starts empty. Each answer fills a ring."
-            : answeredCount < 4
-            ? "KORA is mapping your understanding. Keep going."
-            : answeredCount < 8
-            ? "Your model is taking shape."
-            : "Almost complete."}
-        </p>
+        <p className="text-xs text-navy-400 text-center">{contextText}</p>
       </div>
+
+      {/* KORA reaction to last answer */}
+      {currentReaction && (
+        <div className="flex items-start gap-2.5 bg-navy-50 border border-navy-100 rounded-xl px-4 py-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-navy-400 mt-0.5 shrink-0">
+            KORA
+          </span>
+          <p className="text-sm text-navy-700 leading-relaxed">{currentReaction}</p>
+        </div>
+      )}
 
       {/* Current question */}
       {currentQuestion && (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-3">
           <div className="flex items-center gap-2">
-            <span className={pillClass}>
+            <span className="text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-navy-100 text-navy-500">
               {DIMENSION_PILLS[dimension] ?? dimension}
             </span>
             <span className="text-[11px] text-navy-300">
-              Question {answeredCount + 1} of {MAX_ASSESSMENT}
+              {answeredCount + 1} of {MAX_ASSESSMENT}
             </span>
           </div>
           <p className="text-navy-900 font-medium leading-relaxed">
@@ -335,8 +347,8 @@ function AssessmentPanel({
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
             }}
-            placeholder="1–2 sentences is all you need…"
-            rows={2}
+            placeholder="2–3 sentences…"
+            rows={3}
             disabled={loading || !currentQuestion}
             className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-navy-900 placeholder-navy-300 resize-none focus:outline-none focus:ring-2 focus:ring-navy-300 disabled:opacity-40 bg-white"
           />
@@ -748,6 +760,7 @@ export default function KoraDemoApp() {
   const [remediationHistory, setRemediationHistory] = useState<ConversationTurn[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentDimension, setCurrentDimension] = useState("accuracy");
+  const [currentReaction, setCurrentReaction] = useState("");
   const [acknowledgment, setAcknowledgment] = useState("");
   const [mentalModel, setMentalModel] = useState<MentalModel | null>(null);
   const [loading, setLoading] = useState(false);
@@ -784,6 +797,7 @@ export default function KoraDemoApp() {
       });
       setCurrentQuestion(data.question);
       setCurrentDimension(data.dimension);
+      setCurrentReaction("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -794,6 +808,7 @@ export default function KoraDemoApp() {
   async function handleAssessmentResponse(response: string) {
     setLoading(true);
     setError("");
+    setCurrentReaction("");
 
     const updatedHistory: ConversationTurn[] = [
       ...assessmentHistory,
@@ -808,7 +823,6 @@ export default function KoraDemoApp() {
 
     try {
       if (hitCap) {
-        // Force analyze at cap
         await triggerAnalysis(updatedHistory);
         return;
       }
@@ -822,6 +836,7 @@ export default function KoraDemoApp() {
       if (data.ready_to_analyze) {
         await triggerAnalysis(updatedHistory);
       } else {
+        setCurrentReaction(data.reaction ?? "");
         setCurrentQuestion(data.question);
         setCurrentDimension(data.dimension);
       }
@@ -944,6 +959,7 @@ export default function KoraDemoApp() {
     setRemediationHistory([]);
     setCurrentQuestion("");
     setCurrentDimension("accuracy");
+    setCurrentReaction("");
     setAcknowledgment("");
     setMentalModel(null);
     setError("");
@@ -983,6 +999,7 @@ export default function KoraDemoApp() {
               concept={concept}
               answeredCount={answeredCount}
               currentQuestion={currentQuestion}
+              currentReaction={currentReaction}
               dimension={currentDimension}
               onSubmit={handleAssessmentResponse}
               loading={loading}
