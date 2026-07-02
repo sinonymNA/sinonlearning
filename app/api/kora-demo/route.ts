@@ -40,11 +40,11 @@ function formatHistory(turns: ConversationTurn[]): string {
 function buildQuestionPrompt(concept: KoraConcept, history: ConversationTurn[]): string {
   const studentResponses = history.filter((t) => t.role === "student").length;
   const readyNote =
-    studentResponses >= 3
-      ? "You have enough evidence to analyze. Set ready_to_analyze to true UNLESS one more question would clarify a critical gap."
-      : `You have ${studentResponses} student response(s). Continue gathering evidence — aim for 3–5 exchanges.`;
+    studentResponses >= 4
+      ? "You likely have enough evidence to analyze. Set ready_to_analyze to true UNLESS the most recent response reveals a critical gap that ONE more targeted question would clarify."
+      : `You have ${studentResponses} student response(s). Aim for 4–6 short focused exchanges before analyzing.`;
 
-  return `You are KORA, Sinon Learning's pedagogical understanding engine. Your job is to reveal what a student understands through evidence-gathering questions — not to teach or confirm correct answers.
+  return `You are KORA, Sinon Learning's pedagogical understanding engine. Your job is to reveal what a student understands through short, targeted probes — not to teach.
 
 CONCEPT: ${concept.name} (${concept.subject})
 SOURCE KNOWLEDGE:
@@ -53,13 +53,24 @@ ${concept.source_content}
 CONVERSATION SO FAR:
 ${formatHistory(history)}
 
-YOUR TASK: Generate ONE formative question that probes a dimension of understanding not yet evidenced. Priority order: accuracy → causality → application → transfer. Do not repeat a dimension already well-evidenced.
+YOUR TASK: Generate ONE short, focused probe. Requirements:
+- The student must be able to answer in 1–2 sentences — not a paragraph
+- Target ONE thing: a definition, an example, a comparison, a cause, a prediction, or a scenario
+- Make it concrete and specific, not "explain the concept"
+- Vary the format: "What does X mean when Y happens?", "Give me one example of Z", "What's the key difference between A and B?", "If [scenario], what does that tell you?"
+- Never compound — one idea per question
+
+BAD: "Can you explain what [concept] means and give examples of how it works in real life?"
+GOOD: "Give me one real-world example of [concept] happening."
+GOOD: "What happens to [X] when [Y]? Just one sentence."
+
+Priority order for dimensions not yet probed: accuracy → causality → application → transfer.
 
 ${readyNote}
 
-Return ONLY valid JSON (no markdown, no extra text):
+Return ONLY valid JSON:
 {
-  "question": "open-ended question requiring explanation, not recall",
+  "question": "short focused probe — one sentence if possible",
   "dimension": "accuracy|causality|application|transfer",
   "ready_to_analyze": false
 }`;
@@ -100,43 +111,46 @@ function buildRemediatePrompt(
   mentalModel: MentalModel,
   remediationHistory: ConversationTurn[]
 ): string {
-  const masteryCheck =
-    remediationHistory.filter((t) => t.role === "student").length >= 3
-      ? "You have had several exchanges. If the student has clearly articulated the core mechanism in their own words and can apply it, set mastery_unlocked: true."
-      : "Continue building toward the conceptual gap in the path_to_mastery.";
+  const exchangeCount = remediationHistory.filter((t) => t.role === "student").length;
+  const masteryNote =
+    exchangeCount >= 5
+      ? "After this many exchanges, if the student has shown meaningful movement toward the key insight — even imperfectly — set mastery_unlocked: true. Look for genuine engagement with the idea, not perfect articulation."
+      : exchangeCount >= 3
+      ? "If the student has demonstrated the core mechanism in their own words and can apply or extend it, set mastery_unlocked: true."
+      : "Continue guiding — they need more exchanges to reach the insight.";
 
-  return `You are KORA operating in Socratic remediation mode. Your ONLY tool is questions. You NEVER give answers, explanations, or tell the student they are correct or incorrect. You guide them to discover the understanding themselves.
+  return `You are KORA operating in Socratic remediation mode. Your ONLY tool is questions. You NEVER give answers or explanations. You guide the student to discover the understanding themselves.
 
 CONCEPT: ${concept.name} (${concept.subject})
 SOURCE KNOWLEDGE:
 ${concept.source_content}
 
-STUDENT MENTAL MODEL (from prior assessment):
-Overall Level: ${mentalModel.overall_level}
-Key Gaps: ${mentalModel.gaps.join("; ") || "none identified"}
-Misconceptions: ${mentalModel.misconceptions.join("; ") || "none detected"}
+STUDENT MENTAL MODEL (from assessment):
+Level: ${mentalModel.overall_level}
+Gaps: ${mentalModel.gaps.join("; ") || "none"}
+Misconceptions: ${mentalModel.misconceptions.join("; ") || "none"}
 Path to Mastery: ${mentalModel.path_to_mastery}
 
-ASSESSMENT CONVERSATION (for context):
+ASSESSMENT CONVERSATION:
 ${formatHistory(assessmentHistory)}
 
-SOCRATIC REMEDIATION SO FAR:
+SOCRATIC EXCHANGES SO FAR (${exchangeCount} student responses):
 ${formatHistory(remediationHistory)}
 
 RULES:
-1. NEVER state the answer or explanation directly
-2. NEVER say "correct!" or "exactly!" — acknowledge what they said and probe deeper
-3. Each question should move them one step closer to discovering the core mechanism
-4. Target the most critical gap or misconception first, then work outward
-5. mastery_unlocked: true ONLY when the student has articulated the core concept in their own words and demonstrated they can apply or extend it
+1. NEVER state the answer or give an explanation
+2. NEVER evaluate as correct or incorrect — just acknowledge and ask
+3. Keep each question short — one idea, one sentence if possible
+4. Target the most critical gap first, then build outward
+5. Questions should help them reason ONE step forward, not multiple
 
-${masteryCheck}
+${masteryNote}
 
 Return ONLY valid JSON:
 {
-  "acknowledgment": "1–2 sentences noticing what the student said without evaluating it as right or wrong",
-  "question": "one focused Socratic question — short, one idea only",
-  "understanding_signal": "what this question is trying to surface",
+  "acknowledgment": "1–2 sentences noticing what they said — no evaluation",
+  "question": "one short Socratic question",
+  "understanding_signal": "what you're trying to surface",
   "mastery_unlocked": false
 }`;
 }

@@ -1,136 +1,252 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Loader2, BookOpen, Brain, ChevronRight, CheckCircle2, AlertCircle, Lightbulb, Timer } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Lightbulb,
+  Brain,
+  ChevronRight,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
 import { KORA_DEMO_CONCEPTS, type KoraConcept } from "@/lib/koraDemoConcepts";
 import type { ConversationTurn, MentalModel } from "@/app/api/kora-demo/route";
 
 type AppPhase =
   | "concept"
-  | "research"
   | "assessment"
   | "analyzing"
   | "profile"
   | "remediation"
   | "complete";
 
+const MAX_ASSESSMENT = 10;
+const MAX_REMEDIATION = 7;
+
 const LEVEL_CONFIG: Record<
   string,
-  { label: string; color: string; bg: string; border: string; description: string }
+  {
+    label: string;
+    description: string;
+    textColor: string;
+    bgColor: string;
+    borderColor: string;
+    badgeClass: string;
+  }
 > = {
   "Not Yet Shown": {
     label: "Not Yet Shown",
-    color: "text-rose-700",
-    bg: "bg-rose-50",
-    border: "border-rose-200",
     description: "Your responses didn't reveal the core concept yet.",
+    textColor: "text-rose-700",
+    bgColor: "bg-rose-50",
+    borderColor: "border-rose-200",
+    badgeClass: "bg-rose-100 text-rose-700 border border-rose-200",
   },
   Emerging: {
     label: "Emerging",
-    color: "text-amber-700",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
     description: "You've grasped parts of it, with important gaps remaining.",
+    textColor: "text-amber-700",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
+    badgeClass: "bg-amber-100 text-amber-700 border border-amber-200",
   },
   Solid: {
     label: "Solid",
-    color: "text-blue-700",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    description: "You understand the core concept with some gaps to address.",
+    description: "You understand the core concept with some areas to deepen.",
+    textColor: "text-blue-700",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
+    badgeClass: "bg-blue-100 text-blue-700 border border-blue-200",
   },
   Strong: {
     label: "Strong",
-    color: "text-green-700",
-    bg: "bg-green-50",
-    border: "border-green-200",
     description: "You demonstrate clear, transferable understanding.",
+    textColor: "text-green-700",
+    bgColor: "bg-green-50",
+    borderColor: "border-green-200",
+    badgeClass: "bg-green-100 text-green-700 border border-green-200",
   },
 };
 
-function ConceptCard({ concept, onBegin }: { concept: KoraConcept; onBegin: () => void }) {
+const DIMENSION_PILLS: Record<string, string> = {
+  accuracy: "What you know",
+  causality: "How it works",
+  application: "Using it",
+  transfer: "Taking it further",
+};
+
+// ──────────────────────────────────────────────
+// Atom progress visualization
+// ──────────────────────────────────────────────
+
+function AtomRings({
+  answered,
+  total = MAX_ASSESSMENT,
+}: {
+  answered: number;
+  total?: number;
+}) {
+  const size = 220;
+  const cx = size / 2;
+  const cy = size / 2;
+  const minR = 14;
+  const maxR = 96;
+  const step = (maxR - minR) / Math.max(total - 1, 1);
+
   return (
-    <div className="max-w-xl mx-auto space-y-6">
-      <div className="text-center space-y-2">
-        <span className="text-xs font-semibold tracking-widest uppercase text-navy-400">
-          {concept.subject}
-        </span>
-        <h2 className="text-3xl font-serif font-bold text-navy-900">{concept.name}</h2>
-        <p className="text-navy-500 text-lg">{concept.tagline}</p>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="select-none"
+    >
+      {/* Subtle backdrop */}
+      <circle cx={cx} cy={cy} r={maxR + 10} fill="#f8fafc" />
+
+      {Array.from({ length: total }, (_, i) => {
+        const r = minR + step * i;
+        const filled = i < answered;
+        const t = total > 1 ? i / (total - 1) : 0;
+        // Filled: dark navy (inner) → steel blue (outer)
+        // Empty: faint dashed slate
+        const stroke = filled
+          ? `hsl(215 55% ${18 + t * 22}%)`
+          : "hsl(214 20% 88%)";
+        return (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={filled ? 2.5 : 1.2}
+            strokeDasharray={filled ? undefined : "3.5 6"}
+            style={{
+              transition: "stroke 0.55s ease, stroke-width 0.3s ease",
+            }}
+          />
+        );
+      })}
+
+      {/* Nucleus */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={4.5}
+        fill={answered > 0 ? "hsl(215 55% 18%)" : "hsl(214 20% 82%)"}
+        style={{ transition: "fill 0.4s ease" }}
+      />
+    </svg>
+  );
+}
+
+function AtomProgress({
+  answered,
+  total = MAX_ASSESSMENT,
+  label,
+}: {
+  answered: number;
+  total?: number;
+  label?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <AtomRings answered={answered} total={total} />
+      <div className="text-center -mt-1">
+        <p className="text-xs font-mono font-semibold text-navy-600">
+          {answered}
+          <span className="text-navy-300">/{total}</span>
+        </p>
+        {label && <p className="text-[11px] text-navy-400 mt-0.5">{label}</p>}
       </div>
-
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-3">
-        <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
-          <BookOpen className="w-4 h-4" />
-          Research this concept for 5 minutes
-        </div>
-        <p className="text-amber-900 text-sm leading-relaxed">{concept.research_prompt}</p>
-      </div>
-
-      <p className="text-center text-navy-500 text-sm">
-        When you&apos;re ready, KORA will assess your understanding through a short conversation.
-      </p>
-
-      <button
-        onClick={onBegin}
-        className="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-3.5 rounded-xl transition-colors"
-      >
-        I&apos;ve researched it — start the assessment
-      </button>
     </div>
   );
 }
 
-function ResearchTimer({ onDone }: { onDone: () => void }) {
-  const [seconds, setSeconds] = useState(300);
+// ──────────────────────────────────────────────
+// Concept card (phase: concept)
+// ──────────────────────────────────────────────
 
-  useEffect(() => {
-    if (seconds <= 0) return;
-    const t = setInterval(() => setSeconds((s) => s - 1), 1000);
-    return () => clearInterval(t);
-  }, [seconds]);
-
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-
+function ConceptCard({
+  concept,
+  onBegin,
+}: {
+  concept: KoraConcept;
+  onBegin: () => void;
+}) {
   return (
-    <div className="max-w-xl mx-auto space-y-6 text-center">
-      <div className="space-y-2">
-        <Timer className="w-10 h-10 text-amber-600 mx-auto" />
-        <h2 className="text-2xl font-serif font-bold text-navy-900">Research time</h2>
-        <p className="text-navy-500">
-          Use the research prompt on the previous screen. Come back when you&apos;re ready.
+    <div className="max-w-lg mx-auto space-y-6">
+      <div className="text-center space-y-2">
+        <span className="inline-block text-[11px] font-semibold tracking-widest uppercase text-navy-400 bg-navy-50 border border-navy-100 rounded-full px-3 py-0.5">
+          {concept.subject}
+        </span>
+        <h2 className="text-3xl font-serif font-bold text-navy-900">
+          {concept.name}
+        </h2>
+        <p className="text-navy-500">{concept.tagline}</p>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-2">
+        <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+          <BookOpen className="w-4 h-4 shrink-0" />
+          Step 1 — Research this concept for ~5 minutes
+        </div>
+        <p className="text-amber-900/80 text-sm leading-relaxed">
+          {concept.research_prompt}
         </p>
       </div>
 
-      <div className="text-6xl font-mono font-bold text-navy-900">
-        {m}:{String(s).padStart(2, "0")}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2">
+        <div className="flex items-center gap-2 text-navy-700 font-semibold text-sm">
+          <Brain className="w-4 h-4 shrink-0" />
+          Step 2 — KORA assesses your understanding
+        </div>
+        <p className="text-navy-500 text-sm leading-relaxed">
+          KORA will ask you up to 10 short, focused questions — each needing
+          only 1–2 sentences. It will build a map of what you understand and
+          what&apos;s missing.
+        </p>
       </div>
 
-      {seconds <= 0 && (
-        <p className="text-green-700 font-semibold">Time&apos;s up — head back and start the assessment!</p>
-      )}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2">
+        <div className="flex items-center gap-2 text-navy-700 font-semibold text-sm">
+          <Lightbulb className="w-4 h-4 shrink-0" />
+          Step 3 — Guided discovery to mastery
+        </div>
+        <p className="text-navy-500 text-sm leading-relaxed">
+          KORA guides you to fill your gaps through Socratic questions — it
+          will never give you the answer. You discover it yourself.
+        </p>
+      </div>
 
       <button
-        onClick={onDone}
-        className="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-3.5 rounded-xl transition-colors"
+        onClick={onBegin}
+        className="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
       >
-        I&apos;m ready — assess me
+        I&apos;ve researched it — assess me
+        <ChevronRight className="w-4 h-4" />
       </button>
     </div>
   );
 }
 
+// ──────────────────────────────────────────────
+// Assessment panel (phase: assessment)
+// ──────────────────────────────────────────────
+
 function AssessmentPanel({
   concept,
-  history,
+  answeredCount,
   currentQuestion,
   dimension,
   onSubmit,
   loading,
 }: {
   concept: KoraConcept;
-  history: ConversationTurn[];
+  answeredCount: number;
   currentQuestion: string;
   dimension: string;
   onSubmit: (response: string) => void;
@@ -138,11 +254,12 @@ function AssessmentPanel({
 }) {
   const [answer, setAnswer] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history, currentQuestion]);
+    if (!loading && currentQuestion) {
+      textareaRef.current?.focus();
+    }
+  }, [loading, currentQuestion]);
 
   function handleSubmit() {
     const trimmed = answer.trim();
@@ -151,285 +268,91 @@ function AssessmentPanel({
     setAnswer("");
   }
 
-  const DIMENSION_LABELS: Record<string, string> = {
-    accuracy: "What you know",
-    causality: "Why it works",
-    application: "Using it",
-    transfer: "Applying it elsewhere",
-  };
+  const pillClass =
+    "text-[11px] font-semibold tracking-wide uppercase px-2.5 py-0.5 rounded-full bg-navy-100 text-navy-500";
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-serif font-bold text-navy-900">{concept.name}</h2>
-          <p className="text-xs text-navy-400 uppercase tracking-widest">{concept.subject}</p>
-        </div>
-        <span className="text-xs text-navy-500 bg-navy-100 px-2.5 py-1 rounded-full">
-          Assessment in progress
-        </span>
-      </div>
-
-      <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-        {history.map((turn, i) => (
-          <div
-            key={i}
-            className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
-              turn.role === "kora"
-                ? "bg-slate-50 border border-slate-200 text-navy-800"
-                : "bg-navy-900 text-white ml-8"
-            }`}
-          >
-            {turn.role === "kora" && (
-              <span className="text-xs font-semibold text-navy-400 block mb-1">KORA</span>
-            )}
-            {turn.content}
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {currentQuestion && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 space-y-1">
-          <span className="text-xs font-semibold text-navy-400 block">
-            KORA · {DIMENSION_LABELS[dimension] ?? dimension}
-          </span>
-          <p className="text-navy-800 text-sm leading-relaxed">{currentQuestion}</p>
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <textarea
-          ref={textareaRef}
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-          }}
-          placeholder="Type your response… (⌘Enter to submit)"
-          rows={3}
-          disabled={loading || !currentQuestion}
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-navy-900 placeholder-navy-300 resize-none focus:outline-none focus:ring-2 focus:ring-navy-400 disabled:opacity-50"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={!answer.trim() || loading || !currentQuestion}
-          className="w-full flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-800 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              KORA is reading your response…
-            </>
-          ) : (
-            <>
-              Submit response
-              <ChevronRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function MentalModelProfile({
-  concept,
-  model,
-  onBeginRemediation,
-}: {
-  concept: KoraConcept;
-  model: MentalModel;
-  onBeginRemediation: () => void;
-}) {
-  const cfg = LEVEL_CONFIG[model.overall_level] ?? LEVEL_CONFIG["Emerging"];
-  const isStrong = model.overall_level === "Strong";
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header */}
       <div className="text-center space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-widest text-navy-400">
-          KORA Understanding Profile
+        <p className="text-[11px] font-semibold tracking-widest uppercase text-navy-400">
+          KORA Assessment
         </p>
-        <h2 className="text-2xl font-serif font-bold text-navy-900">{concept.name}</h2>
+        <h2 className="text-xl font-serif font-bold text-navy-900">
+          {concept.name}
+        </h2>
       </div>
 
-      <div className={`rounded-2xl border ${cfg.border} ${cfg.bg} px-5 py-4 space-y-1`}>
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-navy-500">Overall Level</span>
-          <span className={`text-sm font-bold ${cfg.color}`}>{cfg.label}</span>
-        </div>
-        <p className="text-sm text-navy-600">{cfg.description}</p>
-        <p className="text-sm text-navy-700 leading-relaxed mt-2">{model.summary}</p>
-      </div>
-
-      {model.strengths.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-green-700 font-semibold text-sm">
-            <CheckCircle2 className="w-4 h-4" />
-            Strengths
-          </div>
-          <ul className="space-y-1.5">
-            {model.strengths.map((s, i) => (
-              <li key={i} className="text-sm text-navy-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 leading-relaxed">
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {model.gaps.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-amber-700 font-semibold text-sm">
-            <AlertCircle className="w-4 h-4" />
-            Gaps
-          </div>
-          <ul className="space-y-1.5">
-            {model.gaps.map((g, i) => (
-              <li key={i} className="text-sm text-navy-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed">
-                {g}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {model.misconceptions.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-rose-700 font-semibold text-sm">
-            <Brain className="w-4 h-4" />
-            Misconceptions detected
-          </div>
-          <ul className="space-y-1.5">
-            {model.misconceptions.map((m, i) => (
-              <li key={i} className="text-sm text-navy-700 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2 leading-relaxed">
-                {m}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 space-y-1">
-        <div className="flex items-center gap-2 text-navy-600 font-semibold text-sm">
-          <Lightbulb className="w-4 h-4" />
-          Path to mastery
-        </div>
-        <p className="text-sm text-navy-700 leading-relaxed">{model.path_to_mastery}</p>
-      </div>
-
-      {isStrong ? (
-        <div className="text-center space-y-2">
-          <CheckCircle2 className="w-10 h-10 text-green-600 mx-auto" />
-          <p className="text-navy-700 font-semibold">You already demonstrate Strong understanding.</p>
-          <p className="text-navy-500 text-sm">No remediation needed — try a different concept.</p>
-        </div>
-      ) : (
-        <button
-          onClick={onBeginRemediation}
-          className="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-3.5 rounded-xl transition-colors"
-        >
-          Begin guided discovery →
-        </button>
-      )}
-    </div>
-  );
-}
-
-function RemediationPanel({
-  concept,
-  history,
-  currentQuestion,
-  acknowledgment,
-  loading,
-  onSubmit,
-}: {
-  concept: KoraConcept;
-  history: ConversationTurn[];
-  currentQuestion: string;
-  acknowledgment: string;
-  loading: boolean;
-  onSubmit: (response: string) => void;
-}) {
-  const [answer, setAnswer] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history, currentQuestion, acknowledgment]);
-
-  function handleSubmit() {
-    const trimmed = answer.trim();
-    if (!trimmed || loading) return;
-    onSubmit(trimmed);
-    setAnswer("");
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-serif font-bold text-navy-900">{concept.name}</h2>
-          <p className="text-xs text-navy-400 uppercase tracking-widest">{concept.subject}</p>
-        </div>
-        <span className="text-xs text-navy-500 bg-navy-100 px-2.5 py-1 rounded-full">
-          Guided discovery
-        </span>
-      </div>
-
-      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
-        {history.map((turn, i) => (
-          <div
-            key={i}
-            className={`rounded-xl px-4 py-3 text-sm leading-relaxed ${
-              turn.role === "kora"
-                ? "bg-slate-50 border border-slate-200 text-navy-800"
-                : "bg-navy-900 text-white ml-8"
-            }`}
-          >
-            {turn.role === "kora" && (
-              <span className="text-xs font-semibold text-navy-400 block mb-1">KORA</span>
-            )}
-            {turn.content}
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-
-      {(acknowledgment || currentQuestion) && (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 space-y-2">
-          <span className="text-xs font-semibold text-navy-400 block">KORA</span>
-          {acknowledgment && (
-            <p className="text-navy-600 text-sm leading-relaxed">{acknowledgment}</p>
-          )}
-          {currentQuestion && (
-            <p className="text-navy-800 text-sm leading-relaxed font-medium">{currentQuestion}</p>
-          )}
-        </div>
-      )}
-
-      <div className="space-y-2">
-        <textarea
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
-          }}
-          placeholder="Think it through… (⌘Enter to submit)"
-          rows={3}
-          disabled={loading || !currentQuestion}
-          className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-navy-900 placeholder-navy-300 resize-none focus:outline-none focus:ring-2 focus:ring-navy-400 disabled:opacity-50"
+      {/* Atom + context */}
+      <div className="flex flex-col items-center gap-1">
+        <AtomProgress
+          answered={answeredCount}
+          total={MAX_ASSESSMENT}
+          label="understanding probes"
         />
+        <p className="text-sm text-navy-500 text-center max-w-xs">
+          {answeredCount === 0
+            ? "Your mental model starts empty. Each answer fills a ring."
+            : answeredCount < 4
+            ? "KORA is mapping your understanding. Keep going."
+            : answeredCount < 8
+            ? "Your model is taking shape."
+            : "Almost complete."}
+        </p>
+      </div>
+
+      {/* Current question */}
+      {currentQuestion && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className={pillClass}>
+              {DIMENSION_PILLS[dimension] ?? dimension}
+            </span>
+            <span className="text-[11px] text-navy-300">
+              Question {answeredCount + 1} of {MAX_ASSESSMENT}
+            </span>
+          </div>
+          <p className="text-navy-900 font-medium leading-relaxed">
+            {currentQuestion}
+          </p>
+        </div>
+      )}
+
+      {loading && !currentQuestion && (
+        <div className="flex items-center justify-center gap-2 py-4 text-navy-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">KORA is reading your response…</span>
+        </div>
+      )}
+
+      {/* Answer area */}
+      <div className="space-y-2">
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+            }}
+            placeholder="1–2 sentences is all you need…"
+            rows={2}
+            disabled={loading || !currentQuestion}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-navy-900 placeholder-navy-300 resize-none focus:outline-none focus:ring-2 focus:ring-navy-300 disabled:opacity-40 bg-white"
+          />
+          <span className="absolute bottom-2 right-3 text-[10px] text-navy-300 pointer-events-none">
+            ⌘↵
+          </span>
+        </div>
         <button
           onClick={handleSubmit}
           disabled={!answer.trim() || loading || !currentQuestion}
-          className="w-full flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-800 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+          className="w-full flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-800 disabled:opacity-30 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
         >
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              KORA is thinking…
+              Thinking…
             </>
           ) : (
             <>
@@ -443,45 +366,359 @@ function RemediationPanel({
   );
 }
 
+// ──────────────────────────────────────────────
+// Analyzing state
+// ──────────────────────────────────────────────
+
+function AnalyzingScreen({ concept, answeredCount }: { concept: KoraConcept; answeredCount: number }) {
+  return (
+    <div className="max-w-lg mx-auto flex flex-col items-center gap-6 py-8">
+      <AtomProgress answered={answeredCount} total={MAX_ASSESSMENT} label="probes complete" />
+      <div className="text-center space-y-2">
+        <div className="flex items-center justify-center gap-2 text-navy-600">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span className="font-semibold">Building your understanding profile…</span>
+        </div>
+        <p className="text-navy-400 text-sm">
+          KORA is synthesizing evidence from your {answeredCount} responses about{" "}
+          <span className="font-medium text-navy-600">{concept.name}</span>.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Mental model profile (phase: profile)
+// ──────────────────────────────────────────────
+
+function MentalModelProfile({
+  concept,
+  model,
+  answeredCount,
+  onBeginRemediation,
+}: {
+  concept: KoraConcept;
+  model: MentalModel;
+  answeredCount: number;
+  onBeginRemediation: () => void;
+}) {
+  const cfg = LEVEL_CONFIG[model.overall_level] ?? LEVEL_CONFIG["Emerging"];
+  const isStrong = model.overall_level === "Strong";
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header + atom */}
+      <div className="flex flex-col items-center gap-4">
+        <AtomProgress answered={answeredCount} total={MAX_ASSESSMENT} label="probes analyzed" />
+        <div className="text-center space-y-1">
+          <p className="text-[11px] font-semibold tracking-widest uppercase text-navy-400">
+            KORA Understanding Profile
+          </p>
+          <h2 className="text-2xl font-serif font-bold text-navy-900">
+            {concept.name}
+          </h2>
+        </div>
+      </div>
+
+      {/* Overall level card */}
+      <div
+        className={`rounded-2xl border ${cfg.borderColor} ${cfg.bgColor} p-5 space-y-2`}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-navy-500 uppercase tracking-wide">
+            Overall Level
+          </span>
+          <span className={`text-sm font-bold px-3 py-0.5 rounded-full ${cfg.badgeClass}`}>
+            {cfg.label}
+          </span>
+        </div>
+        <p className="text-sm text-navy-600">{cfg.description}</p>
+        <p className="text-sm text-navy-700 leading-relaxed">{model.summary}</p>
+      </div>
+
+      {/* Strengths */}
+      {model.strengths.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-1.5 text-green-700 font-semibold text-sm">
+            <CheckCircle2 className="w-4 h-4" />
+            Demonstrated strengths
+          </div>
+          <ul className="space-y-1.5">
+            {model.strengths.map((s, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2.5 bg-green-50 border border-green-100 rounded-xl px-3.5 py-2.5"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 shrink-0" />
+                <span className="text-sm text-navy-700 leading-relaxed">{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Gaps */}
+      {model.gaps.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-1.5 text-amber-700 font-semibold text-sm">
+            <AlertCircle className="w-4 h-4" />
+            Gaps in your model
+          </div>
+          <ul className="space-y-1.5">
+            {model.gaps.map((g, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2.5 bg-amber-50 border border-amber-100 rounded-xl px-3.5 py-2.5"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 shrink-0" />
+                <span className="text-sm text-navy-700 leading-relaxed">{g}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Misconceptions */}
+      {model.misconceptions.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-1.5 text-rose-700 font-semibold text-sm">
+            <Brain className="w-4 h-4" />
+            Misconceptions detected
+          </div>
+          <ul className="space-y-1.5">
+            {model.misconceptions.map((m, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2.5 bg-rose-50 border border-rose-100 rounded-xl px-3.5 py-2.5"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+                <span className="text-sm text-navy-700 leading-relaxed">{m}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Path to mastery */}
+      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2">
+        <div className="flex items-center gap-1.5 text-navy-700 font-semibold text-sm">
+          <Lightbulb className="w-4 h-4" />
+          Path to mastery
+        </div>
+        <p className="text-sm text-navy-700 leading-relaxed">
+          {model.path_to_mastery}
+        </p>
+      </div>
+
+      {isStrong ? (
+        <div className="text-center space-y-2 py-2">
+          <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto" />
+          <p className="font-semibold text-navy-800">
+            You already demonstrate Strong understanding.
+          </p>
+          <p className="text-navy-400 text-sm">No remediation needed.</p>
+        </div>
+      ) : (
+        <button
+          onClick={onBeginRemediation}
+          className="w-full bg-navy-900 hover:bg-navy-800 text-white font-semibold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          <Sparkles className="w-4 h-4" />
+          Begin guided discovery
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Remediation panel (phase: remediation)
+// ──────────────────────────────────────────────
+
+function RemediationPanel({
+  concept,
+  acknowledgment,
+  currentQuestion,
+  exchangeCount,
+  loading,
+  onSubmit,
+}: {
+  concept: KoraConcept;
+  acknowledgment: string;
+  currentQuestion: string;
+  exchangeCount: number;
+  loading: boolean;
+  onSubmit: (response: string) => void;
+}) {
+  const [answer, setAnswer] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!loading && currentQuestion) {
+      textareaRef.current?.focus();
+    }
+  }, [loading, currentQuestion]);
+
+  function handleSubmit() {
+    const trimmed = answer.trim();
+    if (!trimmed || loading) return;
+    onSubmit(trimmed);
+    setAnswer("");
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-semibold tracking-widest uppercase text-navy-400">
+            Guided Discovery
+          </p>
+          <h2 className="text-xl font-serif font-bold text-navy-900">
+            {concept.name}
+          </h2>
+        </div>
+        <div className="text-right">
+          <p className="text-xs font-mono text-navy-400">
+            Exchange {exchangeCount + 1}
+            <span className="text-navy-300">/{MAX_REMEDIATION}</span>
+          </p>
+          <p className="text-[10px] text-navy-300">Socratic mode</p>
+        </div>
+      </div>
+
+      {/* Exchange progress bar */}
+      <div className="w-full bg-slate-100 rounded-full h-1">
+        <div
+          className="bg-navy-600 h-1 rounded-full transition-all duration-500"
+          style={{ width: `${(exchangeCount / MAX_REMEDIATION) * 100}%` }}
+        />
+      </div>
+
+      {/* KORA's message */}
+      {(acknowledgment || currentQuestion) && (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-3">
+          <span className="text-[11px] font-semibold text-navy-400 uppercase tracking-wide block">
+            KORA
+          </span>
+          {acknowledgment && (
+            <p className="text-navy-600 text-sm leading-relaxed">{acknowledgment}</p>
+          )}
+          {currentQuestion && (
+            <p className="text-navy-900 font-medium leading-relaxed">{currentQuestion}</p>
+          )}
+        </div>
+      )}
+
+      {loading && !currentQuestion && (
+        <div className="flex items-center justify-center gap-2 py-4 text-navy-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">KORA is thinking…</span>
+        </div>
+      )}
+
+      {/* Answer area */}
+      <div className="space-y-2">
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
+            }}
+            placeholder="Think it through…"
+            rows={2}
+            disabled={loading || !currentQuestion}
+            className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm text-navy-900 placeholder-navy-300 resize-none focus:outline-none focus:ring-2 focus:ring-navy-300 disabled:opacity-40 bg-white"
+          />
+          <span className="absolute bottom-2 right-3 text-[10px] text-navy-300 pointer-events-none">
+            ⌘↵
+          </span>
+        </div>
+        <button
+          onClick={handleSubmit}
+          disabled={!answer.trim() || loading || !currentQuestion}
+          className="w-full flex items-center justify-center gap-2 bg-navy-900 hover:bg-navy-800 disabled:opacity-30 text-white font-semibold py-3 rounded-xl transition-colors text-sm"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Thinking…
+            </>
+          ) : (
+            <>
+              Submit
+              <ChevronRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────────────
+// Complete screen
+// ──────────────────────────────────────────────
+
 function CompleteScreen({
   concept,
   model,
+  assessedCount,
   onRestart,
 }: {
   concept: KoraConcept;
   model: MentalModel;
+  assessedCount: number;
   onRestart: () => void;
 }) {
   return (
-    <div className="max-w-xl mx-auto text-center space-y-6">
-      <div className="space-y-3">
-        <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
-        <h2 className="text-2xl font-serif font-bold text-navy-900">Mastery unlocked</h2>
-        <p className="text-navy-500">
-          You arrived at Strong understanding of{" "}
-          <span className="font-semibold text-navy-800">{concept.name}</span> through your own
-          reasoning.
+    <div className="max-w-lg mx-auto space-y-6 text-center">
+      <AtomProgress answered={assessedCount} total={MAX_ASSESSMENT} label="model complete" />
+
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 text-green-700 font-semibold bg-green-50 border border-green-200 rounded-full px-4 py-1.5">
+          <CheckCircle2 className="w-4 h-4" />
+          Mastery unlocked
+        </div>
+        <h2 className="text-2xl font-serif font-bold text-navy-900">
+          You arrived there yourself
+        </h2>
+        <p className="text-navy-500 text-sm">
+          KORA guided you to understand{" "}
+          <span className="font-semibold text-navy-800">{concept.name}</span>{" "}
+          without ever giving you the answer.
         </p>
       </div>
 
-      <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-4 text-left space-y-2">
-        <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">
-          What you demonstrated
-        </p>
-        <ul className="space-y-1.5">
-          {model.strengths.map((s, i) => (
-            <li key={i} className="text-sm text-navy-700 flex items-start gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-              {s}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {model.strengths.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-left space-y-3">
+          <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">
+            What you demonstrated
+          </p>
+          <ul className="space-y-2">
+            {model.strengths.slice(0, 4).map((s, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-navy-700">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      <p className="text-navy-500 text-sm">
-        This is what KORA does for every student — not just grading answers, but building a map of
-        what they understand and guiding them to fill the gaps themselves.
-      </p>
+      <div className="bg-navy-50 border border-navy-100 rounded-2xl p-5 text-left space-y-1">
+        <p className="text-xs font-semibold text-navy-500 uppercase tracking-widest">
+          This is KORA
+        </p>
+        <p className="text-sm text-navy-600 leading-relaxed">
+          Not just grading answers — mapping what you understand, finding the
+          gaps, and guiding you to fill them yourself. This is what Sinon
+          Learning's understanding engine does for every student.
+        </p>
+      </div>
 
       <button
         onClick={onRestart}
@@ -492,6 +729,10 @@ function CompleteScreen({
     </div>
   );
 }
+
+// ──────────────────────────────────────────────
+// Main app
+// ──────────────────────────────────────────────
 
 function pickRandomConcept(exclude?: string): KoraConcept {
   const pool = exclude
@@ -506,11 +747,14 @@ export default function KoraDemoApp() {
   const [assessmentHistory, setAssessmentHistory] = useState<ConversationTurn[]>([]);
   const [remediationHistory, setRemediationHistory] = useState<ConversationTurn[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState("");
-  const [currentDimension, setCurrentDimension] = useState("");
+  const [currentDimension, setCurrentDimension] = useState("accuracy");
   const [acknowledgment, setAcknowledgment] = useState("");
   const [mentalModel, setMentalModel] = useState<MentalModel | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const answeredCount = assessmentHistory.filter((t) => t.role === "student").length;
+  const remediationExchangeCount = remediationHistory.filter((t) => t.role === "student").length;
 
   async function callKoraDemo(payload: Record<string, unknown>) {
     const res = await fetch("/api/kora-demo", {
@@ -520,7 +764,9 @@ export default function KoraDemoApp() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error((err as { error?: string }).error ?? `Request failed (${res.status})`);
+      throw new Error(
+        (err as { error?: string }).error ?? `Request failed (${res.status})`
+      );
     }
     const { data } = await res.json();
     return data;
@@ -548,6 +794,7 @@ export default function KoraDemoApp() {
   async function handleAssessmentResponse(response: string) {
     setLoading(true);
     setError("");
+
     const updatedHistory: ConversationTurn[] = [
       ...assessmentHistory,
       { role: "kora", content: currentQuestion },
@@ -556,7 +803,16 @@ export default function KoraDemoApp() {
     setAssessmentHistory(updatedHistory);
     setCurrentQuestion("");
 
+    const newAnsweredCount = updatedHistory.filter((t) => t.role === "student").length;
+    const hitCap = newAnsweredCount >= MAX_ASSESSMENT;
+
     try {
+      if (hitCap) {
+        // Force analyze at cap
+        await triggerAnalysis(updatedHistory);
+        return;
+      }
+
       const data = await callKoraDemo({
         phase: "question",
         concept,
@@ -564,24 +820,29 @@ export default function KoraDemoApp() {
       });
 
       if (data.ready_to_analyze) {
-        setPhase("analyzing");
-        const analysis = await callKoraDemo({
-          phase: "analyze",
-          concept,
-          assessment_history: updatedHistory,
-        });
-        setMentalModel(analysis);
-        setPhase("profile");
+        await triggerAnalysis(updatedHistory);
       } else {
         setCurrentQuestion(data.question);
         setCurrentDimension(data.dimension);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
-      setCurrentQuestion("KORA encountered an issue. Please try again.");
+      setCurrentQuestion("Let's try another angle. What part of this concept is clearest to you?");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function triggerAnalysis(history: ConversationTurn[]) {
+    setPhase("analyzing");
+    const analysis = await callKoraDemo({
+      phase: "analyze",
+      concept,
+      assessment_history: history,
+    });
+    setMentalModel(analysis);
+    setPhase("profile");
+    setLoading(false);
   }
 
   async function startRemediation() {
@@ -609,18 +870,39 @@ export default function KoraDemoApp() {
     setLoading(true);
     setError("");
 
+    const koraMessage = [acknowledgment, currentQuestion].filter(Boolean).join(" ");
     const newHistory: ConversationTurn[] = [
       ...remediationHistory,
-      ...(acknowledgment || currentQuestion
-        ? [{ role: "kora" as const, content: [acknowledgment, currentQuestion].filter(Boolean).join(" ") }]
-        : []),
+      ...(koraMessage ? [{ role: "kora" as const, content: koraMessage }] : []),
       { role: "student", content: response },
     ];
     setRemediationHistory(newHistory);
     setAcknowledgment("");
     setCurrentQuestion("");
 
+    const newExchangeCount = newHistory.filter((t) => t.role === "student").length;
+    const hitCap = newExchangeCount >= MAX_REMEDIATION;
+
     try {
+      if (hitCap) {
+        // Force mastery unlock at cap
+        setMentalModel((prev) =>
+          prev
+            ? {
+                ...prev,
+                overall_level: "Strong",
+                strengths: [
+                  ...prev.strengths,
+                  "Engaged in extended Socratic discovery",
+                ],
+              }
+            : prev
+        );
+        setPhase("complete");
+        setLoading(false);
+        return;
+      }
+
       const data = await callKoraDemo({
         phase: "remediate",
         concept,
@@ -630,7 +912,6 @@ export default function KoraDemoApp() {
       });
 
       if (data.mastery_unlocked) {
-        // Update mental model strengths for the complete screen
         setMentalModel((prev) =>
           prev
             ? {
@@ -638,7 +919,7 @@ export default function KoraDemoApp() {
                 overall_level: "Strong",
                 strengths: [
                   ...prev.strengths,
-                  "Demonstrated mastery through Socratic discovery",
+                  "Reached mastery through guided discovery",
                 ],
               }
             : prev
@@ -662,7 +943,7 @@ export default function KoraDemoApp() {
     setAssessmentHistory([]);
     setRemediationHistory([]);
     setCurrentQuestion("");
-    setCurrentDimension("");
+    setCurrentDimension("accuracy");
     setAcknowledgment("");
     setMentalModel(null);
     setError("");
@@ -671,35 +952,36 @@ export default function KoraDemoApp() {
   return (
     <div className="min-h-screen bg-cream-50 py-12 px-4">
       <div className="max-w-3xl mx-auto">
+        {/* Page header */}
         <div className="text-center mb-10 space-y-1">
-          <p className="text-xs font-semibold tracking-widest uppercase text-navy-400">
-            KORA · Understanding Engine
+          <p className="text-[11px] font-semibold tracking-widest uppercase text-navy-400">
+            Sinon Learning · KORA
           </p>
           <h1 className="text-4xl font-serif font-bold text-navy-900">
-            Live demo
+            Understanding Engine
           </h1>
-          <p className="text-navy-500 max-w-md mx-auto text-sm">
-            Research a concept, then let KORA assess your understanding and guide you to mastery — without ever giving you the answer.
+          <p className="text-navy-500 text-sm max-w-sm mx-auto">
+            Research a concept, get assessed, reach mastery — without being
+            given the answer.
           </p>
         </div>
 
+        {/* Error banner */}
         {error && (
-          <div className="mb-6 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-rose-700 text-sm">
+          <div className="mb-5 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-rose-700 text-sm">
             {error}
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-6 py-8">
+        {/* Main card */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 px-6 py-8">
           {phase === "concept" && (
-            <ConceptCard concept={concept} onBegin={() => setPhase("research")} />
-          )}
-          {phase === "research" && (
-            <ResearchTimer onDone={startAssessment} />
+            <ConceptCard concept={concept} onBegin={startAssessment} />
           )}
           {phase === "assessment" && (
             <AssessmentPanel
               concept={concept}
-              history={assessmentHistory}
+              answeredCount={answeredCount}
               currentQuestion={currentQuestion}
               dimension={currentDimension}
               onSubmit={handleAssessmentResponse}
@@ -707,25 +989,22 @@ export default function KoraDemoApp() {
             />
           )}
           {phase === "analyzing" && (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <Loader2 className="w-10 h-10 text-navy-400 animate-spin" />
-              <p className="text-navy-600 font-medium">KORA is building your understanding profile…</p>
-              <p className="text-navy-400 text-sm">Synthesizing evidence from your responses</p>
-            </div>
+            <AnalyzingScreen concept={concept} answeredCount={answeredCount} />
           )}
           {phase === "profile" && mentalModel && (
             <MentalModelProfile
               concept={concept}
               model={mentalModel}
+              answeredCount={answeredCount}
               onBeginRemediation={startRemediation}
             />
           )}
           {phase === "remediation" && (
             <RemediationPanel
               concept={concept}
-              history={remediationHistory}
-              currentQuestion={currentQuestion}
               acknowledgment={acknowledgment}
+              currentQuestion={currentQuestion}
+              exchangeCount={remediationExchangeCount}
               loading={loading}
               onSubmit={handleRemediationResponse}
             />
@@ -734,12 +1013,13 @@ export default function KoraDemoApp() {
             <CompleteScreen
               concept={concept}
               model={mentalModel}
+              assessedCount={answeredCount}
               onRestart={restart}
             />
           )}
         </div>
 
-        <p className="text-center text-xs text-navy-300 mt-6">
+        <p className="text-center text-[11px] text-navy-300 mt-6">
           Powered by KORA · Sinon Learning&apos;s pedagogical understanding engine
         </p>
       </div>
