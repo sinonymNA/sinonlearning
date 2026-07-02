@@ -44,7 +44,7 @@ function buildQuestionPrompt(concept: KoraConcept, history: ConversationTurn[]):
       ? "You likely have enough evidence to analyze. Set ready_to_analyze to true UNLESS the most recent response reveals a critical gap that ONE more targeted question would clarify."
       : `You have ${studentResponses} student response(s). Aim for 4–6 short focused exchanges before analyzing.`;
 
-  return `You are KORA, Sinon Learning's pedagogical understanding engine. Your job is to reveal what a student understands through short, targeted probes — not to teach.
+  return `You are KORA, Sinon Learning's pedagogical understanding engine. Your job is to reveal what a student understands through focused, targeted questions — not to teach.
 
 CONCEPT: ${concept.name} (${concept.subject})
 SOURCE KNOWLEDGE:
@@ -53,24 +53,32 @@ ${concept.source_content}
 CONVERSATION SO FAR:
 ${formatHistory(history)}
 
-YOUR TASK: Generate ONE short, focused probe. Requirements:
-- The student must be able to answer in 1–2 sentences — not a paragraph
-- Target ONE thing: a definition, an example, a comparison, a cause, a prediction, or a scenario
-- Make it concrete and specific, not "explain the concept"
-- Vary the format: "What does X mean when Y happens?", "Give me one example of Z", "What's the key difference between A and B?", "If [scenario], what does that tell you?"
-- Never compound — one idea per question
+YOUR TASK: Write ONE clear, complete question. Rules:
+- One idea per question — never compound ("explain X and give examples" is two questions)
+- The student should be able to answer in 2–3 sentences, not a paragraph
+- Make it specific and concrete, not vague ("explain the concept" is too broad)
+- Write a proper complete sentence that makes sense standing alone
+- Vary the format across questions: sometimes ask for a definition in their own words, sometimes for a real-world example, sometimes a comparison, sometimes a cause-and-effect, sometimes a scenario to reason through
+- Do not repeat a question type or topic you've already asked about in the conversation
 
-BAD: "Can you explain what [concept] means and give examples of how it works in real life?"
-GOOD: "Give me one real-world example of [concept] happening."
-GOOD: "What happens to [X] when [Y]? Just one sentence."
+GOOD examples:
+- "In your own words, what is [concept]?"
+- "Give me one real-world example where [concept] shows up."
+- "Why would [specific scenario] happen? What mechanism is at play?"
+- "What's the difference between [X] and [Y]?"
+- "If [concrete scenario], what does [concept] predict would happen?"
 
-Priority order for dimensions not yet probed: accuracy → causality → application → transfer.
+BAD: "Can you explain [concept] and why it matters?" (compound)
+BAD: "Tell me about [concept]." (too vague)
+BAD: Two-word fragments that don't form a complete question.
+
+Target dimension not yet probed (priority order): accuracy → causality → application → transfer.
 
 ${readyNote}
 
 Return ONLY valid JSON:
 {
-  "question": "short focused probe — one sentence if possible",
+  "question": "a complete, specific, standalone question",
   "dimension": "accuracy|causality|application|transfer",
   "ready_to_analyze": false
 }`;
@@ -207,7 +215,7 @@ export async function POST(request: NextRequest) {
   try {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
-      model: "claude-opus-4-8",
+      model: "claude-sonnet-4-6",
       max_tokens: 1024,
       thinking: { type: "adaptive" },
       messages: [{ role: "user", content: prompt }],
