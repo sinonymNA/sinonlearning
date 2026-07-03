@@ -7,21 +7,6 @@ import type { HistoricalCollection, HistoricalFeatureProps } from "@/types/histo
 import { filterByYear } from "@/lib/filterByYear";
 import { STATUS_FILL_EXPRESSION } from "@/lib/globeColors";
 
-// Minimal dark style — ocean background only, land loaded as GeoJSON overlay
-const DARK_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  name: "dark-historical-globe",
-  projection: { type: "globe" },
-  sources: {},
-  layers: [
-    {
-      id: "ocean",
-      type: "background",
-      paint: { "background-color": "#04101e" },
-    },
-  ],
-};
-
 interface GlobeMapProps {
   year: number;
   onEntityClick: (entity: HistoricalFeatureProps | null) => void;
@@ -48,7 +33,7 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: DARK_STYLE,
+      style: "https://demotiles.maplibre.org/style.json",
       center: [15, 20],
       zoom: 1.8,
       attributionControl: false,
@@ -62,35 +47,6 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
       // Enforce globe projection (style.projection is the primary mechanism in v5,
       // but calling setProjection after load ensures it applies even if style parsing differs)
       map.setProjection({ type: "globe" });
-
-      // ── Land basemap ─────────────────────────────────────────────────────────
-      map.addSource("land", {
-        type: "geojson",
-        data: "/data/historical/ne_110m_land.geojson",
-      });
-
-      // Subtle land mass fill so geography is visible without competing with data
-      map.addLayer({
-        id: "land-fill",
-        type: "fill",
-        source: "land",
-        paint: {
-          "fill-color": "#0e2038",
-          "fill-opacity": 1,
-        },
-      });
-
-      // Faint coastline
-      map.addLayer({
-        id: "land-line",
-        type: "line",
-        source: "land",
-        paint: {
-          "line-color": "#1a3354",
-          "line-width": 0.8,
-          "line-opacity": 0.8,
-        },
-      });
 
       // ── Historical data ───────────────────────────────────────────────────────
       const tryAddSource = () => {
@@ -189,16 +145,16 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
   return (
     <div className="relative w-full h-full">
       {status === "loading" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#04101e] z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-sky-200 z-10">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-slate-400 text-sm tracking-wide">Loading globe...</p>
+            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-600 text-sm tracking-wide">Loading globe...</p>
           </div>
         </div>
       )}
       {status === "error" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#04101e] z-10">
-          <p className="text-red-400 text-sm">Failed to load historical data.</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-sky-200 z-10">
+          <p className="text-red-600 text-sm">Failed to load historical data.</p>
         </div>
       )}
       <div ref={containerRef} className="w-full h-full" />

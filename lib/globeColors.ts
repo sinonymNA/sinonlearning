@@ -2,14 +2,14 @@ import type { EntityStatus } from "@/types/historicalGeo";
 
 export const STATUS_FILL: Record<EntityStatus, string> = {
   independent: "#1d4ed8",  // blue-700 — vivid, stands out from dark land
-  colonial:    "#d97706",  // amber-600 — warm orange
+  colonial:    "#b45309",  // amber-700 — darker for light basemap
   disputed:    "#dc2626",  // red-600
   occupied:    "#64748b",  // slate-500
 };
 
 export const STATUS_FILL_HOVER: Record<EntityStatus, string> = {
   independent: "#3b82f6",  // blue-500
-  colonial:    "#f59e0b",  // amber-400
+  colonial:    "#d97706",  // amber-600
   disputed:    "#ef4444",  // red-400
   occupied:    "#94a3b8",  // slate-400
 };
