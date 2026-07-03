@@ -1,0 +1,387 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[44.0,29.5],[49.0,29.5],[49.0,34.5],[44.0,34.5],[44.0,29.5]]] },
+      "properties": { "id": "sumer", "name": "Sumer (Sumerian City-States)", "type": "civilization", "year_from": -3500, "year_to": -2334, "valid_from": "-3500", "valid_to": "-2334", "status": "independent", "certainty": "medium", "capital": "Ur", "source": "ancient-world-curated", "description": "Earliest urban civilization in southern Mesopotamia, comprising city-states like Ur, Uruk, Lagash, and Nippur." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[30.5,25.0],[34.5,25.0],[35.5,28.0],[37.0,30.5],[36.0,32.0],[32.0,32.5],[29.5,31.0],[28.0,28.5],[28.5,25.5],[30.5,25.0]]] },
+      "properties": { "id": "egypt_old_kingdom", "name": "Old Kingdom Egypt", "type": "kingdom", "year_from": -2686, "year_to": -2181, "valid_from": "-2686", "valid_to": "-2181", "status": "independent", "certainty": "medium", "capital": "Memphis", "source": "ancient-world-curated", "description": "Age of pyramid building. Unification of Upper and Lower Egypt under pharaonic rule." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[65.0,20.0],[78.0,20.0],[78.0,30.0],[65.0,30.0],[65.0,20.0]]] },
+      "properties": { "id": "indus_valley", "name": "Indus Valley Civilization", "type": "civilization", "year_from": -2600, "year_to": -1900, "valid_from": "-2600", "valid_to": "-1900", "status": "independent", "certainty": "medium", "capital": "Mohenjo-daro", "source": "ancient-world-curated", "description": "Bronze Age civilization in the Indus River basin, featuring cities with advanced urban planning and drainage." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[108.0,32.0],[120.0,32.0],[120.0,42.0],[108.0,42.0],[108.0,32.0]]] },
+      "properties": { "id": "xia_dynasty", "name": "Xia Dynasty", "type": "dynasty", "year_from": -2070, "year_to": -1600, "valid_from": "-2070", "valid_to": "-1600", "status": "independent", "certainty": "low", "capital": "Yangcheng", "source": "ancient-world-curated", "description": "First dynasty of ancient China according to tradition. Existence partially confirmed by archaeology." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[38.0,29.5],[50.0,29.5],[50.0,37.5],[38.0,37.5],[38.0,29.5]]] },
+      "properties": { "id": "akkadian_empire", "name": "Akkadian Empire", "type": "empire", "year_from": -2334, "year_to": -2154, "valid_from": "-2334", "valid_to": "-2154", "status": "independent", "certainty": "medium", "capital": "Akkad", "source": "ancient-world-curated", "description": "World's first empire, founded by Sargon of Akkad. United Sumerian city-states under centralized rule." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[27.5,36.0],[36.0,36.0],[36.0,42.0],[27.5,42.0],[27.5,36.0]]] },
+      "properties": { "id": "hittite_empire", "name": "Hittite Empire", "type": "empire", "year_from": -1650, "year_to": -1178, "valid_from": "-1650", "valid_to": "-1178", "status": "independent", "certainty": "medium", "capital": "Hattusa", "source": "ancient-world-curated", "description": "Major Anatolian power that rivaled Egypt. Signed one of history's first known peace treaties at Kadesh." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[42.0,29.5],[50.0,29.5],[50.0,35.0],[42.0,35.0],[42.0,29.5]]] },
+      "properties": { "id": "babylonian_old", "name": "Old Babylonian Empire", "type": "empire", "year_from": -1895, "year_to": -1595, "valid_from": "-1895", "valid_to": "-1595", "status": "independent", "certainty": "medium", "capital": "Babylon", "source": "ancient-world-curated", "description": "Height under Hammurabi, who codified one of the earliest law codes. Controlled much of Mesopotamia." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[29.0,22.0],[37.0,22.0],[37.5,30.0],[36.0,32.0],[32.0,32.5],[29.5,31.0],[28.0,28.5],[27.5,25.0],[29.0,22.0]]] },
+      "properties": { "id": "egypt_new_kingdom", "name": "New Kingdom Egypt", "type": "kingdom", "year_from": -1550, "year_to": -1069, "valid_from": "-1550", "valid_to": "-1069", "status": "independent", "certainty": "high", "capital": "Thebes", "source": "ancient-world-curated", "description": "Egypt's imperial age. Expanded into Nubia and the Levant. Pharaohs included Ramesses II and Tutankhamun." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[112.0,30.0],[122.0,30.0],[122.0,40.0],[112.0,40.0],[112.0,30.0]]] },
+      "properties": { "id": "shang_dynasty", "name": "Shang Dynasty", "type": "dynasty", "year_from": -1600, "year_to": -1046, "valid_from": "-1600", "valid_to": "-1046", "status": "independent", "certainty": "high", "capital": "Yin (Anyang)", "source": "ancient-world-curated", "description": "First historically confirmed Chinese dynasty. Known for oracle bones, bronze casting, and earliest Chinese writing." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[24.0,22.0],[36.0,22.0],[36.0,24.0],[35.0,24.5],[34.0,24.5],[24.0,24.0],[24.0,22.0]]] },
+      "properties": { "id": "kush", "name": "Kingdom of Kush", "type": "kingdom", "year_from": -1070, "year_to": 350, "valid_from": "-1070", "valid_to": "0350", "status": "independent", "certainty": "medium", "capital": "Napata", "source": "ancient-world-curated", "description": "Nubian kingdom south of Egypt. Conquered and ruled Egypt as the 25th Dynasty. Known for pyramid-building at Meroe." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[96.0,28.0],[122.0,28.0],[122.0,42.0],[96.0,42.0],[96.0,28.0]]] },
+      "properties": { "id": "zhou_dynasty", "name": "Zhou Dynasty", "type": "dynasty", "year_from": -1046, "year_to": -256, "valid_from": "-1046", "valid_to": "-256", "status": "independent", "certainty": "high", "capital": "Hao / Luoyi", "source": "ancient-world-curated", "description": "Longest-reigning Chinese dynasty. Gave rise to Confucius, Taoism, and the Hundred Schools of Thought." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[38.0,29.5],[52.0,29.5],[52.0,40.0],[36.0,40.0],[35.0,36.0],[38.0,29.5]]] },
+      "properties": { "id": "neo_assyrian", "name": "Neo-Assyrian Empire", "type": "empire", "year_from": -911, "year_to": -609, "valid_from": "-911", "valid_to": "-609", "status": "independent", "certainty": "high", "capital": "Nineveh", "source": "ancient-world-curated", "description": "Dominant power of the ancient Near East. Famous for brutal military campaigns and the royal library at Nineveh." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[42.0,29.5],[50.0,29.5],[50.0,36.0],[42.0,36.0],[42.0,29.5]]] },
+      "properties": { "id": "neo_babylonian", "name": "Neo-Babylonian Empire", "type": "empire", "year_from": -626, "year_to": -539, "valid_from": "-626", "valid_to": "-539", "status": "independent", "certainty": "high", "capital": "Babylon", "source": "ancient-world-curated", "description": "Babylon's final imperial period. Nebuchadnezzar II destroyed Jerusalem and built the Hanging Gardens." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[21.0,35.0],[26.0,35.0],[26.0,42.0],[21.0,42.0],[21.0,35.0]]] },
+      "properties": { "id": "macedon", "name": "Kingdom of Macedon", "type": "kingdom", "year_from": -700, "year_to": -148, "valid_from": "-700", "valid_to": "-148", "status": "independent", "certainty": "high", "capital": "Pella", "source": "ancient-world-curated", "description": "Northern Greek kingdom that became the dominant Greek power under Philip II and then Alexander the Great." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[22.0,35.5],[27.0,35.5],[28.0,38.0],[24.0,40.0],[20.5,38.5],[20.0,36.5],[22.0,35.5]]] },
+      "properties": { "id": "athens", "name": "Athens & the Delian League", "type": "city-state", "year_from": -508, "year_to": -404, "valid_from": "-508", "valid_to": "-404", "status": "independent", "certainty": "high", "capital": "Athens", "source": "ancient-world-curated", "description": "Birthplace of democracy. Led the Delian League against Persia and produced Socrates, Plato, and Aristotle." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[25.0,24.0],[75.0,24.0],[75.0,45.0],[25.0,45.0],[25.0,24.0]]] },
+      "properties": { "id": "achaemenid_persia", "name": "Achaemenid Persian Empire", "type": "empire", "year_from": -550, "year_to": -330, "valid_from": "-550", "valid_to": "-330", "status": "independent", "certainty": "high", "capital": "Persepolis", "source": "ancient-world-curated", "description": "Largest empire the world had yet seen. Founded by Cyrus the Great, stretching from Egypt to Central Asia." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[70.0,21.0],[90.0,21.0],[90.0,37.0],[70.0,37.0],[70.0,21.0]]] },
+      "properties": { "id": "maurya_empire", "name": "Maurya Empire", "type": "empire", "year_from": -321, "year_to": -185, "valid_from": "-321", "valid_to": "-185", "status": "independent", "certainty": "high", "capital": "Pataliputra", "source": "ancient-world-curated", "description": "First empire to unify most of the Indian subcontinent. Ashoka spread Buddhism throughout Asia." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,26.0],[80.0,26.0],[80.0,44.0],[26.0,44.0],[26.0,26.0]]] },
+      "properties": { "id": "alexander_empire", "name": "Macedonian Empire (Alexander)", "type": "empire", "year_from": -336, "year_to": -323, "valid_from": "-336", "valid_to": "-323", "status": "independent", "certainty": "high", "capital": "Babylon", "source": "ancient-world-curated", "description": "Alexander the Great's empire at its peak, stretching from Greece to northwestern India — the largest contiguous empire to that date." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[32.0,28.0],[75.0,28.0],[75.0,42.0],[32.0,42.0],[32.0,28.0]]] },
+      "properties": { "id": "seleucid_empire", "name": "Seleucid Empire", "type": "empire", "year_from": -305, "year_to": -63, "valid_from": "-305", "valid_to": "-63", "status": "independent", "certainty": "high", "capital": "Antioch", "source": "ancient-world-curated", "description": "Successor state to Alexander's empire in the east. Controlled the Fertile Crescent and much of the Iranian plateau." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[103.0,28.0],[122.0,28.0],[122.0,42.0],[103.0,42.0],[103.0,28.0]]] },
+      "properties": { "id": "qin_empire", "name": "Qin Empire", "type": "empire", "year_from": -221, "year_to": -206, "valid_from": "-221", "valid_to": "-206", "status": "independent", "certainty": "high", "capital": "Xianyang", "source": "ancient-world-curated", "description": "China's first unified imperial dynasty. Built the Great Wall and standardized weights, measures, and writing." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-10.0,36.0],[7.0,36.0],[10.0,38.5],[14.0,40.5],[15.0,37.0],[15.5,38.5],[13.0,44.0],[9.5,46.0],[1.0,46.0],[-5.0,44.0],[-9.0,39.0],[-10.0,36.0]]] },
+      "properties": { "id": "roman_republic", "name": "Roman Republic", "type": "republic", "year_from": -509, "year_to": -27, "valid_from": "-509", "valid_to": "-27", "status": "independent", "certainty": "high", "capital": "Rome", "source": "ancient-world-curated", "description": "Rome's republican period, expanding from a city-state to dominate the Mediterranean world." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[96.0,25.0],[122.0,25.0],[122.0,45.0],[96.0,45.0],[96.0,25.0]]] },
+      "properties": { "id": "han_dynasty", "name": "Han Dynasty", "type": "dynasty", "year_from": -206, "year_to": 220, "valid_from": "-206", "valid_to": "0220", "status": "independent", "certainty": "high", "capital": "Chang'an", "source": "ancient-world-curated", "description": "Golden age of Chinese civilization. Opened the Silk Road, advanced science and bureaucracy. Contemporary of Rome." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[42.0,29.0],[66.0,29.0],[66.0,42.0],[42.0,42.0],[42.0,29.0]]] },
+      "properties": { "id": "parthian_empire", "name": "Parthian Empire", "type": "empire", "year_from": -247, "year_to": 224, "valid_from": "-247", "valid_to": "0224", "status": "independent", "certainty": "high", "capital": "Ctesiphon", "source": "ancient-world-curated", "description": "Iranian empire that controlled the Silk Road between Rome and China. Defeated Roman armies at Carrhae." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-10.0,35.0],[42.0,35.0],[42.0,48.0],[14.0,52.0],[0.0,52.0],[-5.0,48.0],[-10.0,44.0],[-10.0,35.0]]] },
+      "properties": { "id": "roman_empire", "name": "Roman Empire", "type": "empire", "year_from": -27, "year_to": 395, "valid_from": "-27", "valid_to": "0395", "status": "independent", "certainty": "high", "capital": "Rome", "source": "ancient-world-curated", "description": "The classical Mediterranean superpower at its height under Trajan. Spread Roman law, Latin, and Christianity." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[60.0,25.0],[80.0,25.0],[80.0,38.0],[60.0,38.0],[60.0,25.0]]] },
+      "properties": { "id": "kushan_empire", "name": "Kushan Empire", "type": "empire", "year_from": 30, "year_to": 375, "valid_from": "0030", "valid_to": "0375", "status": "independent", "certainty": "medium", "capital": "Purushapura", "source": "ancient-world-curated", "description": "Major Silk Road empire linking Rome, Persia, India, and China. Important center for Buddhism's spread." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[36.0,3.0],[44.0,3.0],[44.0,18.0],[36.0,18.0],[36.0,3.0]]] },
+      "properties": { "id": "aksum", "name": "Kingdom of Aksum", "type": "kingdom", "year_from": 100, "year_to": 940, "valid_from": "0100", "valid_to": "0940", "status": "independent", "certainty": "medium", "capital": "Aksum", "source": "ancient-world-curated", "description": "Ethiopian trading empire that controlled the Red Sea trade. One of the first states to adopt Christianity." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[70.0,22.0],[90.0,22.0],[90.0,36.0],[70.0,36.0],[70.0,22.0]]] },
+      "properties": { "id": "gupta_empire", "name": "Gupta Empire", "type": "empire", "year_from": 320, "year_to": 550, "valid_from": "0320", "valid_to": "0550", "status": "independent", "certainty": "high", "capital": "Pataliputra", "source": "ancient-world-curated", "description": "Golden Age of India. Advances in mathematics (zero, decimal system), astronomy, literature, and philosophy." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,36.0],[42.0,36.0],[42.0,48.0],[30.0,48.0],[26.0,44.0],[26.0,36.0]]] },
+      "properties": { "id": "byzantine_empire_early", "name": "Byzantine Empire", "type": "empire", "year_from": 395, "year_to": 1204, "valid_from": "0395", "valid_to": "1204", "status": "independent", "certainty": "high", "capital": "Constantinople", "source": "ancient-world-curated", "description": "Eastern Roman Empire that preserved Roman and Greek culture for a millennium. Center of Orthodox Christianity." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[44.0,25.0],[65.0,25.0],[65.0,40.0],[44.0,40.0],[44.0,25.0]]] },
+      "properties": { "id": "sassanid_empire", "name": "Sassanid Persian Empire", "type": "empire", "year_from": 224, "year_to": 651, "valid_from": "0224", "valid_to": "0651", "status": "independent", "certainty": "high", "capital": "Ctesiphon", "source": "ancient-world-curated", "description": "Last great pre-Islamic Persian empire. Rival of Rome and Byzantium. Zoroastrianism as state religion." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,45.0],[15.0,45.0],[15.0,55.0],[-5.0,55.0],[-5.0,45.0]]] },
+      "properties": { "id": "western_roman", "name": "Western Roman Empire", "type": "empire", "year_from": 395, "year_to": 476, "valid_from": "0395", "valid_to": "0476", "status": "independent", "certainty": "high", "capital": "Ravenna", "source": "ancient-world-curated", "description": "The western half of the Roman Empire after the 395 split. Fell to Germanic migrations in 476 CE." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[95.0,22.0],[122.0,22.0],[122.0,42.0],[95.0,42.0],[95.0,22.0]]] },
+      "properties": { "id": "tang_dynasty", "name": "Tang Dynasty", "type": "dynasty", "year_from": 618, "year_to": 907, "valid_from": "0618", "valid_to": "0907", "status": "independent", "certainty": "high", "capital": "Chang'an", "source": "ancient-world-curated", "description": "Often considered China's golden age of culture, trade, and military power. Chang'an was the world's most cosmopolitan city." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-12.0,28.0],[60.0,28.0],[60.0,46.0],[-12.0,46.0],[-12.0,28.0]]] },
+      "properties": { "id": "umayyad_caliphate", "name": "Umayyad Caliphate", "type": "caliphate", "year_from": 661, "year_to": 750, "valid_from": "0661", "valid_to": "0750", "status": "independent", "certainty": "high", "capital": "Damascus", "source": "ancient-world-curated", "description": "Largest Islamic empire at its time, stretching from Spain to Central Asia. Spread Arabic language and Islam rapidly." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,35.0],[65.0,35.0],[65.0,46.0],[-5.0,46.0],[-5.0,35.0]]] },
+      "properties": { "id": "abbasid_caliphate", "name": "Abbasid Caliphate", "type": "caliphate", "year_from": 750, "year_to": 1258, "valid_from": "0750", "valid_to": "1258", "status": "independent", "certainty": "high", "capital": "Baghdad", "source": "ancient-world-curated", "description": "Islamic Golden Age. Baghdad's House of Wisdom preserved and advanced science, mathematics, and philosophy." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,44.0],[15.0,44.0],[15.0,55.0],[-5.0,55.0],[-5.0,44.0]]] },
+      "properties": { "id": "carolingian_empire", "name": "Carolingian Empire", "type": "empire", "year_from": 768, "year_to": 843, "valid_from": "0768", "valid_to": "0843", "status": "independent", "certainty": "high", "capital": "Aachen", "source": "ancient-world-curated", "description": "Charlemagne's empire, the first major Western European polity since Rome. Predecessor of France and Germany." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[100.0,10.0],[107.0,10.0],[107.0,16.0],[100.0,16.0],[100.0,10.0]]] },
+      "properties": { "id": "khmer_empire", "name": "Khmer Empire", "type": "empire", "year_from": 802, "year_to": 1431, "valid_from": "0802", "valid_to": "1431", "status": "independent", "certainty": "high", "capital": "Angkor", "source": "ancient-world-curated", "description": "Southeast Asian empire centered in Cambodia. Built Angkor Wat, the world's largest religious monument." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[93.0,22.0],[122.0,22.0],[122.0,40.0],[93.0,40.0],[93.0,22.0]]] },
+      "properties": { "id": "song_dynasty", "name": "Song Dynasty", "type": "dynasty", "year_from": 960, "year_to": 1279, "valid_from": "0960", "valid_to": "1279", "status": "independent", "certainty": "high", "capital": "Kaifeng", "source": "ancient-world-curated", "description": "China's first gunpowder weapons, movable type printing, and advanced commerce. Lost northern China to the Jin." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-18.0,10.0],[-5.0,10.0],[-5.0,20.0],[-18.0,20.0],[-18.0,10.0]]] },
+      "properties": { "id": "mali_empire", "name": "Mali Empire", "type": "empire", "year_from": 1235, "year_to": 1600, "valid_from": "1235", "valid_to": "1600", "status": "independent", "certainty": "medium", "capital": "Niani", "source": "ancient-world-curated", "description": "West African empire that controlled trans-Saharan gold and salt trade. Mansa Musa was reputedly the wealthiest person in history." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,36.0],[36.0,36.0],[36.0,43.0],[26.0,43.0],[26.0,36.0]]] },
+      "properties": { "id": "byzantine_late", "name": "Byzantine Empire (Late)", "type": "empire", "year_from": 1204, "year_to": 1453, "valid_from": "1204", "valid_to": "1453", "status": "independent", "certainty": "high", "capital": "Constantinople", "source": "ancient-world-curated", "description": "Much diminished Byzantine state after the Fourth Crusade's sack. Finally fell to the Ottoman Turks in 1453." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[40.0,25.0],[140.0,25.0],[140.0,55.0],[40.0,55.0],[40.0,25.0]]] },
+      "properties": { "id": "mongol_empire", "name": "Mongol Empire", "type": "empire", "year_from": 1206, "year_to": 1368, "valid_from": "1206", "valid_to": "1368", "status": "independent", "certainty": "high", "capital": "Karakorum", "source": "ancient-world-curated", "description": "Largest contiguous land empire in history at its peak. United Eurasia, enabling trade and cultural exchange across the Silk Road." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[65.0,20.0],[90.0,20.0],[90.0,36.0],[65.0,36.0],[65.0,20.0]]] },
+      "properties": { "id": "delhi_sultanate", "name": "Delhi Sultanate", "type": "sultanate", "year_from": 1206, "year_to": 1526, "valid_from": "1206", "valid_to": "1526", "status": "independent", "certainty": "high", "capital": "Delhi", "source": "ancient-world-curated", "description": "First major Islamic sultanate in India. Repelled the Mongol invasion and introduced Persian administrative culture." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[94.0,22.0],[122.0,22.0],[122.0,42.0],[94.0,42.0],[94.0,22.0]]] },
+      "properties": { "id": "yuan_dynasty", "name": "Yuan Dynasty (Mongol China)", "type": "dynasty", "year_from": 1271, "year_to": 1368, "valid_from": "1271", "valid_to": "1368", "status": "independent", "certainty": "high", "capital": "Khanbaliq (Beijing)", "source": "ancient-world-curated", "description": "Mongol rule over China. Marco Polo visited under Kublai Khan. Connected China to the wider Mongol world." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,36.0],[44.0,36.0],[44.0,42.0],[26.0,42.0],[26.0,36.0]]] },
+      "properties": { "id": "ottoman_early", "name": "Ottoman Empire (Early)", "type": "empire", "year_from": 1299, "year_to": 1453, "valid_from": "1299", "valid_to": "1453", "status": "independent", "certainty": "high", "capital": "Bursa / Edirne", "source": "ancient-world-curated", "description": "Rising Anatolian Turkish state that gradually conquered Byzantine territory before taking Constantinople in 1453." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[94.0,20.0],[122.0,20.0],[122.0,43.0],[94.0,43.0],[94.0,20.0]]] },
+      "properties": { "id": "ming_dynasty", "name": "Ming Dynasty", "type": "dynasty", "year_from": 1368, "year_to": 1644, "valid_from": "1368", "valid_to": "1644", "status": "independent", "certainty": "high", "capital": "Beijing", "source": "ancient-world-curated", "description": "Chinese dynasty that expelled the Mongols, built the Forbidden City, and sent Zheng He's treasure fleets across Asia and Africa." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-9.5,36.0],[-6.0,36.5],[-9.0,39.0],[-8.5,42.0],[-10.0,43.5],[-9.5,36.0]]] },
+      "properties": { "id": "portugal_early", "name": "Kingdom of Portugal", "type": "kingdom", "year_from": 1139, "year_to": 1580, "valid_from": "1139", "valid_to": "1580", "status": "independent", "certainty": "high", "capital": "Lisbon", "source": "ancient-world-curated", "description": "Pioneer of European maritime exploration. Established the first sea route to India and built a global trading empire." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-9.5,36.0],[4.0,36.0],[3.5,44.0],[-9.5,43.5],[-9.5,36.0]]] },
+      "properties": { "id": "crown_of_castile", "name": "Crown of Castile & Aragon", "type": "kingdom", "year_from": 1479, "year_to": 1516, "valid_from": "1479", "valid_to": "1516", "status": "independent", "certainty": "high", "capital": "Toledo", "source": "ancient-world-curated", "description": "United Spanish kingdoms under Ferdinand and Isabella. Funded Columbus's 1492 voyage and began the conquest of the Americas." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,30.0],[44.0,30.0],[44.0,48.0],[26.0,48.0],[26.0,30.0]]] },
+      "properties": { "id": "ottoman_peak", "name": "Ottoman Empire (Peak)", "type": "empire", "year_from": 1453, "year_to": 1683, "valid_from": "1453", "valid_to": "1683", "status": "independent", "certainty": "high", "capital": "Constantinople (Istanbul)", "source": "ancient-world-curated", "description": "At its height under Suleiman the Magnificent, the empire spanned three continents and was the most powerful state in the world." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[44.0,25.0],[65.0,25.0],[65.0,40.0],[44.0,40.0],[44.0,25.0]]] },
+      "properties": { "id": "safavid_persia", "name": "Safavid Empire", "type": "empire", "year_from": 1501, "year_to": 1736, "valid_from": "1501", "valid_to": "1736", "status": "independent", "certainty": "high", "capital": "Isfahan", "source": "ancient-world-curated", "description": "Established Shia Islam as Iran's official religion. Persian cultural renaissance. Constant rival of the Ottoman Empire." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[65.0,15.0],[90.0,15.0],[90.0,36.0],[65.0,36.0],[65.0,15.0]]] },
+      "properties": { "id": "mughal_empire", "name": "Mughal Empire", "type": "empire", "year_from": 1526, "year_to": 1857, "valid_from": "1526", "valid_to": "1857", "status": "independent", "certainty": "high", "capital": "Agra / Delhi", "source": "ancient-world-curated", "description": "Dominated the Indian subcontinent for over three centuries. Built the Taj Mahal; peak GDP rivaled all of Europe." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-90.0,-60.0],[-35.0,-60.0],[-35.0,10.0],[-90.0,10.0],[-90.0,-60.0]]] },
+      "properties": { "id": "spanish_colonial_americas", "name": "Spanish Colonial Americas", "type": "colonial territory", "year_from": 1521, "year_to": 1821, "valid_from": "1521", "valid_to": "1821", "status": "colonial", "certainty": "high", "capital": "Mexico City (Viceroyalty)", "source": "ancient-world-curated", "description": "Spain's vast colonial empire in the Americas, including Mexico, Central America, and most of South America." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-48.0,-35.0],[-34.0,-35.0],[-34.0,5.0],[-48.0,5.0],[-48.0,-35.0]]] },
+      "properties": { "id": "portuguese_brazil", "name": "Colonial Brazil (Portugal)", "type": "colonial territory", "year_from": 1532, "year_to": 1822, "valid_from": "1532", "valid_to": "1822", "status": "colonial", "certainty": "high", "capital": "Rio de Janeiro", "source": "ancient-world-curated", "description": "Portuguese colony in South America. Became the largest country in Latin America upon independence." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[94.0,20.0],[135.0,20.0],[135.0,53.0],[94.0,53.0],[94.0,20.0]]] },
+      "properties": { "id": "qing_dynasty_early", "name": "Qing Dynasty (China)", "type": "dynasty", "year_from": 1644, "year_to": 1912, "valid_from": "1644", "valid_to": "1912", "status": "independent", "certainty": "high", "capital": "Beijing", "source": "ancient-world-curated", "description": "China's last imperial dynasty, founded by Manchu conquerors. Largest extent of Chinese territory in history." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,50.0],[2.5,50.0],[2.5,55.0],[-5.0,55.0],[-5.0,50.0]]] },
+      "properties": { "id": "england_early", "name": "Kingdom of England", "type": "kingdom", "year_from": 927, "year_to": 1707, "valid_from": "0927", "valid_to": "1707", "status": "independent", "certainty": "high", "capital": "London", "source": "ancient-world-curated", "description": "English kingdom that conquered Wales and Ireland. Magna Carta (1215) established constitutional governance principles." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,42.0],[8.0,42.0],[8.0,52.0],[-5.0,52.0],[-5.0,42.0]]] },
+      "properties": { "id": "france_capetian", "name": "Kingdom of France", "type": "kingdom", "year_from": 987, "year_to": 1792, "valid_from": "0987", "valid_to": "1792", "status": "independent", "certainty": "high", "capital": "Paris", "source": "ancient-world-curated", "description": "France under the Capetian, Valois, and Bourbon dynasties. Major European power through the medieval and early modern eras." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[8.0,46.0],[18.0,46.0],[18.0,55.0],[8.0,55.0],[8.0,46.0]]] },
+      "properties": { "id": "holy_roman_empire", "name": "Holy Roman Empire", "type": "empire", "year_from": 962, "year_to": 1806, "valid_from": "0962", "valid_to": "1806", "status": "independent", "certainty": "high", "capital": "Vienna (Habsburgs)", "source": "ancient-world-curated", "description": "Loose confederation of Central European states. At its height under Charlemagne; famously 'neither holy, Roman, nor an empire' by Voltaire." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[28.0,46.0],[42.0,46.0],[42.0,70.0],[28.0,70.0],[28.0,46.0]]] },
+      "properties": { "id": "tsardom_of_russia", "name": "Tsardom of Russia", "type": "empire", "year_from": 1547, "year_to": 1721, "valid_from": "1547", "valid_to": "1721", "status": "independent", "certainty": "high", "capital": "Moscow", "source": "ancient-world-curated", "description": "Centralized Russian state under Ivan the Terrible. Expanded eastward into Siberia and established autocratic rule." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-14.0,-5.0],[10.0,-5.0],[10.0,20.0],[-14.0,20.0],[-14.0,-5.0]]] },
+      "properties": { "id": "songhai_empire", "name": "Songhai Empire", "type": "empire", "year_from": 1464, "year_to": 1591, "valid_from": "1464", "valid_to": "1591", "status": "independent", "certainty": "medium", "capital": "Gao", "source": "ancient-world-curated", "description": "Largest empire in West African history. Timbuktu was a major center of Islamic scholarship and trade." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-16.0,4.0],[-8.0,4.0],[-8.0,12.0],[-16.0,12.0],[-16.0,4.0]]] },
+      "properties": { "id": "oyo_empire", "name": "Oyo Empire", "type": "empire", "year_from": 1400, "year_to": 1836, "valid_from": "1400", "valid_to": "1836", "status": "independent", "certainty": "medium", "capital": "Oyo-Ile", "source": "ancient-world-curated", "description": "Yoruba empire in West Africa, dominant in the region's politics and the Atlantic slave trade." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[30.0,-12.0],[38.0,-12.0],[38.0,-2.0],[30.0,-2.0],[30.0,-12.0]]] },
+      "properties": { "id": "zimbabwe_kingdom", "name": "Great Zimbabwe / Mutapa", "type": "kingdom", "year_from": 1220, "year_to": 1450, "valid_from": "1220", "valid_to": "1450", "status": "independent", "certainty": "medium", "capital": "Great Zimbabwe", "source": "ancient-world-curated", "description": "Stone-city civilization in southern Africa. Major gold-trading state linked to Swahili coast merchants." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[38.0,47.0],[70.0,47.0],[70.0,65.0],[38.0,65.0],[38.0,47.0]]] },
+      "properties": { "id": "russian_empire_early", "name": "Russian Empire", "type": "empire", "year_from": 1721, "year_to": 1815, "valid_from": "1721", "valid_to": "1815", "status": "independent", "certainty": "high", "capital": "Saint Petersburg", "source": "ancient-world-curated", "description": "Peter the Great transformed Russia into a European power. Catherine the Great expanded it to become the world's largest state." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,43.0],[9.0,43.0],[9.0,52.0],[-5.0,52.0],[-5.0,43.0]]] },
+      "properties": { "id": "napoleonic_france", "name": "First French Empire (Napoleon)", "type": "empire", "year_from": 1804, "year_to": 1815, "valid_from": "1804", "valid_to": "1815", "status": "independent", "certainty": "high", "capital": "Paris", "source": "ancient-world-curated", "description": "Napoleon's France dominated continental Europe. Spread revolutionary ideals but ultimately fell to the Sixth Coalition." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,50.0],[2.5,50.0],[2.5,59.0],[-5.0,59.0],[-5.0,50.0]]] },
+      "properties": { "id": "great_britain_1707", "name": "Kingdom of Great Britain", "type": "kingdom", "year_from": 1707, "year_to": 1800, "valid_from": "1707", "valid_to": "1800", "status": "independent", "certainty": "high", "capital": "London", "source": "ancient-world-curated", "description": "Union of England and Scotland. Became a major colonial power and began the Industrial Revolution." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-5.0,50.0],[2.5,50.0],[2.5,59.0],[-5.0,59.0],[-5.0,50.0]]] },
+      "properties": { "id": "united_kingdom_1800", "name": "United Kingdom of Great Britain and Ireland", "type": "kingdom", "year_from": 1801, "year_to": 1885, "valid_from": "1801", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "London", "source": "ancient-world-curated", "description": "World's leading naval and industrial power through the 19th century. The British Empire became the largest in history." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-80.0,25.0],[-66.0,25.0],[-66.0,50.0],[-80.0,50.0],[-80.0,25.0]]] },
+      "properties": { "id": "usa_early", "name": "United States of America (Early)", "type": "republic", "year_from": 1776, "year_to": 1860, "valid_from": "1776", "valid_to": "1860", "status": "independent", "certainty": "high", "capital": "Washington D.C.", "source": "ancient-world-curated", "description": "Newly independent republic expanding westward. Purchased Louisiana (1803) and drove westward expansion." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-80.0,25.0],[-65.0,25.0],[-65.0,50.0],[-125.0,50.0],[-125.0,25.0],[-80.0,25.0]]] },
+      "properties": { "id": "usa_manifest_destiny", "name": "United States (Westward Expansion)", "type": "republic", "year_from": 1848, "year_to": 1885, "valid_from": "1848", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Washington D.C.", "source": "ancient-world-curated", "description": "The US after the Mexican-American War gave it California and the Southwest. Completed transcontinental railroad 1869." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-80.0,-36.0],[-34.0,-36.0],[-34.0,6.0],[-80.0,6.0],[-80.0,-36.0]]] },
+      "properties": { "id": "gran_colombia", "name": "Gran Colombia", "type": "republic", "year_from": 1819, "year_to": 1831, "valid_from": "1819", "valid_to": "1831", "status": "independent", "certainty": "high", "capital": "Bogotá", "source": "ancient-world-curated", "description": "Bolívar's short-lived united republic of northern South America, which dissolved into Venezuela, Colombia, and Ecuador." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[8.0,46.0],[23.0,46.0],[23.0,55.0],[8.0,55.0],[8.0,46.0]]] },
+      "properties": { "id": "german_confederation", "name": "German Confederation", "type": "confederation", "year_from": 1815, "year_to": 1866, "valid_from": "1815", "valid_to": "1866", "status": "independent", "certainty": "high", "capital": "Frankfurt", "source": "ancient-world-curated", "description": "Loose association of German states after Napoleon's defeat. Prussia and Austria competed for dominance." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[6.0,43.0],[20.0,43.0],[20.0,50.0],[6.0,50.0],[6.0,43.0]]] },
+      "properties": { "id": "austria_empire", "name": "Austrian Empire", "type": "empire", "year_from": 1804, "year_to": 1866, "valid_from": "1804", "valid_to": "1866", "status": "independent", "certainty": "high", "capital": "Vienna", "source": "ancient-world-curated", "description": "Habsburg multi-ethnic empire that dominated Central Europe after Napoleon's defeat, including Hungary, Bohemia, and northern Italy." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[38.0,47.0],[130.0,47.0],[130.0,70.0],[38.0,70.0],[38.0,47.0]]] },
+      "properties": { "id": "russian_empire_1815", "name": "Russian Empire (1815–1885)", "type": "empire", "year_from": 1815, "year_to": 1885, "valid_from": "1815", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Saint Petersburg", "source": "ancient-world-curated", "description": "Europe's largest power. Expanded into Central Asia and the Caucasus. Defeated Napoleon and dominated post-Congress Europe." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[26.0,29.0],[44.0,29.0],[44.0,46.0],[26.0,46.0],[26.0,29.0]]] },
+      "properties": { "id": "ottoman_empire_1815", "name": "Ottoman Empire (1815–1885)", "type": "empire", "year_from": 1815, "year_to": 1885, "valid_from": "1815", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Constantinople (Istanbul)", "source": "ancient-world-curated", "description": "The 'sick man of Europe' — Ottoman power declined as nationalist movements in Greece, Serbia, and Bulgaria gained independence." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[65.0,7.0],[90.0,7.0],[90.0,36.0],[65.0,36.0],[65.0,7.0]]] },
+      "properties": { "id": "british_india_early", "name": "British India (Company Raj)", "type": "colonial territory", "year_from": 1757, "year_to": 1857, "valid_from": "1757", "valid_to": "1857", "status": "colonial", "certainty": "high", "capital": "Calcutta", "source": "ancient-world-curated", "description": "East India Company control over the Indian subcontinent, gained through trade and conquest over the 18th century." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-20.0,-40.0],[55.0,-40.0],[55.0,15.0],[-20.0,15.0],[-20.0,-40.0]]] },
+      "properties": { "id": "european_africa_1815", "name": "European Coastal Africa (Colonies)", "type": "colonial territory", "year_from": 1815, "year_to": 1885, "valid_from": "1815", "valid_to": "1885", "status": "colonial", "certainty": "medium", "capital": "Various", "source": "ancient-world-curated", "description": "European powers controlled coastal trading posts in Africa before the Scramble for Africa (1885)." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[8.0,46.0],[22.0,46.0],[22.0,55.0],[8.0,55.0],[8.0,46.0]]] },
+      "properties": { "id": "german_empire_1871", "name": "German Empire", "type": "empire", "year_from": 1871, "year_to": 1885, "valid_from": "1871", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Berlin", "source": "ancient-world-curated", "description": "Unified Germany under Prussian leadership. Rapid industrialization made it Europe's most powerful land power." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-70.0,-40.0],[-53.0,-40.0],[-53.0,-20.0],[-70.0,-20.0],[-70.0,-40.0]]] },
+      "properties": { "id": "argentina_1816", "name": "Argentina", "type": "republic", "year_from": 1816, "year_to": 1885, "valid_from": "1816", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Buenos Aires", "source": "ancient-world-curated", "description": "Declared independence from Spain in 1816. One of Latin America's largest and most prosperous nations." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[-74.0,-4.0],[-68.0,-4.0],[-68.0,4.0],[-74.0,4.0],[-74.0,-4.0]]] },
+      "properties": { "id": "ecuador_1830", "name": "Ecuador", "type": "republic", "year_from": 1830, "year_to": 1885, "valid_from": "1830", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Quito", "source": "ancient-world-curated", "description": "Emerged from the dissolution of Gran Colombia. Named for its location on the equator." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[6.0,43.0],[19.0,43.0],[19.0,50.0],[6.0,50.0],[6.0,43.0]]] },
+      "properties": { "id": "austria_hungary", "name": "Austria-Hungary", "type": "empire", "year_from": 1867, "year_to": 1885, "valid_from": "1867", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Vienna / Budapest", "source": "ancient-world-curated", "description": "Dual monarchy created by the Ausgleich (Compromise) of 1867. A multi-ethnic empire of 11 nationalities." }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Polygon", "coordinates": [[[127.0,30.0],[145.0,30.0],[145.0,46.0],[127.0,46.0],[127.0,30.0]]] },
+      "properties": { "id": "meiji_japan", "name": "Meiji Japan", "type": "empire", "year_from": 1868, "year_to": 1885, "valid_from": "1868", "valid_to": "1885", "status": "independent", "certainty": "high", "capital": "Tokyo", "source": "ancient-world-curated", "description": "Rapid modernization following the Meiji Restoration. Japan industrialized and reformed within a generation." }
+    }
+
+  ]
+}

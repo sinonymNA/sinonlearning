@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-const SPEEDS = [1, 2, 5, 10] as const;
+const SPEEDS = [1, 2, 5, 10, 100] as const;
 type Speed = typeof SPEEDS[number];
 
 interface TimelineControlsProps {
@@ -16,6 +16,23 @@ interface TimelineControlsProps {
   onSpeedChange: (speed: Speed) => void;
 }
 
+function formatYear(year: number): string {
+  if (year < 0) return `${Math.abs(year)} BCE`;
+  if (year <= 999) return `${year} CE`;
+  return String(year);
+}
+
+const ERA_MARKERS = [
+  { year: -3000, label: "3000 BCE" },
+  { year: -500,  label: "500 BCE" },
+  { year: 500,   label: "500 CE" },
+  { year: 1200,  label: "1200" },
+  { year: 1500,  label: "1500" },
+  { year: 1914,  label: "WWI" },
+  { year: 1991,  label: "USSR" },
+  { year: 2023,  label: "2023" },
+];
+
 export default function TimelineControls({
   year, minYear, maxYear, playing, speed,
   onYearChange, onPlayToggle, onSpeedChange,
@@ -26,21 +43,22 @@ export default function TimelineControls({
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (!playing) return;
     intervalRef.current = setInterval(() => {
-      onYearChange(Math.min(year + 1, maxYear));
-      if (year + 1 >= maxYear) onPlayToggle();
-    }, 1000 / speed);
+      const next = Math.min(year + speed, maxYear);
+      onYearChange(next);
+      if (next >= maxYear) onPlayToggle();
+    }, 100);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [playing, year, speed, maxYear, onYearChange, onPlayToggle]);
 
   const pct = ((year - minYear) / (maxYear - minYear)) * 100;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 px-6 pb-6 pt-4 z-20">
+    <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 pt-4 z-20">
       <div className="max-w-3xl mx-auto bg-[#0a1929]/90 backdrop-blur-sm border border-white/10 rounded-2xl px-5 py-4 shadow-2xl">
-        {/* Year display */}
+        {/* Year display + controls */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-4xl font-bold tabular-nums tracking-tight text-white" style={{ fontFamily: "var(--font-fraunces)" }}>
-            {year}
+            {formatYear(year)}
           </span>
           <div className="flex items-center gap-2">
             {/* Speed selector */}
@@ -55,7 +73,7 @@ export default function TimelineControls({
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  {s}×
+                  {s === 100 ? "100×" : `${s}×`}
                 </button>
               ))}
             </div>
@@ -95,17 +113,20 @@ export default function TimelineControls({
           />
         </div>
 
-        {/* Era labels */}
-        <div className="flex justify-between mt-2 text-[10px] text-slate-500 select-none">
-          <span>{minYear}</span>
-          <span className="text-slate-600">·</span>
-          <span>1914 WWI</span>
-          <span className="text-slate-600">·</span>
-          <span>1939 WWII</span>
-          <span className="text-slate-600">·</span>
-          <span>1991 USSR</span>
-          <span className="text-slate-600">·</span>
-          <span>{maxYear}</span>
+        {/* Era markers */}
+        <div className="relative mt-2 h-4">
+          {ERA_MARKERS.map(({ year: my, label }) => {
+            const pos = ((my - minYear) / (maxYear - minYear)) * 100;
+            return (
+              <span
+                key={my}
+                className="absolute text-[9px] text-slate-500 select-none -translate-x-1/2 whitespace-nowrap"
+                style={{ left: `${pos}%` }}
+              >
+                {label}
+              </span>
+            );
+          })}
         </div>
       </div>
     </div>

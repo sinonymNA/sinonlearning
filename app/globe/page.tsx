@@ -17,13 +17,13 @@ const GlobeMap = dynamic(() => import("@/components/globe/GlobeMap"), {
   ),
 });
 
-const MIN_YEAR = 1886;
+const MIN_YEAR = -3000;
 const MAX_YEAR = 2023;
 
-type Speed = 1 | 2 | 5 | 10;
+type Speed = 1 | 2 | 5 | 10 | 100;
 
 export default function GlobePage() {
-  const [year, setYear] = useState(1950);
+  const [year, setYear] = useState(-500);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(2);
   const [entity, setEntity] = useState<HistoricalFeatureProps | null>(null);
@@ -46,7 +46,7 @@ export default function GlobePage() {
 
   return (
     <div
-      className="relative w-screen overflow-hidden bg-sky-200"
+      className="relative w-screen overflow-hidden bg-[#b8d4e8]"
       style={{ height: "100dvh" }}
     >
       {/* Back link */}

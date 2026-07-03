@@ -4,12 +4,14 @@ export function filterByYear(
   collection: HistoricalCollection,
   year: number
 ): HistoricalCollection {
-  const jan1 = `${year}-01-01`;
   return {
     type: "FeatureCollection",
     features: collection.features.filter((f) => {
-      const { valid_from, valid_to } = f.properties as HistoricalFeatureProps;
-      return valid_from <= jan1 && valid_to >= jan1;
+      const p = f.properties as HistoricalFeatureProps;
+      // Prefer numeric year fields (ancient data); fall back to parsing the string field
+      const fromYear = p.year_from ?? parseInt(p.valid_from, 10);
+      const toYear   = p.year_to   ?? (p.valid_to.startsWith("9999") ? 9999 : parseInt(p.valid_to, 10));
+      return fromYear <= year && toYear >= year;
     }),
   };
 }
