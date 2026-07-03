@@ -65,7 +65,7 @@ export default function NotesheetUpload({ onUpload }: Props) {
             <FileUp size={36} className="text-white/40" />
             <div className="text-center">
               <p className="text-sm font-medium text-white/80">Drop your slideshow here</p>
-              <p className="text-xs text-white/45 mt-1">PowerPoint (.pptx) · up to 10 MB</p>
+              <p className="text-xs text-white/45 mt-1">PowerPoint (.pptx) · up to 100 MB</p>
             </div>
           </>
         )}
