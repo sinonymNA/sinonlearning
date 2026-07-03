@@ -22,108 +22,106 @@ const SECTION_TOKENS: Record<
 const S = StyleSheet.create({
   page: {
     fontFamily: "Times-Roman",
-    fontSize: 11,
+    fontSize: 10.5,
     color: "#1a1a1a",
-    paddingTop: 54,
-    paddingBottom: 54,
-    paddingLeft: 54,
-    paddingRight: 54,
+    paddingTop: 42,
+    paddingBottom: 42,
+    paddingLeft: 46,
+    paddingRight: 46,
     backgroundColor: "#ffffff",
   },
   header: {
-    borderBottomWidth: 3,
+    borderBottomWidth: 2.5,
     borderBottomColor: "#6d28d9",
     borderBottomStyle: "solid",
-    paddingBottom: 8,
-    marginBottom: 14,
+    paddingBottom: 6,
+    marginBottom: 9,
   },
   headerTitle: {
     fontFamily: "Times-Bold",
-    fontSize: 17,
+    fontSize: 15,
   },
   headerMeta: {
     fontFamily: "Times-Italic",
-    fontSize: 9,
+    fontSize: 8.5,
     color: "#555555",
-    marginTop: 3,
+    marginTop: 2,
   },
   essentialQuestion: {
     backgroundColor: "#f5f3ee",
     borderLeftWidth: 3,
     borderLeftColor: "#333333",
     borderLeftStyle: "solid",
-    paddingTop: 7,
-    paddingBottom: 7,
-    paddingLeft: 10,
-    paddingRight: 10,
-    marginBottom: 14,
+    paddingTop: 5,
+    paddingBottom: 5,
+    paddingLeft: 9,
+    paddingRight: 9,
+    marginBottom: 9,
   },
   eqLabel: {
     fontFamily: "Times-Bold",
-    fontSize: 8,
+    fontSize: 7.5,
     color: "#333333",
-    marginBottom: 3,
+    marginBottom: 2,
     letterSpacing: 0.8,
   },
   eqText: {
     fontFamily: "Times-Italic",
-    fontSize: 11,
-    lineHeight: 1.4,
+    fontSize: 10.5,
+    lineHeight: 1.35,
   },
   // Base section style — no border; stripe and bg applied dynamically
   section: {
-    borderRadius: 4,
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingLeft: 14,
-    paddingRight: 12,
-    marginBottom: 12,
+    borderRadius: 3,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingLeft: 10,
+    paddingRight: 8,
+    marginBottom: 7,
     borderLeftWidth: 3,
     borderLeftStyle: "solid",
     // borderLeftColor set per-type at render time
   },
   sectionPaired: {
-    // marginBottom omitted — the pair row View handles spacing
-    borderRadius: 4,
-    paddingTop: 12,
-    paddingBottom: 12,
-    paddingLeft: 14,
-    paddingRight: 12,
+    borderRadius: 3,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingLeft: 10,
+    paddingRight: 8,
     borderLeftWidth: 3,
     borderLeftStyle: "solid",
     flex: 1,
   },
   sectionHeading: {
     fontFamily: "Times-Bold",
-    fontSize: 9.5,
-    // color set per-type at render time
-    marginBottom: 5,
+    fontSize: 8.5,
+    marginBottom: 4,
     letterSpacing: 0.5,
   },
   prompt: {
-    fontSize: 11,
-    lineHeight: 1.4,
-    marginBottom: 7,
+    fontSize: 10.5,
+    lineHeight: 1.35,
+    marginBottom: 5,
   },
   contentText: {
-    fontSize: 11,
-    lineHeight: 1.5,
+    fontSize: 10.5,
+    lineHeight: 1.4,
   },
   blankLine: {
     borderBottomWidth: 0.5,
     borderBottomColor: "#d1d5db",
     borderBottomStyle: "solid",
-    height: 22,
-    marginBottom: 3,
+    height: 17,
+    marginBottom: 2,
   },
   numberedRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: 3,
   },
   numberLabel: {
-    fontSize: 10,
-    width: 18,
+    fontSize: 9.5,
+    width: 16,
     color: "#555555",
   },
   numberLine: {
@@ -131,20 +129,20 @@ const S = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#d1d5db",
     borderBottomStyle: "solid",
-    height: 22,
+    height: 17,
   },
   drawArea: {
     borderWidth: 1,
     borderColor: "#d1d5db",
     borderStyle: "dashed",
-    height: 140,
-    marginTop: 5,
+    height: 95,
+    marginTop: 4,
     alignItems: "center",
     justifyContent: "center",
   },
   drawLabel: {
     color: "#aaaaaa",
-    fontSize: 9,
+    fontSize: 8.5,
     fontFamily: "Times-Italic",
   },
   tableHeaderRow: { flexDirection: "row" },
@@ -153,22 +151,22 @@ const S = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: "#d1d5db",
     borderStyle: "solid",
-    paddingTop: 4,
-    paddingBottom: 4,
-    paddingLeft: 6,
-    paddingRight: 6,
+    paddingTop: 3,
+    paddingBottom: 3,
+    paddingLeft: 5,
+    paddingRight: 5,
   },
   tableHeaderText: {
     fontFamily: "Times-Bold",
-    fontSize: 8,
-    letterSpacing: 0.5,
+    fontSize: 7.5,
+    letterSpacing: 0.4,
   },
   tableRow: { flexDirection: "row" },
   tableCell: {
     borderWidth: 0.5,
     borderColor: "#e5e7eb",
     borderStyle: "solid",
-    height: 28,
+    height: 22,
     backgroundColor: "#fafafa",
   },
   answerKey: {
@@ -176,25 +174,25 @@ const S = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: "#fbbf24",
     borderLeftStyle: "solid",
-    paddingLeft: 8,
-    paddingRight: 8,
-    paddingTop: 5,
-    paddingBottom: 5,
-    marginTop: 8,
+    paddingLeft: 7,
+    paddingRight: 7,
+    paddingTop: 4,
+    paddingBottom: 4,
+    marginTop: 6,
   },
   answerKeyText: {
-    fontSize: 10,
-    lineHeight: 1.4,
+    fontSize: 9.5,
+    lineHeight: 1.35,
   },
   answerKeyLabel: {
     fontFamily: "Times-Bold",
-    fontSize: 8,
+    fontSize: 7.5,
   },
   // Pair row container
   pairRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
+    gap: 7,
+    marginBottom: 7,
   },
 });
 
@@ -260,9 +258,11 @@ function AnswerKey({ label, notes }: { label: string; notes: string }) {
 function SectionBody({
   section,
   isTeacher,
+  paired,
 }: {
   section: NotesheetSection;
   isTeacher: boolean;
+  paired: boolean;
 }) {
   switch (section.type) {
     case "warmup_box":
@@ -272,7 +272,7 @@ function SectionBody({
           {isTeacher ? (
             <AnswerKey label="Key" notes={section.answer_key_notes} />
           ) : (
-            <BlankLines n={5} />
+            <BlankLines n={paired ? 3 : 4} />
           )}
         </View>
       );
@@ -284,7 +284,7 @@ function SectionBody({
           {isTeacher ? (
             <AnswerKey label="Key" notes={section.answer_key_notes} />
           ) : (
-            <BlankLines n={3} />
+            <BlankLines n={paired ? 2 : 3} />
           )}
         </View>
       );
@@ -336,7 +336,7 @@ function SectionBody({
               </View>
             ))}
           </View>
-          {Array.from({ length: 6 }).map((_, row) => (
+          {Array.from({ length: 4 }).map((_, row) => (
             <View key={row} style={S.tableRow}>
               {cols.map((col, colIdx) => (
                 <View
@@ -384,7 +384,7 @@ function SectionBody({
               </View>
             ))}
           </View>
-          {Array.from({ length: 4 }).map((_, row) => (
+          {Array.from({ length: 3 }).map((_, row) => (
             <View key={row} style={S.tableRow}>
               {cols.map((col, colIdx) => (
                 <View
@@ -432,7 +432,7 @@ function SectionCard({
           {section.heading.toUpperCase()}
         </Text>
       )}
-      <SectionBody section={section} isTeacher={isTeacher} />
+      <SectionBody section={section} isTeacher={isTeacher} paired={paired} />
     </View>
   );
 }

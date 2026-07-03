@@ -9,10 +9,8 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 10;
 
 const SYSTEM_PROMPT =
-  "You are KORA, Sinon Learning's pedagogical understanding engine. " +
-  "You do not act as a tutor. You return structured JSON that makes student understanding visible. " +
-  "When asked to generate a notesheet plan, you return a JSON object matching the exact schema provided. " +
-  "Never add prose or markdown outside the JSON.";
+  "You are KORA, Sinon Learning's pedagogical AI. " +
+  "Return a single JSON object matching the schema exactly. No prose, no markdown outside the JSON.";
 
 function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -20,10 +18,10 @@ function extractJson(text: string): string {
 }
 
 function sectionCountRange(targetPages: number): string {
-  if (targetPages <= 1) return "4-6";
-  if (targetPages === 2) return "6-9";
-  if (targetPages === 3) return "9-13";
-  return "12-16";
+  if (targetPages <= 1) return "3-4";
+  if (targetPages === 2) return "5-6";
+  if (targetPages === 3) return "7-9";
+  return "10-12";
 }
 
 function buildUserMessage(params: {
@@ -36,42 +34,15 @@ function buildUserMessage(params: {
   const { rawText, concept, subject, gradeBand, targetPages } = params;
   const countRange = sectionCountRange(targetPages);
   return [
-    `Concept: ${concept}`,
-    `Subject: ${subject}`,
-    `Grade Band: ${gradeBand}`,
-    `Target length: ${targetPages} printed page${targetPages === 1 ? "" : "s"} — design ${countRange} sections that together fill approximately ${targetPages} page${targetPages === 1 ? "" : "s"} when rendered. Shorter prompts and fewer blank lines for shorter targets.`,
-    `\nSlideshow Content:\n${rawText.slice(0, 6000)}`,
-    `\nTask: Analyze this slideshow and return a structured notesheet plan as JSON. The plan tells students what to write, in what format, with what prompts. Do not write the notesheet yourself — return a plan that the system will render.`,
-    `\nReturn a JSON object with this exact schema:`,
-    `{`,
-    `  "concept": string,`,
-    `  "title": string,`,
-    `  "grade_band": string,`,
-    `  "subject": string,`,
-    `  "learning_objective": string,`,
-    `  "essential_question": string,`,
-    `  "sections": [`,
-    `    {`,
-    `      "id": string (unique, like "s1"),`,
-    `      "type": "warmup_box"|"fill_blank"|"numbered_response"|"content_box"|"two_column_box"|"drawing_box"|"three_column_box",`,
-    `      "heading": string (optional section title),`,
-    `      "content": string (teacher-facing description of this section's purpose),`,
-    `      "student_prompt": string (text shown to student),`,
-    `      "answer_key_notes": string (what a strong answer includes, for teacher key),`,
-    `      "num_lines": number (optional, for numbered_response — how many items),`,
-    `      "columns": [{header, width_pct, prefilled}] (optional, for two/three_column_box)`,
-    `    }`,
-    `  ]`,
-    `}`,
-    `\nSection type guidance:`,
-    `- warmup_box: open-ended warm-up or activating question, student writes freely`,
-    `- fill_blank: a sentence or definition with blanks the student fills in`,
-    `- numbered_response: a numbered list where students fill in each item (set num_lines)`,
-    `- content_box: teacher-written explanatory content, no student writing (use sparingly)`,
-    `- two_column_box: two columns, e.g. Term | Definition; left column prefilled`,
-    `- drawing_box: student draws a diagram, graph, or visual representation`,
-    `- three_column_box: three columns, e.g. Concept | Example | Why It Works`,
-    `\nInclude ${countRange} sections. Start with a warmup_box. Mix section types thoughtfully based on the content.`,
+    `Concept: ${concept} | Subject: ${subject} | Grade: ${gradeBand}`,
+    `Target: ${targetPages} printed page${targetPages === 1 ? "" : "s"}.`,
+    `Design EXACTLY ${countRange} sections. Every section must fit compactly — keep student_prompt to 1-3 sentences.`,
+    `Space budget per section type (approximate): warmup_box=small, fill_blank=small, numbered_response=medium, two_column_box=large, three_column_box=large, drawing_box=large, content_box=small.`,
+    `For a ${targetPages}-page sheet, use at most ${targetPages <= 2 ? "1 large section (two_column_box, three_column_box, or drawing_box)" : "2 large sections"}. Prefer warmup_box, fill_blank, and numbered_response for the rest.`,
+    `\nSlideshow Content:\n${rawText.slice(0, 5000)}`,
+    `\nReturn JSON matching this schema exactly:`,
+    `{"concept":string,"title":string,"grade_band":string,"subject":string,"learning_objective":string,"essential_question":string,"sections":[{"id":string,"type":"warmup_box"|"fill_blank"|"numbered_response"|"content_box"|"two_column_box"|"drawing_box"|"three_column_box","heading":string(optional),"content":string,"student_prompt":string,"answer_key_notes":string,"num_lines":number(optional,for numbered_response),"columns":[{"header":string,"width_pct":number,"prefilled":boolean}](optional,for two/three_column_box)}]}`,
+    `\nStart with a warmup_box. Mix types to match the content. Output only the JSON.`,
   ].join("\n");
 }
 
@@ -107,8 +78,8 @@ export async function POST(request: NextRequest) {
   try {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 2048,
       system: SYSTEM_PROMPT,
       messages: [
         {
