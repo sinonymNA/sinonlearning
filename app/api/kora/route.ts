@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  let raw = "";
   try {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
@@ -60,16 +61,26 @@ export async function POST(request: NextRequest) {
       system: KORA_SYSTEM_PROMPT,
       messages: [{ role: "user", content: user_message }],
     });
-
-    const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    const jsonStr = extractJson(raw);
-    const data = JSON.parse(jsonStr);
-    return NextResponse.json({ data });
+    raw = message.content[0].type === "text" ? message.content[0].text : "";
   } catch (err) {
-    console.error("[KORA API]", err);
+    console.error("[KORA API] Claude call failed:", err);
     return NextResponse.json(
-      { error: "KORA could not generate a response. Please try again." },
+      { error: "KORA inference service is unavailable. Please try again." },
       { status: 502 }
     );
   }
+
+  let data: unknown;
+  try {
+    const jsonStr = extractJson(raw);
+    data = JSON.parse(jsonStr);
+  } catch {
+    console.error("[KORA API] JSON parse failed. Raw output:", raw.slice(0, 500));
+    return NextResponse.json(
+      { error: "KORA returned an unreadable response. Please try again." },
+      { status: 422 }
+    );
+  }
+
+  return NextResponse.json({ data });
 }

@@ -91,10 +91,10 @@ export default function KoraModelPage() {
         subtext="KORA is Sinon Learning's teacher-first AI model—built to remove the dirty, repetitive work around teaching, never the thinking, judgment, and relationships that make teaching matter."
       >
         <Link
-          href="/teacher-tools/teacher-studio"
+          href="/notesheet"
           className="inline-flex items-center gap-2 rounded-full bg-teal-300 px-6 py-3 text-sm font-medium text-navy-950 transition-colors hover:bg-teal-200"
         >
-          See Teacher Studio
+          Try the Notesheet Engine
           <ArrowRight size={14} />
         </Link>
         <Link
@@ -114,7 +114,7 @@ export default function KoraModelPage() {
               A teacher-first AI model, built around one constraint.
             </h2>
             <p className="mt-5 text-lg leading-relaxed text-white/65">
-              KORA is the AI model behind Sinon Learning&rsquo;s teacher-facing tools, like Teacher Studio. It is designed to
+              KORA is the AI model behind Sinon Learning&rsquo;s teacher-facing tools. It is designed to
               remove the dirty, repetitive work around teaching—drafting, formatting, first passes—so teachers can spend
               their time and attention on what actually requires a human: judgment, relationships, and real classroom
               decisions.
@@ -288,7 +288,7 @@ export default function KoraModelPage() {
             theme="dark"
             title="Keep exploring"
             links={[
-              { label: "Teacher Studio", href: "/teacher-tools/teacher-studio" },
+              { label: "Notesheet Engine", href: "/notesheet" },
               { label: "KORA Constitution", href: "/mission/kora-constitution" },
               { label: "Open Education & AI", href: "/research/open-education-and-ai" },
             ]}

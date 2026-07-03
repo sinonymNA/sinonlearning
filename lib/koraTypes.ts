@@ -71,3 +71,68 @@ export interface KoraEvidenceEvent {
 export interface KoraEvidenceEventsOutput {
   events: KoraEvidenceEvent[];
 }
+
+export interface KoraAnchorOutput {
+  concept: string;
+  anchor_statement: string;
+  analogy: string;
+  why_it_matters: string;
+  prerequisite_concepts: string[];
+}
+
+export interface KoraGraphNode {
+  id: string;
+  label: string;
+  type: "concept" | "example" | "misconception";
+}
+
+export interface KoraGraphEdge {
+  from: string;
+  to: string;
+  label: string;
+}
+
+export interface KoraGraphOutput {
+  concept: string;
+  nodes: KoraGraphNode[];
+  edges: KoraGraphEdge[];
+  central_insight: string;
+}
+
+export interface KoraEvaluateOutput {
+  concept: string;
+  student_response: string;
+  evidence_level: KoraEvidenceLevel;
+  evidence_summary: string;
+  strength_observed: string | null;
+  misconception_detected: boolean;
+  misconception_label: string | null;
+  next_move: string;
+}
+
+export interface KoraDiagnosisOutput {
+  concept: string;
+  student_response: string;
+  primary_misconception: string | null;
+  misconception_category: string | null;
+  confidence: "low" | "medium" | "high";
+  diagnostic_reasoning: string;
+  intervention_suggestion: string;
+}
+
+export interface KoraMisconceptionSimOutput {
+  concept: string;
+  misconception_label: string;
+  simulated_response: string;
+  why_this_sounds_right: string;
+  key_error: string;
+}
+
+export interface KoraNextProbeOutput {
+  concept: string;
+  current_evidence_level: string;
+  probe_question: string;
+  cognitive_demand: "recall" | "explain" | "apply" | "evaluate";
+  what_a_strong_answer_includes: string;
+  what_to_listen_for: string;
+}

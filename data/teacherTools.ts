@@ -11,22 +11,21 @@ export interface TeacherToolEntry {
 
 export const teacherTools: TeacherToolEntry[] = [
   {
-    slug: "teacher-studio",
-    title: "Teacher Studio",
-    tagline: "Turn lesson content into polished Google Docs and Slides.",
+    slug: "notesheet-engine",
+    title: "Notesheet Engine",
+    tagline: "Upload a slideshow — get a student notesheet built in your style.",
     description:
-      "Paste your notes, choose a classroom template, add images if you want, and Teacher Studio formats everything into editable Google materials — plus a full workspace for building slides, worksheets, and activities from scratch or from a template.",
+      "Upload a PowerPoint or PDF, tell KORA the concept and grade level, and it returns a structured notesheet plan. Your code renders it. You download student PDFs and a teacher answer key.",
     status: "Available",
-    externalHref: "/studio",
+    externalHref: "/notesheet",
   },
   {
-    slug: "anchored-notes",
-    title: "Anchored Notes",
-    tagline: "Paste your lesson content, pick a template, generate a Google Doc.",
+    slug: "kora-game",
+    title: "KORA Game",
+    tagline: "A live game where understanding depth earns points — not recall speed.",
     description:
-      "Paste lesson content, choose a classroom template like APWH Anchored Notes or Clean Printable Notes, add image links if you want them, and generate a polished student handout as a real Google Doc — or export it locally.",
-    status: "Available",
-    externalHref: "/studio/anchored-notes",
+      "Teachers launch a game, students join with a code and type short answers. KORA evaluates each response for understanding level and misconceptions in real time. Teachers see a live grid of who understands what.",
+    status: "Coming Soon",
   },
   {
     slug: "simulations-and-games",
@@ -45,42 +44,6 @@ export const teacherTools: TeacherToolEntry[] = [
       "Classboard, the Game Show Generator, and a growing set of lightweight tools built for how teachers actually run a classroom.",
     status: "Available",
     externalHref: "/tools",
-  },
-  {
-    slug: "assessment-builder",
-    title: "Assessment Builder",
-    tagline: "Build quizzes and assessments with the answer key filled in.",
-    description:
-      "Build quizzes, exit tickets, and study guides inside Teacher Studio, with answer keys auto-filled for multiple choice and true/false questions.",
-    status: "Available",
-    externalHref: "/studio",
-  },
-  {
-    slug: "templates",
-    title: "Templates",
-    tagline: "36 ready-made templates for planning and classroom documents.",
-    description:
-      "A library of lesson plan templates, worksheets, activities, and assessments teachers can copy and adapt in minutes inside Teacher Studio.",
-    status: "Available",
-    externalHref: "/studio/templates",
-  },
-  {
-    slug: "google-docs-slides-export",
-    title: "Google Docs & Slides Export",
-    tagline: "Take Teacher Studio projects straight into your own Drive.",
-    description:
-      "Sign into your own Google account just long enough to send a finished Teacher Studio project into a real, editable Google Doc or Slides presentation.",
-    status: "Available",
-    externalHref: "/studio",
-  },
-  {
-    slug: "teach-this-tomorrow",
-    title: "Teach This Tomorrow",
-    tagline: "Grab-and-go lessons for when you need something fast.",
-    description:
-      "A few quick questions in Teacher Studio build a ready-to-teach draft right now — no waiting, built for substitutes and busy mornings.",
-    status: "Available",
-    externalHref: "/studio",
   },
 ];
 

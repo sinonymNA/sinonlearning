@@ -97,10 +97,10 @@ const featuredNow = [
     cta: "Explore the course",
   },
   {
-    title: "Teacher Studio",
-    description: "An upcoming AI workspace that removes the dirty work around teaching.",
-    href: "/teacher-tools/teacher-studio",
-    cta: "See what's coming",
+    title: "Notesheet Engine",
+    description: "Upload a slideshow — Sinon reads the lesson and builds a student notesheet in your style.",
+    href: "/notesheet",
+    cta: "Try it now",
   },
   {
     title: "KORA Model",
