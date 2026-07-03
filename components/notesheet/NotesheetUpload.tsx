@@ -44,28 +44,32 @@ export default function NotesheetUpload({ onUpload }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center gap-5">
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
         className={[
-          "flex flex-col items-center justify-center gap-4 w-full max-w-md h-56 rounded-xl border-2 border-dashed cursor-pointer transition-colors",
-          dragging ? "border-teal-400 bg-teal-50/5" : "border-white/20 hover:border-white/40",
+          "flex flex-col items-center justify-center gap-4 w-full h-52 rounded-2xl border-2 border-dashed cursor-pointer transition-all",
+          dragging
+            ? "border-violet-400 bg-violet-50"
+            : "border-stone-300 bg-white hover:border-violet-300 hover:bg-violet-50/40",
         ].join(" ")}
       >
         {loading ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="w-7 h-7 border-2 border-teal-300 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-white/60">Reading slides...</p>
+            <div className="w-7 h-7 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-stone-500">Reading slides…</p>
           </div>
         ) : (
           <>
-            <FileUp size={36} className="text-white/40" />
+            <div className={["w-12 h-12 rounded-xl flex items-center justify-center transition-colors", dragging ? "bg-violet-100" : "bg-stone-100"].join(" ")}>
+              <FileUp size={22} className={dragging ? "text-violet-600" : "text-stone-400"} />
+            </div>
             <div className="text-center">
-              <p className="text-sm font-medium text-white/80">Drop your slideshow here</p>
-              <p className="text-xs text-white/45 mt-1">PowerPoint (.pptx) · up to 100 MB</p>
+              <p className="text-sm font-medium text-stone-700">Drop your slideshow here</p>
+              <p className="text-xs text-stone-400 mt-1">PowerPoint (.pptx) · up to 100 MB</p>
             </div>
           </>
         )}
@@ -82,14 +86,18 @@ export default function NotesheetUpload({ onUpload }: Props) {
       {!loading && (
         <button
           onClick={() => inputRef.current?.click()}
-          className="flex items-center gap-2 rounded-full bg-teal-300 px-5 py-2.5 text-sm font-medium text-navy-950 hover:bg-teal-200 transition-colors"
+          className="flex items-center gap-2 rounded-full bg-violet-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm"
         >
           <Upload size={14} />
           Choose file
         </button>
       )}
 
-      {error && <p className="text-red-400 text-sm text-center max-w-xs">{error}</p>}
+      {error && (
+        <p className="text-red-500 text-sm text-center max-w-xs bg-red-50 border border-red-100 rounded-lg px-4 py-2">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

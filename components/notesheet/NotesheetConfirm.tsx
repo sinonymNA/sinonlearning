@@ -15,6 +15,7 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
   const [concept, setConcept] = useState("");
   const [subject, setSubject] = useState("");
   const [gradeBand, setGradeBand] = useState("");
+  const [targetPages, setTargetPages] = useState(2);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
       const res = await fetch("/api/notesheet/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawText, concept, subject, gradeBand }),
+        body: JSON.stringify({ rawText, concept, subject, gradeBand, targetPages }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Generation failed."); return; }
@@ -43,8 +44,8 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col gap-6">
-      <div className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-sm text-white/60">
-        Extracted text from <span className="text-white font-medium">{slideCount} slides</span>
+      <div className="rounded-xl border border-stone-200 bg-stone-100 px-5 py-4 text-sm text-stone-500">
+        Extracted text from <span className="text-stone-800 font-medium">{slideCount} slides</span>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -54,35 +55,67 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
           { label: "Grade band", value: gradeBand, set: setGradeBand, placeholder: "e.g. Grades 9–10" },
         ].map(({ label, value, set, placeholder }) => (
           <label key={label} className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-widest text-white/50">{label}</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">{label}</span>
             <input
               type="text"
               value={value}
               onChange={(e) => set(e.target.value)}
               placeholder={placeholder}
-              className="rounded-lg border border-white/15 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-teal-400/60 focus:bg-white/[0.07] transition-colors"
+              className="rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-800 placeholder-stone-300 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
             />
           </label>
         ))}
+
+        {/* Pages selector */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-widest text-stone-400">Target length</span>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setTargetPages(n)}
+                className={[
+                  "flex-1 rounded-lg border py-2 text-sm font-medium transition-all",
+                  targetPages === n
+                    ? "border-violet-500 bg-violet-600 text-white shadow-sm"
+                    : "border-stone-200 bg-white text-stone-500 hover:border-violet-300 hover:text-violet-600",
+                ].join(" ")}
+              >
+                {n}p
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-stone-400 mt-0.5">
+            {targetPages === 1 ? "4–6 sections · very focused" :
+             targetPages === 2 ? "6–9 sections · standard" :
+             targetPages === 3 ? "9–13 sections · comprehensive" :
+             "12–16 sections · deep dive"}
+          </p>
+        </div>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && (
+        <p className="text-red-500 text-sm bg-red-50 border border-red-100 rounded-lg px-4 py-2">
+          {error}
+        </p>
+      )}
 
       <div className="flex gap-3">
         <button
           onClick={onBack}
-          className="flex-1 rounded-full border border-white/15 px-4 py-2.5 text-sm text-white/60 hover:border-white/30 hover:text-white/80 transition-colors"
+          className="flex-1 rounded-full border border-stone-200 px-4 py-2.5 text-sm text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-colors"
         >
           Back
         </button>
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="flex-1 flex items-center justify-center gap-2 rounded-full bg-teal-300 px-4 py-2.5 text-sm font-medium text-navy-950 hover:bg-teal-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 flex items-center justify-center gap-2 rounded-full bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           {loading ? (
             <>
-              <div className="w-4 h-4 border-2 border-navy-950/40 border-t-navy-950 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               Building plan…
             </>
           ) : (

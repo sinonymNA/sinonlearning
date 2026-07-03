@@ -112,7 +112,7 @@ export default function PrintAnimation({ visible, mode }: Props) {
             borderRadius: 12,
           }}
         >
-          {/* Indicator light — teal pulse */}
+          {/* Indicator light — violet pulse */}
           <div
             style={{
               position: "absolute",
@@ -121,8 +121,8 @@ export default function PrintAnimation({ visible, mode }: Props) {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: "#2dd4bf",
-              boxShadow: "0 0 10px #2dd4bf88",
+              background: "#a78bfa",
+              boxShadow: "0 0 10px #a78bfa88",
               animation: "pulse 1.5s ease-in-out infinite",
             }}
           />

@@ -11,11 +11,11 @@ export interface TeacherToolEntry {
 
 export const teacherTools: TeacherToolEntry[] = [
   {
-    slug: "notesheet-engine",
-    title: "Notesheet Engine",
-    tagline: "Upload a slideshow — get a student notesheet built in your style.",
+    slug: "scaffold",
+    title: "Scaffold",
+    tagline: "Upload a slideshow — get a structured student notesheet in seconds.",
     description:
-      "Upload a PowerPoint or PDF, tell KORA the concept and grade level, and it returns a structured notesheet plan. Your code renders it. You download student PDFs and a teacher answer key.",
+      "Upload a PowerPoint or PDF, tell KORA the concept and grade level, and Scaffold builds a structured notesheet plan. Download student PDFs and a teacher answer key instantly.",
     status: "Available",
     externalHref: "/notesheet",
   },

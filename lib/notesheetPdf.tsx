@@ -2,6 +2,23 @@ import React from "react";
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { NotesheetPlan, NotesheetSection } from "@/lib/notesheetTypes";
 
+// ─── Per-section-type design tokens ──────────────────────────────────────────
+
+const SECTION_TOKENS: Record<
+  NotesheetSection["type"],
+  { stripe: string; bg: string }
+> = {
+  warmup_box:        { stripe: "#a78bfa", bg: "#faf5ff" },
+  fill_blank:        { stripe: "#60a5fa", bg: "#eff6ff" },
+  numbered_response: { stripe: "#34d399", bg: "#f0fdf4" },
+  content_box:       { stripe: "#fbbf24", bg: "#fffbeb" },
+  two_column_box:    { stripe: "#f472b6", bg: "#fdf2f8" },
+  drawing_box:       { stripe: "#fb923c", bg: "#fff7ed" },
+  three_column_box:  { stripe: "#38bdf8", bg: "#f0f9ff" },
+};
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const S = StyleSheet.create({
   page: {
     fontFamily: "Times-Roman",
@@ -14,8 +31,8 @@ const S = StyleSheet.create({
     backgroundColor: "#ffffff",
   },
   header: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#1a1a1a",
+    borderBottomWidth: 3,
+    borderBottomColor: "#6d28d9",
     borderBottomStyle: "solid",
     paddingBottom: 8,
     marginBottom: 14,
@@ -53,23 +70,33 @@ const S = StyleSheet.create({
     fontSize: 11,
     lineHeight: 1.4,
   },
+  // Base section style — no border; stripe and bg applied dynamically
   section: {
-    borderWidth: 1,
-    borderColor: "#cccccc",
-    borderStyle: "solid",
-    borderRadius: 2,
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingLeft: 12,
+    borderRadius: 4,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingLeft: 14,
     paddingRight: 12,
-    marginBottom: 14,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+    borderLeftStyle: "solid",
+    // borderLeftColor set per-type at render time
   },
-  warmupBg: { backgroundColor: "#faf9f6" },
-  contentBg: { backgroundColor: "#f0f4f8", borderColor: "#9999bb" },
+  sectionPaired: {
+    // marginBottom omitted — the pair row View handles spacing
+    borderRadius: 4,
+    paddingTop: 12,
+    paddingBottom: 12,
+    paddingLeft: 14,
+    paddingRight: 12,
+    borderLeftWidth: 3,
+    borderLeftStyle: "solid",
+    flex: 1,
+  },
   sectionHeading: {
     fontFamily: "Times-Bold",
-    fontSize: 9,
-    color: "#333333",
+    fontSize: 9.5,
+    // color set per-type at render time
     marginBottom: 5,
     letterSpacing: 0.5,
   },
@@ -83,10 +110,10 @@ const S = StyleSheet.create({
     lineHeight: 1.5,
   },
   blankLine: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#aaaaaa",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#d1d5db",
     borderBottomStyle: "solid",
-    height: 24,
+    height: 22,
     marginBottom: 3,
   },
   numberedRow: {
@@ -101,16 +128,16 @@ const S = StyleSheet.create({
   },
   numberLine: {
     flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: "#aaaaaa",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#d1d5db",
     borderBottomStyle: "solid",
     height: 22,
   },
   drawArea: {
     borderWidth: 1,
-    borderColor: "#999999",
+    borderColor: "#d1d5db",
     borderStyle: "dashed",
-    height: 130,
+    height: 140,
     marginTop: 5,
     alignItems: "center",
     justifyContent: "center",
@@ -122,9 +149,9 @@ const S = StyleSheet.create({
   },
   tableHeaderRow: { flexDirection: "row" },
   tableHeaderCell: {
-    backgroundColor: "#eeeeee",
-    borderWidth: 1,
-    borderColor: "#bbbbbb",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 0.5,
+    borderColor: "#d1d5db",
     borderStyle: "solid",
     paddingTop: 4,
     paddingBottom: 4,
@@ -138,23 +165,22 @@ const S = StyleSheet.create({
   },
   tableRow: { flexDirection: "row" },
   tableCell: {
-    borderWidth: 1,
-    borderColor: "#cccccc",
+    borderWidth: 0.5,
+    borderColor: "#e5e7eb",
     borderStyle: "solid",
     height: 28,
     backgroundColor: "#fafafa",
   },
   answerKey: {
-    marginTop: 8,
-    paddingTop: 5,
-    paddingBottom: 5,
+    backgroundColor: "#fffbeb",
+    borderLeftWidth: 2,
+    borderLeftColor: "#fbbf24",
+    borderLeftStyle: "solid",
     paddingLeft: 8,
     paddingRight: 8,
-    backgroundColor: "#fffbcc",
-    borderWidth: 1,
-    borderColor: "#ccaa88",
-    borderStyle: "dashed",
-    borderRadius: 2,
+    paddingTop: 5,
+    paddingBottom: 5,
+    marginTop: 8,
   },
   answerKeyText: {
     fontSize: 10,
@@ -164,7 +190,51 @@ const S = StyleSheet.create({
     fontFamily: "Times-Bold",
     fontSize: 8,
   },
+  // Pair row container
+  pairRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 12,
+  },
 });
+
+// ─── Small-section detection ──────────────────────────────────────────────────
+
+function isSmall(section: NotesheetSection): boolean {
+  if (section.type === "warmup_box" || section.type === "fill_blank") {
+    return true;
+  }
+  if (section.type === "numbered_response") {
+    const n = section.num_lines ?? 5;
+    return n <= 4;
+  }
+  return false;
+}
+
+// ─── Layout algorithm ─────────────────────────────────────────────────────────
+
+type LayoutRow =
+  | { kind: "single"; section: NotesheetSection }
+  | { kind: "pair"; left: NotesheetSection; right: NotesheetSection };
+
+function buildLayout(sections: NotesheetSection[]): LayoutRow[] {
+  const rows: LayoutRow[] = [];
+  let i = 0;
+  while (i < sections.length) {
+    const curr = sections[i];
+    const next = sections[i + 1];
+    if (isSmall(curr) && next && isSmall(next)) {
+      rows.push({ kind: "pair", left: curr, right: next });
+      i += 2;
+    } else {
+      rows.push({ kind: "single", section: curr });
+      i++;
+    }
+  }
+  return rows;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function BlankLines({ n }: { n: number }) {
   return (
@@ -258,7 +328,10 @@ function SectionBody({
           <Text style={S.prompt}>{section.student_prompt}</Text>
           <View style={S.tableHeaderRow}>
             {cols.map((col, i) => (
-              <View key={i} style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}>
+              <View
+                key={i}
+                style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}
+              >
                 <Text style={S.tableHeaderText}>{col.header.toUpperCase()}</Text>
               </View>
             ))}
@@ -266,7 +339,10 @@ function SectionBody({
           {Array.from({ length: 6 }).map((_, row) => (
             <View key={row} style={S.tableRow}>
               {cols.map((col, colIdx) => (
-                <View key={colIdx} style={[S.tableCell, { width: `${col.width_pct}%` }]} />
+                <View
+                  key={colIdx}
+                  style={[S.tableCell, { width: `${col.width_pct}%` }]}
+                />
               ))}
             </View>
           ))}
@@ -300,7 +376,10 @@ function SectionBody({
           <Text style={S.prompt}>{section.student_prompt}</Text>
           <View style={S.tableHeaderRow}>
             {cols.map((col, i) => (
-              <View key={i} style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}>
+              <View
+                key={i}
+                style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}
+              >
                 <Text style={S.tableHeaderText}>{col.header.toUpperCase()}</Text>
               </View>
             ))}
@@ -308,7 +387,10 @@ function SectionBody({
           {Array.from({ length: 4 }).map((_, row) => (
             <View key={row} style={S.tableRow}>
               {cols.map((col, colIdx) => (
-                <View key={colIdx} style={[S.tableCell, { width: `${col.width_pct}%` }]} />
+                <View
+                  key={colIdx}
+                  style={[S.tableCell, { width: `${col.width_pct}%` }]}
+                />
               ))}
             </View>
           ))}
@@ -322,29 +404,40 @@ function SectionBody({
   }
 }
 
-function NotesheetSection({
+function SectionCard({
   section,
   isTeacher,
+  paired = false,
 }: {
   section: NotesheetSection;
   isTeacher: boolean;
+  paired?: boolean;
 }) {
-  const extraStyle =
-    section.type === "warmup_box"
-      ? S.warmupBg
-      : section.type === "content_box"
-      ? S.contentBg
-      : undefined;
+  const tokens = SECTION_TOKENS[section.type];
+  const baseStyle = paired ? S.sectionPaired : S.section;
 
   return (
-    <View style={extraStyle ? [S.section, extraStyle] : S.section} wrap={false}>
+    <View
+      style={[
+        baseStyle,
+        {
+          backgroundColor: tokens.bg,
+          borderLeftColor: tokens.stripe,
+        },
+      ]}
+      wrap={false}
+    >
       {section.heading && (
-        <Text style={S.sectionHeading}>{section.heading.toUpperCase()}</Text>
+        <Text style={[S.sectionHeading, { color: tokens.stripe }]}>
+          {section.heading.toUpperCase()}
+        </Text>
       )}
       <SectionBody section={section} isTeacher={isTeacher} />
     </View>
   );
 }
+
+// ─── Document ─────────────────────────────────────────────────────────────────
 
 export default function NotesheetDocument({
   plan,
@@ -354,6 +447,7 @@ export default function NotesheetDocument({
   mode: "student" | "teacher_key";
 }) {
   const isTeacher = mode === "teacher_key";
+  const layout = buildLayout(plan.sections);
 
   return (
     <Document>
@@ -373,9 +467,32 @@ export default function NotesheetDocument({
           <Text style={S.eqText}>{plan.essential_question}</Text>
         </View>
 
-        {plan.sections.map((section) => (
-          <NotesheetSection key={section.id} section={section} isTeacher={isTeacher} />
-        ))}
+        {layout.map((row, idx) => {
+          if (row.kind === "single") {
+            return (
+              <SectionCard
+                key={row.section.id}
+                section={row.section}
+                isTeacher={isTeacher}
+              />
+            );
+          }
+          // Pair row
+          return (
+            <View key={`pair-${idx}`} style={S.pairRow} wrap={false}>
+              <SectionCard
+                section={row.left}
+                isTeacher={isTeacher}
+                paired
+              />
+              <SectionCard
+                section={row.right}
+                isTeacher={isTeacher}
+                paired
+              />
+            </View>
+          );
+        })}
       </Page>
     </Document>
   );

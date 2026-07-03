@@ -19,17 +19,27 @@ function extractJson(text: string): string {
   return (fenced ? fenced[1] : text).trim();
 }
 
+function sectionCountRange(targetPages: number): string {
+  if (targetPages <= 1) return "4-6";
+  if (targetPages === 2) return "6-9";
+  if (targetPages === 3) return "9-13";
+  return "12-16";
+}
+
 function buildUserMessage(params: {
   rawText: string;
   concept: string;
   subject: string;
   gradeBand: string;
+  targetPages: number;
 }): string {
-  const { rawText, concept, subject, gradeBand } = params;
+  const { rawText, concept, subject, gradeBand, targetPages } = params;
+  const countRange = sectionCountRange(targetPages);
   return [
     `Concept: ${concept}`,
     `Subject: ${subject}`,
     `Grade Band: ${gradeBand}`,
+    `Target length: ${targetPages} printed page${targetPages === 1 ? "" : "s"} — design ${countRange} sections that together fill approximately ${targetPages} page${targetPages === 1 ? "" : "s"} when rendered. Shorter prompts and fewer blank lines for shorter targets.`,
     `\nSlideshow Content:\n${rawText.slice(0, 6000)}`,
     `\nTask: Analyze this slideshow and return a structured notesheet plan as JSON. The plan tells students what to write, in what format, with what prompts. Do not write the notesheet yourself — return a plan that the system will render.`,
     `\nReturn a JSON object with this exact schema:`,
@@ -61,7 +71,7 @@ function buildUserMessage(params: {
     `- two_column_box: two columns, e.g. Term | Definition; left column prefilled`,
     `- drawing_box: student draws a diagram, graph, or visual representation`,
     `- three_column_box: three columns, e.g. Concept | Example | Why It Works`,
-    `\nInclude 5-10 sections. Start with a warmup_box. Mix section types thoughtfully based on the content.`,
+    `\nInclude ${countRange} sections. Start with a warmup_box. Mix section types thoughtfully based on the content.`,
   ].join("\n");
 }
 
@@ -76,20 +86,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
   }
 
-  let body: { rawText: string; concept: string; subject: string; gradeBand: string };
+  let body: { rawText: string; concept: string; subject: string; gradeBand: string; targetPages?: number };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { rawText, concept, subject, gradeBand } = body;
+  const { rawText, concept, subject, gradeBand, targetPages = 2 } = body;
   if (!rawText || !concept || !subject || !gradeBand) {
     return NextResponse.json(
       { error: "rawText, concept, subject, and gradeBand are required." },
       { status: 400 }
     );
   }
+
+  const clampedPages = Math.max(1, Math.min(4, Math.round(targetPages)));
 
   let raw = "";
   try {
@@ -98,7 +110,12 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildUserMessage({ rawText, concept, subject, gradeBand }) }],
+      messages: [
+        {
+          role: "user",
+          content: buildUserMessage({ rawText, concept, subject, gradeBand, targetPages: clampedPages }),
+        },
+      ],
     });
     raw = message.content[0].type === "text" ? message.content[0].text : "";
   } catch (err) {
