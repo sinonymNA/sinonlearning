@@ -28,8 +28,13 @@ interface DemoRequestBody {
 }
 
 function extractJson(text: string): string {
+  // Try fenced code block first
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
+  if (fenced) return fenced[1].trim();
+  // Fall back to finding the outermost JSON object
+  const objMatch = text.match(/\{[\s\S]*\}/);
+  if (objMatch) return objMatch[0].trim();
+  return text.trim();
 }
 
 function formatHistory(turns: ConversationTurn[]): string {
@@ -223,15 +228,12 @@ export async function POST(request: NextRequest) {
     const client = new Anthropic({ apiKey });
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      thinking: { type: "adaptive" },
+      max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const raw = message.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("");
+    const raw =
+      message.content[0].type === "text" ? message.content[0].text : "";
 
     const jsonStr = extractJson(raw);
     const data = JSON.parse(jsonStr);
