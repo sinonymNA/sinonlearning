@@ -2,210 +2,218 @@ import React from "react";
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { NotesheetPlan, NotesheetSection } from "@/lib/notesheetTypes";
 
-// ─── Per-section-type design tokens ──────────────────────────────────────────
+// ─── Palette ──────────────────────────────────────────────────────────────────
 
-const SECTION_TOKENS: Record<
-  NotesheetSection["type"],
-  { stripe: string; bg: string }
-> = {
-  warmup_box:        { stripe: "#a78bfa", bg: "#faf5ff" },
-  fill_blank:        { stripe: "#60a5fa", bg: "#eff6ff" },
-  numbered_response: { stripe: "#34d399", bg: "#f0fdf4" },
-  content_box:       { stripe: "#fbbf24", bg: "#fffbeb" },
-  two_column_box:    { stripe: "#f472b6", bg: "#fdf2f8" },
-  drawing_box:       { stripe: "#fb923c", bg: "#fff7ed" },
-  three_column_box:  { stripe: "#38bdf8", bg: "#f0f9ff" },
-};
+const BK = "#000000";
+const DK = "#1a1a1a";
+const MD = "#666666";
+const LT = "#cccccc";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
   page: {
-    fontFamily: "Times-Roman",
-    fontSize: 10.5,
-    color: "#1a1a1a",
-    paddingTop: 42,
-    paddingBottom: 42,
+    fontFamily: "Helvetica",
+    fontSize: 10,
+    color: DK,
+    paddingTop: 38,
+    paddingBottom: 38,
     paddingLeft: 46,
     paddingRight: 46,
     backgroundColor: "#ffffff",
   },
-  header: {
-    borderBottomWidth: 2.5,
-    borderBottomColor: "#6d28d9",
+
+  // ── Top meta row ────────────────────────────────────────────────────────────
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 7,
+  },
+  metaCourse: {
+    fontSize: 8,
+    letterSpacing: 0.5,
+    color: MD,
+  },
+  metaNameRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  metaNameLabel: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 9,
+    paddingBottom: 2,
+  },
+  metaNameLine: {
+    width: 110,
+    borderBottomWidth: 0.75,
+    borderBottomColor: BK,
     borderBottomStyle: "solid",
-    paddingBottom: 6,
-    marginBottom: 9,
+    height: 13,
   },
-  headerTitle: {
-    fontFamily: "Times-Bold",
-    fontSize: 15,
-  },
-  headerMeta: {
-    fontFamily: "Times-Italic",
-    fontSize: 8.5,
-    color: "#555555",
-    marginTop: 2,
-  },
-  essentialQuestion: {
-    backgroundColor: "#f5f3ee",
-    borderLeftWidth: 3,
-    borderLeftColor: "#333333",
-    borderLeftStyle: "solid",
-    paddingTop: 5,
+
+  // ── Title ────────────────────────────────────────────────────────────────────
+  titleBlock: {
+    borderBottomWidth: 2,
+    borderBottomColor: BK,
+    borderBottomStyle: "solid",
     paddingBottom: 5,
+    marginBottom: 9,
+    alignItems: "center",
+  },
+  titleText: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 13,
+    letterSpacing: 1.5,
+    textAlign: "center",
+  },
+
+  // ── Essential question ───────────────────────────────────────────────────────
+  eqBox: {
+    borderWidth: 1,
+    borderColor: BK,
+    borderStyle: "solid",
+    paddingTop: 6,
+    paddingBottom: 6,
     paddingLeft: 9,
     paddingRight: 9,
-    marginBottom: 9,
+    marginBottom: 7,
   },
   eqLabel: {
-    fontFamily: "Times-Bold",
+    fontFamily: "Helvetica-Bold",
     fontSize: 7.5,
-    color: "#333333",
-    marginBottom: 2,
     letterSpacing: 0.8,
+    marginBottom: 3,
   },
   eqText: {
-    fontFamily: "Times-Italic",
-    fontSize: 10.5,
-    lineHeight: 1.35,
-  },
-  // Base section style — no border; stripe and bg applied dynamically
-  section: {
-    borderRadius: 3,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingLeft: 10,
-    paddingRight: 8,
-    marginBottom: 7,
-    borderLeftWidth: 3,
-    borderLeftStyle: "solid",
-    // borderLeftColor set per-type at render time
-  },
-  sectionPaired: {
-    borderRadius: 3,
-    paddingTop: 8,
-    paddingBottom: 8,
-    paddingLeft: 10,
-    paddingRight: 8,
-    borderLeftWidth: 3,
-    borderLeftStyle: "solid",
-    flex: 1,
-  },
-  sectionHeading: {
-    fontFamily: "Times-Bold",
-    fontSize: 8.5,
-    marginBottom: 4,
-    letterSpacing: 0.5,
-  },
-  prompt: {
-    fontSize: 10.5,
-    lineHeight: 1.35,
-    marginBottom: 5,
-  },
-  contentText: {
-    fontSize: 10.5,
+    fontFamily: "Helvetica-Oblique",
+    fontSize: 9.5,
     lineHeight: 1.4,
   },
+
+  // ── Section box ──────────────────────────────────────────────────────────────
+  section: {
+    borderWidth: 1,
+    borderColor: BK,
+    borderStyle: "solid",
+    padding: 9,
+    marginBottom: 7,
+  },
+  sectionPaired: {
+    borderWidth: 1,
+    borderColor: BK,
+    borderStyle: "solid",
+    padding: 9,
+    flex: 1,
+  },
+  sectionLabel: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 8.5,
+    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+  bodyText: {
+    fontSize: 9.5,
+    lineHeight: 1.4,
+    marginBottom: 5,
+  },
+
+  // ── Writing lines ─────────────────────────────────────────────────────────────
   blankLine: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#d1d5db",
+    borderBottomWidth: 0.75,
+    borderBottomColor: BK,
     borderBottomStyle: "solid",
-    height: 17,
+    height: 19,
     marginBottom: 2,
   },
   numberedRow: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 3,
+    alignItems: "flex-end",
+    marginBottom: 4,
   },
   numberLabel: {
     fontSize: 9.5,
-    width: 16,
-    color: "#555555",
+    width: 18,
+    paddingBottom: 2,
   },
   numberLine: {
     flex: 1,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#d1d5db",
+    borderBottomWidth: 0.75,
+    borderBottomColor: BK,
     borderBottomStyle: "solid",
-    height: 17,
+    height: 19,
   },
+
+  // ── Table ─────────────────────────────────────────────────────────────────────
+  tableWrap: {
+    borderWidth: 1,
+    borderColor: BK,
+    borderStyle: "solid",
+    marginTop: 5,
+  },
+  tableHeadRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: BK,
+    borderBottomStyle: "solid",
+  },
+  tableBodyRow: {
+    flexDirection: "row",
+    height: 22,
+  },
+
+  // ── Drawing area ──────────────────────────────────────────────────────────────
   drawArea: {
     borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderColor: LT,
     borderStyle: "dashed",
-    height: 95,
-    marginTop: 4,
+    height: 90,
+    marginTop: 5,
     alignItems: "center",
     justifyContent: "center",
   },
-  drawLabel: {
-    color: "#aaaaaa",
-    fontSize: 8.5,
-    fontFamily: "Times-Italic",
+  drawHint: {
+    fontFamily: "Helvetica-Oblique",
+    fontSize: 8,
+    color: LT,
   },
-  tableHeaderRow: { flexDirection: "row" },
-  tableHeaderCell: {
-    backgroundColor: "#f3f4f6",
-    borderWidth: 0.5,
-    borderColor: "#d1d5db",
-    borderStyle: "solid",
-    paddingTop: 3,
-    paddingBottom: 3,
-    paddingLeft: 5,
-    paddingRight: 5,
-  },
-  tableHeaderText: {
-    fontFamily: "Times-Bold",
-    fontSize: 7.5,
-    letterSpacing: 0.4,
-  },
-  tableRow: { flexDirection: "row" },
-  tableCell: {
-    borderWidth: 0.5,
-    borderColor: "#e5e7eb",
-    borderStyle: "solid",
-    height: 22,
-    backgroundColor: "#fafafa",
-  },
+
+  // ── Answer key ────────────────────────────────────────────────────────────────
   answerKey: {
-    backgroundColor: "#fffbeb",
+    backgroundColor: "#f8f8f6",
     borderLeftWidth: 2,
-    borderLeftColor: "#fbbf24",
+    borderLeftColor: MD,
     borderLeftStyle: "solid",
     paddingLeft: 7,
     paddingRight: 7,
     paddingTop: 4,
     paddingBottom: 4,
-    marginTop: 6,
-  },
-  answerKeyText: {
-    fontSize: 9.5,
-    lineHeight: 1.35,
+    marginTop: 7,
   },
   answerKeyLabel: {
-    fontFamily: "Times-Bold",
+    fontFamily: "Helvetica-Bold",
     fontSize: 7.5,
+    color: MD,
   },
-  // Pair row container
+  answerKeyText: {
+    fontSize: 9,
+    lineHeight: 1.35,
+  },
+
+  // ── Pair row ──────────────────────────────────────────────────────────────────
   pairRow: {
     flexDirection: "row",
-    gap: 7,
+    gap: 6,
     marginBottom: 7,
   },
 });
 
 // ─── Small-section detection ──────────────────────────────────────────────────
 
-function isSmall(section: NotesheetSection): boolean {
-  if (section.type === "warmup_box" || section.type === "fill_blank") {
-    return true;
-  }
-  if (section.type === "numbered_response") {
-    const n = section.num_lines ?? 5;
-    return n <= 4;
-  }
+function isSmall(s: NotesheetSection): boolean {
+  if (s.type === "warmup_box" || s.type === "fill_blank") return true;
+  if (s.type === "numbered_response") return (s.num_lines ?? 5) <= 4;
   return false;
 }
 
@@ -232,7 +240,7 @@ function buildLayout(sections: NotesheetSection[]): LayoutRow[] {
   return rows;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function BlankLines({ n }: { n: number }) {
   return (
@@ -244,16 +252,48 @@ function BlankLines({ n }: { n: number }) {
   );
 }
 
-function AnswerKey({ label, notes }: { label: string; notes: string }) {
+function AnswerKey({ notes }: { notes: string }) {
   return (
     <View style={S.answerKey}>
       <Text style={S.answerKeyText}>
-        <Text style={S.answerKeyLabel}>{label.toUpperCase()}: </Text>
+        <Text style={S.answerKeyLabel}>KEY: </Text>
         {notes}
       </Text>
     </View>
   );
 }
+
+// Renders a single column header or body cell with right-border on non-last cells
+function TCell({
+  widthPct,
+  isLast,
+  isHeader,
+  children,
+}: {
+  widthPct: number;
+  isLast: boolean;
+  isHeader: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View
+      style={{
+        width: `${widthPct}%`,
+        paddingTop: isHeader ? 4 : 0,
+        paddingBottom: isHeader ? 4 : 0,
+        paddingLeft: 6,
+        paddingRight: 6,
+        borderRightWidth: isLast ? 0 : 1,
+        borderRightColor: isHeader ? BK : LT,
+        borderRightStyle: "solid",
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
+// ─── Section body ─────────────────────────────────────────────────────────────
 
 function SectionBody({
   section,
@@ -268,24 +308,16 @@ function SectionBody({
     case "warmup_box":
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
-          {isTeacher ? (
-            <AnswerKey label="Key" notes={section.answer_key_notes} />
-          ) : (
-            <BlankLines n={paired ? 3 : 4} />
-          )}
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 3 : 4} />}
         </View>
       );
 
     case "fill_blank":
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
-          {isTeacher ? (
-            <AnswerKey label="Key" notes={section.answer_key_notes} />
-          ) : (
-            <BlankLines n={paired ? 2 : 3} />
-          )}
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 2 : 3} />}
         </View>
       );
 
@@ -293,9 +325,9 @@ function SectionBody({
       const n = section.num_lines ?? 5;
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
           {isTeacher ? (
-            <AnswerKey label="Key" notes={section.answer_key_notes} />
+            <AnswerKey notes={section.answer_key_notes} />
           ) : (
             Array.from({ length: n }).map((_, i) => (
               <View key={i} style={S.numberedRow}>
@@ -311,42 +343,49 @@ function SectionBody({
     case "content_box":
       return (
         <View>
-          <Text style={S.contentText}>{section.content}</Text>
-          {isTeacher && (
-            <AnswerKey label="Note" notes={section.answer_key_notes} />
-          )}
+          <Text style={S.bodyText}>{section.content}</Text>
+          {isTeacher && <AnswerKey notes={section.answer_key_notes} />}
         </View>
       );
 
     case "two_column_box": {
       const cols = section.columns ?? [
-        { header: "Term", width_pct: 35, prefilled: true },
-        { header: "Definition", width_pct: 65, prefilled: false },
+        { header: "Term", width_pct: 40, prefilled: true },
+        { header: "Definition", width_pct: 60, prefilled: false },
       ];
+      const ROWS = 4;
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
-          <View style={S.tableHeaderRow}>
-            {cols.map((col, i) => (
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          <View style={S.tableWrap}>
+            {/* Header row */}
+            <View style={S.tableHeadRow}>
+              {cols.map((col, i) => (
+                <TCell key={i} widthPct={col.width_pct} isLast={i === cols.length - 1} isHeader>
+                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8, letterSpacing: 0.3 }}>
+                    {col.header.toUpperCase()}
+                  </Text>
+                </TCell>
+              ))}
+            </View>
+            {/* Body rows */}
+            {Array.from({ length: ROWS }).map((_, row) => (
               <View
-                key={i}
-                style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}
+                key={row}
+                style={[
+                  S.tableBodyRow,
+                  row < ROWS - 1
+                    ? { borderBottomWidth: 0.5, borderBottomColor: LT, borderBottomStyle: "solid" }
+                    : {},
+                ]}
               >
-                <Text style={S.tableHeaderText}>{col.header.toUpperCase()}</Text>
+                {cols.map((col, ci) => (
+                  <TCell key={ci} widthPct={col.width_pct} isLast={ci === cols.length - 1} isHeader={false} />
+                ))}
               </View>
             ))}
           </View>
-          {Array.from({ length: 4 }).map((_, row) => (
-            <View key={row} style={S.tableRow}>
-              {cols.map((col, colIdx) => (
-                <View
-                  key={colIdx}
-                  style={[S.tableCell, { width: `${col.width_pct}%` }]}
-                />
-              ))}
-            </View>
-          ))}
-          {isTeacher && <AnswerKey label="Key" notes={section.answer_key_notes} />}
+          {isTeacher && <AnswerKey notes={section.answer_key_notes} />}
         </View>
       );
     }
@@ -354,12 +393,12 @@ function SectionBody({
     case "drawing_box":
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
           {isTeacher ? (
-            <AnswerKey label="Expected" notes={section.answer_key_notes} />
+            <AnswerKey notes={section.answer_key_notes} />
           ) : (
             <View style={S.drawArea}>
-              <Text style={S.drawLabel}>Draw here</Text>
+              <Text style={S.drawHint}>Draw here</Text>
             </View>
           )}
         </View>
@@ -371,30 +410,37 @@ function SectionBody({
         { header: "Example", width_pct: 34, prefilled: false },
         { header: "Why It Works", width_pct: 33, prefilled: false },
       ];
+      const ROWS = 3;
       return (
         <View>
-          <Text style={S.prompt}>{section.student_prompt}</Text>
-          <View style={S.tableHeaderRow}>
-            {cols.map((col, i) => (
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          <View style={S.tableWrap}>
+            <View style={S.tableHeadRow}>
+              {cols.map((col, i) => (
+                <TCell key={i} widthPct={col.width_pct} isLast={i === cols.length - 1} isHeader>
+                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8, letterSpacing: 0.3 }}>
+                    {col.header.toUpperCase()}
+                  </Text>
+                </TCell>
+              ))}
+            </View>
+            {Array.from({ length: ROWS }).map((_, row) => (
               <View
-                key={i}
-                style={[S.tableHeaderCell, { width: `${col.width_pct}%` }]}
+                key={row}
+                style={[
+                  S.tableBodyRow,
+                  row < ROWS - 1
+                    ? { borderBottomWidth: 0.5, borderBottomColor: LT, borderBottomStyle: "solid" }
+                    : {},
+                ]}
               >
-                <Text style={S.tableHeaderText}>{col.header.toUpperCase()}</Text>
+                {cols.map((col, ci) => (
+                  <TCell key={ci} widthPct={col.width_pct} isLast={ci === cols.length - 1} isHeader={false} />
+                ))}
               </View>
             ))}
           </View>
-          {Array.from({ length: 3 }).map((_, row) => (
-            <View key={row} style={S.tableRow}>
-              {cols.map((col, colIdx) => (
-                <View
-                  key={colIdx}
-                  style={[S.tableCell, { width: `${col.width_pct}%` }]}
-                />
-              ))}
-            </View>
-          ))}
-          {isTeacher && <AnswerKey label="Key" notes={section.answer_key_notes} />}
+          {isTeacher && <AnswerKey notes={section.answer_key_notes} />}
         </View>
       );
     }
@@ -403,6 +449,8 @@ function SectionBody({
       return null;
   }
 }
+
+// ─── Section card ─────────────────────────────────────────────────────────────
 
 function SectionCard({
   section,
@@ -413,24 +461,10 @@ function SectionCard({
   isTeacher: boolean;
   paired?: boolean;
 }) {
-  const tokens = SECTION_TOKENS[section.type];
-  const baseStyle = paired ? S.sectionPaired : S.section;
-
   return (
-    <View
-      style={[
-        baseStyle,
-        {
-          backgroundColor: tokens.bg,
-          borderLeftColor: tokens.stripe,
-        },
-      ]}
-      wrap={false}
-    >
+    <View style={paired ? S.sectionPaired : S.section} wrap={false}>
       {section.heading && (
-        <Text style={[S.sectionHeading, { color: tokens.stripe }]}>
-          {section.heading.toUpperCase()}
-        </Text>
+        <Text style={S.sectionLabel}>{section.heading.toUpperCase()}</Text>
       )}
       <SectionBody section={section} isTeacher={isTeacher} paired={paired} />
     </View>
@@ -452,21 +486,31 @@ export default function NotesheetDocument({
   return (
     <Document>
       <Page size="LETTER" style={S.page}>
-        <View style={S.header}>
-          <Text style={S.headerTitle}>
-            {plan.title}
-            {isTeacher ? " — Teacher Key" : ""}
+
+        {/* Course info | NAME: ___ */}
+        <View style={S.metaRow}>
+          <Text style={S.metaCourse}>
+            {plan.subject.toUpperCase()} · {plan.grade_band.toUpperCase()}
+            {isTeacher ? " · TEACHER KEY" : ""}
           </Text>
-          <Text style={S.headerMeta}>
-            {plan.subject} · {plan.grade_band} · {plan.concept}
-          </Text>
+          <View style={S.metaNameRow}>
+            <Text style={S.metaNameLabel}>NAME:</Text>
+            <View style={S.metaNameLine} />
+          </View>
         </View>
 
-        <View style={S.essentialQuestion}>
+        {/* Title */}
+        <View style={S.titleBlock}>
+          <Text style={S.titleText}>{plan.title.toUpperCase()}</Text>
+        </View>
+
+        {/* Essential Question */}
+        <View style={S.eqBox}>
           <Text style={S.eqLabel}>ESSENTIAL QUESTION</Text>
           <Text style={S.eqText}>{plan.essential_question}</Text>
         </View>
 
+        {/* Sections */}
         {layout.map((row, idx) => {
           if (row.kind === "single") {
             return (
@@ -477,22 +521,14 @@ export default function NotesheetDocument({
               />
             );
           }
-          // Pair row
           return (
             <View key={`pair-${idx}`} style={S.pairRow} wrap={false}>
-              <SectionCard
-                section={row.left}
-                isTeacher={isTeacher}
-                paired
-              />
-              <SectionCard
-                section={row.right}
-                isTeacher={isTeacher}
-                paired
-              />
+              <SectionCard section={row.left} isTeacher={isTeacher} paired />
+              <SectionCard section={row.right} isTeacher={isTeacher} paired />
             </View>
           );
         })}
+
       </Page>
     </Document>
   );
