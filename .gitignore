@@ -51,3 +51,6 @@ kora_model/outputs/*
 *.bin
 *.pt
 *.ckpt
+
+# CShapes raw source file (large; only needed for regenerating cshapes-2-0.geojson)
+public/data/historical/cshapes-raw.geojson
