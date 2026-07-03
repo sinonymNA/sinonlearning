@@ -1,17 +1,17 @@
 import type { EntityStatus } from "@/types/historicalGeo";
 
 export const STATUS_FILL: Record<EntityStatus, string> = {
-  independent: "#1e3a5f",  // navy-700
-  colonial:    "#b45309",  // amber-700
+  independent: "#1d4ed8",  // blue-700 — vivid, stands out from dark land
+  colonial:    "#d97706",  // amber-600 — warm orange
   disputed:    "#dc2626",  // red-600
   occupied:    "#64748b",  // slate-500
 };
 
 export const STATUS_FILL_HOVER: Record<EntityStatus, string> = {
-  independent: "#2d5287",
-  colonial:    "#d97706",
-  disputed:    "#ef4444",
-  occupied:    "#94a3b8",
+  independent: "#3b82f6",  // blue-500
+  colonial:    "#f59e0b",  // amber-400
+  disputed:    "#ef4444",  // red-400
+  occupied:    "#94a3b8",  // slate-400
 };
 
 export const STATUS_LABEL: Record<EntityStatus, string> = {
@@ -21,7 +21,7 @@ export const STATUS_LABEL: Record<EntityStatus, string> = {
   occupied:    "Occupied Territory",
 };
 
-// MapLibre match expression: ["match", ["get", "status"], "independent", COLOR, ...]
+// MapLibre match expression
 export const STATUS_FILL_EXPRESSION = [
   "match",
   ["get", "status"],
@@ -30,14 +30,4 @@ export const STATUS_FILL_EXPRESSION = [
   "disputed",    STATUS_FILL.disputed,
   "occupied",    STATUS_FILL.occupied,
   "#334155",
-];
-
-export const STATUS_FILL_HOVER_EXPRESSION = [
-  "match",
-  ["get", "status"],
-  "independent", STATUS_FILL_HOVER.independent,
-  "colonial",    STATUS_FILL_HOVER.colonial,
-  "disputed",    STATUS_FILL_HOVER.disputed,
-  "occupied",    STATUS_FILL_HOVER.occupied,
-  "#475569",
 ];

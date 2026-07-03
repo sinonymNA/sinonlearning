@@ -7,15 +7,17 @@ import type { HistoricalCollection, HistoricalFeatureProps } from "@/types/histo
 import { filterByYear } from "@/lib/filterByYear";
 import { STATUS_FILL_EXPRESSION } from "@/lib/globeColors";
 
-const DARK_STYLE = {
-  version: 8 as const,
+// Minimal dark style — ocean background only, land loaded as GeoJSON overlay
+const DARK_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
   name: "dark-historical-globe",
-  sources: {} as Record<string, never>,
+  projection: { type: "globe" },
+  sources: {},
   layers: [
     {
       id: "ocean",
-      type: "background" as const,
-      paint: { "background-color": "#060e1a" },
+      type: "background",
+      paint: { "background-color": "#04101e" },
     },
   ],
 };
@@ -32,7 +34,7 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
   const hoveredIdRef = useRef<string | number | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
-  // Load GeoJSON once
+  // Pre-fetch historical data
   useEffect(() => {
     fetch("/data/historical/sample.geojson")
       .then((r) => r.json())
@@ -40,41 +42,65 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
       .catch(() => setStatus("error"));
   }, []);
 
-  // Initialize map
+  // Initialize map once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      style: DARK_STYLE as any,
-      center: [15, 25],
-      zoom: 1.4,
+      style: DARK_STYLE,
+      center: [15, 20],
+      zoom: 1.8,
       attributionControl: false,
       minZoom: 0.5,
-      maxZoom: 8,
+      maxZoom: 10,
     });
 
     mapRef.current = map;
 
     map.on("load", () => {
-      // Enable globe projection
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (map as any).setProjection({ name: "globe" });
-      } catch {
-        // Falls back gracefully to mercator if globe not supported
-      }
+      // Enforce globe projection (style.projection is the primary mechanism in v5,
+      // but calling setProjection after load ensures it applies even if style parsing differs)
+      map.setProjection({ type: "globe" });
 
+      // ── Land basemap ─────────────────────────────────────────────────────────
+      map.addSource("land", {
+        type: "geojson",
+        data: "/data/historical/ne_110m_land.geojson",
+      });
+
+      // Subtle land mass fill so geography is visible without competing with data
+      map.addLayer({
+        id: "land-fill",
+        type: "fill",
+        source: "land",
+        paint: {
+          "fill-color": "#0e2038",
+          "fill-opacity": 1,
+        },
+      });
+
+      // Faint coastline
+      map.addLayer({
+        id: "land-line",
+        type: "line",
+        source: "land",
+        paint: {
+          "line-color": "#1a3354",
+          "line-width": 0.8,
+          "line-opacity": 0.8,
+        },
+      });
+
+      // ── Historical data ───────────────────────────────────────────────────────
       const tryAddSource = () => {
-        if (!dataRef.current) { setTimeout(tryAddSource, 100); return; }
+        if (!dataRef.current) { setTimeout(tryAddSource, 80); return; }
 
         const yearData = filterByYear(dataRef.current, year);
 
         map.addSource("borders", {
           type: "geojson",
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data: yearData as any,
+          data: yearData as GeoJSON.FeatureCollection,
           generateId: true,
         });
 
@@ -83,13 +109,12 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
           type: "fill",
           source: "borders",
           paint: {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            "fill-color": STATUS_FILL_EXPRESSION as any,
+            "fill-color": STATUS_FILL_EXPRESSION as maplibregl.ExpressionSpecification,
             "fill-opacity": [
               "case",
               ["boolean", ["feature-state", "hover"], false],
-              0.88,
-              0.72,
+              0.9,
+              0.78,
             ],
           },
         });
@@ -99,9 +124,9 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
           type: "line",
           source: "borders",
           paint: {
-            "line-color": "#c9c4b5",
-            "line-width": 0.6,
-            "line-opacity": 0.45,
+            "line-color": "#d4cfbf",
+            "line-width": 0.7,
+            "line-opacity": 0.5,
           },
         });
 
@@ -111,17 +136,17 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
       tryAddSource();
     });
 
+    // ── Interactions ──────────────────────────────────────────────────────────
+
     map.on("click", "borders-fill", (e) => {
       if (e.features?.length) {
         onEntityClick(e.features[0].properties as HistoricalFeatureProps);
-        e.originalEvent.stopPropagation();
       }
     });
 
-    // Click on ocean clears panel
     map.on("click", (e) => {
-      const features = map.queryRenderedFeatures(e.point, { layers: ["borders-fill"] });
-      if (!features.length) onEntityClick(null);
+      const hit = map.queryRenderedFeatures(e.point, { layers: ["borders-fill"] });
+      if (!hit.length) onEntityClick(null);
     });
 
     map.on("mousemove", "borders-fill", (e) => {
@@ -148,27 +173,23 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
       "top-right"
     );
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update visible data when year changes
+  // Update historical layer when year changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !dataRef.current) return;
     const src = map.getSource("borders") as maplibregl.GeoJSONSource | undefined;
     if (!src) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    src.setData(filterByYear(dataRef.current, year) as any);
+    src.setData(filterByYear(dataRef.current, year) as GeoJSON.FeatureCollection);
   }, [year]);
 
   return (
     <div className="relative w-full h-full">
       {status === "loading" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#060e1a] z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#04101e] z-10">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             <p className="text-slate-400 text-sm tracking-wide">Loading globe...</p>
@@ -176,7 +197,7 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
         </div>
       )}
       {status === "error" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#060e1a] z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#04101e] z-10">
           <p className="text-red-400 text-sm">Failed to load historical data.</p>
         </div>
       )}
