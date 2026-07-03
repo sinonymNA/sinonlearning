@@ -9,10 +9,15 @@ export type NotesheetSectionType =
   | "drawing_box"
   | "three_column_box";
 
+const booleanFromAny = z.preprocess(
+  (val) => (typeof val === "string" ? val === "true" : val),
+  z.boolean()
+);
+
 export const NotesheetColumnSchema = z.object({
   header: z.string(),
-  width_pct: z.number().min(1).max(100),
-  prefilled: z.boolean(),
+  width_pct: z.coerce.number().min(1).max(100),
+  prefilled: booleanFromAny,
 });
 
 export const NotesheetSectionSchema = z.object({
@@ -30,7 +35,7 @@ export const NotesheetSectionSchema = z.object({
   content: z.string(),
   student_prompt: z.string(),
   answer_key_notes: z.string(),
-  num_lines: z.number().int().min(1).max(20).optional(),
+  num_lines: z.coerce.number().int().min(1).max(20).optional(),
   columns: z.array(NotesheetColumnSchema).optional(),
 });
 
