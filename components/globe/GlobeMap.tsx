@@ -5,7 +5,6 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { HistoricalCollection, HistoricalFeatureProps } from "@/types/historicalGeo";
 import { filterByYear } from "@/lib/filterByYear";
-import { STATUS_FILL_EXPRESSION } from "@/lib/globeColors";
 
 // Natural atlas style — parchment land, calm ocean, no modern political fills
 const NATURAL_STYLE: maplibregl.StyleSpecification = {
@@ -32,6 +31,32 @@ function mergeCollections(...collections: (HistoricalCollection | null)[]): Hist
     type: "FeatureCollection",
     features: collections.flatMap((c) => c?.features ?? []),
   };
+}
+
+function computeLabelSource(yearData: HistoricalCollection): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  for (const f of yearData.features) {
+    const geom = f.geometry as GeoJSON.Geometry;
+    const allCoords: number[][] = [];
+    if (geom.type === "Polygon") {
+      allCoords.push(...(geom as GeoJSON.Polygon).coordinates[0]);
+    } else if (geom.type === "MultiPolygon") {
+      for (const poly of (geom as GeoJSON.MultiPolygon).coordinates) {
+        allCoords.push(...poly[0]);
+      }
+    }
+    if (!allCoords.length) continue;
+    const lngs = allCoords.map((c) => c[0]);
+    const lats = allCoords.map((c) => c[1]);
+    const cx = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+    const cy = (Math.min(...lats) + Math.max(...lats)) / 2;
+    features.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [cx, cy] },
+      properties: { name: f.properties?.name ?? "" },
+    });
+  }
+  return { type: "FeatureCollection", features };
 }
 
 export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
@@ -127,13 +152,13 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
           type: "fill",
           source: "borders",
           paint: {
-            "fill-color": STATUS_FILL_EXPRESSION as maplibregl.ExpressionSpecification,
+            "fill-color": ["coalesce", ["get", "color"], "#2471a3"] as maplibregl.ExpressionSpecification,
             "fill-opacity": [
               "case",
               ["boolean", ["feature-state", "hover"], false],
               0.88,
-              0.75,
-            ],
+              0.72,
+            ] as maplibregl.ExpressionSpecification,
           },
         });
 
@@ -145,6 +170,31 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
             "line-color": "#ffffff",
             "line-width": 0.8,
             "line-opacity": 0.6,
+          },
+        });
+
+        // Label source: one Point per visible entity at polygon centroid
+        map.addSource("borders-labels", {
+          type: "geojson",
+          data: computeLabelSource(yearData),
+        });
+
+        map.addLayer({
+          id: "borders-text",
+          type: "symbol",
+          source: "borders-labels",
+          layout: {
+            "text-field": ["get", "name"] as maplibregl.ExpressionSpecification,
+            "text-size": 10,
+            "text-font": ["Open Sans Regular"],
+            "text-max-width": 8,
+            "text-allow-overlap": false,
+            "text-ignore-placement": false,
+          },
+          paint: {
+            "text-color": "#1a1a1a",
+            "text-halo-color": "rgba(255,255,255,0.85)",
+            "text-halo-width": 1.5,
           },
         });
 
@@ -195,14 +245,17 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update historical layer when year changes
+  // Update historical layers when year changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const src = map.getSource("borders") as maplibregl.GeoJSONSource | undefined;
-    if (!src) return;
+    const bordersSrc = map.getSource("borders") as maplibregl.GeoJSONSource | undefined;
+    if (!bordersSrc) return;
     const combined = mergeCollections(ancientRef.current, modernRef.current);
-    src.setData(filterByYear(combined, year) as GeoJSON.FeatureCollection);
+    const yearData = filterByYear(combined, year);
+    bordersSrc.setData(yearData as GeoJSON.FeatureCollection);
+    const labelSrc = map.getSource("borders-labels") as maplibregl.GeoJSONSource | undefined;
+    if (labelSrc) labelSrc.setData(computeLabelSource(yearData));
   }, [year]);
 
   return (
