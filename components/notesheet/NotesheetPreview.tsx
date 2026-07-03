@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pencil, Download, FileText } from "lucide-react";
 import type { NotesheetPlan, NotesheetSection } from "@/lib/notesheetTypes";
 import NotesheetSectionEditor from "./NotesheetSectionEditor";
+import PrintAnimation from "./PrintAnimation";
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
   warmup_box: "Warm-up Box",
@@ -143,6 +144,8 @@ export default function NotesheetPreview({ plan, onPlanChange, onReset }: Props)
           onClose={() => setEditingId(null)}
         />
       )}
+
+      <PrintAnimation visible={!!exporting} mode={exporting ?? "student"} />
     </div>
   );
 }

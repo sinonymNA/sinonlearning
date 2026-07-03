@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import React from "react";
+import { renderToBuffer } from "@react-pdf/renderer";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import { NotesheetPlanSchema } from "@/lib/notesheetTypes";
-import { renderNotesheetHtml } from "@/lib/notesheetRenderer";
+import NotesheetDocument from "@/lib/notesheetPdf";
 
 export const dynamic = "force-dynamic";
 
@@ -27,37 +29,22 @@ export async function POST(request: NextRequest) {
   }
 
   const mode = body.mode === "teacher_key" ? "teacher_key" : "student";
-  const html = renderNotesheetHtml(planResult.data, mode);
 
   let pdfBuffer: Buffer;
   try {
-    // Dynamic import to avoid module-load issues in Next.js edge/serverless
-    const { chromium } = await import("playwright");
-    const browser = await chromium.launch({
-      executablePath: process.env.PLAYWRIGHT_BROWSERS_PATH
-        ? `${process.env.PLAYWRIGHT_BROWSERS_PATH}/chromium`
-        : "/opt/pw-browsers/chromium",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
-    const buf = await page.pdf({
-      format: "Letter",
-      printBackground: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
-    });
-    await browser.close();
-    pdfBuffer = Buffer.from(buf);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const element = React.createElement(NotesheetDocument, { plan: planResult.data, mode }) as any;
+    const buffer = await renderToBuffer(element);
+    pdfBuffer = Buffer.from(buffer);
   } catch (err) {
-    console.error("[notesheet/export] Playwright error:", err);
+    console.error("[notesheet/export] PDF render error:", err);
     return NextResponse.json(
       { error: "PDF generation failed. Please try again." },
       { status: 500 }
     );
   }
 
-  const filename =
-    `${planResult.data.concept.replace(/\s+/g, "_")}_notesheet${mode === "teacher_key" ? "_key" : ""}.pdf`;
+  const filename = `${planResult.data.concept.replace(/\s+/g, "_")}_notesheet${mode === "teacher_key" ? "_key" : ""}.pdf`;
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {
