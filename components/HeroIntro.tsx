@@ -63,8 +63,8 @@ export default function HeroIntro() {
           Explore Curriculum
           <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
         </Button>
-        <Button href="/teacher-tools" variant="secondary">
-          See Teacher Tools
+        <Button href="/teachers" variant="secondary">
+          Teacher Apps
         </Button>
         <Link
           href="/research/kora-model"

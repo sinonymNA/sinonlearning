@@ -9,9 +9,8 @@ import Logo from "./Logo";
 const links = [
   { href: "/", label: "Home" },
   { href: "/curriculum", label: "Curriculum" },
-  { href: "/teacher-tools", label: "Teacher Tools" },
+  { href: "/teachers", label: "Teachers" },
   { href: "/students", label: "Students" },
-  { href: "/teaching-lab", label: "Teaching Lab" },
   { href: "/research", label: "Research" },
   { href: "/mission", label: "Mission" },
 ];

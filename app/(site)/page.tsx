@@ -1,12 +1,9 @@
 import Link from "next/link";
 import {
   ArrowRight,
-  BookOpen,
   Wrench,
   GraduationCap,
-  FlaskConical,
   Microscope,
-  HeartHandshake,
 } from "lucide-react";
 import Button from "@/components/Button";
 import SectionHeader from "@/components/SectionHeader";
@@ -15,18 +12,18 @@ import HeroDashboard from "@/components/HeroDashboard";
 import EmailSignup from "@/components/EmailSignup";
 import FadeIn from "@/components/FadeIn";
 import PathwayCard from "@/components/PathwayCard";
-import FeatureCard from "@/components/FeatureCard";
 import PromiseCard from "@/components/PromiseCard";
 import RoadmapCard from "@/components/RoadmapCard";
+import KoraLogo from "@/components/KoraLogo";
 import { homeRoadmap } from "@/data/courses";
 
 const startHere = [
   {
-    href: "/teacher-tools",
+    href: "/teachers",
     title: "I'm a teacher",
-    description: "Find classroom tools, simulations, and the AI workspace built to support your teaching.",
+    description: "Find classroom apps, simulations, and AI-powered tools built to support your teaching.",
     icon: Wrench,
-    cta: "Go to Teacher Tools",
+    cta: "See Teacher Apps",
   },
   {
     href: "/students",
@@ -41,51 +38,6 @@ const startHere = [
     description: "See the learning science and teacher-first AI thinking behind Sinon Learning.",
     icon: Microscope,
     cta: "Go to Research",
-  },
-];
-
-const whatWeBuild = [
-  {
-    title: "Curriculum",
-    description: "Complete courses, digital textbooks, slides, and assessments for the everyday classroom.",
-    href: "/curriculum",
-    icon: BookOpen,
-    status: "Available" as const,
-  },
-  {
-    title: "Teacher Tools",
-    description: "Classroom apps, simulations, and a future AI workspace built around real teaching.",
-    href: "/teacher-tools",
-    icon: Wrench,
-    status: "Available" as const,
-  },
-  {
-    title: "Students",
-    description: "Textbooks, simulations, and resources built directly for student use.",
-    href: "/students",
-    icon: GraduationCap,
-    status: "Available" as const,
-  },
-  {
-    title: "Teaching Lab",
-    description: "A practical, growing space for getting better at the craft of teaching.",
-    href: "/teaching-lab",
-    icon: FlaskConical,
-    status: "Coming Soon" as const,
-  },
-  {
-    title: "Research",
-    description: "Learning science turned into something a teacher can use tomorrow.",
-    href: "/research",
-    icon: Microscope,
-    status: "Available" as const,
-  },
-  {
-    title: "Mission",
-    description: "Why free curriculum, free tools, and teacher-first AI are the whole point.",
-    href: "/mission",
-    icon: HeartHandshake,
-    status: "Available" as const,
   },
 ];
 
@@ -163,34 +115,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* What We Build */}
-      <section className="bg-cream-100 px-6 py-20 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <FadeIn>
-            <SectionHeader
-              eyebrow="What We Build"
-              title="Six sections. One free ecosystem."
-              subtitle="Everything Sinon Learning builds lives under one of six sections, each free to use and growing."
-            />
-          </FadeIn>
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {whatWeBuild.map((item, i) => (
-              <FadeIn key={item.title} delay={i * 0.06}>
-                <FeatureCard
-                  item={{
-                    title: item.title,
-                    description: item.description,
-                    href: item.href,
-                    icon: item.icon,
-                    status: item.status,
-                  }}
-                />
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Featured Now */}
       <section className="px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -222,11 +146,14 @@ export default function Home() {
       <section className="bg-cream-100 px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <SectionHeader
-              eyebrow="Our AI Promise"
-              title="Teacher-first, not teacher-optional."
-              subtitle="KORA, Sinon Learning's teacher-first AI model, is held to a set of explicit promises."
-            />
+            <div className="flex flex-col items-center gap-3 mb-10">
+              <KoraLogo size="lg" />
+              <SectionHeader
+                eyebrow="Our AI Promise"
+                title="Teacher-first, not teacher-optional."
+                subtitle="Sinon Learning's teacher-first AI, held to a set of explicit promises."
+              />
+            </div>
           </FadeIn>
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {aiPromises.map((promise, i) => (
@@ -314,8 +241,8 @@ export default function Home() {
             </h2>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button href="/curriculum">Explore Curriculum</Button>
-              <Button href="/teacher-tools" variant="secondary">
-                View Tools
+              <Button href="/teachers" variant="secondary">
+                Teacher Apps
               </Button>
             </div>
           </div>
