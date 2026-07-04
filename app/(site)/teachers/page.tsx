@@ -48,12 +48,9 @@ const tools = [
     slug: "margins",
     href: "/margins",
     status: "live" as const,
-    bgClass: "bg-gradient-to-br from-violet-500 to-violet-700",
-    logo: (
-      <div className="rounded-2xl bg-white px-5 py-3 shadow-sm">
-        <MarginsLogo width={130} />
-      </div>
-    ),
+    bgClass: "bg-gradient-to-br from-stone-100 to-stone-200",
+    logo: <MarginsLogo width={230} />,
+    logoSubClass: "text-stone-400",
     logoSub: "AP Writing & Grading",
     name: "Margins",
     tagline: "Classes, rubric-based DBQ/LEQ/SAQ assignments, and KORA-graded, annotated feedback for students.",
@@ -149,7 +146,11 @@ export default function TeachersPage() {
                     className={`h-52 flex flex-col items-center justify-center gap-2.5 ${tool.bgClass}`}
                   >
                     {tool.logo}
-                    <span className="text-[11px] font-semibold uppercase tracking-widest text-white/60 mt-1">
+                    <span
+                      className={`text-[11px] font-semibold uppercase tracking-widest mt-1 ${
+                        "logoSubClass" in tool ? tool.logoSubClass : "text-white/60"
+                      }`}
+                    >
                       {tool.logoSub}
                     </span>
                   </div>

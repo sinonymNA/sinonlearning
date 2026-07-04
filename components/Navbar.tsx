@@ -36,7 +36,7 @@ export default function Navbar() {
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
         <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
-          <SinonWordmark width={160} />
+          <SinonWordmark width={210} />
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">
