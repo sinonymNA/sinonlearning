@@ -37,7 +37,7 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
       translateY: [16, 0],
       duration: 380,
       delay: stagger(70),
-      easing: "easeOutQuart",
+      easing: "outQuart",
     });
   }, []);
 
@@ -50,7 +50,7 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
       animate(btnRef.current, {
         scale: [1, 0.96, 1],
         duration: 200,
-        easing: "easeOutQuart",
+        easing: "outQuart",
       });
     }
 

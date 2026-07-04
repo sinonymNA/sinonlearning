@@ -55,7 +55,7 @@ export default function ScaffoldPage() {
         animate(prog, {
           width: `${STEP_PROGRESS[newStep]}%`,
           duration: 700,
-          easing: "easeOutQuart",
+          easing: "outQuart",
         });
       }
       // Double rAF ensures React has committed the new step's DOM
@@ -66,7 +66,7 @@ export default function ScaffoldPage() {
               opacity: [0, 1],
               translateY: [18, 0],
               duration: 420,
-              easing: "easeOutQuart",
+              easing: "outQuart",
             });
           }
         });
@@ -78,7 +78,7 @@ export default function ScaffoldPage() {
         opacity: [1, 0],
         translateY: [0, -12],
         duration: 190,
-        easing: "easeInQuart",
+        easing: "inQuart",
         onComplete: commit,
       });
     } else {

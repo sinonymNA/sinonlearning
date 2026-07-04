@@ -24,7 +24,7 @@ export default function PrintAnimation({ visible, mode }: Props) {
         { translateY: -96, opacity: 0, duration: 300 },
       ],
       delay: stagger(380),
-      easing: "easeOutSine",
+      easing: "outSine",
       loop: true,
     });
 

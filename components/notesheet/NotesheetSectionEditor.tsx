@@ -36,7 +36,7 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
       animate(backdropRef.current, {
         opacity: [0, 1],
         duration: 220,
-        easing: "easeOutQuart",
+        easing: "outQuart",
       });
     }
     if (panelRef.current) {
@@ -44,7 +44,7 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
         translateY: [40, 0],
         opacity: [0, 1],
         duration: 380,
-        easing: "easeOutQuart",
+        easing: "outQuart",
       });
     }
   }, []);
@@ -56,7 +56,7 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
         translateY: [0, 30],
         opacity: [1, 0],
         duration: 220,
-        easing: "easeInQuart",
+        easing: "inQuart",
         onComplete: onClose,
       });
     } else {
@@ -66,7 +66,7 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
       animate(backdropRef.current, {
         opacity: [1, 0],
         duration: 200,
-        easing: "easeInQuart",
+        easing: "inQuart",
       });
     }
   }

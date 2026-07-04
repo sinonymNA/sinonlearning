@@ -47,7 +47,7 @@ export default function NotesheetPreview({ plan, onPlanChange, onReset }: Props)
       translateY: [20, 0],
       duration: 420,
       delay: stagger(55, { start: 60 }),
-      easing: "easeOutQuart",
+      easing: "outQuart",
     });
   }, []);
 

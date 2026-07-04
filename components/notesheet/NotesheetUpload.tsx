@@ -29,7 +29,7 @@ export default function NotesheetUpload({ onUpload }: Props) {
         opacity: [0, 1],
         translateY: [12, 0],
         duration: 500,
-        easing: "easeOutQuart",
+        easing: "outQuart",
       });
     }
   }, []);
@@ -41,7 +41,7 @@ export default function NotesheetUpload({ onUpload }: Props) {
       animate(zoneRef.current, {
         scale: [1, 1.016],
         duration: 350,
-        easing: "easeOutElastic(1, .5)",
+        easing: "outElastic(1, .5)",
       });
     }
   }
@@ -52,7 +52,7 @@ export default function NotesheetUpload({ onUpload }: Props) {
       animate(zoneRef.current, {
         scale: [1.016, 1],
         duration: 280,
-        easing: "easeOutQuart",
+        easing: "outQuart",
       });
     }
   }
