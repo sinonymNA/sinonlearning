@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
+import MarginsLogo from "@/components/MarginsLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -56,6 +57,16 @@ const tools = [
     logoSub: "KORA Game",
     name: "KORA Game",
     tagline: "Students type answers in a live game. KORA scores depth of understanding, not just recall.",
+  },
+  {
+    slug: "margins",
+    href: "/margins",
+    status: "live" as const,
+    bgClass: "bg-gradient-to-br from-rose-500 to-rose-700",
+    logo: <MarginsLogo light className="text-2xl" />,
+    logoSub: "AP Writing & Grading",
+    name: "Margins",
+    tagline: "Classes, rubric-based DBQ/LEQ/SAQ assignments, and KORA-graded, annotated feedback for students.",
   },
   {
     slug: "simulations",
@@ -118,7 +129,7 @@ export default function TeachersPage() {
       {/* App grid */}
       <div className="px-6 pb-24 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {tools.map((tool, i) => {
               const inner = (
                 <div

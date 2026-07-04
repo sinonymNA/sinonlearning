@@ -11,6 +11,7 @@ import {
   Coins,
 } from "lucide-react";
 import FadeIn from "./FadeIn";
+import MarginsLogo from "./MarginsLogo";
 
 interface MarqueeApp {
   href: string;
@@ -49,6 +50,12 @@ const apps: MarqueeApp[] = [
     mark: (
       <Image src="/kora-logo.png" alt="KORA" width={88} height={33} style={{ width: 88, height: "auto" }} />
     ),
+  },
+  {
+    href: "/margins",
+    label: "Margins",
+    sub: "AP writing & grading",
+    mark: <MarginsLogo className="text-xl" />,
   },
   {
     href: "/classboard",

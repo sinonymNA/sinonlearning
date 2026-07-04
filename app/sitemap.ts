@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/textbooks",
     "/teachers",
     "/notesheet",
+    "/margins",
     "/students",
     "/game-shows",
     "/research",

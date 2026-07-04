@@ -64,11 +64,12 @@ export const studentResources: StudentResourceEntry[] = [
   },
   {
     slug: "writing-help",
-    title: "Writing Help",
-    tagline: "Support for planning, drafting, and revising your writing.",
+    title: "Margins",
+    tagline: "Practice AP writing and get real, honest feedback.",
     description:
-      "A planned set of writing scaffolds and feedback tools designed to help students think more clearly, not just write faster.",
-    status: "Coming Soon",
+      "Join your class, write DBQ, LEQ, and SAQ essays right in the browser, and get KORA-graded, color-coded annotated feedback against your teacher's rubric.",
+    status: "Available",
+    externalHref: "/margins",
   },
   {
     slug: "explainers",
