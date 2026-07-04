@@ -124,13 +124,13 @@ const S = StyleSheet.create({
     borderBottomWidth: 0.75,
     borderBottomColor: BK,
     borderBottomStyle: "solid",
-    height: 19,
-    marginBottom: 2,
+    height: 24,
+    marginBottom: 3,
   },
   numberedRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    marginBottom: 4,
+    marginBottom: 5,
   },
   numberLabel: {
     fontSize: 9.5,
@@ -142,7 +142,7 @@ const S = StyleSheet.create({
     borderBottomWidth: 0.75,
     borderBottomColor: BK,
     borderBottomStyle: "solid",
-    height: 19,
+    height: 24,
   },
 
   // ── Table ─────────────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ const S = StyleSheet.create({
   },
   tableBodyRow: {
     flexDirection: "row",
-    height: 22,
+    height: 34,
   },
 
   // ── Drawing area ──────────────────────────────────────────────────────────────
@@ -309,7 +309,7 @@ function SectionBody({
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
-          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 3 : 4} />}
+          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 5 : 7} />}
         </View>
       );
 
@@ -317,7 +317,7 @@ function SectionBody({
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
-          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 2 : 3} />}
+          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 3 : 5} />}
         </View>
       );
 
@@ -353,7 +353,7 @@ function SectionBody({
         { header: "Term", width_pct: 40, prefilled: true },
         { header: "Definition", width_pct: 60, prefilled: false },
       ];
-      const ROWS = 4;
+      const ROWS = 5;
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
@@ -410,7 +410,7 @@ function SectionBody({
         { header: "Example", width_pct: 34, prefilled: false },
         { header: "Why It Works", width_pct: 33, prefilled: false },
       ];
-      const ROWS = 3;
+      const ROWS = 4;
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
