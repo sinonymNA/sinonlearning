@@ -43,7 +43,7 @@ export default function MarginsSignupPage() {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
       <header className="px-6 h-16 flex items-center justify-between">
-        <MarginsLogo className="text-xl" />
+        <MarginsLogo width={110} />
         <Link href="/margins" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
           Back
         </Link>
@@ -68,8 +68,8 @@ export default function MarginsSignupPage() {
                 className={[
                   "rounded-xl border py-2.5 text-sm font-semibold capitalize transition-all",
                   role === r
-                    ? "border-rose-500 bg-rose-600 text-white shadow-sm shadow-rose-200"
-                    : "border-stone-200 bg-white text-stone-500 hover:border-rose-300 hover:text-rose-600",
+                    ? "border-violet-500 bg-violet-600 text-white shadow-sm shadow-violet-200"
+                    : "border-stone-200 bg-white text-stone-500 hover:border-violet-300 hover:text-violet-600",
                 ].join(" ")}
               >
                 {r}
@@ -84,7 +84,7 @@ export default function MarginsSignupPage() {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
             />
           </label>
 
@@ -95,7 +95,7 @@ export default function MarginsSignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
             />
           </label>
 
@@ -107,7 +107,7 @@ export default function MarginsSignupPage() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
             />
             <span className="text-[11px] text-stone-400">At least 8 characters.</span>
           </label>
@@ -121,14 +121,14 @@ export default function MarginsSignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
           >
             {loading ? "Creating account…" : "Create account"}
           </button>
 
           <p className="text-center text-[13px] text-stone-400">
             Already have an account?{" "}
-            <Link href="/margins/login" className="text-rose-600 font-medium hover:text-rose-700">
+            <Link href="/margins/login" className="text-violet-600 font-medium hover:text-violet-700">
               Log in
             </Link>
           </p>

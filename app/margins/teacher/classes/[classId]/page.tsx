@@ -43,14 +43,14 @@ export default async function TeacherClassDetailPage({
             <h1 className="text-xl font-bold text-stone-900">{cls.name}</h1>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-stone-400">
               <Users size={13} />
-              Join code: <span className="font-mono font-semibold text-rose-600">{cls.join_code}</span>
+              Join code: <span className="font-mono font-semibold text-violet-600">{cls.join_code}</span>
               <span className="text-stone-300">·</span>
               {roster.length} student{roster.length === 1 ? "" : "s"}
             </p>
           </div>
           <Link
             href={`/margins/teacher/classes/${cls.id}/assignments/new`}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all shrink-0"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all shrink-0"
           >
             <Plus size={14} />
             New assignment
@@ -69,7 +69,7 @@ export default async function TeacherClassDetailPage({
                 <Link
                   key={a.id}
                   href={`/margins/teacher/assignments/${a.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-rose-200 hover:shadow-sm transition-all"
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${TYPE_COLORS[a.essay_type]}`}>
@@ -77,7 +77,7 @@ export default async function TeacherClassDetailPage({
                     </span>
                     <p className="font-medium text-stone-800 truncate">{a.title}</p>
                   </div>
-                  <FileText size={14} className="text-stone-300 group-hover:text-rose-500 transition-colors shrink-0" />
+                  <FileText size={14} className="text-stone-300 group-hover:text-violet-500 transition-colors shrink-0" />
                 </Link>
               ))}
             </div>

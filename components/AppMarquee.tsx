@@ -55,7 +55,7 @@ const apps: MarqueeApp[] = [
     href: "/margins",
     label: "Margins",
     sub: "AP writing & grading",
-    mark: <MarginsLogo className="text-xl" />,
+    mark: <MarginsLogo width={100} />,
   },
   {
     href: "/classboard",

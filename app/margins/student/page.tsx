@@ -73,7 +73,7 @@ export default async function StudentDashboardPage() {
                 <Link
                   key={a.id}
                   href={`/margins/student/assignments/${a.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-rose-200 hover:shadow-sm transition-all"
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${TYPE_COLORS[a.essay_type]}`}>

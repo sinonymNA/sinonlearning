@@ -39,7 +39,7 @@ export default function MarginsLoginPage() {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
       <header className="px-6 h-16 flex items-center justify-between">
-        <MarginsLogo className="text-xl" />
+        <MarginsLogo width={110} />
         <Link href="/margins" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
           Back
         </Link>
@@ -62,7 +62,7 @@ export default function MarginsLoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
             />
           </label>
 
@@ -73,7 +73,7 @@ export default function MarginsLoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all"
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all"
             />
           </label>
 
@@ -86,14 +86,14 @@ export default function MarginsLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all disabled:opacity-60"
+            className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
           >
             {loading ? "Logging in…" : "Log in"}
           </button>
 
           <p className="text-center text-[13px] text-stone-400">
             Need an account?{" "}
-            <Link href="/margins/signup" className="text-rose-600 font-medium hover:text-rose-700">
+            <Link href="/margins/signup" className="text-violet-600 font-medium hover:text-violet-700">
               Sign up
             </Link>
           </p>

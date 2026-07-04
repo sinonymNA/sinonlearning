@@ -45,6 +45,20 @@ const tools = [
     tagline: "Upload a slideshow — KORA reads the lesson and builds a student notesheet in seconds.",
   },
   {
+    slug: "margins",
+    href: "/margins",
+    status: "live" as const,
+    bgClass: "bg-gradient-to-br from-violet-500 to-violet-700",
+    logo: (
+      <div className="rounded-2xl bg-white px-5 py-3 shadow-sm">
+        <MarginsLogo width={130} />
+      </div>
+    ),
+    logoSub: "AP Writing & Grading",
+    name: "Margins",
+    tagline: "Classes, rubric-based DBQ/LEQ/SAQ assignments, and KORA-graded, annotated feedback for students.",
+  },
+  {
     slug: "kora-game",
     href: null,
     status: "soon" as const,
@@ -57,16 +71,6 @@ const tools = [
     logoSub: "KORA Game",
     name: "KORA Game",
     tagline: "Students type answers in a live game. KORA scores depth of understanding, not just recall.",
-  },
-  {
-    slug: "margins",
-    href: "/margins",
-    status: "live" as const,
-    bgClass: "bg-gradient-to-br from-rose-500 to-rose-700",
-    logo: <MarginsLogo light className="text-2xl" />,
-    logoSub: "AP Writing & Grading",
-    name: "Margins",
-    tagline: "Classes, rubric-based DBQ/LEQ/SAQ assignments, and KORA-graded, annotated feedback for students.",
   },
   {
     slug: "simulations",

@@ -17,7 +17,7 @@ const ESSAY_TYPES: { value: EssayType; label: string; hint: string }[] = [
 ];
 
 const inputCls =
-  "rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] text-stone-800 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 focus:bg-white transition-all";
+  "rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[14px] text-stone-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all";
 
 export default function AssignmentWizard({ classId }: { classId: string }) {
   const router = useRouter();
@@ -160,8 +160,8 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               className={[
                 "rounded-xl border p-3.5 text-left transition-all",
                 essayType === t.value
-                  ? "border-rose-500 bg-rose-50"
-                  : "border-stone-200 bg-white hover:border-rose-200",
+                  ? "border-violet-500 bg-violet-50"
+                  : "border-stone-200 bg-white hover:border-violet-200",
               ].join(" ")}
             >
               <p className="font-bold text-stone-900">{t.label}</p>
@@ -172,8 +172,8 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       </div>
 
       {/* KORA generator */}
-      <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-4 flex flex-col gap-2.5">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-rose-500 flex items-center gap-1.5">
+      <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4 flex flex-col gap-2.5">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 flex items-center gap-1.5">
           <Sparkles size={12} /> Generate with KORA
         </p>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -189,7 +189,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               type="button"
               onClick={handleGeneratePrompt}
               disabled={generatingPrompt}
-              className="rounded-xl border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-60"
+              className="rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
               {generatingPrompt ? "Writing…" : "Prompt"}
             </button>
@@ -197,7 +197,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               type="button"
               onClick={handleGenerateRubric}
               disabled={generatingRubric}
-              className="rounded-xl border border-rose-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-60"
+              className="rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
               {generatingRubric ? "Writing…" : "Rubric"}
             </button>
@@ -205,7 +205,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
         </div>
         {generateError && <p className="text-[12px] text-red-600">{generateError}</p>}
         {essayType === "DBQ" && suggestedDocTopics.length > 0 && (
-          <div className="rounded-lg bg-white/70 border border-rose-100 px-3 py-2">
+          <div className="rounded-lg bg-white/70 border border-violet-100 px-3 py-2">
             <p className="text-[11px] font-semibold text-stone-500 mb-1">
               Suggested source topics — find real documents for these, KORA won&rsquo;t invent them:
             </p>
@@ -254,7 +254,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
             <button
               type="button"
               onClick={addDocument}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700"
             >
               <Plus size={12} /> Add document
             </button>
@@ -267,7 +267,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                     type="text"
                     value={doc.label}
                     onChange={(e) => updateDocument(i, "label", e.target.value)}
-                    className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm font-medium outline-none focus:border-rose-400"
+                    className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm font-medium outline-none focus:border-violet-400"
                   />
                   {documents.length > 1 && (
                     <button type="button" onClick={() => removeDocument(i)} className="text-stone-300 hover:text-red-500">
@@ -280,7 +280,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                   value={doc.source_text}
                   onChange={(e) => updateDocument(i, "source_text", e.target.value)}
                   placeholder="Paste the document excerpt, attribution, and date."
-                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-rose-400 resize-none"
+                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-violet-400 resize-none"
                 />
               </div>
             ))}
@@ -303,14 +303,14 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                   type="text"
                   value={row.category}
                   onChange={(e) => updateRubricRow(i, "category", e.target.value)}
-                  className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm font-semibold outline-none focus:border-rose-400"
+                  className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm font-semibold outline-none focus:border-violet-400"
                 />
                 <input
                   type="number"
                   min={0}
                   value={row.points_possible}
                   onChange={(e) => updateRubricRow(i, "points_possible", e.target.value)}
-                  className="w-16 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-center outline-none focus:border-rose-400"
+                  className="w-16 rounded-lg border border-stone-200 bg-white px-2 py-1.5 text-sm text-center outline-none focus:border-violet-400"
                 />
                 <span className="text-xs text-stone-400 shrink-0">pts</span>
               </div>
@@ -318,7 +318,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                 rows={2}
                 value={row.description}
                 onChange={(e) => updateRubricRow(i, "description", e.target.value)}
-                className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-[13px] outline-none focus:border-rose-400 resize-none"
+                className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-[13px] outline-none focus:border-violet-400 resize-none"
               />
             </div>
           ))}
@@ -334,7 +334,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 py-3.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all disabled:opacity-60"
+        className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
       >
         {loading ? "Publishing…" : "Publish assignment"}
       </button>

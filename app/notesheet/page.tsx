@@ -3,12 +3,13 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { animate } from "animejs";
+import { Upload, Sparkles, Printer, ArrowRight } from "lucide-react";
 import NotesheetUpload from "@/components/notesheet/NotesheetUpload";
 import NotesheetConfirm from "@/components/notesheet/NotesheetConfirm";
 import NotesheetPreview from "@/components/notesheet/NotesheetPreview";
 import type { NotesheetPlan } from "@/lib/notesheetTypes";
 
-type Step = "upload" | "confirm" | "preview";
+type Step = "intro" | "upload" | "confirm" | "preview";
 
 interface UploadResult {
   slides: string[];
@@ -17,10 +18,17 @@ interface UploadResult {
 }
 
 const STEP_PROGRESS: Record<Step, number> = {
-  upload: 6,
-  confirm: 46,
+  intro: 2,
+  upload: 20,
+  confirm: 55,
   preview: 100,
 };
+
+const introSteps = [
+  { icon: Upload, title: "Upload", description: "Drop in a PowerPoint or PDF of your lesson slides." },
+  { icon: Sparkles, title: "KORA structures it", description: "KORA decides what students should write, section by section." },
+  { icon: Printer, title: "Print & teach", description: "Download a student PDF and a teacher answer key, ready to go." },
+];
 
 export function ScaffoldLogo({ className = "" }: { className?: string }) {
   return (
@@ -39,7 +47,7 @@ export function ScaffoldLogo({ className = "" }: { className?: string }) {
 }
 
 export default function ScaffoldPage() {
-  const [step, setStep] = useState<Step>("upload");
+  const [step, setStep] = useState<Step>("intro");
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [plan, setPlan] = useState<NotesheetPlan | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -128,6 +136,14 @@ export default function ScaffoldPage() {
               ← Back
             </button>
           )}
+          {step === "upload" && (
+            <button
+              onClick={() => goToStep("intro")}
+              className="text-xs text-stone-400 hover:text-stone-700 transition-colors"
+            >
+              ← What is this?
+            </button>
+          )}
           {uploadResult && step !== "upload" && (
             <span className="text-xs text-stone-300">
               {uploadResult.slideCount} slides
@@ -145,6 +161,54 @@ export default function ScaffoldPage() {
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center px-4 pt-8 pb-16">
         <div ref={contentRef} className="w-full max-w-[520px]">
+
+          {step === "intro" && (
+            <div className="flex flex-col gap-9">
+              <div className="text-center">
+                <ScaffoldLogo className="text-3xl" />
+                <h1 className="mt-4 text-[28px] font-bold text-stone-900 leading-tight tracking-tight">
+                  Turn any slideshow into a{" "}
+                  <span
+                    style={{
+                      background: "linear-gradient(90deg, #9061F9, #5B21B6)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    ready-to-teach notesheet.
+                  </span>
+                </h1>
+                <p className="mt-2.5 text-[14px] text-stone-400 leading-relaxed max-w-sm mx-auto">
+                  Upload your lesson slides — KORA reads them, decides what students should
+                  write, and builds a print-ready student notesheet with a teacher answer key.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                {introSteps.map((s, i) => (
+                  <div key={s.title} className="flex items-center gap-3.5 rounded-xl border border-stone-100 bg-stone-50/60 px-4 py-3">
+                    <span className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 text-[12px] font-bold">
+                      {i + 1}
+                    </span>
+                    <s.icon size={16} className="shrink-0 text-violet-500" strokeWidth={1.75} />
+                    <div>
+                      <p className="text-[13px] font-semibold text-stone-800">{s.title}</p>
+                      <p className="text-[12px] text-stone-400">{s.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => goToStep("upload")}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-violet-200 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              >
+                Get started
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          )}
 
           {step === "upload" && (
             <div className="flex flex-col gap-9">

@@ -1,37 +1,40 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { animate } from "animejs";
+import Image from "next/image";
+
 interface Props {
+  width?: number;
   className?: string;
-  light?: boolean;
 }
 
-const BAR_COLORS = ["#FB7185", "#FBBF24", "#34D399"];
+export default function MarginsLogo({ width = 130, className = "" }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
 
-export default function MarginsLogo({ className = "", light = false }: Props) {
+  useEffect(() => {
+    if (!ref.current) return;
+    animate(ref.current, {
+      translateY: [0, -6, 0],
+      rotate: [0, -1, 0, 1, 0],
+      duration: 4800,
+      loop: true,
+      easing: "inOutSine",
+    });
+  }, []);
+
+  const height = Math.round(width * (293 / 852));
+
   return (
-    <span className={`inline-flex items-center gap-2 select-none ${className}`}>
-      <span className="flex items-center gap-[3px]">
-        {BAR_COLORS.map((color) => (
-          <span
-            key={color}
-            className="block w-[3px] rounded-full"
-            style={{ height: "0.75em", backgroundColor: color }}
-          />
-        ))}
-      </span>
-      <span
-        className="font-extrabold tracking-tight"
-        style={
-          light
-            ? { color: "#fff" }
-            : {
-                background: "linear-gradient(90deg, #FB7185 0%, #E11D48 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }
-        }
-      >
-        [margins]
-      </span>
-    </span>
+    <div ref={ref} className={`inline-block ${className}`}>
+      <Image
+        src="/margins-logo.png"
+        alt="Margins"
+        width={width}
+        height={height}
+        priority
+        style={{ width, height: "auto" }}
+      />
+    </div>
   );
 }

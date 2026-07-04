@@ -11,6 +11,15 @@ export interface StudentResourceEntry {
 
 export const studentResources: StudentResourceEntry[] = [
   {
+    slug: "writing-help",
+    title: "Margins",
+    tagline: "Practice AP writing and get real, honest feedback.",
+    description:
+      "Join your class, write DBQ, LEQ, and SAQ essays right in the browser, and get KORA-graded, color-coded annotated feedback against your teacher's rubric.",
+    status: "Available",
+    externalHref: "/margins",
+  },
+  {
     slug: "study-guides",
     title: "Study Guides",
     tagline: "Clear, visual guides for the topics that matter most.",
@@ -61,15 +70,6 @@ export const studentResources: StudentResourceEntry[] = [
       "Start with $10,000 in cash and build a portfolio using real, live stock prices—a hands-on way to learn investing basics.",
     status: "Available",
     externalHref: "/simulations/stock-market-basics",
-  },
-  {
-    slug: "writing-help",
-    title: "Margins",
-    tagline: "Practice AP writing and get real, honest feedback.",
-    description:
-      "Join your class, write DBQ, LEQ, and SAQ essays right in the browser, and get KORA-graded, color-coded annotated feedback against your teacher's rubric.",
-    status: "Available",
-    externalHref: "/margins",
   },
   {
     slug: "explainers",

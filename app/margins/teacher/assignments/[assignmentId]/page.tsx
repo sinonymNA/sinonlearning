@@ -67,7 +67,7 @@ export default async function TeacherAssignmentPage({
                 <Link
                   key={s.id}
                   href={`/margins/teacher/submissions/${s.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-rose-200 hover:shadow-sm transition-all"
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
                 >
                   <p className="font-medium text-stone-800">{s.student_name}</p>
                   <div className="flex items-center gap-3">

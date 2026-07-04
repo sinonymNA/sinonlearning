@@ -32,13 +32,13 @@ export default function TriggerGradeButton({ submissionId }: { submissionId: str
   }
 
   return (
-    <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 p-8 text-center flex flex-col items-center gap-3">
-      <Sparkles size={20} className="text-rose-400" />
+    <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/50 p-8 text-center flex flex-col items-center gap-3">
+      <Sparkles size={20} className="text-violet-400" />
       <p className="text-sm text-stone-600">This essay hasn&rsquo;t been graded by KORA yet.</p>
       <button
         onClick={handleClick}
         disabled={loading}
-        className="rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all disabled:opacity-60"
+        className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
       >
         {loading ? "Grading…" : "Grade with KORA"}
       </button>

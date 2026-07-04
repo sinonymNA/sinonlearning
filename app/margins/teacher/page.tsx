@@ -36,17 +36,17 @@ export default async function TeacherDashboardPage() {
               <Link
                 key={cls.id}
                 href={`/margins/teacher/classes/${cls.id}`}
-                className="group rounded-2xl border border-stone-100 bg-white p-5 hover:border-rose-200 hover:shadow-md transition-all"
+                className="group rounded-2xl border border-stone-100 bg-white p-5 hover:border-violet-200 hover:shadow-md transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-semibold text-stone-900">{cls.name}</h3>
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-stone-400">
                       <Users size={12} />
-                      Join code: <span className="font-mono font-semibold text-rose-600">{cls.join_code}</span>
+                      Join code: <span className="font-mono font-semibold text-violet-600">{cls.join_code}</span>
                     </p>
                   </div>
-                  <ArrowRight size={16} className="text-stone-300 group-hover:text-rose-500 transition-colors mt-1" />
+                  <ArrowRight size={16} className="text-stone-300 group-hover:text-violet-500 transition-colors mt-1" />
                 </div>
               </Link>
             ))}

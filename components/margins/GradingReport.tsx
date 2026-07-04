@@ -30,9 +30,9 @@ export default function GradingReport({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 to-white p-6 flex items-center justify-between">
+      <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-6 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-rose-500 mb-1">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 mb-1">
             {teacherOverrideScore != null ? "Teacher score" : "KORA draft score"}
           </p>
           <p className="text-3xl font-bold text-stone-900">
@@ -41,7 +41,7 @@ export default function GradingReport({
           </p>
         </div>
         {teacherOverrideScore == null && (
-          <span className="rounded-full bg-white border border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-600">
+          <span className="rounded-full bg-white border border-violet-200 px-3 py-1 text-[11px] font-semibold text-violet-600">
             Draft — awaiting teacher review
           </span>
         )}
@@ -60,7 +60,7 @@ export default function GradingReport({
               </div>
               <div className="h-1.5 w-full rounded-full bg-stone-100 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-rose-400 to-rose-600"
+                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-600"
                   style={{ width: `${row.points_possible > 0 ? (row.points_earned / row.points_possible) * 100 : 0}%` }}
                 />
               </div>

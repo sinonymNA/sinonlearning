@@ -121,7 +121,7 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
           onChange={(e) => handleChange(e.target.value)}
           rows={20}
           placeholder="Start writing…"
-          className="rounded-2xl border border-stone-200 bg-white p-5 text-[15px] leading-relaxed text-stone-800 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-none min-h-[420px]"
+          className="rounded-2xl border border-stone-200 bg-white p-5 text-[15px] leading-relaxed text-stone-800 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none min-h-[420px]"
         />
 
         {error && (
@@ -133,7 +133,7 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="self-end rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-rose-200 hover:shadow-md transition-all disabled:opacity-60"
+          className="self-end rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
         >
           {submitting ? "Submitting & grading…" : "Submit for grading"}
         </button>
