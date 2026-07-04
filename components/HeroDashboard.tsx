@@ -19,7 +19,7 @@ import {
   Lock,
   Check,
 } from "lucide-react";
-import Logo from "./Logo";
+import SinonWordmark from "./SinonWordmark";
 
 const curriculumItems = [
   { label: "Economics", icon: Landmark },
@@ -129,11 +129,8 @@ export default function HeroDashboard() {
           <div className="grid sm:grid-cols-[180px_1fr]">
             {/* Sidebar */}
             <div className="hidden flex-col gap-1 border-r border-navy-900/8 bg-cream-200/60 p-5 sm:flex">
-              <div className="mb-6 flex items-center gap-2 px-2">
-                <Logo size={24} />
-                <span className="font-display text-sm font-medium text-navy-900">
-                  Sinon Learning
-                </span>
+              <div className="mb-6 flex items-center px-2">
+                <SinonWordmark width={120} />
               </div>
               {sidebarLinks.map((link) => (
                 <div

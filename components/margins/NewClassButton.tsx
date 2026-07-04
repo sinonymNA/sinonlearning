@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { animate } from "animejs";
 import { Plus, X } from "lucide-react";
 
 export default function NewClassButton() {
@@ -10,6 +11,18 @@ export default function NewClassButton() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (open && formRef.current) {
+      animate(formRef.current, {
+        opacity: [0, 1],
+        scale: [0.92, 1],
+        duration: 260,
+        easing: "outQuart",
+      });
+    }
+  }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,7 +63,9 @@ export default function NewClassButton() {
 
   return (
     <form
+      ref={formRef}
       onSubmit={handleSubmit}
+      style={{ opacity: 0 }}
       className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white p-1.5 shadow-sm"
     >
       <input

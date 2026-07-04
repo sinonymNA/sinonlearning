@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { animate } from "animejs";
 import { Plus, Trash2, Sparkles } from "lucide-react";
 import { RUBRIC_TEMPLATES, type EssayType, type RubricCriterion } from "@/lib/marginsRubrics";
+import { revealStagger } from "@/lib/marginsMotion";
 
 interface DocumentEntry {
   label: string;
@@ -34,6 +36,13 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
   const [generatingRubric, setGeneratingRubric] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const rubricRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (rubricRef.current) {
+      revealStagger(rubricRef.current, ".rubric-edit-row", { stagger: 50, duration: 320, translateY: 10 });
+    }
+  }, [rubric]);
 
   async function handleGeneratePrompt() {
     if (!topic.trim()) {
@@ -156,7 +165,10 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
             <button
               key={t.value}
               type="button"
-              onClick={() => changeEssayType(t.value)}
+              onClick={(e) => {
+                animate(e.currentTarget, { scale: [0.94, 1], duration: 260, easing: "outQuart" });
+                changeEssayType(t.value);
+              }}
               className={[
                 "rounded-xl border p-3.5 text-left transition-all",
                 essayType === t.value
@@ -189,16 +201,18 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               type="button"
               onClick={handleGeneratePrompt}
               disabled={generatingPrompt}
-              className="rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
+              {generatingPrompt && <Sparkles size={11} className="animate-pulse" />}
               {generatingPrompt ? "Writing…" : "Prompt"}
             </button>
             <button
               type="button"
               onClick={handleGenerateRubric}
               disabled={generatingRubric}
-              className="rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
+              {generatingRubric && <Sparkles size={11} className="animate-pulse" />}
               {generatingRubric ? "Writing…" : "Rubric"}
             </button>
           </div>
@@ -295,9 +309,9 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
             Rubric — {maxScore} points total
           </span>
         </div>
-        <div className="flex flex-col gap-2.5">
+        <div ref={rubricRef} className="flex flex-col gap-2.5">
           {rubric.map((row, i) => (
-            <div key={i} className="rounded-xl border border-stone-200 bg-stone-50 p-3.5 flex flex-col gap-2">
+            <div key={i} className="rubric-edit-row rounded-xl border border-stone-200 bg-stone-50 p-3.5 flex flex-col gap-2" style={{ opacity: 0 }}>
               <div className="flex items-center gap-2">
                 <input
                   type="text"

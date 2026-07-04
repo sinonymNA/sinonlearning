@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Logo from "./Logo";
+import SinonWordmark from "./SinonWordmark";
 
 const columns = [
   {
@@ -50,11 +50,8 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:grid-cols-5">
           <div className="col-span-2 sm:col-span-3 lg:col-span-5 mb-4 sm:mb-2">
-            <div className="flex items-center gap-2.5">
-              <Logo size={28} />
-              <span className="font-display text-lg font-medium text-navy-900">
-                Sinon Learning
-              </span>
+            <div className="flex items-center">
+              <SinonWordmark width={150} />
             </div>
             <p className="mt-3 text-sm text-navy-700/60">
               Free education. Human teachers. Powerful tools.

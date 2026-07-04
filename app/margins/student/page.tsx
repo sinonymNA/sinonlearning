@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { NotebookPen } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByStudent, getAssignmentsForStudent } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import JoinClassButton from "@/components/margins/JoinClassButton";
+import RevealGroup from "@/components/margins/RevealGroup";
 
 const TYPE_COLORS: Record<string, string> = {
   DBQ: "bg-violet-50 text-violet-600",
@@ -51,29 +53,35 @@ export default async function StudentDashboardPage() {
         </div>
 
         {classes.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-10">
+          <RevealGroup className="flex flex-wrap gap-2 mb-10" stagger={40} translateY={8}>
             {classes.map((c) => (
-              <span key={c.id} className="rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600">
+              <span
+                key={c.id}
+                className="reveal-item rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600"
+                style={{ opacity: 0 }}
+              >
                 {c.name}
               </span>
             ))}
-          </div>
+          </RevealGroup>
         )}
 
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3">Your assignments</h2>
         {assignments.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center">
+          <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center flex flex-col items-center gap-3">
+            <NotebookPen size={26} className="text-stone-300" strokeWidth={1.5} />
             <p className="text-stone-400 text-sm">No assignments yet.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <RevealGroup className="flex flex-col gap-2.5" stagger={60} translateY={14}>
             {assignments.map((a) => {
               const status = a.submission_status ?? "not_started";
               return (
                 <Link
                   key={a.id}
                   href={`/margins/student/assignments/${a.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
+                  className="reveal-item group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
+                  style={{ opacity: 0 }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${TYPE_COLORS[a.essay_type]}`}>
@@ -90,7 +98,7 @@ export default async function StudentDashboardPage() {
                 </Link>
               );
             })}
-          </div>
+          </RevealGroup>
         )}
       </main>
     </div>

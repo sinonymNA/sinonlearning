@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { animate } from "animejs";
 import MarginsLogo from "@/components/MarginsLogo";
+import { useMountReveal } from "@/lib/marginsMotion";
 
 export default function MarginsLoginPage() {
   const router = useRouter();
@@ -11,6 +13,14 @@ export default function MarginsLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (formRef.current) {
+      animate(formRef.current, { opacity: [0, 1], scale: [0.97, 1], duration: 380, easing: "outQuart" });
+    }
+  }, []);
+  useMountReveal(formRef, ".form-field", { stagger: 70, translateY: 14, delay: 120, duration: 380 });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,15 +57,17 @@ export default function MarginsLoginPage() {
 
       <main className="flex-1 flex items-center justify-center px-6 py-10">
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
+          style={{ opacity: 0 }}
           className="w-full max-w-sm rounded-2xl border border-stone-100 bg-white p-7 shadow-xl flex flex-col gap-5"
         >
-          <div>
+          <div className="form-field" style={{ opacity: 0 }}>
             <h1 className="text-lg font-bold text-stone-900">Log in</h1>
             <p className="text-[13px] text-stone-400 mt-1">Welcome back.</p>
           </div>
 
-          <label className="flex flex-col gap-1.5">
+          <label className="form-field flex flex-col gap-1.5" style={{ opacity: 0 }}>
             <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Email</span>
             <input
               type="email"
@@ -66,7 +78,7 @@ export default function MarginsLoginPage() {
             />
           </label>
 
-          <label className="flex flex-col gap-1.5">
+          <label className="form-field flex flex-col gap-1.5" style={{ opacity: 0 }}>
             <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Password</span>
             <input
               type="password"
@@ -86,12 +98,13 @@ export default function MarginsLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
+            className="form-field rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
+            style={{ opacity: 0 }}
           >
             {loading ? "Logging in…" : "Log in"}
           </button>
 
-          <p className="text-center text-[13px] text-stone-400">
+          <p className="form-field text-center text-[13px] text-stone-400" style={{ opacity: 0 }}>
             Need an account?{" "}
             <Link href="/margins/signup" className="text-violet-600 font-medium hover:text-violet-700">
               Sign up

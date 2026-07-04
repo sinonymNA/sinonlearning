@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Users, ArrowRight } from "lucide-react";
+import { Users, ArrowRight, GraduationCap } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByTeacher } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import NewClassButton from "@/components/margins/NewClassButton";
+import RevealGroup from "@/components/margins/RevealGroup";
 
 export default async function TeacherDashboardPage() {
   const user = await getCurrentUser();
@@ -27,16 +28,18 @@ export default async function TeacherDashboardPage() {
         </div>
 
         {classes.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-12 text-center">
+          <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-12 text-center flex flex-col items-center gap-3">
+            <GraduationCap size={28} className="text-stone-300" strokeWidth={1.5} />
             <p className="text-stone-400 text-sm">No classes yet. Create your first class to get started.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <RevealGroup className="grid grid-cols-1 sm:grid-cols-2 gap-4" stagger={70} translateY={16}>
             {classes.map((cls) => (
               <Link
                 key={cls.id}
                 href={`/margins/teacher/classes/${cls.id}`}
-                className="group rounded-2xl border border-stone-100 bg-white p-5 hover:border-violet-200 hover:shadow-md transition-all"
+                className="reveal-item group rounded-2xl border border-stone-100 bg-white p-5 hover:border-violet-200 hover:shadow-md transition-all"
+                style={{ opacity: 0 }}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -50,7 +53,7 @@ export default async function TeacherDashboardPage() {
                 </div>
               </Link>
             ))}
-          </div>
+          </RevealGroup>
         )}
       </main>
     </div>

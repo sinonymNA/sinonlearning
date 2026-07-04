@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { animate } from "animejs";
+import { Sparkles } from "lucide-react";
+import { useMountReveal } from "@/lib/marginsMotion";
 
 interface DocumentEntry {
   label: string;
@@ -22,6 +25,10 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLSpanElement>(null);
+
+  useMountReveal(containerRef, ".editor-panel", { stagger: 90, translateY: 16, duration: 420 });
 
   function handleChange(value: string) {
     setText(value);
@@ -49,6 +56,12 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (statusRef.current) {
+      animate(statusRef.current, { opacity: [0, 1], duration: 220, easing: "outQuart" });
+    }
+  }, [saveState]);
 
   async function handleSubmit() {
     setError(null);
@@ -90,9 +103,9 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div ref={containerRef} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       <div className={documents && documents.length > 0 ? "lg:col-span-2 flex flex-col gap-4" : "lg:col-span-5 flex flex-col gap-4"}>
-        <div className="rounded-2xl border border-stone-100 bg-white p-5">
+        <div className="editor-panel rounded-2xl border border-stone-100 bg-white p-5" style={{ opacity: 0 }}>
           <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-2">Prompt</p>
           <p className="text-[15px] text-stone-700 leading-relaxed whitespace-pre-wrap">{promptText}</p>
         </div>
@@ -100,7 +113,7 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
         {documents && documents.length > 0 && (
           <div className="flex flex-col gap-3">
             {documents.map((doc, i) => (
-              <div key={i} className="rounded-2xl border border-stone-100 bg-white p-4">
+              <div key={i} className="editor-panel rounded-2xl border border-stone-100 bg-white p-4" style={{ opacity: 0 }}>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 mb-1.5">{doc.label}</p>
                 <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">{doc.source_text}</p>
               </div>
@@ -109,11 +122,14 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
         )}
       </div>
 
-      <div className={documents && documents.length > 0 ? "lg:col-span-3 flex flex-col gap-3" : "lg:col-span-5 flex flex-col gap-3"}>
+      <div className={documents && documents.length > 0 ? "editor-panel lg:col-span-3 flex flex-col gap-3" : "editor-panel lg:col-span-5 flex flex-col gap-3"} style={{ opacity: 0 }}>
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Your essay</span>
           <span className="text-xs text-stone-400">
-            {wordCount} words · {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
+            {wordCount} words ·{" "}
+            <span ref={statusRef} style={{ opacity: 0 }}>
+              {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
+            </span>
           </span>
         </div>
         <textarea
@@ -133,8 +149,9 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="self-end rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
+          className="self-end inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
         >
+          {submitting && <Sparkles size={14} className="animate-pulse" />}
           {submitting ? "Submitting & grading…" : "Submit for grading"}
         </button>
       </div>

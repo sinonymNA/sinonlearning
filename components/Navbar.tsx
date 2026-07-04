@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import Logo from "./Logo";
+import SinonWordmark from "./SinonWordmark";
 
 const links = [
   { href: "/", label: "Home" },
@@ -35,11 +35,8 @@ export default function Navbar() {
       }`}
     >
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-        <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
-          <Logo size={32} />
-          <span className="font-display text-lg font-medium text-navy-900">
-            Sinon Learning
-          </span>
+        <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
+          <SinonWordmark width={160} />
         </Link>
 
         <div className="hidden items-center gap-8 lg:flex">

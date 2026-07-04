@@ -58,6 +58,7 @@ export default async function TeacherSubmissionPage({
           <TriggerGradeButton submissionId={submissionId} />
         ) : (
           <div className="flex flex-col gap-6">
+            <AnnotatedEssay essayText={submission.essay_text} annotations={grading.annotations} />
             <GradingReport
               overallScore={grading.overall_score}
               maxScore={grading.max_score}
@@ -74,7 +75,6 @@ export default async function TeacherSubmissionPage({
               maxScore={grading.max_score}
               currentNotes={grading.teacher_notes}
             />
-            <AnnotatedEssay essayText={submission.essay_text} annotations={grading.annotations} />
           </div>
         )}
       </main>

@@ -4,6 +4,7 @@ import { Plus, FileText, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassById, getClassRoster, getAssignmentsByClass } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
+import RevealGroup from "@/components/margins/RevealGroup";
 
 const TYPE_COLORS: Record<string, string> = {
   DBQ: "bg-violet-50 text-violet-600",
@@ -64,12 +65,13 @@ export default async function TeacherClassDetailPage({
               <p className="text-stone-400 text-sm">No assignments yet.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5">
+            <RevealGroup className="flex flex-col gap-2.5" stagger={60} translateY={14}>
               {assignments.map((a) => (
                 <Link
                   key={a.id}
                   href={`/margins/teacher/assignments/${a.id}`}
-                  className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
+                  className="reveal-item group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
+                  style={{ opacity: 0 }}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${TYPE_COLORS[a.essay_type]}`}>
@@ -80,7 +82,7 @@ export default async function TeacherClassDetailPage({
                   <FileText size={14} className="text-stone-300 group-hover:text-violet-500 transition-colors shrink-0" />
                 </Link>
               ))}
-            </div>
+            </RevealGroup>
           )}
         </section>
 
@@ -89,13 +91,17 @@ export default async function TeacherClassDetailPage({
           {roster.length === 0 ? (
             <p className="text-sm text-stone-400">Share the join code above with your students.</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <RevealGroup className="flex flex-wrap gap-2" stagger={40} translateY={8}>
               {roster.map((s) => (
-                <span key={s.id} className="rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600">
+                <span
+                  key={s.id}
+                  className="reveal-item rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600"
+                  style={{ opacity: 0 }}
+                >
                   {s.name}
                 </span>
               ))}
-            </div>
+            </RevealGroup>
           )}
         </section>
       </main>
