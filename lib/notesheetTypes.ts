@@ -35,7 +35,7 @@ export const NotesheetSectionSchema = z.object({
   content: z.string(),
   student_prompt: z.string(),
   answer_key_notes: z.string(),
-  num_lines: z.coerce.number().int().min(1).max(20).optional(),
+  num_lines: z.coerce.number().int().min(0).max(20).optional(),
   columns: z.array(NotesheetColumnSchema).optional(),
 });
 

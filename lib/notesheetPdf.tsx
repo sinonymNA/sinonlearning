@@ -322,7 +322,7 @@ function SectionBody({
       );
 
     case "numbered_response": {
-      const n = section.num_lines ?? 5;
+      const n = Math.max(1, section.num_lines ?? 5);
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
