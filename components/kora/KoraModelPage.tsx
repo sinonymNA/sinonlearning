@@ -76,6 +76,13 @@ const stats = [
   { value: "0", label: "AI-generated images", sub: "presented as real historical sources, ever" },
 ];
 
+const gradientText = {
+  background: "linear-gradient(90deg, #7C3AED 0%, #0D9488 100%)",
+  WebkitBackgroundClip: "text" as const,
+  WebkitTextFillColor: "transparent" as const,
+  backgroundClip: "text" as const,
+};
+
 export default function KoraModelPage() {
   const statsRef = useRef<HTMLDivElement>(null);
   const diffRef = useRef<HTMLDivElement>(null);
@@ -118,10 +125,10 @@ export default function KoraModelPage() {
   }, []);
 
   return (
-    <div className="bg-navy-950">
+    <div className="bg-cream-50">
       {/* ── Hero ── */}
       <KoraHero
-        logo={<KoraLogo width={180} />}
+        logo={<KoraLogo width={300} className="max-w-[70vw]" />}
         eyebrow="Meet KORA"
         headline={
           <>
@@ -134,14 +141,14 @@ export default function KoraModelPage() {
       >
         <Link
           href="/notesheet"
-          className="inline-flex items-center gap-2 rounded-full bg-teal-300 px-6 py-3 text-sm font-semibold text-navy-950 transition-all hover:bg-teal-200 hover:shadow-lg hover:shadow-teal-400/20"
+          className="inline-flex items-center gap-2 rounded-full bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-all hover:bg-violet-500 hover:shadow-lg hover:shadow-violet-300 hover:-translate-y-0.5"
         >
           Try Scaffold — it&rsquo;s free
           <ArrowRight size={14} />
         </Link>
         <Link
           href="/mission/kora-constitution"
-          className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-medium text-white/80 transition-colors hover:border-teal-300/40 hover:text-teal-200"
+          className="inline-flex items-center gap-2 rounded-full border border-navy-900/15 px-6 py-3 text-sm font-medium text-navy-800/80 transition-colors hover:border-violet-400 hover:text-violet-700"
         >
           Read the KORA Constitution
         </Link>
@@ -151,21 +158,22 @@ export default function KoraModelPage() {
       <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <FadeIn>
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
               The problem worth solving
             </p>
-            <h2 className="mt-5 text-center font-display text-3xl font-medium leading-tight text-white sm:text-4xl lg:text-5xl">
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl lg:text-5xl">
               Every AI tool for education was built the same wrong way.
             </h2>
           </FadeIn>
           <FadeIn delay={0.1}>
             <div className="mx-auto mt-8 max-w-2xl text-center">
-              <p className="text-lg leading-relaxed text-white/65">
+              <p className="text-lg leading-relaxed text-navy-700/75">
                 They generate content — slides, quizzes, lesson plans — and ask teachers to review it.
                 That&rsquo;s not saving time. That&rsquo;s adding a second job.
               </p>
-              <p className="mt-4 text-lg leading-relaxed text-white/65">
-                KORA starts from a different question: <span className="text-white font-medium">what&rsquo;s actually keeping teachers from teaching?</span>
+              <p className="mt-4 text-lg leading-relaxed text-navy-700/75">
+                KORA starts from a different question: <span className="font-medium text-navy-900">what&rsquo;s actually keeping teachers from teaching?</span>
               </p>
             </div>
           </FadeIn>
@@ -179,12 +187,12 @@ export default function KoraModelPage() {
             {stats.map((stat) => (
               <div
                 key={stat.value}
-                className="stat-card rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-sm"
+                className="stat-card rounded-3xl border border-navy-900/8 bg-white p-8 text-center shadow-[0_1px_2px_rgba(13,27,46,0.04)]"
                 style={{ opacity: 0 }}
               >
-                <p className="font-display text-5xl font-bold text-teal-300">{stat.value}</p>
-                <p className="mt-2 text-sm font-semibold text-white">{stat.label}</p>
-                <p className="mt-1 text-sm leading-relaxed text-white/50">{stat.sub}</p>
+                <p className="font-display text-5xl font-bold" style={gradientText}>{stat.value}</p>
+                <p className="mt-2 text-sm font-semibold text-navy-900">{stat.label}</p>
+                <p className="mt-1 text-sm leading-relaxed text-navy-700/60">{stat.sub}</p>
               </div>
             ))}
           </div>
@@ -192,13 +200,14 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── The KORA difference ── */}
-      <section className="px-6 py-24 lg:px-8">
+      <section className="bg-cream-100 px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
               The KORA difference
             </p>
-            <h2 className="mt-5 text-center font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
               Four things no other education AI does.
             </h2>
           </FadeIn>
@@ -227,14 +236,15 @@ export default function KoraModelPage() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="diff-card group rounded-3xl border border-white/10 bg-white/[0.03] p-8 transition-colors duration-300 hover:border-teal-300/25 hover:bg-white/[0.06]"
+                className="diff-card group relative overflow-hidden rounded-3xl border border-navy-900/8 bg-white p-8 shadow-[0_1px_2px_rgba(13,27,46,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(13,27,46,0.1)]"
                 style={{ opacity: 0 }}
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-400/10 text-teal-300">
+                <div className="absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400 transition-transform duration-300 group-hover:scale-x-100" />
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-600">
                   <item.icon size={20} strokeWidth={1.75} />
                 </span>
-                <h3 className="mt-5 font-display text-lg font-semibold text-white">{item.title}</h3>
-                <p className="mt-2.5 text-[15px] leading-relaxed text-white/60">{item.body}</p>
+                <h3 className="mt-5 font-display text-lg font-semibold text-navy-900">{item.title}</h3>
+                <p className="mt-2.5 text-[15px] leading-relaxed text-navy-700/70">{item.body}</p>
               </div>
             ))}
           </div>
@@ -242,15 +252,15 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── Quote ── */}
-      <section className="px-6 py-4 pb-24 lg:px-8">
+      <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <FadeIn>
-            <div className="rounded-3xl border border-teal-300/20 bg-gradient-to-br from-teal-400/10 via-white/[0.02] to-purple-500/10 p-10 text-center">
-              <Quote size={24} className="mx-auto text-teal-300" />
-              <p className="mt-6 font-display text-2xl font-medium leading-snug text-white sm:text-3xl">
+            <div className="relative overflow-hidden rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-teal-50 p-10 text-center shadow-[0_20px_50px_-20px_rgba(124,58,237,0.15)]">
+              <Quote size={24} className="mx-auto text-violet-500" />
+              <p className="mt-6 font-display text-2xl font-medium leading-snug text-navy-900 sm:text-3xl">
                 &ldquo;KORA exists to make teachers more powerful, not more replaceable.&rdquo;
               </p>
-              <p className="mt-5 text-sm text-white/50">
+              <p className="mt-5 text-sm text-navy-700/60">
                 That&rsquo;s the single constraint every feature has to pass before it ships — not a slogan added afterward.
               </p>
             </div>
@@ -259,13 +269,14 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── What KORA can do ── */}
-      <section className="px-6 py-24 lg:px-8">
+      <section className="bg-cream-100 px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
               What KORA does
             </p>
-            <h2 className="mt-5 text-center font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
               Eight things KORA understands how to do.
             </h2>
           </FadeIn>
@@ -273,14 +284,14 @@ export default function KoraModelPage() {
             {whatKoraDoes.map((item) => (
               <div
                 key={item.title}
-                className="cap-card rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-teal-300/20"
+                className="cap-card rounded-2xl border border-navy-900/8 bg-white p-5 shadow-[0_1px_2px_rgba(13,27,46,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-violet-200 hover:shadow-[0_12px_28px_rgba(13,27,46,0.08)]"
                 style={{ opacity: 0 }}
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-400/10 text-teal-300">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
                   <item.icon size={17} strokeWidth={2} />
                 </span>
-                <p className="mt-4 text-sm font-semibold text-white">{item.title}</p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-white/55">{item.description}</p>
+                <p className="mt-4 text-sm font-semibold text-navy-900">{item.title}</p>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-navy-700/65">{item.description}</p>
               </div>
             ))}
           </div>
@@ -291,54 +302,55 @@ export default function KoraModelPage() {
       <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
               Live now
             </p>
-            <h2 className="mt-5 text-center font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
               Scaffold: the first KORA tool.
             </h2>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div className="mt-12 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03]">
+            <div className="mt-12 overflow-hidden rounded-3xl border border-navy-900/8 bg-white shadow-[0_30px_60px_-25px_rgba(13,27,46,0.15)]">
               <div className="grid grid-cols-1 lg:grid-cols-2">
                 <div className="p-10 lg:p-14">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-300/25 bg-teal-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-teal-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-emerald-600">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Available Now · Free
                   </span>
-                  <h3 className="mt-6 font-display text-2xl font-semibold text-white">
+                  <h3 className="mt-6 font-display text-2xl font-semibold text-navy-900">
                     Upload a slideshow.<br />
                     Get a student notesheet.
                   </h3>
-                  <p className="mt-4 text-[15px] leading-relaxed text-white/65">
+                  <p className="mt-4 text-[15px] leading-relaxed text-navy-700/75">
                     Scaffold reads your lesson slides, identifies the key concepts and structure, and builds a
                     print-ready student notesheet in seconds. Section types — fill-in-the-blank, numbered response,
                     vocabulary tables, drawing boxes — are matched to the content, not forced into a template.
                   </p>
                   <ul className="mt-6 space-y-2.5">
                     {["Accepts PowerPoint and PDF", "Student PDF + teacher answer key", "Edit any section before exporting", "No login required"].map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-sm text-white/70">
-                        <CircleCheck size={14} className="text-teal-300 shrink-0" />
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-navy-700/80">
+                        <CircleCheck size={14} className="shrink-0 text-violet-500" />
                         {f}
                       </li>
                     ))}
                   </ul>
                   <Link
                     href="/notesheet"
-                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-teal-300 px-6 py-3 text-sm font-semibold text-navy-950 transition-all hover:bg-teal-200 hover:shadow-lg hover:shadow-teal-400/20"
+                    className="mt-8 inline-flex items-center gap-2 rounded-full bg-violet-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-all hover:bg-violet-500 hover:shadow-lg hover:shadow-violet-300 hover:-translate-y-0.5"
                   >
                     Try Scaffold now
                     <ArrowRight size={14} />
                   </Link>
                 </div>
-                <div className="flex items-center justify-center border-t border-white/10 bg-white/[0.02] p-10 lg:border-l lg:border-t-0">
+                <div className="flex items-center justify-center border-t border-navy-900/8 bg-gradient-to-br from-violet-50 to-cream-100 p-10 lg:border-l lg:border-t-0">
                   <div className="w-full max-w-xs">
-                    <div className="rounded-2xl border border-white/15 bg-navy-950 p-5 shadow-2xl">
-                      <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/30">
+                    <div className="rounded-2xl border border-navy-900/8 bg-white p-5 shadow-xl">
+                      <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-navy-700/40">
                         <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
                         Scaffold output
                       </div>
-                      <p className="mt-4 font-semibold text-white text-sm">The Agricultural Revolution</p>
+                      <p className="mt-4 text-sm font-semibold text-navy-900">The Agricultural Revolution</p>
                       <div className="mt-4 space-y-2.5">
                         {[
                           { type: "Warm-up", color: "bg-violet-400" },
@@ -347,13 +359,13 @@ export default function KoraModelPage() {
                           { type: "Numbered Response", color: "bg-emerald-400" },
                           { type: "Drawing Box", color: "bg-orange-400" },
                         ].map((s) => (
-                          <div key={s.type} className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2">
+                          <div key={s.type} className="flex items-center gap-2.5 rounded-lg border border-navy-900/8 bg-cream-50 px-3 py-2">
                             <span className={`h-2 w-2 rounded-full ${s.color} shrink-0`} />
-                            <span className="text-[11px] text-white/60">{s.type}</span>
+                            <span className="text-[11px] text-navy-700/70">{s.type}</span>
                           </div>
                         ))}
                       </div>
-                      <p className="mt-4 text-[10px] text-white/25">Click any section to edit · Export as PDF</p>
+                      <p className="mt-4 text-[10px] text-navy-700/35">Click any section to edit · Export as PDF</p>
                     </div>
                   </div>
                 </div>
@@ -364,15 +376,16 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── TRACE Method ── */}
-      <section className="px-6 py-24 lg:px-8">
+      <section className="bg-cream-100 px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
             <div className="text-center">
-              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">The TRACE Method</p>
-              <h2 className="mt-5 font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">The TRACE Method</p>
+              <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+              <h2 className="mt-6 font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
                 Teacher Reasoning and Artifact Construction Encoding.
               </h2>
-              <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/65">
+              <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-navy-700/75">
                 TRACE is the loop that connects a teacher&rsquo;s intent to a classroom artifact — and makes every teacher revision feed back into a better model.
               </p>
             </div>
@@ -387,23 +400,24 @@ export default function KoraModelPage() {
       <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <FadeIn>
-            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
               Non-negotiable
             </p>
-            <h2 className="mt-5 text-center font-display text-3xl font-medium leading-tight text-white sm:text-4xl">
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
               Rules KORA will never break.
             </h2>
-            <p className="mx-auto mt-5 max-w-xl text-center text-lg leading-relaxed text-white/65">
+            <p className="mx-auto mt-5 max-w-xl text-center text-lg leading-relaxed text-navy-700/75">
               These aren&rsquo;t guidelines or best practices. They are design constraints baked into KORA from the start.
             </p>
           </FadeIn>
           <div className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {neverRules.map((rule, i) => (
               <FadeIn key={rule.title} delay={i * 0.07}>
-                <div className="h-full rounded-3xl border border-white/10 bg-white/[0.03] p-8">
-                  <rule.icon size={20} className="text-teal-300" />
-                  <p className="mt-5 text-base font-semibold text-white">{rule.title}</p>
-                  <p className="mt-2 text-[15px] leading-relaxed text-white/60">{rule.description}</p>
+                <div className="h-full rounded-3xl border border-navy-900/8 bg-white p-8 shadow-[0_1px_2px_rgba(13,27,46,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(13,27,46,0.1)]">
+                  <rule.icon size={20} className="text-violet-600" />
+                  <p className="mt-5 text-base font-semibold text-navy-900">{rule.title}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-navy-700/70">{rule.description}</p>
                 </div>
               </FadeIn>
             ))}
@@ -412,13 +426,13 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── AI Promise ── */}
-      <section className="px-6 py-24 lg:px-8">
+      <section className="bg-cream-100 px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <FadeIn>
-            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-12">
-              <div className="flex items-center gap-2 mb-6">
-                <ShieldCheck size={18} className="text-teal-300" />
-                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-teal-300/80">Our AI Promise</p>
+            <div className="rounded-3xl border border-navy-900/8 bg-white p-8 shadow-[0_1px_2px_rgba(13,27,46,0.04)] sm:p-12">
+              <div className="mb-6 flex items-center gap-2">
+                <ShieldCheck size={18} className="text-violet-600" />
+                <p className="text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">Our AI Promise</p>
               </div>
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {[
@@ -429,8 +443,8 @@ export default function KoraModelPage() {
                   "Never designed to replace a teacher's judgment",
                   "Built in service of free education, not instead of it",
                 ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-white/75">
-                    <Eye size={14} className="mt-0.5 shrink-0 text-teal-300/70" />
+                  <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed text-navy-700/80">
+                    <Eye size={14} className="mt-0.5 shrink-0 text-violet-500" />
                     {item}
                   </li>
                 ))}
@@ -441,10 +455,9 @@ export default function KoraModelPage() {
       </section>
 
       {/* ── Related + CTA ── */}
-      <section className="px-6 pb-20 lg:px-8">
+      <section className="px-6 pt-20 pb-8 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <RelatedResources
-            theme="dark"
             title="Keep exploring"
             links={[
               { label: "Scaffold — Notesheet Engine", href: "/notesheet" },
@@ -455,19 +468,19 @@ export default function KoraModelPage() {
         </div>
       </section>
 
-      <section className="px-6 pb-28 lg:px-8">
+      <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <FadeIn>
             <div className="mb-8 flex justify-center">
-              <KoraLogo width={120} />
+              <KoraLogo width={170} />
             </div>
-            <h2 className="font-display text-3xl font-medium text-white sm:text-4xl">
+            <h2 className="font-display text-3xl font-medium text-navy-900 sm:text-4xl">
               The future of classroom AI starts with teachers in control.
             </h2>
-            <p className="mt-4 text-white/60 text-lg">Try the first KORA tool. No account needed. Free.</p>
+            <p className="mt-4 text-lg text-navy-700/70">Try the first KORA tool. No account needed. Free.</p>
             <Link
               href="/notesheet"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-teal-300 px-8 py-4 text-sm font-semibold text-navy-950 transition-all hover:bg-teal-200 hover:shadow-xl hover:shadow-teal-400/25 hover:-translate-y-0.5"
+              className="mt-8 inline-flex items-center gap-2 rounded-full bg-violet-600 px-8 py-4 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition-all hover:bg-violet-500 hover:shadow-xl hover:shadow-violet-300 hover:-translate-y-0.5"
             >
               Try Scaffold Now
               <ArrowRight size={14} />

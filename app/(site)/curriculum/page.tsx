@@ -114,8 +114,8 @@ export default function CurriculumPage() {
               <RelatedResources
                 title="Keep exploring"
                 links={[
-                  { label: "Teaching Lab", href: "/teaching-lab" },
-                  { label: "Teacher Tools", href: "/teacher-tools" },
+                  { label: "Teacher Apps", href: "/teachers" },
+                  { label: "Students", href: "/students" },
                   { label: "Research", href: "/research" },
                 ]}
               />

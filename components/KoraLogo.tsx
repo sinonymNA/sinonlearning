@@ -15,8 +15,9 @@ export default function KoraLogo({ width = 140, className = "" }: Props) {
   useEffect(() => {
     if (!ref.current) return;
     animate(ref.current, {
-      translateY: [0, -6, 0],
-      duration: 3800,
+      translateY: [0, -7, 0],
+      rotate: [0, 1.2, 0, -1.2, 0],
+      duration: 5200,
       loop: true,
       easing: "inOutSine",
     });

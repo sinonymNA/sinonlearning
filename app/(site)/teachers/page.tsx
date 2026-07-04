@@ -125,7 +125,7 @@ export default function TeachersPage() {
                   className={[
                     "group flex flex-col rounded-3xl border bg-white overflow-hidden transition-all duration-300",
                     tool.href
-                      ? "border-stone-100 hover:border-stone-200 hover:shadow-2xl hover:-translate-y-1 cursor-pointer"
+                      ? "border-stone-100 hover:border-stone-200 hover:shadow-2xl hover:-translate-y-1.5 hover:-rotate-1 cursor-pointer"
                       : "border-stone-100 opacity-80",
                   ].join(" ")}
                 >

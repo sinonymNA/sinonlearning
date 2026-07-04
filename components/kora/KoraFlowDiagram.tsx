@@ -21,21 +21,21 @@ export default function KoraFlowDiagram({ stages }: { stages: KoraFlowStage[] })
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5, delay: reduceMotion ? 0 : i * 0.08 }}
-          className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm transition-colors duration-300 hover:border-teal-300/30"
+          className="group relative overflow-hidden rounded-2xl border border-navy-900/8 bg-white p-6 shadow-[0_1px_2px_rgba(13,27,46,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-violet-300 hover:shadow-[0_12px_32px_rgba(13,27,46,0.08)]"
         >
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-400/10 text-teal-300">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-100 text-violet-600">
               {stage.icon}
             </span>
-            <span className="font-mono text-xs uppercase tracking-[0.16em] text-teal-300/60">
+            <span className="font-mono text-xs uppercase tracking-[0.16em] text-violet-500/80">
               Stage {String(i + 1).padStart(2, "0")}
             </span>
           </div>
-          <p className="mt-4 text-sm font-semibold text-white">{stage.title}</p>
-          <p className="mt-1.5 text-sm leading-relaxed text-white/60">{stage.description}</p>
+          <p className="mt-4 text-sm font-semibold text-navy-900">{stage.title}</p>
+          <p className="mt-1.5 text-sm leading-relaxed text-navy-700/70">{stage.description}</p>
 
           {i < stages.length - 1 && (
-            <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 text-white/15 lg:block">
+            <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 text-navy-900/15 lg:block">
               →
             </span>
           )}

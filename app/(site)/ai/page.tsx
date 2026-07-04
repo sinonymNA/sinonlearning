@@ -132,10 +132,10 @@ export default function AIMissionPage() {
               Ready to bring AI literacy into your classroom?
             </h2>
             <Link
-              href="/teacher-tools"
+              href="/teachers"
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal-300 px-6 py-3 text-sm font-medium text-navy-950 transition-colors hover:bg-teal-200"
             >
-              See Teacher Tools
+              See Teacher Apps
               <ArrowRight size={14} />
             </Link>
           </FadeIn>

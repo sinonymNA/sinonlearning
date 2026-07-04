@@ -3,9 +3,7 @@ import { getPublishedPosts } from "@/lib/blog";
 import { getPublishedTextbooks } from "@/lib/textbooks";
 import { simulations } from "@/data/simulations";
 import { courses } from "@/data/courses";
-import { teacherTools } from "@/data/teacherTools";
 import { studentResources } from "@/data/students";
-import { teachingLabTopics } from "@/data/teachingLab";
 import { researchTopics } from "@/data/research";
 import { missionTopics } from "@/data/missionTopics";
 import { SITE_URL } from "@/lib/seo";
@@ -22,11 +20,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/educational-theory",
     "/simulations",
     "/textbooks",
-    "/teacher-tools",
     "/teachers",
     "/notesheet",
     "/students",
-    "/teaching-lab",
+    "/game-shows",
     "/research",
     "/research/kora-model",
     "/mission",
@@ -57,18 +54,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(book.updated_at),
   }));
 
-  const teacherToolRoutes = teacherTools.map((entry) => ({
-    url: `${SITE_URL}/teacher-tools/${entry.slug}`,
-    lastModified: new Date(),
-  }));
-
   const studentRoutes = studentResources.map((entry) => ({
     url: `${SITE_URL}/students/${entry.slug}`,
-    lastModified: new Date(),
-  }));
-
-  const teachingLabRoutes = teachingLabTopics.map((entry) => ({
-    url: `${SITE_URL}/teaching-lab/${entry.slug}`,
     lastModified: new Date(),
   }));
 
@@ -88,9 +75,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...simulationRoutes,
     ...courseRoutes,
     ...textbookRoutes,
-    ...teacherToolRoutes,
     ...studentRoutes,
-    ...teachingLabRoutes,
     ...researchRoutes,
     ...missionRoutes,
   ];

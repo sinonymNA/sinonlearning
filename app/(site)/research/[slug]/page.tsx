@@ -129,7 +129,7 @@ export default async function ResearchTopicPage({
                   theme="dark"
                   title="Keep exploring"
                   links={[
-                    { label: "Teaching Lab", href: "/teaching-lab" },
+                    { label: "Teacher Apps", href: "/teachers" },
                     { label: "Classroom Tools", href: "/tools" },
                     { label: "Curriculum", href: "/curriculum" },
                   ]}
