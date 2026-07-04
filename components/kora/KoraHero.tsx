@@ -22,11 +22,13 @@ export default function KoraHero({
   headline,
   subtext,
   children,
+  logo,
 }: {
   eyebrow?: string;
   headline: ReactNode;
   subtext: string;
   children?: ReactNode;
+  logo?: ReactNode;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -77,10 +79,20 @@ export default function KoraHero({
       ))}
 
       <div className="relative mx-auto max-w-3xl text-center">
+        {logo && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, ease: "backOut" }}
+            className="mb-8 flex justify-center"
+          >
+            {logo}
+          </motion.div>
+        )}
         <motion.span
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, delay: logo ? 0.15 : 0 }}
           className="mb-5 inline-flex items-center gap-2 rounded-full border border-teal-300/25 bg-teal-400/10 px-3.5 py-1.5 text-xs font-medium text-teal-200"
         >
           <Sparkles size={12} />

@@ -2,60 +2,38 @@
 
 import { useEffect, useRef } from "react";
 import { animate } from "animejs";
+import Image from "next/image";
 
 interface Props {
-  size?: "sm" | "md" | "lg" | "xl";
-  light?: boolean;
+  width?: number;
+  className?: string;
 }
 
-const sizeMap = {
-  sm: { cls: "text-xl", dot: 5 },
-  md: { cls: "text-3xl", dot: 7 },
-  lg: { cls: "text-5xl", dot: 11 },
-  xl: { cls: "text-7xl", dot: 16 },
-};
-
-export default function KoraLogo({ size = "md", light = false }: Props) {
-  const dotRef = useRef<HTMLSpanElement>(null);
+export default function KoraLogo({ width = 140, className = "" }: Props) {
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!dotRef.current) return;
-    animate(dotRef.current, {
-      scale: [1, 1.5, 1],
-      opacity: [0.9, 0.55, 0.9],
-      duration: 2400,
+    if (!ref.current) return;
+    animate(ref.current, {
+      translateY: [0, -6, 0],
+      duration: 3800,
       loop: true,
       easing: "inOutSine",
     });
   }, []);
 
-  const { cls, dot } = sizeMap[size];
-  const textColor = light ? "#fff" : "#7C3AED";
+  const height = Math.round(width * (212 / 566));
 
   return (
-    <span
-      className={`font-extrabold tracking-tight select-none ${cls}`}
-      style={{ color: textColor, fontFamily: "inherit" }}
-    >
-      k
-      <span className="relative inline-block">
-        o
-        <span
-          ref={dotRef}
-          style={{
-            position: "absolute",
-            width: dot,
-            height: dot,
-            borderRadius: "50%",
-            background: "#FB7185",
-            left: "50%",
-            top: "48%",
-            transform: "translate(-50%, -50%)",
-            display: "block",
-          }}
-        />
-      </span>
-      ra
-    </span>
+    <div ref={ref} className={`inline-block ${className}`}>
+      <Image
+        src="/kora-logo.png"
+        alt="KORA"
+        width={width}
+        height={height}
+        priority
+        style={{ width: width, height: "auto" }}
+      />
+    </div>
   );
 }

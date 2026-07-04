@@ -15,6 +15,7 @@ import PathwayCard from "@/components/PathwayCard";
 import PromiseCard from "@/components/PromiseCard";
 import RoadmapCard from "@/components/RoadmapCard";
 import KoraLogo from "@/components/KoraLogo";
+import AnimatedHeroBlobs from "@/components/AnimatedHeroBlobs";
 import { homeRoadmap } from "@/data/courses";
 
 const startHere = [
@@ -88,8 +89,7 @@ export default function Home() {
     <>
       {/* Hero */}
       <section className="bg-grain relative overflow-hidden bg-cream-50">
-        <div className="absolute left-1/2 top-0 -z-10 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-teal-400/15 blur-[120px]" />
-        <div className="absolute -right-20 top-40 -z-10 h-72 w-72 rounded-full bg-amber-400/10 blur-[100px]" />
+        <AnimatedHeroBlobs />
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:px-8 lg:pt-24">
           <HeroIntro />
 
@@ -146,14 +146,14 @@ export default function Home() {
       <section className="bg-cream-100 px-6 py-20 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <FadeIn>
-            <div className="flex flex-col items-center gap-3 mb-10">
-              <KoraLogo size="lg" />
-              <SectionHeader
-                eyebrow="Our AI Promise"
-                title="Teacher-first, not teacher-optional."
-                subtitle="Sinon Learning's teacher-first AI, held to a set of explicit promises."
-              />
+            <div className="flex justify-center mb-6">
+              <KoraLogo width={120} />
             </div>
+            <SectionHeader
+              eyebrow="Our AI Promise"
+              title="Teacher-first, not teacher-optional."
+              subtitle="Sinon Learning's teacher-first AI, held to a set of explicit promises."
+            />
           </FadeIn>
           <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {aiPromises.map((promise, i) => (

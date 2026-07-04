@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
-import KoraLogo from "@/components/KoraLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -48,7 +48,11 @@ const tools = [
     href: null,
     status: "soon" as const,
     bgClass: "bg-gradient-to-br from-indigo-900 to-indigo-700",
-    logo: <KoraLogo size="md" light />,
+    logo: (
+      <div className="rounded-2xl bg-white/15 px-6 py-3 backdrop-blur-sm">
+        <Image src="/kora-logo.png" alt="KORA" width={120} height={45} style={{ width: 120, height: "auto" }} />
+      </div>
+    ),
     logoSub: "KORA Game",
     name: "KORA Game",
     tagline: "Students type answers in a live game. KORA scores depth of understanding, not just recall.",
