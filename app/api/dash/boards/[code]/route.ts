@@ -17,6 +17,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       kind: p.kind,
       content: p.content,
       authorName: p.author_name,
+      x: p.x,
+      y: p.y,
+      z: p.z,
       createdAt: p.created_at,
     })),
   });

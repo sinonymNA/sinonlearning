@@ -38,6 +38,10 @@ export interface DashBoardPost {
   kind: BoardPostKind;
   content: DashBoardPostContent;
   author_name: string;
+  owner_token: string;
+  x: number;
+  y: number;
+  z: number;
   created_at: string;
 }
 
@@ -61,9 +65,19 @@ export function ensureDashJamSchema(): Promise<void> {
           kind TEXT NOT NULL,
           content JSONB NOT NULL,
           author_name TEXT NOT NULL DEFAULT 'Anonymous',
+          owner_token TEXT NOT NULL DEFAULT '',
+          x REAL NOT NULL DEFAULT 10,
+          y REAL NOT NULL DEFAULT 10,
+          z INTEGER NOT NULL DEFAULT 0,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
       )
+      .then(() =>
+        query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS owner_token TEXT NOT NULL DEFAULT ''`)
+      )
+      .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS x REAL NOT NULL DEFAULT 10`))
+      .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS y REAL NOT NULL DEFAULT 10`))
+      .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS z INTEGER NOT NULL DEFAULT 0`))
       .then(() => undefined);
   }
   return schemaReady;
@@ -114,11 +128,25 @@ export async function getBoardByCode(code: string): Promise<DashBoard | undefine
 export async function getBoardPosts(boardId: string): Promise<DashBoardPost[]> {
   await ensureDashJamSchema();
   const { rows } = await query<DashBoardPost>(
-    `SELECT id, board_id, kind, content, author_name, created_at
+    `SELECT id, board_id, kind, content, author_name, owner_token, x, y, z, created_at
      FROM dash_board_posts WHERE board_id = $1 ORDER BY created_at ASC`,
     [boardId]
   );
   return rows;
+}
+
+export async function getBoardPostById(boardId: string, postId: string): Promise<DashBoardPost | undefined> {
+  await ensureDashJamSchema();
+  const { rows } = await query<DashBoardPost>(
+    `SELECT id, board_id, kind, content, author_name, owner_token, x, y, z, created_at
+     FROM dash_board_posts WHERE id = $1 AND board_id = $2`,
+    [postId, boardId]
+  );
+  return rows[0];
+}
+
+function randomStartCoord(): number {
+  return Math.round((5 + Math.random() * 65) * 100) / 100;
 }
 
 export async function addBoardPost(params: {
@@ -129,17 +157,38 @@ export async function addBoardPost(params: {
 }): Promise<DashBoardPost> {
   await ensureDashJamSchema();
   const id = randomUUID();
+  const ownerToken = randomBytes(16).toString("hex");
   const { rows } = await query<DashBoardPost>(
-    `INSERT INTO dash_board_posts (id, board_id, kind, content, author_name)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, board_id, kind, content, author_name, created_at`,
+    `INSERT INTO dash_board_posts (id, board_id, kind, content, author_name, owner_token, x, y)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, board_id, kind, content, author_name, owner_token, x, y, z, created_at`,
     [
       id,
       params.boardId,
       params.kind,
       JSON.stringify(params.content),
       params.authorName.trim() || "Anonymous",
+      ownerToken,
+      randomStartCoord(),
+      randomStartCoord(),
     ]
+  );
+  return rows[0];
+}
+
+export async function updateBoardPostPosition(
+  boardId: string,
+  postId: string,
+  position: { x: number; y: number; z: number }
+): Promise<DashBoardPost | undefined> {
+  await ensureDashJamSchema();
+  const x = Math.min(85, Math.max(0, position.x));
+  const y = Math.min(85, Math.max(0, position.y));
+  const { rows } = await query<DashBoardPost>(
+    `UPDATE dash_board_posts SET x = $3, y = $4, z = $5
+     WHERE id = $1 AND board_id = $2
+     RETURNING id, board_id, kind, content, author_name, owner_token, x, y, z, created_at`,
+    [postId, boardId, x, y, position.z]
   );
   return rows[0];
 }

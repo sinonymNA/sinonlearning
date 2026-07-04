@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate, stagger } from "animejs";
+import { motion, useMotionValue, type PanInfo } from "framer-motion";
+import { Patrick_Hand } from "next/font/google";
 import { Image as ImageIcon, Link2, StickyNote, Type, X, Loader2, Sparkles } from "lucide-react";
+import { useLocalStorageState } from "@/hooks/useLocalStorageState";
+
+const handwriting = Patrick_Hand({ subsets: ["latin"], weight: "400" });
 
 type BoardPostKind = "sticky" | "text" | "image" | "link";
 
@@ -18,6 +23,9 @@ interface BoardPost {
   kind: BoardPostKind;
   content: BoardPostContent;
   authorName: string;
+  x: number;
+  y: number;
+  z: number;
   createdAt: string;
 }
 
@@ -53,12 +61,20 @@ const KIND_OPTIONS: { kind: BoardPostKind; label: string; icon: typeof StickyNot
 function rotationForId(id: string): number {
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
-  return (Math.abs(hash) % 5) - 2;
+  return (Math.abs(hash) % 9) - 4;
+}
+
+function clampCoord(n: number): number {
+  return Math.min(85, Math.max(0, n));
 }
 
 export default function JamboardView({ code, isHost, hostToken, authorName }: Props) {
   const [posts, setPosts] = useState<BoardPost[]>([]);
   const [pendingPosts, setPendingPosts] = useState<(BoardPost & { submittedAt: number })[]>([]);
+  const [ownerTokens, setOwnerTokens] = useLocalStorageState<Record<string, string>>(
+    `dash:jam:${code}:owners`,
+    {}
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +84,7 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [summary, setSummary] = useState<BoardSummary | null>(null);
   const [summarizing, setSummarizing] = useState(false);
@@ -75,6 +92,17 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
 
   const containerRef = useRef<HTMLDivElement>(null);
   const seenIdsRef = useRef<Set<string>>(new Set());
+  const draggingIdsRef = useRef<Set<string>>(new Set());
+  const pendingPositionsRef = useRef<Record<string, { x: number; y: number; z: number; updatedAt: number }>>(
+    {}
+  );
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text, kind]);
 
   useEffect(() => {
     let active = true;
@@ -90,7 +118,22 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
         const data = await res.json();
         if (!active) return;
         setError(null);
-        setPosts(data.posts);
+        if (draggingIdsRef.current.size === 0) {
+          setPosts((prev) =>
+            (data.posts as BoardPost[]).map((serverPost) => {
+              const pending = pendingPositionsRef.current[serverPost.id];
+              if (pending && pending.updatedAt > pollStartedAt) {
+                return { ...serverPost, x: pending.x, y: pending.y, z: pending.z };
+              }
+              return serverPost;
+            })
+          );
+          for (const id of Object.keys(pendingPositionsRef.current)) {
+            if (pendingPositionsRef.current[id].updatedAt <= pollStartedAt) {
+              delete pendingPositionsRef.current[id];
+            }
+          }
+        }
         setPendingPosts((prev) => prev.filter((p) => p.submittedAt > pollStartedAt));
         setLoading(false);
       } catch {
@@ -141,6 +184,51 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [displayedIdsKey]);
 
+  async function persistPosition(postId: string, x: number, y: number, z: number) {
+    pendingPositionsRef.current[postId] = { x, y, z, updatedAt: Date.now() };
+    setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, x, y, z } : p)));
+    try {
+      await fetch(`/api/dash/boards/${code}/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          x,
+          y,
+          z,
+          ownerToken: ownerTokens[postId],
+          hostToken: isHost ? hostToken : undefined,
+        }),
+      });
+    } catch {
+      // next poll reconciles if this silently failed
+    }
+  }
+
+  function currentMaxZ(): number {
+    return Math.max(0, ...posts.map((p) => p.z));
+  }
+
+  function handleDragStart(postId: string) {
+    draggingIdsRef.current.add(postId);
+  }
+
+  function handleDragEnd(postId: string, info: PanInfo) {
+    draggingIdsRef.current.delete(postId);
+    const rect = containerRef.current?.getBoundingClientRect();
+    const post = posts.find((p) => p.id === postId);
+    if (!rect || !post) return;
+    const dxPct = (info.offset.x / rect.width) * 100;
+    const dyPct = (info.offset.y / rect.height) * 100;
+    persistPosition(postId, clampCoord(post.x + dxPct), clampCoord(post.y + dyPct), currentMaxZ() + 1);
+  }
+
+  function handleTap(postId: string, canDrag: boolean) {
+    if (!canDrag) return;
+    const post = posts.find((p) => p.id === postId);
+    if (!post) return;
+    persistPosition(postId, post.x, post.y, currentMaxZ() + 1);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setComposerError(null);
@@ -180,6 +268,7 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
         return;
       }
       setPendingPosts((prev) => [...prev, { ...data.post, submittedAt: Date.now() }]);
+      setOwnerTokens((prev) => ({ ...prev, [data.post.id]: data.ownerToken }));
       setText("");
       setUrl("");
     } catch {
@@ -221,6 +310,8 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
     }
   }
 
+  const composerIsNote = kind === "sticky" || kind === "text";
+
   return (
     <div className="flex h-full flex-col gap-4">
       <form
@@ -245,14 +336,17 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
           ))}
         </div>
 
-        {(kind === "sticky" || kind === "text") && (
+        {composerIsNote && (
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={2}
             maxLength={500}
             placeholder={kind === "sticky" ? "Write a sticky note…" : "Write something…"}
-            className="w-full resize-none rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-2 text-sm text-navy-900 focus:border-green-500/50 focus:outline-none"
+            className={`bg-grain w-full resize-none overflow-hidden rounded-lg border-none px-3 py-2.5 text-lg leading-snug text-navy-900 outline-none placeholder:text-navy-700/35 ${handwriting.className} ${
+              kind === "sticky" ? STICKY_BG[color] : "bg-cream-100"
+            }`}
           />
         )}
         {(kind === "image" || kind === "link") && (
@@ -332,27 +426,89 @@ export default function JamboardView({ code, isHost, hostToken, authorName }: Pr
       )}
 
       {!error && !loading && (
-        <div ref={containerRef} className="flex-1 overflow-y-auto">
+        <div ref={containerRef} className="relative min-h-[1600px] flex-1 overflow-y-auto overflow-x-hidden">
           {displayed.length === 0 ? (
             <div className="flex h-full items-center justify-center text-sm text-navy-700/40">
               No posts yet — be the first!
             </div>
           ) : (
-            <div className="columns-1 gap-3 sm:columns-2 lg:columns-3">
-              {displayed.map((post) => (
-                <div
+            displayed.map((post) => {
+              const canDrag = isHost || !!ownerTokens[post.id];
+              return (
+                <DraggableCard
                   key={post.id}
-                  data-post-id={post.id}
-                  className="mb-3 break-inside-avoid"
-                  style={seenIdsRef.current.has(post.id) ? undefined : { opacity: 0 }}
-                >
-                  <Card post={post} isHost={isHost} onDelete={handleDelete} />
-                </div>
-              ))}
-            </div>
+                  post={post}
+                  isHost={isHost}
+                  canDrag={canDrag}
+                  containerRef={containerRef}
+                  revealed={seenIdsRef.current.has(post.id)}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onTap={handleTap}
+                  onDelete={handleDelete}
+                />
+              );
+            })
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function DraggableCard({
+  post,
+  isHost,
+  canDrag,
+  containerRef,
+  revealed,
+  onDragStart,
+  onDragEnd,
+  onTap,
+  onDelete,
+}: {
+  post: BoardPost;
+  isHost: boolean;
+  canDrag: boolean;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  revealed: boolean;
+  onDragStart: (postId: string) => void;
+  onDragEnd: (postId: string, info: PanInfo) => void;
+  onTap: (postId: string, canDrag: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  return (
+    <div
+      data-post-id={post.id}
+      className="absolute"
+      style={{
+        left: `${post.x}%`,
+        top: `${post.y}%`,
+        zIndex: post.z,
+        opacity: revealed ? undefined : 0,
+      }}
+    >
+      <motion.div
+        drag={canDrag}
+        dragMomentum={false}
+        dragElastic={0.05}
+        dragConstraints={containerRef}
+        style={{ x, y }}
+        whileDrag={{ scale: 1.06, boxShadow: "0 22px 40px -10px rgba(13,27,46,0.35)" }}
+        onDragStart={() => onDragStart(post.id)}
+        onDragEnd={(_e, info) => {
+          onDragEnd(post.id, info);
+          x.set(0);
+          y.set(0);
+        }}
+        onTap={canDrag ? undefined : () => onTap(post.id, canDrag)}
+        className={canDrag ? "cursor-grab active:cursor-grabbing" : ""}
+      >
+        <Card post={post} isHost={isHost} onDelete={onDelete} />
+      </motion.div>
     </div>
   );
 }
@@ -372,19 +528,28 @@ function Card({
     if (post.kind === "sticky") {
       return (
         <div
-          className={`relative rounded-xl p-3.5 shadow-sm ${STICKY_BG[post.content.color ?? "yellow"]}`}
+          className={`bg-grain relative w-56 rounded-sm p-4 shadow-[0_10px_20px_-6px_rgba(13,27,46,0.25)] ${STICKY_BG[post.content.color ?? "yellow"]}`}
           style={{ transform: `rotate(${rotation}deg)` }}
         >
-          <p className="whitespace-pre-wrap text-[13px] text-navy-900/90">{post.content.text}</p>
+          <div
+            className="pointer-events-none absolute right-0 top-0 h-5 w-5"
+            style={{
+              clipPath: "polygon(100% 0, 0 0, 100% 100%)",
+              background: "linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.2))",
+            }}
+          />
+          <p className={`whitespace-pre-wrap text-lg leading-snug text-navy-900/90 ${handwriting.className}`}>
+            {post.content.text}
+          </p>
           <p className="mt-2 text-[11px] font-medium text-navy-900/50">{post.authorName}</p>
         </div>
       );
     }
     if (post.kind === "image" && post.content.imageUrl) {
       return (
-        <div className="overflow-hidden rounded-xl border border-navy-900/10 bg-white shadow-sm">
+        <div className="w-64 overflow-hidden rounded-xl border border-navy-900/10 bg-white shadow-[0_10px_20px_-6px_rgba(13,27,46,0.2)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={post.content.imageUrl} alt="" className="w-full object-cover" />
+          <img src={post.content.imageUrl} alt="" className="w-full object-cover" draggable={false} />
           <p className="px-3 py-2 text-[11px] font-medium text-navy-700/50">{post.authorName}</p>
         </div>
       );
@@ -395,7 +560,7 @@ function Card({
           href={post.content.linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="block rounded-xl border border-navy-900/10 bg-white p-3.5 shadow-sm transition-colors hover:border-green-500/40"
+          className="block w-60 rounded-xl border border-navy-900/10 bg-white p-3.5 shadow-[0_10px_20px_-6px_rgba(13,27,46,0.2)] transition-colors hover:border-green-500/40"
         >
           <div className="flex items-center gap-1.5 text-green-700">
             <Link2 size={13} />
@@ -406,8 +571,20 @@ function Card({
       );
     }
     return (
-      <div className="rounded-xl border border-navy-900/10 bg-white p-3.5 shadow-sm">
-        <p className="whitespace-pre-wrap text-[13px] text-navy-800/90">{post.content.text}</p>
+      <div
+        className={`bg-grain relative w-56 rounded-sm bg-cream-100 p-4 shadow-[0_10px_20px_-6px_rgba(13,27,46,0.25)]`}
+        style={{ transform: `rotate(${rotation}deg)` }}
+      >
+        <div
+          className="pointer-events-none absolute right-0 top-0 h-5 w-5"
+          style={{
+            clipPath: "polygon(100% 0, 0 0, 100% 100%)",
+            background: "linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.2))",
+          }}
+        />
+        <p className={`whitespace-pre-wrap text-lg leading-snug text-navy-800/90 ${handwriting.className}`}>
+          {post.content.text}
+        </p>
         <p className="mt-2 text-[11px] font-medium text-navy-700/50">{post.authorName}</p>
       </div>
     );
@@ -418,9 +595,10 @@ function Card({
       {inner()}
       {isHost && (
         <button
+          onPointerDownCapture={(e) => e.stopPropagation()}
           onClick={() => onDelete(post.id)}
           aria-label="Remove post"
-          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-navy-900/70 text-white opacity-0 transition-opacity hover:bg-navy-900 group-hover:opacity-100"
+          className="absolute -right-1.5 -top-1.5 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-navy-900/70 text-white opacity-0 transition-opacity hover:bg-navy-900 group-hover:opacity-100"
         >
           <X size={11} />
         </button>

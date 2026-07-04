@@ -51,7 +51,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       kind: post.kind,
       content: post.content,
       authorName: post.author_name,
+      x: post.x,
+      y: post.y,
+      z: post.z,
       createdAt: post.created_at,
     },
+    ownerToken: post.owner_token,
   });
 }
