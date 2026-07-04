@@ -50,7 +50,7 @@ export default function PollWidget() {
       <input
         value={poll.question}
         onChange={(e) => setPoll((prev) => ({ ...prev, question: e.target.value }))}
-        className="w-full rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm font-medium text-navy-900 focus:border-teal-500/50 focus:outline-none"
+        className="w-full rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm font-medium text-navy-900 focus:border-green-500/50 focus:outline-none"
       />
 
       <div className="mt-3 space-y-2">
@@ -60,10 +60,10 @@ export default function PollWidget() {
             <button
               key={i}
               onClick={() => vote(i)}
-              className="relative w-full overflow-hidden rounded-lg border border-navy-900/12 bg-cream-50 px-3 py-2 text-left transition-colors hover:border-teal-500/40"
+              className="relative w-full overflow-hidden rounded-lg border border-navy-900/12 bg-cream-50 px-3 py-2 text-left transition-colors hover:border-green-500/40"
             >
               <div
-                className="absolute inset-y-0 left-0 bg-teal-400/20 transition-[width] duration-300"
+                className="absolute inset-y-0 left-0 bg-green-400/20 transition-[width] duration-300"
                 style={{ width: `${pct}%` }}
               />
               <div className="relative flex items-center justify-between gap-2">

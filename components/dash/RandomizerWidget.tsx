@@ -76,7 +76,7 @@ export default function RandomizerWidget() {
       <button
         onClick={spin}
         disabled={roster.length === 0}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-teal-500 py-2 text-sm font-medium text-navy-950 transition-colors hover:bg-teal-400 disabled:opacity-30"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-green-500 py-2 text-sm font-medium text-navy-950 transition-colors hover:bg-green-400 disabled:opacity-30"
       >
         <Shuffle size={14} />
         Pick a student
@@ -90,7 +90,7 @@ export default function RandomizerWidget() {
             setNoRepeat(e.target.checked);
             setRemaining([]);
           }}
-          className="accent-teal-500"
+          className="accent-green-500"
         />
         Don&apos;t repeat until everyone&apos;s picked
       </label>
@@ -119,12 +119,12 @@ export default function RandomizerWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addName()}
           placeholder="Add student..."
-          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-green-500/50 focus:outline-none"
         />
         <button
           onClick={addName}
           aria-label="Add student"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-navy-950 transition-colors hover:bg-teal-400"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-500 text-navy-950 transition-colors hover:bg-green-400"
         >
           <Plus size={15} />
         </button>

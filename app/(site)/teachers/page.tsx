@@ -4,6 +4,7 @@ import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
+import DashLogo from "@/components/DashLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -56,6 +57,17 @@ const tools = [
     tagline: "Classes, rubric-based DBQ/LEQ/SAQ assignments, and KORA-graded, annotated feedback for students.",
   },
   {
+    slug: "dash",
+    href: "/dash",
+    status: "live" as const,
+    bgClass: "bg-gradient-to-br from-stone-100 to-stone-200",
+    logo: <DashLogo width={190} />,
+    logoSubClass: "text-stone-400",
+    logoSub: "Classroom Display",
+    name: "Dash",
+    tagline: "Live agenda, timer, student randomizer, polls, and exit tickets — the front-of-room display for your classroom.",
+  },
+  {
     slug: "kora-game",
     href: null,
     status: "soon" as const,
@@ -103,7 +115,7 @@ const tools = [
     ),
     logoSub: "Classroom Tools",
     name: "Classroom Tools",
-    tagline: "Classboard, Game Show Generator, and a growing set of daily classroom utilities.",
+    tagline: "Game Show Generator and a growing set of daily classroom utilities.",
   },
 ];
 

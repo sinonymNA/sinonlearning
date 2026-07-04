@@ -54,8 +54,8 @@ export default function AgendaWidget() {
               onClick={() => toggleItem(item.id)}
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
                 item.done
-                  ? "border-teal-500 bg-teal-500"
-                  : "border-navy-900/25 hover:border-teal-500"
+                  ? "border-green-500 bg-green-500"
+                  : "border-navy-900/25 hover:border-green-500"
               }`}
               aria-label={item.done ? "Mark incomplete" : "Mark complete"}
             />
@@ -86,12 +86,12 @@ export default function AgendaWidget() {
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addItem()}
           placeholder="Add agenda item..."
-          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="min-w-0 flex-1 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1.5 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-green-500/50 focus:outline-none"
         />
         <button
           onClick={addItem}
           aria-label="Add item"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-navy-950 transition-colors hover:bg-teal-400"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-500 text-navy-950 transition-colors hover:bg-green-400"
         >
           <Plus size={15} />
         </button>

@@ -44,7 +44,7 @@ export default function VideoMenu({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium text-navy-900">
-          <Film size={15} className="text-teal-600" />
+          <Film size={15} className="text-green-600" />
           Add a YouTube video
         </div>
         <button onClick={onClose} className="text-navy-700/40 hover:text-navy-900" aria-label="Close">
@@ -56,20 +56,20 @@ export default function VideoMenu({
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         placeholder="Paste a YouTube link..."
-        className="mt-3 w-full rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-2 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+        className="mt-3 w-full rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-2 text-sm text-navy-900 placeholder:text-navy-700/35 focus:border-green-500/50 focus:outline-none"
       />
       {error && <p className="mt-1.5 text-xs text-rose-600">{error}</p>}
 
       <div className="mt-3 flex gap-2">
         <button
           onClick={() => handleSubmit("background")}
-          className="flex-1 rounded-lg bg-teal-500 py-2 text-xs font-medium text-navy-950 transition-colors hover:bg-teal-400"
+          className="flex-1 rounded-lg bg-green-500 py-2 text-xs font-medium text-navy-950 transition-colors hover:bg-green-400"
         >
           Set as background
         </button>
         <button
           onClick={() => handleSubmit("pip")}
-          className="flex-1 rounded-lg border border-navy-900/12 py-2 text-xs font-medium text-navy-800 transition-colors hover:border-teal-500/40"
+          className="flex-1 rounded-lg border border-navy-900/12 py-2 text-xs font-medium text-navy-800 transition-colors hover:border-green-500/40"
         >
           Open as PIP
         </button>

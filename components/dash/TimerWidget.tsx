@@ -82,7 +82,7 @@ export default function TimerWidget() {
             cy="50%"
             r="56"
             fill="none"
-            stroke={remaining === 0 ? "#fb7185" : "#2dd4bf"}
+            stroke={remaining === 0 ? "#fb7185" : "#22c55e"}
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={`${2 * Math.PI * 56}`}
@@ -99,7 +99,7 @@ export default function TimerWidget() {
         <button
           onClick={() => setRunning((r) => !r)}
           disabled={remaining === 0}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500 text-navy-950 transition-colors hover:bg-teal-400 disabled:opacity-30"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-green-500 text-navy-950 transition-colors hover:bg-green-400 disabled:opacity-30"
           aria-label={running ? "Pause" : "Start"}
         >
           {running ? <Pause size={15} /> : <Play size={15} />}
@@ -121,7 +121,7 @@ export default function TimerWidget() {
           <button
             key={p}
             onClick={() => setMinutes(p)}
-            className="rounded-full border border-navy-900/15 px-2.5 py-1 text-xs text-navy-700/70 transition-colors hover:border-teal-500/50 hover:text-navy-900"
+            className="rounded-full border border-navy-900/15 px-2.5 py-1 text-xs text-navy-700/70 transition-colors hover:border-green-500/50 hover:text-navy-900"
           >
             {p}m
           </button>
@@ -134,7 +134,7 @@ export default function TimerWidget() {
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && applyCustom()}
           placeholder="Custom min"
-          className="w-24 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1 text-center text-xs text-navy-900 placeholder:text-navy-700/35 focus:border-teal-500/50 focus:outline-none"
+          className="w-24 rounded-lg border border-navy-900/12 bg-cream-50 px-2.5 py-1 text-center text-xs text-navy-900 placeholder:text-navy-700/35 focus:border-green-500/50 focus:outline-none"
         />
         <button
           onClick={applyCustom}

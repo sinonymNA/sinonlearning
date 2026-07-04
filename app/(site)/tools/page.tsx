@@ -1,8 +1,7 @@
-import { ArrowLeft, ArrowRight, MonitorPlay } from "lucide-react";
+import { ArrowLeft, MonitorPlay } from "lucide-react";
 import Button from "@/components/Button";
 import SectionHeader from "@/components/SectionHeader";
 import ToolCard from "@/components/ToolCard";
-import ClassroomScreenMockup from "@/components/ClassroomScreenMockup";
 import FadeIn from "@/components/FadeIn";
 import PhotoSlot from "@/components/PhotoSlot";
 import { tools } from "@/data/tools";
@@ -44,30 +43,6 @@ export default function ToolsPage() {
               </FadeIn>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Classboard preview */}
-      <section className="bg-cream-100 px-6 py-20 lg:px-8">
-        <div className="mx-auto max-w-5xl">
-          <FadeIn>
-            <SectionHeader
-              eyebrow="Live Now"
-              title="A look at Classboard"
-              subtitle="A single front-of-room display with a live agenda, timer, randomizer, polls, exit tickets, and ambient YouTube backgrounds—built and ready to use today."
-            />
-          </FadeIn>
-          <div className="mt-10">
-            <ClassroomScreenMockup />
-          </div>
-          <FadeIn delay={0.1}>
-            <div className="mt-10 flex justify-center">
-              <Button href="/classboard">
-                Launch Classboard
-                <ArrowRight size={16} className="transition-transform duration-200 group-hover:translate-x-0.5" />
-              </Button>
-            </div>
-          </FadeIn>
         </div>
       </section>
 

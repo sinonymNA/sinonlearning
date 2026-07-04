@@ -16,6 +16,7 @@ import {
   ImageOff,
 } from "lucide-react";
 import VideoMenu from "./VideoMenu";
+import DashLogo from "@/components/DashLogo";
 
 export interface WidgetState {
   agenda: boolean;
@@ -71,14 +72,14 @@ export default function Toolbar({
     <div className="relative z-40 flex items-center justify-between gap-3 border-b border-navy-900/8 bg-cream-50/90 px-4 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <Link
-          href="/tools"
+          href="/teachers"
           className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
         >
           <ArrowLeft size={13} />
           Exit
         </Link>
-        <span className="ml-1 hidden font-display text-sm font-medium text-navy-900 sm:inline">
-          Classboard
+        <span className="ml-1 hidden sm:inline">
+          <DashLogo width={64} />
         </span>
       </div>
 
@@ -89,7 +90,7 @@ export default function Toolbar({
             onClick={() => onToggleWidget(key)}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               widgets[key]
-                ? "bg-teal-500/15 text-teal-700"
+                ? "bg-green-500/15 text-green-700"
                 : "text-navy-700/60 hover:bg-navy-900/5 hover:text-navy-900"
             }`}
           >

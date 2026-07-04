@@ -46,7 +46,7 @@ export default function Panel({
         className="flex cursor-grab items-center justify-between gap-2 border-b border-navy-900/8 bg-cream-100/60 px-4 py-2.5 active:cursor-grabbing"
       >
         <div className="flex items-center gap-2 text-sm font-medium text-navy-900">
-          <Icon size={15} className="text-teal-600" />
+          <Icon size={15} className="text-green-600" />
           {title}
         </div>
         <div className="flex items-center gap-2 text-navy-700/40">

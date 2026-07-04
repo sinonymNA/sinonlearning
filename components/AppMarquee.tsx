@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Presentation,
   Gamepad2,
   CitrusIcon,
   TrendingUp,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import FadeIn from "./FadeIn";
 import MarginsLogo from "./MarginsLogo";
+import DashLogo from "./DashLogo";
 
 interface MarqueeApp {
   href: string;
@@ -58,10 +58,10 @@ const apps: MarqueeApp[] = [
     mark: <MarginsLogo width={100} />,
   },
   {
-    href: "/classboard",
-    label: "Classboard",
+    href: "/dash",
+    label: "Dash",
     sub: "Run the room",
-    mark: <Presentation size={30} strokeWidth={1.6} className="text-teal-600" />,
+    mark: <DashLogo width={80} />,
   },
   {
     href: "/game-shows",

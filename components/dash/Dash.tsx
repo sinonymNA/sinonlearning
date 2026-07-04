@@ -38,7 +38,7 @@ interface PipVideo {
   videoId: string;
 }
 
-export default function Classboard() {
+export default function Dash() {
   const [mounted, setMounted] = useState(false);
   const [widgets, setWidgets] = useLocalStorageState<WidgetState>(
     "classboard:widgets",
@@ -99,8 +99,8 @@ export default function Classboard() {
       {backgroundVideoId && <VideoBackground videoId={backgroundVideoId} />}
       {!backgroundVideoId && (
         <div className="absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-teal-400/15 blur-[140px]" />
-          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-amber-400/15 blur-[120px]" />
+          <div className="absolute left-1/2 top-1/3 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-green-400/15 blur-[140px]" />
+          <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-emerald-400/15 blur-[120px]" />
         </div>
       )}
 

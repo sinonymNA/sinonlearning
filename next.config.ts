@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
       { source: "/teacher-tools/:path*", destination: "/teachers", permanent: true },
       { source: "/teaching-lab", destination: "/teachers", permanent: true },
       { source: "/teaching-lab/:path*", destination: "/teachers", permanent: true },
+      { source: "/classboard", destination: "/dash", permanent: true },
     ];
   },
 };
