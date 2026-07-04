@@ -35,8 +35,11 @@ function buildUserMessage(params: {
 }): string {
   const { rawText, concept, subject, gradeBand, targetPages } = params;
   const countRange = sectionCountRange(targetPages);
+  const effectiveConcept = concept.trim() || "infer the main concept from the slide content";
+  const effectiveSubject = subject.trim() || "infer from slide content";
+  const effectiveGrade = gradeBand.trim() || "infer from slide content";
   return [
-    `Concept: ${concept} | Subject: ${subject} | Grade: ${gradeBand}`,
+    `Concept: ${effectiveConcept} | Subject: ${effectiveSubject} | Grade: ${effectiveGrade}`,
     `Target: ${targetPages} printed page${targetPages === 1 ? "" : "s"}.`,
     `Design EXACTLY ${countRange} sections. Every section must fit compactly — keep student_prompt to 1-3 sentences.`,
     `Space budget per section type (approximate): warmup_box=small, fill_blank=small, numbered_response=medium, two_column_box=large, three_column_box=large, drawing_box=large, content_box=small.`,
@@ -64,19 +67,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
   }
 
-  let body: { rawText: string; concept: string; subject: string; gradeBand: string; targetPages?: number };
+  let body: { rawText: string; concept?: string; subject?: string; gradeBand?: string; targetPages?: number };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { rawText, concept, subject, gradeBand, targetPages = 2 } = body;
-  if (!rawText || !concept || !subject || !gradeBand) {
-    return NextResponse.json(
-      { error: "rawText, concept, subject, and gradeBand are required." },
-      { status: 400 }
-    );
+  const { rawText, concept = "", subject = "", gradeBand = "", targetPages = 2 } = body;
+  if (!rawText) {
+    return NextResponse.json({ error: "rawText is required." }, { status: 400 });
   }
 
   const clampedPages = Math.max(1, Math.min(4, Math.round(targetPages)));

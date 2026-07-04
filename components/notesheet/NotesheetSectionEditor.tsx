@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { animate } from "animejs";
 import { X } from "lucide-react";
 import type { NotesheetSection, NotesheetSectionType } from "@/lib/notesheetTypes";
 
@@ -14,8 +15,9 @@ const SECTION_TYPES: { value: NotesheetSectionType; label: string }[] = [
   { value: "three_column_box", label: "Three-Column Box" },
 ];
 
-const inputCls = "rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-800 placeholder-stone-300 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all";
-const labelCls = "text-xs font-semibold uppercase tracking-widest text-stone-400";
+const inputCls =
+  "rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-[13px] text-stone-800 placeholder-stone-300 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 focus:bg-white transition-all";
+const labelCls = "text-[11px] font-bold uppercase tracking-widest text-stone-400";
 
 interface Props {
   section: NotesheetSection;
@@ -25,21 +27,78 @@ interface Props {
 
 export default function NotesheetSectionEditor({ section, onSave, onClose }: Props) {
   const [draft, setDraft] = useState<NotesheetSection>({ ...section });
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Slide-up entrance
+  useEffect(() => {
+    if (backdropRef.current) {
+      animate(backdropRef.current, {
+        opacity: [0, 1],
+        duration: 220,
+        easing: "easeOutQuart",
+      });
+    }
+    if (panelRef.current) {
+      animate(panelRef.current, {
+        translateY: [40, 0],
+        opacity: [0, 1],
+        duration: 380,
+        easing: "easeOutQuart",
+      });
+    }
+  }, []);
+
+  function close() {
+    // Slide-down exit
+    if (panelRef.current) {
+      animate(panelRef.current, {
+        translateY: [0, 30],
+        opacity: [1, 0],
+        duration: 220,
+        easing: "easeInQuart",
+        onComplete: onClose,
+      });
+    } else {
+      onClose();
+    }
+    if (backdropRef.current) {
+      animate(backdropRef.current, {
+        opacity: [1, 0],
+        duration: 200,
+        easing: "easeInQuart",
+      });
+    }
+  }
 
   function update<K extends keyof NotesheetSection>(key: K, val: NotesheetSection[K]) {
     setDraft((d) => ({ ...d, [key]: val }));
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-xl flex flex-col gap-5">
+    <div
+      ref={backdropRef}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-[2px]"
+      style={{ opacity: 0 }}
+      onClick={(e) => { if (e.target === backdropRef.current) close(); }}
+    >
+      <div
+        ref={panelRef}
+        className="w-full max-w-lg rounded-2xl border border-stone-100 bg-white p-6 shadow-2xl flex flex-col gap-5"
+        style={{ opacity: 0 }}
+      >
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-stone-900">Edit Section</h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors">
-            <X size={18} />
+          <h2 className="text-[15px] font-bold text-stone-900">Edit Section</h2>
+          <button
+            onClick={close}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
+          >
+            <X size={15} />
           </button>
         </div>
 
+        {/* Type */}
         <label className="flex flex-col gap-1.5">
           <span className={labelCls}>Section Type</span>
           <select
@@ -53,17 +112,19 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
           </select>
         </label>
 
+        {/* Heading */}
         <label className="flex flex-col gap-1.5">
-          <span className={labelCls}>Heading (optional)</span>
+          <span className={labelCls}>Heading <span className="normal-case font-normal tracking-normal text-stone-300">(optional)</span></span>
           <input
             type="text"
             value={draft.heading ?? ""}
             onChange={(e) => update("heading", e.target.value || undefined)}
             className={inputCls}
-            placeholder="Section heading"
+            placeholder="e.g. The Agricultural Revolution"
           />
         </label>
 
+        {/* Student prompt */}
         <label className="flex flex-col gap-1.5">
           <span className={labelCls}>Student Prompt</span>
           <textarea
@@ -74,16 +135,18 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
           />
         </label>
 
+        {/* Answer key */}
         <label className="flex flex-col gap-1.5">
           <span className={labelCls}>Answer Key Notes</span>
           <textarea
-            rows={3}
+            rows={2}
             value={draft.answer_key_notes}
             onChange={(e) => update("answer_key_notes", e.target.value)}
             className={`${inputCls} resize-none`}
           />
         </label>
 
+        {/* num_lines for numbered response */}
         {draft.type === "numbered_response" && (
           <label className="flex flex-col gap-1.5">
             <span className={labelCls}>Number of Lines</span>
@@ -98,16 +161,17 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
           </label>
         )}
 
-        <div className="flex gap-3 pt-1">
+        {/* Actions */}
+        <div className="flex gap-2.5 pt-1">
           <button
-            onClick={onClose}
-            className="flex-1 rounded-full border border-stone-200 px-4 py-2.5 text-sm text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-colors"
+            onClick={close}
+            className="flex-1 rounded-xl border border-stone-200 px-4 py-2.5 text-[13px] font-medium text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={() => onSave(draft)}
-            className="flex-1 rounded-full bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-700 transition-colors shadow-sm"
+            className="flex-1 rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-4 py-2.5 text-[13px] font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all"
           >
             Save
           </button>

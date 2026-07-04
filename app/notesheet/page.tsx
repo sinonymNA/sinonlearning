@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { animate } from "animejs";
 import NotesheetUpload from "@/components/notesheet/NotesheetUpload";
 import NotesheetConfirm from "@/components/notesheet/NotesheetConfirm";
 import NotesheetPreview from "@/components/notesheet/NotesheetPreview";
@@ -16,130 +16,179 @@ interface UploadResult {
   rawText: string;
 }
 
-const STEPS = ["Upload", "Configure", "Download"];
+const STEP_PROGRESS: Record<Step, number> = {
+  upload: 6,
+  confirm: 46,
+  preview: 100,
+};
+
+export function ScaffoldLogo({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`font-extrabold tracking-tight select-none ${className}`}
+      style={{
+        background: "linear-gradient(90deg, #9061F9 0%, #5B21B6 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+      }}
+    >
+      [scaffold]
+    </span>
+  );
+}
 
 export default function ScaffoldPage() {
   const [step, setStep] = useState<Step>("upload");
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [plan, setPlan] = useState<NotesheetPlan | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
+
+  function goToStep(newStep: Step) {
+    const el = contentRef.current;
+    const prog = progressRef.current;
+
+    function commit() {
+      setStep(newStep);
+      if (prog) {
+        animate(prog, {
+          width: `${STEP_PROGRESS[newStep]}%`,
+          duration: 700,
+          easing: "easeOutQuart",
+        });
+      }
+      // Double rAF ensures React has committed the new step's DOM
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (contentRef.current) {
+            animate(contentRef.current, {
+              opacity: [0, 1],
+              translateY: [18, 0],
+              duration: 420,
+              easing: "easeOutQuart",
+            });
+          }
+        });
+      });
+    }
+
+    if (el) {
+      animate(el, {
+        opacity: [1, 0],
+        translateY: [0, -12],
+        duration: 190,
+        easing: "easeInQuart",
+        onComplete: commit,
+      });
+    } else {
+      commit();
+    }
+  }
 
   function handleUpload(result: UploadResult) {
     setUploadResult(result);
-    setStep("confirm");
+    goToStep("confirm");
   }
 
   function handleGenerate(generatedPlan: NotesheetPlan) {
     setPlan(generatedPlan);
-    setStep("preview");
+    goToStep("preview");
   }
 
   function reset() {
-    setStep("upload");
     setUploadResult(null);
     setPlan(null);
+    goToStep("upload");
   }
 
-  const stepIndex = { upload: 0, confirm: 1, preview: 2 }[step];
-
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Scaffold wordmark */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center justify-center w-6 h-6 rounded bg-violet-600">
-                <div className="w-3 h-[2px] bg-white rounded-full" />
-              </div>
-              <span className="text-[15px] font-semibold text-stone-900 tracking-tight">scaffold</span>
-            </div>
-            <span className="text-stone-300 text-sm">·</span>
-            <span className="text-xs text-stone-400">by Sinon Learning</span>
-          </div>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Thin gradient progress bar */}
+      <div className="h-[3px] w-full bg-stone-100 shrink-0">
+        <div
+          ref={progressRef}
+          className="h-full rounded-r-full"
+          style={{
+            width: `${STEP_PROGRESS[step]}%`,
+            background: "linear-gradient(90deg, #9061F9, #5B21B6)",
+          }}
+        />
+      </div>
+
+      {/* Minimal header */}
+      <header className="shrink-0 px-6 h-14 flex items-center justify-between">
+        <ScaffoldLogo className="text-[18px]" />
+        <div className="flex items-center gap-5">
+          {step === "confirm" && (
+            <button
+              onClick={() => goToStep("upload")}
+              className="text-xs text-stone-400 hover:text-stone-700 transition-colors"
+            >
+              ← Back
+            </button>
+          )}
+          {uploadResult && step !== "upload" && (
+            <span className="text-xs text-stone-300">
+              {uploadResult.slideCount} slides
+            </span>
+          )}
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-700 transition-colors"
+            className="text-xs text-stone-300 hover:text-stone-500 transition-colors"
           >
-            Sinon Learning
-            <ArrowUpRight size={11} />
+            Sinon Learning ↗
           </Link>
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl px-6 py-10 lg:py-14">
-        {/* Hero — only shown on upload step */}
-        {step === "upload" && (
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-stone-900 leading-tight sm:text-4xl">
-              Upload a lesson.<br />
-              <span className="text-violet-600">Get a student notesheet.</span>
-            </h1>
-            <p className="mt-3 text-base text-stone-500 leading-relaxed max-w-sm">
-              KORA reads your slideshow, decides what students should write and how, and builds a structured notesheet you can download instantly.
-            </p>
-          </div>
-        )}
+      {/* Main content */}
+      <main className="flex-1 flex flex-col items-center px-4 pt-8 pb-16">
+        <div ref={contentRef} className="w-full max-w-[520px]">
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-0 mb-10">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center">
-              <div className="flex items-center gap-2">
-                <div
-                  className={[
-                    "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all",
-                    i < stepIndex
-                      ? "bg-violet-600 text-white"
-                      : i === stepIndex
-                      ? "bg-violet-600 text-white ring-4 ring-violet-100"
-                      : "bg-stone-200 text-stone-400",
-                  ].join(" ")}
-                >
-                  {i < stepIndex ? (
-                    <svg viewBox="0 0 12 12" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                      <polyline points="2,6 5,9 10,3" />
-                    </svg>
-                  ) : (
-                    i + 1
-                  )}
-                </div>
-                <span
-                  className={[
-                    "text-xs font-medium",
-                    i <= stepIndex ? "text-stone-700" : "text-stone-400",
-                  ].join(" ")}
-                >
-                  {label}
-                </span>
+          {step === "upload" && (
+            <div className="flex flex-col gap-9">
+              <div className="text-center">
+                <h1 className="text-[28px] font-bold text-stone-900 leading-tight tracking-tight">
+                  Upload a lesson.{" "}
+                  <span
+                    style={{
+                      background: "linear-gradient(90deg, #9061F9, #5B21B6)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    Get a notesheet.
+                  </span>
+                </h1>
+                <p className="mt-2.5 text-[14px] text-stone-400 leading-relaxed max-w-sm mx-auto">
+                  KORA reads your slides, decides what students should write, and builds a print-ready PDF in seconds.
+                </p>
               </div>
-              {i < STEPS.length - 1 && (
-                <div className={["mx-3 h-px w-8 transition-colors", i < stepIndex ? "bg-violet-300" : "bg-stone-200"].join(" ")} />
-              )}
+              <NotesheetUpload onUpload={handleUpload} />
             </div>
-          ))}
+          )}
+
+          {step === "confirm" && uploadResult && (
+            <NotesheetConfirm
+              slideCount={uploadResult.slideCount}
+              rawText={uploadResult.rawText}
+              onGenerate={handleGenerate}
+              onBack={() => goToStep("upload")}
+            />
+          )}
+
+          {step === "preview" && plan && (
+            <NotesheetPreview
+              plan={plan}
+              onPlanChange={setPlan}
+              onReset={reset}
+            />
+          )}
+
         </div>
-
-        {/* Step content */}
-        {step === "upload" && <NotesheetUpload onUpload={handleUpload} />}
-
-        {step === "confirm" && uploadResult && (
-          <NotesheetConfirm
-            slideCount={uploadResult.slideCount}
-            rawText={uploadResult.rawText}
-            onGenerate={handleGenerate}
-            onBack={() => setStep("upload")}
-          />
-        )}
-
-        {step === "preview" && plan && (
-          <NotesheetPreview
-            plan={plan}
-            onPlanChange={setPlan}
-            onReset={reset}
-          />
-        )}
-      </div>
+      </main>
     </div>
   );
 }
