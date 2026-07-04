@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { ListChecks, TimerIcon, Shuffle, BarChart3, ClipboardCheck } from "lucide-react";
 import { useLocalStorageState } from "@/hooks/useLocalStorageState";
-import Toolbar, { type WidgetState } from "./Toolbar";
+import Toolbar, { type WidgetState, type DashMode } from "./Toolbar";
 import Panel from "./Panel";
 import AgendaWidget from "./AgendaWidget";
 import TimerWidget from "./TimerWidget";
@@ -13,6 +13,7 @@ import PollWidget from "./PollWidget";
 import ExitTicketWidget from "./ExitTicketWidget";
 import VideoBackground from "./VideoBackground";
 import VideoPip from "./VideoPip";
+import JamboardHost, { type JamSession } from "./JamboardHost";
 
 const defaultWidgets: WidgetState = {
   agenda: true,
@@ -48,6 +49,8 @@ export default function Dash() {
     "classboard:background",
     null
   );
+  const [mode, setMode] = useLocalStorageState<DashMode>("dash:mode", "dash");
+  const [jamSession, setJamSession] = useLocalStorageState<JamSession | null>("dash:jam:session", null);
   const [pipVideos, setPipVideos] = useState<PipVideo[]>([]);
   const [zIndices, setZIndices] = useState<Record<string, number>>({});
   const [topZ, setTopZ] = useState(10);
@@ -111,41 +114,48 @@ export default function Dash() {
         onSetBackground={(id) => setBackgroundVideoId(id)}
         onSetPip={addPip}
         onClearBackground={() => setBackgroundVideoId(null)}
+        mode={mode}
+        onSetMode={setMode}
+        jamCode={jamSession?.code}
       />
 
       <div className="relative h-[calc(100%-3rem)] w-full">
-        <AnimatePresence>
-          {(Object.keys(widgets) as (keyof WidgetState)[])
-            .filter((key) => widgets[key])
-            .map((key) => {
-              const config = panelConfig[key];
-              return (
-                <Panel
-                  key={key}
-                  title={config.title}
-                  icon={config.icon}
-                  initialX={config.x}
-                  initialY={config.y}
-                  width={config.width}
-                  zIndex={zIndices[key] ?? 10}
-                  onFocus={() => bringToFront(key)}
-                  onClose={() => closeWidget(key)}
-                >
-                  {widgetContent[key]}
-                </Panel>
-              );
-            })}
+        {mode === "dash" ? (
+          <AnimatePresence>
+            {(Object.keys(widgets) as (keyof WidgetState)[])
+              .filter((key) => widgets[key])
+              .map((key) => {
+                const config = panelConfig[key];
+                return (
+                  <Panel
+                    key={key}
+                    title={config.title}
+                    icon={config.icon}
+                    initialX={config.x}
+                    initialY={config.y}
+                    width={config.width}
+                    zIndex={zIndices[key] ?? 10}
+                    onFocus={() => bringToFront(key)}
+                    onClose={() => closeWidget(key)}
+                  >
+                    {widgetContent[key]}
+                  </Panel>
+                );
+              })}
 
-          {pipVideos.map((pip) => (
-            <VideoPip
-              key={pip.id}
-              videoId={pip.videoId}
-              zIndex={zIndices[pip.id] ?? 10}
-              onFocus={() => bringToFront(pip.id)}
-              onClose={() => closePip(pip.id)}
-            />
-          ))}
-        </AnimatePresence>
+            {pipVideos.map((pip) => (
+              <VideoPip
+                key={pip.id}
+                videoId={pip.videoId}
+                zIndex={zIndices[pip.id] ?? 10}
+                onFocus={() => bringToFront(pip.id)}
+                onClose={() => closePip(pip.id)}
+              />
+            ))}
+          </AnimatePresence>
+        ) : (
+          <JamboardHost session={jamSession} onSessionCreated={setJamSession} />
+        )}
       </div>
     </div>
   );

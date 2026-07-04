@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowUpRight, BookOpen, Sparkles, Coins, NotebookPen, ListChecks, Lightbulb } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
+import DashLogo from "@/components/DashLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -29,6 +30,16 @@ const tools = [
     logoSub: "AP Writing & Grading",
     name: "Margins",
     tagline: "Write DBQ, LEQ, and SAQ essays and get KORA-graded, annotated feedback against your teacher's rubric.",
+  },
+  {
+    slug: "dash-jamboard",
+    href: "/dash/join",
+    status: "live" as const,
+    bgClass: "bg-[#4ac57b]",
+    logo: <DashLogo width={190} />,
+    logoSub: "Classroom Jamboard",
+    name: "Dash Jamboard",
+    tagline: "Join your class's live jamboard with a code — post sticky notes, images, and links everyone sees instantly.",
   },
   {
     slug: "digital-textbooks",
