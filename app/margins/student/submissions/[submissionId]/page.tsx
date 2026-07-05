@@ -68,6 +68,7 @@ export default async function StudentSubmissionPage({
               nextSteps={grading.next_steps}
               teacherOverrideScore={grading.teacher_override_score}
               teacherNotes={grading.teacher_notes}
+              essayType={assignment.essay_type}
             />
             {isLatestAttempt && <RevisionCTA submissionId={submissionId} remaining={remainingRevisions} />}
           </div>
