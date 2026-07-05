@@ -24,7 +24,9 @@ interface Props {
   rubricBreakdown: RubricRow[];
   overallFeedback: string;
   strengths: string[];
-  nextSteps: NextStep[];
+  // Gradings created before next_steps became structured objects still have
+  // plain strings in the database — accept both shapes rather than crash.
+  nextSteps: (NextStep | string)[];
   teacherOverrideScore?: number | null;
   teacherNotes?: string | null;
 }
@@ -166,16 +168,22 @@ export default function GradingReport({
         <div className="insight-list rounded-2xl border border-sky-100 bg-sky-50/50 p-5" style={{ opacity: 0 }}>
           <p className="text-[11px] font-bold uppercase tracking-widest text-sky-600 mb-2">Next steps</p>
           <div className="flex flex-col gap-3">
-            {nextSteps.map((step, i) => (
-              <div key={i} className="rounded-xl bg-white/60 p-3">
-                <p className="text-[13px] font-semibold text-stone-800">{step.issue}</p>
-                <p className="text-[12px] text-stone-500 mt-1">{step.why_it_matters}</p>
-                <p className="text-[13px] text-sky-700 font-medium mt-1.5">Try this: {step.how_to_fix}</p>
-                <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-sky-500 bg-sky-100 rounded-full px-2 py-0.5">
-                  {step.skill}
-                </span>
-              </div>
-            ))}
+            {nextSteps.map((step, i) =>
+              typeof step === "string" ? (
+                <div key={i} className="rounded-xl bg-white/60 p-3">
+                  <p className="text-[13px] text-stone-700 leading-relaxed">{step}</p>
+                </div>
+              ) : (
+                <div key={i} className="rounded-xl bg-white/60 p-3">
+                  <p className="text-[13px] font-semibold text-stone-800">{step.issue}</p>
+                  <p className="text-[12px] text-stone-500 mt-1">{step.why_it_matters}</p>
+                  <p className="text-[13px] text-sky-700 font-medium mt-1.5">Try this: {step.how_to_fix}</p>
+                  <span className="inline-block mt-1.5 text-[10px] font-semibold uppercase tracking-wide text-sky-500 bg-sky-100 rounded-full px-2 py-0.5">
+                    {step.skill}
+                  </span>
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>

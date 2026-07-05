@@ -44,8 +44,10 @@ export default function AnnotatedEssay({
   const essayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  function colorFor(type: AnnotationType) {
-    return TYPE_STYLES[type];
+  // Falls back to "growth" for gradings created before the praise/growth
+  // annotation field existed — old rows have no `type` at all.
+  function colorFor(type: AnnotationType | undefined) {
+    return TYPE_STYLES[type ?? "growth"] ?? TYPE_STYLES.growth;
   }
 
   // The centerpiece reveal: legend chips first, then the essay itself, then
