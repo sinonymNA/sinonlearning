@@ -66,8 +66,15 @@ const WORDMARK_GLYPHS: { d: string; x: number }[] = [
   },
 ];
 
-function wordmarkTransform(x: number) {
-  return `translate(248.369,158.917) scale(0.121878,-0.120332) translate(${x.toFixed(3)},0)`;
+// Index of "L" in "Learning" — the source art's word gap here reads wider
+// than its own letter-to-letter spacing, so glyphs from this index on are
+// shifted left to tighten it.
+const SECOND_WORD_START_INDEX = 5;
+const WORD_GAP_TIGHTEN = 260;
+
+function wordmarkTransform(x: number, index: number) {
+  const adjustedX = index >= SECOND_WORD_START_INDEX ? x - WORD_GAP_TIGHTEN : x;
+  return `translate(248.369,158.917) scale(0.121878,-0.120332) translate(${adjustedX.toFixed(3)},0)`;
 }
 
 const WIPE_VARIANTS: Variants = {
@@ -102,7 +109,7 @@ export default function SinonWordmark({ width = 160, className = "", deferUntilI
       </g>
       <g fill="#0E2EC0" opacity="0.18" transform="translate(0 2)">
         {WORDMARK_GLYPHS.map((glyph, i) => (
-          <path key={`shadow-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
+          <path key={`shadow-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x, i)} />
         ))}
       </g>
       <g fill={`url(#${iconGradId})`}>
@@ -110,7 +117,7 @@ export default function SinonWordmark({ width = 160, className = "", deferUntilI
       </g>
       <g fill={`url(#${textGradId})`}>
         {WORDMARK_GLYPHS.map((glyph, i) => (
-          <path key={`color-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
+          <path key={`color-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x, i)} />
         ))}
       </g>
     </>
