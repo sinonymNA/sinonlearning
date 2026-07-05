@@ -48,6 +48,7 @@ export interface MarginsAssignment {
   rubric: RubricCriterionRow[];
   documents: AssignmentDocument[] | null;
   due_at: string | null;
+  max_revisions: number;
   created_at: string;
 }
 
@@ -135,6 +136,28 @@ export function ensureMarginsSchema(): Promise<void> {
       )
       .then(() =>
         query(`ALTER TABLE margins_essay_gradings ADD COLUMN IF NOT EXISTS next_steps JSONB NOT NULL DEFAULT '[]'`)
+      )
+      .then(() =>
+        query(`ALTER TABLE margins_assignments ADD COLUMN IF NOT EXISTS max_revisions INTEGER NOT NULL DEFAULT 1`)
+      )
+      .then(() =>
+        query(
+          `ALTER TABLE margins_submissions ADD COLUMN IF NOT EXISTS parent_submission_id UUID REFERENCES margins_submissions(id) ON DELETE SET NULL`
+        )
+      )
+      .then(() =>
+        query(`ALTER TABLE margins_submissions ADD COLUMN IF NOT EXISTS attempt_number INTEGER NOT NULL DEFAULT 1`)
+      )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS margins_revision_plans (
+          id UUID PRIMARY KEY,
+          submission_id UUID NOT NULL UNIQUE REFERENCES margins_submissions(id) ON DELETE CASCADE,
+          steps JSONB NOT NULL,
+          current_step INTEGER NOT NULL DEFAULT 0,
+          student_responses JSONB NOT NULL DEFAULT '[]',
+          completed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`)
       )
       .then(() => undefined);
   }
@@ -322,6 +345,9 @@ export async function isStudentInClass(classId: string, studentId: string): Prom
 
 // ── Assignments ──
 
+const ASSIGNMENT_COLUMNS =
+  "id, class_id, essay_type, title, prompt_text, rubric, documents, due_at, max_revisions, created_at";
+
 export async function createAssignment(params: {
   classId: string;
   essayType: EssayType;
@@ -330,13 +356,14 @@ export async function createAssignment(params: {
   rubric: RubricCriterionRow[];
   documents?: AssignmentDocument[] | null;
   dueAt?: Date | null;
+  maxRevisions?: number;
 }): Promise<MarginsAssignment> {
   await ensureMarginsSchema();
   const id = randomUUID();
   const { rows } = await query<MarginsAssignment>(
-    `INSERT INTO margins_assignments (id, class_id, essay_type, title, prompt_text, rubric, documents, due_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     RETURNING id, class_id, essay_type, title, prompt_text, rubric, documents, due_at, created_at`,
+    `INSERT INTO margins_assignments (id, class_id, essay_type, title, prompt_text, rubric, documents, due_at, max_revisions)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING ${ASSIGNMENT_COLUMNS}`,
     [
       id,
       params.classId,
@@ -346,6 +373,7 @@ export async function createAssignment(params: {
       JSON.stringify(params.rubric),
       params.documents ? JSON.stringify(params.documents) : null,
       params.dueAt ? params.dueAt.toISOString() : null,
+      params.maxRevisions ?? 1,
     ]
   );
   return rows[0];
@@ -354,8 +382,7 @@ export async function createAssignment(params: {
 export async function getAssignmentsByClass(classId: string): Promise<MarginsAssignment[]> {
   await ensureMarginsSchema();
   const { rows } = await query<MarginsAssignment>(
-    `SELECT id, class_id, essay_type, title, prompt_text, rubric, documents, due_at, created_at
-     FROM margins_assignments WHERE class_id = $1 ORDER BY created_at DESC`,
+    `SELECT ${ASSIGNMENT_COLUMNS} FROM margins_assignments WHERE class_id = $1 ORDER BY created_at DESC`,
     [classId]
   );
   return rows;
@@ -364,8 +391,7 @@ export async function getAssignmentsByClass(classId: string): Promise<MarginsAss
 export async function getAssignmentById(id: string): Promise<MarginsAssignment | undefined> {
   await ensureMarginsSchema();
   const { rows } = await query<MarginsAssignment>(
-    `SELECT id, class_id, essay_type, title, prompt_text, rubric, documents, due_at, created_at
-     FROM margins_assignments WHERE id = $1`,
+    `SELECT ${ASSIGNMENT_COLUMNS} FROM margins_assignments WHERE id = $1`,
     [id]
   );
   return rows[0];
@@ -382,18 +408,26 @@ export interface MarginsSubmission {
   essay_text: string;
   status: SubmissionStatus;
   submitted_at: string | null;
+  parent_submission_id: string | null;
+  attempt_number: number;
   created_at: string;
   updated_at: string;
 }
 
+const SUBMISSION_COLUMNS =
+  "id, assignment_id, student_id, essay_text, status, submitted_at, parent_submission_id, attempt_number, created_at, updated_at";
+
+// Scoped to the ORIGINAL attempt only (parent_submission_id IS NULL) — revisions
+// are separate rows created via createRevisionSubmission(), found via the parent
+// chain, never through this function.
 export async function getOrCreateDraftSubmission(
   assignmentId: string,
   studentId: string
 ): Promise<MarginsSubmission> {
   await ensureMarginsSchema();
   const existing = await query<MarginsSubmission>(
-    `SELECT id, assignment_id, student_id, essay_text, status, submitted_at, created_at, updated_at
-     FROM margins_submissions WHERE assignment_id = $1 AND student_id = $2`,
+    `SELECT ${SUBMISSION_COLUMNS} FROM margins_submissions
+     WHERE assignment_id = $1 AND student_id = $2 AND parent_submission_id IS NULL`,
     [assignmentId, studentId]
   );
   if (existing.rows[0]) return existing.rows[0];
@@ -402,7 +436,7 @@ export async function getOrCreateDraftSubmission(
   const { rows } = await query<MarginsSubmission>(
     `INSERT INTO margins_submissions (id, assignment_id, student_id)
      VALUES ($1, $2, $3)
-     RETURNING id, assignment_id, student_id, essay_text, status, submitted_at, created_at, updated_at`,
+     RETURNING ${SUBMISSION_COLUMNS}`,
     [id, assignmentId, studentId]
   );
   return rows[0];
@@ -416,7 +450,7 @@ export async function updateSubmissionText(
   const { rows } = await query<MarginsSubmission>(
     `UPDATE margins_submissions SET essay_text = $2, updated_at = now()
      WHERE id = $1 AND status = 'draft'
-     RETURNING id, assignment_id, student_id, essay_text, status, submitted_at, created_at, updated_at`,
+     RETURNING ${SUBMISSION_COLUMNS}`,
     [submissionId, essayText]
   );
   return rows[0];
@@ -427,7 +461,7 @@ export async function markSubmissionSubmitted(submissionId: string): Promise<Mar
   const { rows } = await query<MarginsSubmission>(
     `UPDATE margins_submissions SET status = 'submitted', submitted_at = now(), updated_at = now()
      WHERE id = $1
-     RETURNING id, assignment_id, student_id, essay_text, status, submitted_at, created_at, updated_at`,
+     RETURNING ${SUBMISSION_COLUMNS}`,
     [submissionId]
   );
   return rows[0];
@@ -441,9 +475,47 @@ export async function markSubmissionGraded(submissionId: string): Promise<void> 
 export async function getSubmissionById(id: string): Promise<MarginsSubmission | undefined> {
   await ensureMarginsSchema();
   const { rows } = await query<MarginsSubmission>(
-    `SELECT id, assignment_id, student_id, essay_text, status, submitted_at, created_at, updated_at
-     FROM margins_submissions WHERE id = $1`,
+    `SELECT ${SUBMISSION_COLUMNS} FROM margins_submissions WHERE id = $1`,
     [id]
+  );
+  return rows[0];
+}
+
+export async function getAttemptCount(assignmentId: string, studentId: string): Promise<number> {
+  await ensureMarginsSchema();
+  const { rows } = await query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM margins_submissions WHERE assignment_id = $1 AND student_id = $2`,
+    [assignmentId, studentId]
+  );
+  return parseInt(rows[0]?.count ?? "0", 10);
+}
+
+export async function getAttemptChain(assignmentId: string, studentId: string): Promise<MarginsSubmission[]> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsSubmission>(
+    `SELECT ${SUBMISSION_COLUMNS} FROM margins_submissions
+     WHERE assignment_id = $1 AND student_id = $2
+     ORDER BY attempt_number ASC`,
+    [assignmentId, studentId]
+  );
+  return rows;
+}
+
+// Creates a new attempt chained to a graded submission, pre-filled with the
+// parent's essay text so the student edits forward rather than from blank.
+// The graded parent submission is never mutated.
+export async function createRevisionSubmission(parentSubmissionId: string): Promise<MarginsSubmission> {
+  await ensureMarginsSchema();
+  const parent = await getSubmissionById(parentSubmissionId);
+  if (!parent) throw new Error("Parent submission not found.");
+  if (parent.status !== "graded") throw new Error("Only a graded submission can be revised.");
+
+  const id = randomUUID();
+  const { rows } = await query<MarginsSubmission>(
+    `INSERT INTO margins_submissions (id, assignment_id, student_id, essay_text, parent_submission_id, attempt_number)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING ${SUBMISSION_COLUMNS}`,
+    [id, parent.assignment_id, parent.student_id, parent.essay_text, parent.id, parent.attempt_number + 1]
   );
   return rows[0];
 }
@@ -457,13 +529,17 @@ export interface StudentAssignmentRow extends MarginsAssignment {
 export async function getAssignmentsForStudent(studentId: string): Promise<StudentAssignmentRow[]> {
   await ensureMarginsSchema();
   const { rows } = await query<StudentAssignmentRow>(
-    `SELECT a.id, a.class_id, a.essay_type, a.title, a.prompt_text, a.rubric, a.documents, a.due_at, a.created_at,
+    `SELECT a.id, a.class_id, a.essay_type, a.title, a.prompt_text, a.rubric, a.documents, a.due_at, a.max_revisions, a.created_at,
             c.name AS class_name,
             s.id AS submission_id, s.status AS submission_status
      FROM margins_assignments a
      JOIN margins_classes c ON c.id = a.class_id
      JOIN margins_class_memberships m ON m.class_id = a.class_id AND m.student_id = $1
-     LEFT JOIN margins_submissions s ON s.assignment_id = a.id AND s.student_id = $1
+     LEFT JOIN LATERAL (
+       SELECT * FROM margins_submissions
+       WHERE assignment_id = a.id AND student_id = $1
+       ORDER BY attempt_number DESC LIMIT 1
+     ) s ON true
      ORDER BY a.created_at DESC`,
     [studentId]
   );
@@ -474,13 +550,21 @@ export async function getSubmissionsByAssignment(
   assignmentId: string
 ): Promise<(MarginsSubmission & { student_name: string })[]> {
   await ensureMarginsSchema();
+  // One row per student — the latest attempt only. DISTINCT ON requires its
+  // ORDER BY prefix, so the latest-attempt selection happens in a subquery and
+  // the final list is re-sorted by student name (matching getClassRoster's convention).
   const { rows } = await query<MarginsSubmission & { student_name: string }>(
-    `SELECT s.id, s.assignment_id, s.student_id, s.essay_text, s.status, s.submitted_at, s.created_at, s.updated_at,
+    `SELECT sub.id, sub.assignment_id, sub.student_id, sub.essay_text, sub.status, sub.submitted_at,
+            sub.parent_submission_id, sub.attempt_number, sub.created_at, sub.updated_at,
             u.name AS student_name
-     FROM margins_submissions s
-     JOIN margins_users u ON u.id = s.student_id
-     WHERE s.assignment_id = $1
-     ORDER BY s.updated_at DESC`,
+     FROM (
+       SELECT DISTINCT ON (student_id) *
+       FROM margins_submissions
+       WHERE assignment_id = $1
+       ORDER BY student_id, attempt_number DESC
+     ) sub
+     JOIN margins_users u ON u.id = sub.student_id
+     ORDER BY u.name ASC`,
     [assignmentId]
   );
   return rows;
@@ -488,9 +572,12 @@ export async function getSubmissionsByAssignment(
 
 // ── Essay gradings ──
 
+export type AnnotationType = "praise" | "growth";
+
 export interface EssayAnnotationRow {
   quote: string;
   category: string;
+  type: AnnotationType;
   comment: string;
 }
 
@@ -499,6 +586,13 @@ export interface RubricBreakdownRow {
   points_earned: number;
   points_possible: number;
   justification: string;
+}
+
+export interface NextStepRow {
+  issue: string;
+  why_it_matters: string;
+  how_to_fix: string;
+  skill: string;
 }
 
 export interface MarginsGrading {
@@ -510,7 +604,7 @@ export interface MarginsGrading {
   annotations: EssayAnnotationRow[];
   overall_feedback: string;
   strengths: string[];
-  next_steps: string[];
+  next_steps: NextStepRow[];
   teacher_override_score: number | null;
   teacher_notes: string | null;
   graded_at: string;
@@ -528,7 +622,7 @@ export async function createGrading(params: {
   annotations: EssayAnnotationRow[];
   overallFeedback: string;
   strengths: string[];
-  nextSteps: string[];
+  nextSteps: NextStepRow[];
 }): Promise<MarginsGrading> {
   await ensureMarginsSchema();
   const id = randomUUID();
@@ -584,4 +678,72 @@ export async function overrideGrading(
     [submissionId, overrideScore, notes]
   );
   return rows[0];
+}
+
+// ── Revision plans ──
+
+export interface RevisionStepRow {
+  based_on_issue: string;
+  restatement: string;
+  guiding_question: string;
+  scaffold: string;
+  hint: string;
+}
+
+export interface MarginsRevisionPlan {
+  id: string;
+  submission_id: string;
+  steps: RevisionStepRow[];
+  current_step: number;
+  student_responses: string[];
+  completed_at: string | null;
+  created_at: string;
+}
+
+const REVISION_PLAN_COLUMNS =
+  "id, submission_id, steps, current_step, student_responses, completed_at, created_at";
+
+// submissionId here is the GRADED submission the plan is generated from.
+export async function createRevisionPlan(
+  submissionId: string,
+  steps: RevisionStepRow[]
+): Promise<MarginsRevisionPlan> {
+  await ensureMarginsSchema();
+  const id = randomUUID();
+  const { rows } = await query<MarginsRevisionPlan>(
+    `INSERT INTO margins_revision_plans (id, submission_id, steps)
+     VALUES ($1, $2, $3)
+     RETURNING ${REVISION_PLAN_COLUMNS}`,
+    [id, submissionId, JSON.stringify(steps)]
+  );
+  return rows[0];
+}
+
+export async function getRevisionPlanBySubmission(submissionId: string): Promise<MarginsRevisionPlan | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsRevisionPlan>(
+    `SELECT ${REVISION_PLAN_COLUMNS} FROM margins_revision_plans WHERE submission_id = $1`,
+    [submissionId]
+  );
+  return rows[0];
+}
+
+export async function updateRevisionProgress(
+  submissionId: string,
+  currentStep: number,
+  studentResponses: string[]
+): Promise<MarginsRevisionPlan | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsRevisionPlan>(
+    `UPDATE margins_revision_plans SET current_step = $2, student_responses = $3
+     WHERE submission_id = $1
+     RETURNING ${REVISION_PLAN_COLUMNS}`,
+    [submissionId, currentStep, JSON.stringify(studentResponses)]
+  );
+  return rows[0];
+}
+
+export async function markRevisionPlanCompleted(submissionId: string): Promise<void> {
+  await ensureMarginsSchema();
+  await query(`UPDATE margins_revision_plans SET completed_at = now() WHERE submission_id = $1`, [submissionId]);
 }

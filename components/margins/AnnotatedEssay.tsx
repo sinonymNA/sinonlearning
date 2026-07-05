@@ -2,17 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
-import { buildAnnotatedRuns, type EssayAnnotation } from "@/lib/marginsAnnotations";
+import { buildAnnotatedRuns, type EssayAnnotation, type AnnotationType } from "@/lib/marginsAnnotations";
 import { revealStagger } from "@/lib/marginsMotion";
 
-const PALETTE = [
-  { hex: "#ede9fe", text: "text-violet-700", dot: "bg-violet-500", ring: "ring-violet-400", chipBg: "bg-violet-100" },
-  { hex: "#ccfbf1", text: "text-teal-700", dot: "bg-teal-500", ring: "ring-teal-400", chipBg: "bg-teal-100" },
-  { hex: "#fef3c7", text: "text-amber-700", dot: "bg-amber-500", ring: "ring-amber-400", chipBg: "bg-amber-100" },
-  { hex: "#ffe4e6", text: "text-rose-700", dot: "bg-rose-500", ring: "ring-rose-400", chipBg: "bg-rose-100" },
-  { hex: "#e0f2fe", text: "text-sky-700", dot: "bg-sky-500", ring: "ring-sky-400", chipBg: "bg-sky-100" },
-  { hex: "#d1fae5", text: "text-emerald-700", dot: "bg-emerald-500", ring: "ring-emerald-400", chipBg: "bg-emerald-100" },
-];
+// Highlights are colored by praise/growth, not rubric category — the point is
+// to make confidence-building praise visually jump out immediately. Reuses
+// the same emerald/sky already meaningful in GradingReport's Strengths/Next
+// steps cards, so the grading UI's color language stays coherent.
+const TYPE_STYLES: Record<
+  AnnotationType,
+  { hex: string; text: string; dot: string; ring: string; chipBg: string; label: string }
+> = {
+  praise: {
+    hex: "#d1fae5",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+    ring: "ring-emerald-400",
+    chipBg: "bg-emerald-100",
+    label: "Strength",
+  },
+  growth: {
+    hex: "#e0f2fe",
+    text: "text-sky-700",
+    dot: "bg-sky-500",
+    ring: "ring-sky-400",
+    chipBg: "bg-sky-100",
+    label: "Growth area",
+  },
+};
 
 export default function AnnotatedEssay({
   essayText,
@@ -21,16 +38,14 @@ export default function AnnotatedEssay({
   essayText: string;
   annotations: EssayAnnotation[];
 }) {
-  const categories = Array.from(new Set(annotations.map((a) => a.category)));
   const runs = buildAnnotatedRuns(essayText, annotations);
   const [active, setActive] = useState<EssayAnnotation | null>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const essayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  function colorFor(category: string) {
-    const idx = categories.indexOf(category);
-    return PALETTE[(idx >= 0 ? idx : 0) % PALETTE.length];
+  function colorFor(type: AnnotationType) {
+    return TYPE_STYLES[type];
   }
 
   // The centerpiece reveal: legend chips first, then the essay itself, then
@@ -73,18 +88,18 @@ export default function AnnotatedEssay({
 
   return (
     <div className="flex flex-col gap-4">
-      {categories.length > 0 && (
+      {annotations.length > 0 && (
         <div ref={legendRef} className="flex flex-wrap gap-2">
-          {categories.map((c) => {
-            const color = colorFor(c);
+          {(["praise", "growth"] as const).map((type) => {
+            const color = TYPE_STYLES[type];
             return (
               <span
-                key={c}
+                key={type}
                 className={`legend-chip inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${color.chipBg} ${color.text}`}
                 style={{ opacity: 0 }}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${color.dot}`} />
-                {c}
+                {color.label}
               </span>
             );
           })}
@@ -98,7 +113,7 @@ export default function AnnotatedEssay({
       >
         {runs.map((run, i) => {
           if (!run.annotation) return <span key={i}>{run.text}</span>;
-          const color = colorFor(run.annotation.category);
+          const color = colorFor(run.annotation.type);
           const isActive = active === run.annotation;
           return (
             <mark
@@ -119,9 +134,9 @@ export default function AnnotatedEssay({
       </div>
 
       {active ? (
-        <div ref={panelRef} className={`rounded-xl border border-transparent p-4 ${colorFor(active.category).chipBg}`} style={{ opacity: 0 }}>
-          <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${colorFor(active.category).text}`}>
-            {active.category}
+        <div ref={panelRef} className={`rounded-xl border border-transparent p-4 ${colorFor(active.type).chipBg}`} style={{ opacity: 0 }}>
+          <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${colorFor(active.type).text}`}>
+            {colorFor(active.type).label} <span className="font-normal normal-case tracking-normal opacity-70">· {active.category}</span>
           </p>
           <p className="text-sm text-stone-700 leading-relaxed">{active.comment}</p>
         </div>

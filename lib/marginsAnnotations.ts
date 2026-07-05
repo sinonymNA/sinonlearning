@@ -1,6 +1,9 @@
+export type AnnotationType = "praise" | "growth";
+
 export interface EssayAnnotation {
   quote: string;
   category: string;
+  type: AnnotationType;
   comment: string;
 }
 

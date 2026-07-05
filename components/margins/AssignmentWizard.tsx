@@ -28,6 +28,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   const [promptText, setPromptText] = useState("");
   const [rubric, setRubric] = useState<RubricCriterion[]>(RUBRIC_TEMPLATES.LEQ);
   const [documents, setDocuments] = useState<DocumentEntry[]>([{ label: "Document 1", source_text: "" }]);
+  const [maxRevisions, setMaxRevisions] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,6 +138,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
           promptText,
           rubric,
           documents: essayType === "DBQ" ? documents.filter((d) => d.source_text.trim()) : undefined,
+          maxRevisions,
         }),
       });
       const data = await res.json();
@@ -336,6 +338,26 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               />
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Revisions */}
+      <div>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-2">Revisions allowed</p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min={0}
+            max={5}
+            value={maxRevisions}
+            onChange={(e) => setMaxRevisions(Math.max(0, Math.min(5, Number(e.target.value) || 0)))}
+            className={`${inputCls} w-20 text-center`}
+          />
+          <p className="text-[13px] text-stone-500">
+            {maxRevisions === 0
+              ? "Students can't revise and resubmit this assignment."
+              : `Students can revise and resubmit up to ${maxRevisions} time${maxRevisions === 1 ? "" : "s"} after grading.`}
+          </p>
         </div>
       </div>
 

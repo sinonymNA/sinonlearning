@@ -69,7 +69,14 @@ export default async function TeacherAssignmentPage({
                   href={`/margins/teacher/submissions/${s.id}`}
                   className="group flex items-center justify-between gap-3 rounded-xl border border-stone-100 bg-white px-4 py-3.5 hover:border-violet-200 hover:shadow-sm transition-all"
                 >
-                  <p className="font-medium text-stone-800">{s.student_name}</p>
+                  <p className="font-medium text-stone-800">
+                    {s.student_name}
+                    {s.attempt_number > 1 && (
+                      <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-500">
+                        Attempt {s.attempt_number}
+                      </span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-3">
                     {score !== null && s.grading && (
                       <span className="text-sm font-semibold text-stone-700">

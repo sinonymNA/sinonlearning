@@ -43,6 +43,7 @@ export async function POST(
     rubric?: { category: string; points_possible: number; description: string }[];
     documents?: { label: string; source_text: string }[];
     dueAt?: string;
+    maxRevisions?: number;
   };
   try {
     body = await request.json();
@@ -67,6 +68,11 @@ export async function POST(
     );
   }
 
+  const maxRevisions =
+    typeof body.maxRevisions === "number" && Number.isFinite(body.maxRevisions)
+      ? Math.max(0, Math.floor(body.maxRevisions))
+      : 1;
+
   const assignment = await createAssignment({
     classId,
     essayType,
@@ -75,6 +81,7 @@ export async function POST(
     rubric,
     documents: essayType === "DBQ" ? body.documents ?? null : null,
     dueAt: body.dueAt ? new Date(body.dueAt) : null,
+    maxRevisions,
   });
 
   return NextResponse.json({ assignment });

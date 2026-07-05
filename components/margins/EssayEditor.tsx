@@ -11,14 +11,26 @@ interface DocumentEntry {
   source_text: string;
 }
 
+interface RevisionChecklistItem {
+  restatement: string;
+  response: string;
+}
+
 interface Props {
   submissionId: string;
   initialText: string;
   promptText: string;
   documents: DocumentEntry[] | null;
+  revisionChecklist?: RevisionChecklistItem[];
 }
 
-export default function EssayEditor({ submissionId, initialText, promptText, documents }: Props) {
+export default function EssayEditor({
+  submissionId,
+  initialText,
+  promptText,
+  documents,
+  revisionChecklist,
+}: Props) {
   const router = useRouter();
   const [text, setText] = useState(initialText);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -101,10 +113,25 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
   }
 
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const hasSidebar = (documents && documents.length > 0) || (revisionChecklist && revisionChecklist.length > 0);
 
   return (
     <div ref={containerRef} className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div className={documents && documents.length > 0 ? "lg:col-span-2 flex flex-col gap-4" : "lg:col-span-5 flex flex-col gap-4"}>
+      <div className={hasSidebar ? "lg:col-span-2 flex flex-col gap-4" : "lg:col-span-5 flex flex-col gap-4"}>
+        {revisionChecklist && revisionChecklist.length > 0 && (
+          <div className="editor-panel rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5" style={{ opacity: 0 }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Your revision plan</p>
+            <div className="flex flex-col gap-2.5">
+              {revisionChecklist.map((item, i) => (
+                <div key={i} className="rounded-lg bg-white/70 p-2.5">
+                  <p className="text-[13px] font-semibold text-stone-800">{item.restatement}</p>
+                  {item.response && <p className="text-[12px] text-stone-500 mt-1 italic">Your plan: {item.response}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="editor-panel rounded-2xl border border-stone-100 bg-white p-5" style={{ opacity: 0 }}>
           <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-2">Prompt</p>
           <p className="text-[15px] text-stone-700 leading-relaxed whitespace-pre-wrap">{promptText}</p>
@@ -122,7 +149,7 @@ export default function EssayEditor({ submissionId, initialText, promptText, doc
         )}
       </div>
 
-      <div className={documents && documents.length > 0 ? "editor-panel lg:col-span-3 flex flex-col gap-3" : "editor-panel lg:col-span-5 flex flex-col gap-3"} style={{ opacity: 0 }}>
+      <div className={hasSidebar ? "editor-panel lg:col-span-3 flex flex-col gap-3" : "editor-panel lg:col-span-5 flex flex-col gap-3"} style={{ opacity: 0 }}>
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Your essay</span>
           <span className="text-xs text-stone-400">
