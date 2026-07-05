@@ -6,6 +6,15 @@ import { motion, type Variants } from "framer-motion";
 interface Props {
   width?: number;
   className?: string;
+  /**
+   * Instances that are always in view at load (Navbar, HeroDashboard) play a
+   * pure-CSS keyframe reveal so it starts at first paint, independent of
+   * React hydration timing (hydration can lag seconds behind paint on a
+   * throttled mobile device, which otherwise leaves the logo invisible).
+   * Set true only for instances that genuinely need scroll-triggered reveal
+   * (Footer), where framer-motion's whileInView is used instead.
+   */
+  deferUntilInView?: boolean;
 }
 
 const RIBBON_PATH =
@@ -62,10 +71,10 @@ function wordmarkTransform(x: number) {
 }
 
 const WIPE_VARIANTS: Variants = {
-  hidden: { clipPath: "inset(100% -25% -25% -25%)" },
+  hidden: { clipPath: "inset(100% 0% 0% 0%)" },
   visible: {
-    clipPath: "inset(0% -25% -25% -25%)",
-    transition: { duration: 0.75, ease: [0.22, 1, 0.36, 1] },
+    clipPath: "inset(0% 0% 0% 0%)",
+    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
   },
 };
 
@@ -78,12 +87,45 @@ const ACCENT_VARIANTS: Variants = {
   },
 };
 
-export default function SinonWordmark({ width = 160, className = "" }: Props) {
+export default function SinonWordmark({ width = 160, className = "", deferUntilInView = false }: Props) {
   const height = width * (232 / 1075);
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const iconGradId = `iconGrad-${uid}`;
   const textGradId = `textGrad-${uid}`;
-  const shadowId = `shadow-${uid}`;
+  const wipeAnim = `wipe-${uid}`;
+  const accentAnim = `accent-${uid}`;
+
+  const wordmarkContent = (
+    <>
+      <g fill="#112BAE" opacity="0.18" transform="translate(0 2)">
+        <path d={RIBBON_PATH} />
+      </g>
+      <g fill="#0E2EC0" opacity="0.18" transform="translate(0 2)">
+        {WORDMARK_GLYPHS.map((glyph, i) => (
+          <path key={`shadow-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
+        ))}
+      </g>
+      <g fill={`url(#${iconGradId})`}>
+        <path d={RIBBON_PATH} />
+      </g>
+      <g fill={`url(#${textGradId})`}>
+        {WORDMARK_GLYPHS.map((glyph, i) => (
+          <path key={`color-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
+        ))}
+      </g>
+    </>
+  );
+
+  const accentContent = (
+    <>
+      <g fill="#112BAE" opacity="0.18" transform="translate(0 2)">
+        <path d={ACCENT_PATH} />
+      </g>
+      <g fill={`url(#${iconGradId})`}>
+        <path d={ACCENT_PATH} />
+      </g>
+    </>
+  );
 
   return (
     <svg
@@ -106,40 +148,55 @@ export default function SinonWordmark({ width = 160, className = "" }: Props) {
           <stop offset="0" stopColor="#173EF6" />
           <stop offset="1" stopColor="#213CD7" />
         </linearGradient>
-        <filter id={shadowId} x="-10%" y="-15%" width="130%" height="150%">
-          <feDropShadow dx="0" dy="2.2" stdDeviation="1.0" floodColor="#0829A7" floodOpacity="0.34" />
-        </filter>
       </defs>
 
-      <motion.g initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}>
-        <motion.g variants={WIPE_VARIANTS}>
-          <g fill="#112BAE" opacity="0.18" transform="translate(0 2)">
-            <path d={RIBBON_PATH} />
-          </g>
-          <g fill="#0E2EC0" opacity="0.18" transform="translate(0 2)">
-            {WORDMARK_GLYPHS.map((glyph, i) => (
-              <path key={`shadow-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
-            ))}
-          </g>
-          <g fill={`url(#${iconGradId})`} filter={`url(#${shadowId})`}>
-            <path d={RIBBON_PATH} />
-          </g>
-          <g fill={`url(#${textGradId})`} filter={`url(#${shadowId})`}>
-            {WORDMARK_GLYPHS.map((glyph, i) => (
-              <path key={`color-${i}`} d={glyph.d} transform={wordmarkTransform(glyph.x)} />
-            ))}
-          </g>
+      {deferUntilInView ? (
+        <motion.g initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0 }}>
+          <motion.g variants={WIPE_VARIANTS}>{wordmarkContent}</motion.g>
+          <motion.g variants={ACCENT_VARIANTS} style={{ transformOrigin: "194px 53px" }}>
+            {accentContent}
+          </motion.g>
         </motion.g>
-
-        <motion.g variants={ACCENT_VARIANTS} style={{ transformOrigin: "194px 53px" }}>
-          <g fill="#112BAE" opacity="0.18" transform="translate(0 2)">
-            <path d={ACCENT_PATH} />
+      ) : (
+        <>
+          {/* Pure CSS keyframes: starts at first paint, not gated on React hydration. */}
+          <style>{`
+            @keyframes ${wipeAnim} {
+              from { clip-path: inset(100% 0% 0% 0%); }
+              to { clip-path: inset(0% 0% 0% 0%); }
+            }
+            @keyframes ${accentAnim} {
+              0% { opacity: 0; transform: scale(0.3); }
+              60% { opacity: 1; transform: scale(1.15); }
+              80% { transform: scale(0.92); }
+              100% { opacity: 1; transform: scale(1); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .${wipeAnim} { animation: none; clip-path: inset(0% 0% 0% 0%); }
+              .${accentAnim} { animation: none; opacity: 1; transform: none; }
+            }
+          `}</style>
+          <g
+            className={wipeAnim}
+            style={{
+              clipPath: "inset(100% 0% 0% 0%)",
+              animation: `${wipeAnim} 0.6s cubic-bezier(0.22,1,0.36,1) forwards`,
+            }}
+          >
+            {wordmarkContent}
           </g>
-          <g fill={`url(#${iconGradId})`} filter={`url(#${shadowId})`}>
-            <path d={ACCENT_PATH} />
+          <g
+            className={accentAnim}
+            style={{
+              opacity: 0,
+              transformOrigin: "194px 53px",
+              animation: `${accentAnim} 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.45s forwards`,
+            }}
+          >
+            {accentContent}
           </g>
-        </motion.g>
-      </motion.g>
+        </>
+      )}
     </svg>
   );
 }

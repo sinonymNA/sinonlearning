@@ -51,7 +51,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:grid-cols-5">
           <div className="col-span-2 sm:col-span-3 lg:col-span-5 mb-4 sm:mb-2">
             <div className="flex items-center">
-              <SinonWordmark width={150} />
+              <SinonWordmark width={150} deferUntilInView />
             </div>
             <p className="mt-3 text-sm text-navy-700/60">
               Free education. Human teachers. Powerful tools.
