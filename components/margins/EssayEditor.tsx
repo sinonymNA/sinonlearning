@@ -8,7 +8,8 @@ import { useMountReveal } from "@/lib/marginsMotion";
 
 interface DocumentEntry {
   label: string;
-  source_text: string;
+  source_text?: string;
+  image_id?: string;
 }
 
 interface RevisionChecklistItem {
@@ -142,7 +143,17 @@ export default function EssayEditor({
             {documents.map((doc, i) => (
               <div key={i} className="editor-panel rounded-2xl border border-stone-100 bg-white p-4" style={{ opacity: 0 }}>
                 <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 mb-1.5">{doc.label}</p>
-                <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">{doc.source_text}</p>
+                {doc.image_id && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/margins/images/${doc.image_id}`}
+                    alt={doc.label}
+                    className="mb-2 max-h-80 w-full rounded-lg border border-stone-100 object-contain"
+                  />
+                )}
+                {doc.source_text && (
+                  <p className="text-sm text-stone-600 leading-relaxed whitespace-pre-wrap">{doc.source_text}</p>
+                )}
               </div>
             ))}
           </div>

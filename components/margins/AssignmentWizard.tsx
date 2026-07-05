@@ -3,19 +3,35 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { animate } from "animejs";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import confetti from "canvas-confetti";
+import {
+  Plus,
+  Trash2,
+  Sparkles,
+  PenLine,
+  ListChecks,
+  Layers,
+  Image as ImageIcon,
+  Loader2,
+  Upload,
+  FileText,
+  X,
+} from "lucide-react";
 import { RUBRIC_TEMPLATES, type EssayType, type RubricCriterion } from "@/lib/marginsRubrics";
 import { revealStagger } from "@/lib/marginsMotion";
 
 interface DocumentEntry {
   label: string;
   source_text: string;
+  image_id?: string;
+  uploading?: boolean;
+  uploadError?: string;
 }
 
-const ESSAY_TYPES: { value: EssayType; label: string; hint: string }[] = [
-  { value: "LEQ", label: "LEQ", hint: "Long Essay · 6 pts" },
-  { value: "SAQ", label: "SAQ", hint: "Short Answer · 3 pts" },
-  { value: "DBQ", label: "DBQ", hint: "Document-Based · 7 pts" },
+const ESSAY_TYPES: { value: EssayType; label: string; hint: string; icon: typeof PenLine }[] = [
+  { value: "LEQ", label: "LEQ", hint: "Long Essay · 6 pts", icon: PenLine },
+  { value: "SAQ", label: "SAQ", hint: "Short Answer · 3 pts", icon: ListChecks },
+  { value: "DBQ", label: "DBQ", hint: "Document-Based · 7 pts", icon: Layers },
 ];
 
 const inputCls =
@@ -30,6 +46,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   const [documents, setDocuments] = useState<DocumentEntry[]>([{ label: "Document 1", source_text: "" }]);
   const [maxRevisions, setMaxRevisions] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [published, setPublished] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [topic, setTopic] = useState("");
@@ -38,6 +55,31 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   const [generatingRubric, setGeneratingRubric] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const rubricRef = useRef<HTMLDivElement>(null);
+
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importDragOver, setImportDragOver] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const docsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (formRef.current) {
+      revealStagger(formRef.current, ".wizard-block", { stagger: 90, duration: 460, translateY: 16 });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (essayType === "DBQ" && docsRef.current) {
+      animate(docsRef.current, { opacity: [0, 1], translateY: [16, 0], duration: 420, easing: "outQuart" });
+    }
+  }, [essayType]);
 
   useEffect(() => {
     if (rubricRef.current) {
@@ -99,6 +141,41 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
     }
   }
 
+  async function handleImportFile(file: File) {
+    setImportError(null);
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/margins/import-assignment", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error ?? "Could not read that file.");
+        return;
+      }
+      const imported = data.assignment as {
+        essay_type: EssayType;
+        title: string;
+        prompt_text: string;
+        rubric?: RubricCriterion[];
+        documents?: { label: string; source_text: string }[];
+      };
+      setEssayType(imported.essay_type);
+      setRubric(
+        imported.rubric && imported.rubric.length > 0 ? imported.rubric : RUBRIC_TEMPLATES[imported.essay_type]
+      );
+      setTitle((cur) => (cur.trim() ? cur : imported.title));
+      setPromptText((cur) => (cur.trim() ? cur : imported.prompt_text));
+      if (imported.documents && imported.documents.length > 0) {
+        setDocuments(imported.documents.map((d) => ({ label: d.label, source_text: d.source_text })));
+      }
+    } catch {
+      setImportError("Network error. Please try again.");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function changeEssayType(type: EssayType) {
     setEssayType(type);
     setRubric(RUBRIC_TEMPLATES[type]);
@@ -123,6 +200,26 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   function updateDocument(i: number, field: keyof DocumentEntry, value: string) {
     setDocuments((d) => d.map((doc, idx) => (idx === i ? { ...doc, [field]: value } : doc)));
   }
+  function updateDocumentField(i: number, patch: Partial<DocumentEntry>) {
+    setDocuments((d) => d.map((doc, idx) => (idx === i ? { ...doc, ...patch } : doc)));
+  }
+
+  async function handleImageUpload(i: number, file: File) {
+    updateDocumentField(i, { uploading: true, uploadError: undefined });
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/margins/upload-image", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        updateDocumentField(i, { uploading: false, uploadError: data.error ?? "Upload failed." });
+        return;
+      }
+      updateDocumentField(i, { uploading: false, image_id: data.imageId, uploadError: undefined });
+    } catch {
+      updateDocumentField(i, { uploading: false, uploadError: "Network error." });
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -137,20 +234,35 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
           title,
           promptText,
           rubric,
-          documents: essayType === "DBQ" ? documents.filter((d) => d.source_text.trim()) : undefined,
+          documents:
+            essayType === "DBQ"
+              ? documents
+                  .filter((d) => d.source_text.trim() || d.image_id)
+                  .map((d) => ({ label: d.label, source_text: d.source_text, image_id: d.image_id }))
+              : undefined,
           maxRevisions,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Could not create assignment.");
+        setLoading(false);
         return;
       }
-      router.push(`/margins/teacher/classes/${classId}`);
-      router.refresh();
+      setPublished(true);
+      confetti({
+        particleCount: 130,
+        spread: 75,
+        startVelocity: 32,
+        origin: { y: 0.65 },
+        colors: ["#8b5cf6", "#a78bfa", "#c4b5fd", "#ede9fe", "#ffffff"],
+      });
+      setTimeout(() => {
+        router.push(`/margins/teacher/classes/${classId}`);
+        router.refresh();
+      }, 650);
     } catch {
       setError("Network error. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
@@ -158,9 +270,86 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
   const maxScore = rubric.reduce((sum, r) => sum + (r.points_possible || 0), 0);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-7">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-7">
+      {/* Import from file */}
+      <div
+        className="wizard-block rounded-xl border border-sky-100 bg-sky-50/50 overflow-hidden"
+        style={{ opacity: 0 }}
+      >
+        <button
+          type="button"
+          onClick={() => setImportOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-4 py-3 text-left"
+        >
+          <span className="text-[13px] font-semibold text-sky-700 flex items-center gap-1.5">
+            <Upload size={14} /> Already have this assignment on paper or as a file? Import it.
+          </span>
+          <span className="text-sky-400 text-xs">{importOpen ? "▲" : "▼"}</span>
+        </button>
+        {importOpen && (
+          <div className="px-4 pb-4 flex flex-col gap-2.5">
+            <div
+              onClick={() => importInputRef.current?.click()}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setImportDragOver(true);
+              }}
+              onDragLeave={() => setImportDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setImportDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                  setImportFile(file);
+                  handleImportFile(file);
+                }
+              }}
+              className={[
+                "flex flex-col items-center justify-center gap-1.5 rounded-lg border border-dashed py-6 text-xs cursor-pointer transition-colors",
+                importDragOver
+                  ? "border-sky-400 bg-sky-50 text-sky-600"
+                  : "border-sky-200 bg-white text-stone-400 hover:border-sky-300",
+                importing ? "shadow-[0_0_20px_rgba(14,165,233,0.3)] animate-pulse" : "",
+              ].join(" ")}
+            >
+              {importing ? (
+                <>
+                  <Loader2 size={18} className="animate-spin text-sky-500" />
+                  <span className="text-sky-600 font-medium">Reading your assignment…</span>
+                </>
+              ) : importFile ? (
+                <>
+                  <FileText size={18} className="text-sky-500" />
+                  <span>{importFile.name}</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={18} />
+                  <span>Click or drag an image or PDF</span>
+                </>
+              )}
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImportFile(file);
+                    handleImportFile(file);
+                  }
+                  e.target.value = "";
+                }}
+              />
+            </div>
+            {importError && <p className="text-[12px] text-red-600">{importError}</p>}
+          </div>
+        )}
+      </div>
+
       {/* Essay type */}
-      <div>
+      <div className="wizard-block" style={{ opacity: 0 }}>
         <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-2">Essay type</p>
         <div className="grid grid-cols-3 gap-2.5">
           {ESSAY_TYPES.map((t) => (
@@ -168,7 +357,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               key={t.value}
               type="button"
               onClick={(e) => {
-                animate(e.currentTarget, { scale: [0.94, 1], duration: 260, easing: "outQuart" });
+                animate(e.currentTarget, { scale: [0.88, 1.06, 1], duration: 420, easing: "outElastic(1, .6)" });
                 changeEssayType(t.value);
               }}
               className={[
@@ -178,6 +367,10 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                   : "border-stone-200 bg-white hover:border-violet-200",
               ].join(" ")}
             >
+              <t.icon
+                size={16}
+                className={essayType === t.value ? "text-violet-500 mb-1" : "text-stone-300 mb-1"}
+              />
               <p className="font-bold text-stone-900">{t.label}</p>
               <p className="text-[11px] text-stone-400 mt-0.5">{t.hint}</p>
             </button>
@@ -186,7 +379,15 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       </div>
 
       {/* KORA generator */}
-      <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4 flex flex-col gap-2.5">
+      <div
+        className={[
+          "wizard-block rounded-xl border p-4 flex flex-col gap-2.5 transition-shadow duration-300",
+          generatingPrompt || generatingRubric
+            ? "border-violet-300 bg-violet-50/50 shadow-[0_0_24px_rgba(139,92,246,0.35)] animate-pulse"
+            : "border-violet-100 bg-violet-50/50",
+        ].join(" ")}
+        style={{ opacity: 0 }}
+      >
         <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 flex items-center gap-1.5">
           <Sparkles size={12} /> Generate with KORA
         </p>
@@ -205,7 +406,6 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               disabled={generatingPrompt}
               className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
-              {generatingPrompt && <Sparkles size={11} className="animate-pulse" />}
               {generatingPrompt ? "Writing…" : "Prompt"}
             </button>
             <button
@@ -214,7 +414,6 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
               disabled={generatingRubric}
               className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors disabled:opacity-60"
             >
-              {generatingRubric && <Sparkles size={11} className="animate-pulse" />}
               {generatingRubric ? "Writing…" : "Rubric"}
             </button>
           </div>
@@ -235,7 +434,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       </div>
 
       {/* Title + prompt */}
-      <label className="flex flex-col gap-1.5">
+      <label className="wizard-block flex flex-col gap-1.5" style={{ opacity: 0 }}>
         <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Assignment title</span>
         <input
           type="text"
@@ -247,7 +446,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
         />
       </label>
 
-      <label className="flex flex-col gap-1.5">
+      <label className="wizard-block flex flex-col gap-1.5" style={{ opacity: 0 }}>
         <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">
           Prompt {essayType === "SAQ" && <span className="normal-case font-normal text-stone-300">(include parts A, B, C)</span>}
         </span>
@@ -262,7 +461,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
 
       {/* DBQ documents */}
       {essayType === "DBQ" && (
-        <div>
+        <div ref={docsRef} style={{ opacity: 0 }}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">
               Source documents
@@ -291,11 +490,72 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                     </button>
                   )}
                 </div>
+
+                {doc.image_id ? (
+                  <div className="relative rounded-lg overflow-hidden border border-stone-200 bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/api/margins/images/${doc.image_id}`}
+                      alt={doc.label}
+                      className="max-h-48 w-full object-contain"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => updateDocumentField(i, { image_id: undefined })}
+                      className="absolute top-1.5 right-1.5 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ) : doc.uploading ? (
+                  <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-stone-300 bg-white py-6 text-stone-400 text-xs">
+                    <Loader2 size={14} className="animate-spin" /> Uploading…
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRefs.current[i]?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setDragOverIndex(i);
+                    }}
+                    onDragLeave={() => setDragOverIndex((cur) => (cur === i ? null : cur))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverIndex(null);
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) handleImageUpload(i, file);
+                    }}
+                    className={[
+                      "flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed py-5 text-xs cursor-pointer transition-colors",
+                      dragOverIndex === i
+                        ? "border-violet-400 bg-violet-50 text-violet-500"
+                        : "border-stone-300 bg-white text-stone-400 hover:border-violet-300",
+                    ].join(" ")}
+                  >
+                    <ImageIcon size={16} />
+                    <span>Click or drag a photo of this document</span>
+                    <input
+                      ref={(el) => {
+                        fileInputRefs.current[i] = el;
+                      }}
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(i, file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </div>
+                )}
+                {doc.uploadError && <p className="text-[11px] text-red-600">{doc.uploadError}</p>}
+
                 <textarea
                   rows={3}
                   value={doc.source_text}
                   onChange={(e) => updateDocument(i, "source_text", e.target.value)}
-                  placeholder="Paste the document excerpt, attribution, and date."
+                  placeholder="Optional: add a caption, attribution, or transcription."
                   className="rounded-lg border border-stone-200 bg-white px-2.5 py-2 text-sm outline-none focus:border-violet-400 resize-none"
                 />
               </div>
@@ -305,7 +565,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       )}
 
       {/* Rubric */}
-      <div>
+      <div className="wizard-block" style={{ opacity: 0 }}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-[11px] font-bold uppercase tracking-widest text-stone-400">
             Rubric — {maxScore} points total
@@ -342,7 +602,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       </div>
 
       {/* Revisions */}
-      <div>
+      <div className="wizard-block" style={{ opacity: 0 }}>
         <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-2">Revisions allowed</p>
         <div className="flex items-center gap-3">
           <input
@@ -370,9 +630,10 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
       <button
         type="submit"
         disabled={loading}
-        className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
+        className="wizard-block rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 py-3.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all disabled:opacity-60"
+        style={{ opacity: 0 }}
       >
-        {loading ? "Publishing…" : "Publish assignment"}
+        {published ? "Published!" : loading ? "Publishing…" : "Publish assignment"}
       </button>
     </form>
   );

@@ -8,6 +8,7 @@ import {
   getClassById,
   createGrading,
   getGradingBySubmission,
+  getUploadedImage,
 } from "@/lib/marginsDb";
 import { EssayEvalSchema } from "@/lib/marginsGradingTypes";
 
@@ -44,29 +45,25 @@ function extractJson(text: string): string {
   return (fenced ? fenced[1] : text).trim();
 }
 
-function buildUserMessage(params: {
-  essayType: string;
-  promptText: string;
-  documents: { label: string; source_text: string }[] | null;
+type GradingDocument = { label: string; source_text?: string; image_id?: string };
+
+type PriorGrading = {
+  attemptNumber: number;
+  overallScore: number;
+  maxScore: number;
+  nextSteps: { issue: string }[];
+} | null | undefined;
+
+// Rubric + prior-attempt context + essay text + the JSON-schema/rules tail —
+// identical in both the plain-text and multimodal request shapes, so it's
+// built once and reused rather than duplicated.
+function buildRubricEssayTail(params: {
   rubric: { category: string; points_possible: number; description: string }[];
   essayText: string;
-  priorGrading?: {
-    attemptNumber: number;
-    overallScore: number;
-    maxScore: number;
-    nextSteps: { issue: string }[];
-  } | null;
+  priorGrading?: PriorGrading;
 }): string {
-  const { essayType, promptText, documents, rubric, essayText, priorGrading } = params;
-  const lines = [
-    `Essay Type: ${essayType}`,
-    `Prompt: ${promptText}`,
-  ];
-  if (documents && documents.length > 0) {
-    lines.push("\nSource Documents:");
-    documents.forEach((d, i) => lines.push(`Document ${i + 1} (${d.label}): ${d.source_text}`));
-  }
-  lines.push("\nRubric:");
+  const { rubric, essayText, priorGrading } = params;
+  const lines: string[] = ["\nRubric:"];
   rubric.forEach((r) =>
     lines.push(`- ${r.category} (${r.points_possible} pt${r.points_possible === 1 ? "" : "s"}): ${r.description}`)
   );
@@ -99,6 +96,64 @@ function buildUserMessage(params: {
     `Output only the JSON.`
   );
   return lines.join("\n");
+}
+
+function buildUserMessage(params: {
+  essayType: string;
+  promptText: string;
+  documents: GradingDocument[] | null;
+  rubric: { category: string; points_possible: number; description: string }[];
+  essayText: string;
+  priorGrading?: PriorGrading;
+}): string {
+  const { essayType, promptText, documents, rubric, essayText, priorGrading } = params;
+  const lines = [`Essay Type: ${essayType}`, `Prompt: ${promptText}`];
+  if (documents && documents.length > 0) {
+    lines.push("\nSource Documents:");
+    documents.forEach((d, i) =>
+      lines.push(`Document ${i + 1} (${d.label}):${d.source_text ? ` ${d.source_text}` : ""}`)
+    );
+  }
+  return lines.join("\n") + "\n" + buildRubricEssayTail({ rubric, essayText, priorGrading });
+}
+
+// Used when at least one source document carries an uploaded image — sends
+// the actual image bytes to Claude instead of grading blind against only the
+// caption/transcription text.
+async function buildMultimodalContent(params: {
+  essayType: string;
+  promptText: string;
+  documents: GradingDocument[];
+  rubric: { category: string; points_possible: number; description: string }[];
+  essayText: string;
+  priorGrading?: PriorGrading;
+}): Promise<Anthropic.Messages.ContentBlockParam[]> {
+  const { essayType, promptText, documents, rubric, essayText, priorGrading } = params;
+  const parts: Anthropic.Messages.ContentBlockParam[] = [
+    { type: "text", text: `Essay Type: ${essayType}\nPrompt: ${promptText}\n\nSource Documents:` },
+  ];
+  for (let i = 0; i < documents.length; i++) {
+    const d = documents[i];
+    parts.push({
+      type: "text",
+      text: `Document ${i + 1} (${d.label}):${d.source_text ? ` ${d.source_text}` : ""}`,
+    });
+    if (d.image_id) {
+      const image = await getUploadedImage(d.image_id);
+      if (image) {
+        parts.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: image.mime_type as "image/png" | "image/jpeg" | "image/gif" | "image/webp",
+            data: image.data.toString("base64"),
+          },
+        });
+      }
+    }
+  }
+  parts.push({ type: "text", text: buildRubricEssayTail({ rubric, essayText, priorGrading }) });
+  return parts;
 }
 
 export async function POST(request: NextRequest) {
@@ -154,26 +209,33 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const hasImageDocuments = (assignment.documents ?? []).some((d) => d.image_id);
+
   let raw = "";
   try {
     const client = new Anthropic({ apiKey });
+    const content = hasImageDocuments
+      ? await buildMultimodalContent({
+          essayType: assignment.essay_type,
+          promptText: assignment.prompt_text,
+          documents: assignment.documents ?? [],
+          rubric: assignment.rubric,
+          essayText: submission.essay_text,
+          priorGrading,
+        })
+      : buildUserMessage({
+          essayType: assignment.essay_type,
+          promptText: assignment.prompt_text,
+          documents: assignment.documents,
+          rubric: assignment.rubric,
+          essayText: submission.essay_text,
+          priorGrading,
+        });
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: buildUserMessage({
-            essayType: assignment.essay_type,
-            promptText: assignment.prompt_text,
-            documents: assignment.documents,
-            rubric: assignment.rubric,
-            essayText: submission.essay_text,
-            priorGrading,
-          }),
-        },
-      ],
+      messages: [{ role: "user", content }],
     });
     raw = message.content[0].type === "text" ? message.content[0].text : "";
   } catch (err) {

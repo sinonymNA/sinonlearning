@@ -79,3 +79,15 @@ export const RevisionPlanSchema = z.object({
   steps: z.array(RevisionStepSchema).min(1).max(4),
 });
 export type RevisionPlanOutput = z.infer<typeof RevisionPlanSchema>;
+
+// Transcription of an assignment already on paper/in a file — rubric and
+// documents are optional since a real upload may not show either; the
+// assignments route's RUBRIC_TEMPLATES fallback covers "no rubric visible".
+export const ImportAssignmentSchema = z.object({
+  essay_type: EssayTypeSchema,
+  title: z.string().min(1),
+  prompt_text: z.string().min(1),
+  rubric: z.array(RubricCriterionSchema).optional(),
+  documents: z.array(z.object({ label: z.string().min(1), source_text: z.string().min(1) })).optional(),
+});
+export type ImportAssignmentOutput = z.infer<typeof ImportAssignmentSchema>;

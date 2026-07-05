@@ -30,7 +30,8 @@ export type EssayType = "DBQ" | "LEQ" | "SAQ";
 
 export interface AssignmentDocument {
   label: string;
-  source_text: string;
+  source_text?: string;
+  image_id?: string;
 }
 
 export interface RubricCriterionRow {
@@ -156,6 +157,16 @@ export function ensureMarginsSchema(): Promise<void> {
           current_step INTEGER NOT NULL DEFAULT 0,
           student_responses JSONB NOT NULL DEFAULT '[]',
           completed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`)
+      )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS margins_uploaded_images (
+          id UUID PRIMARY KEY,
+          uploaded_by UUID NOT NULL REFERENCES margins_users(id) ON DELETE CASCADE,
+          mime_type TEXT NOT NULL,
+          data BYTEA NOT NULL,
+          byte_size INTEGER NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
       )
@@ -746,4 +757,40 @@ export async function updateRevisionProgress(
 export async function markRevisionPlanCompleted(submissionId: string): Promise<void> {
   await ensureMarginsSchema();
   await query(`UPDATE margins_revision_plans SET completed_at = now() WHERE submission_id = $1`, [submissionId]);
+}
+
+// ── Uploaded images ──
+
+export interface MarginsUploadedImage {
+  id: string;
+  uploaded_by: string;
+  mime_type: string;
+  data: Buffer;
+  byte_size: number;
+  created_at: string;
+}
+
+export async function createUploadedImage(params: {
+  uploadedBy: string;
+  mimeType: string;
+  data: Buffer;
+}): Promise<MarginsUploadedImage> {
+  await ensureMarginsSchema();
+  const id = randomUUID();
+  const { rows } = await query<MarginsUploadedImage>(
+    `INSERT INTO margins_uploaded_images (id, uploaded_by, mime_type, data, byte_size)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, uploaded_by, mime_type, data, byte_size, created_at`,
+    [id, params.uploadedBy, params.mimeType, params.data, params.data.length]
+  );
+  return rows[0];
+}
+
+export async function getUploadedImage(id: string): Promise<MarginsUploadedImage | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsUploadedImage>(
+    `SELECT id, uploaded_by, mime_type, data, byte_size, created_at FROM margins_uploaded_images WHERE id = $1`,
+    [id]
+  );
+  return rows[0];
 }

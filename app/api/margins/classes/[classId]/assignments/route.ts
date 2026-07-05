@@ -41,7 +41,7 @@ export async function POST(
     title?: string;
     promptText?: string;
     rubric?: { category: string; points_possible: number; description: string }[];
-    documents?: { label: string; source_text: string }[];
+    documents?: { label: string; source_text?: string; image_id?: string }[];
     dueAt?: string;
     maxRevisions?: number;
   };
@@ -61,11 +61,22 @@ export async function POST(
     return NextResponse.json({ error: "Title and prompt are required." }, { status: 400 });
   }
   const rubric = body.rubric && body.rubric.length > 0 ? body.rubric : RUBRIC_TEMPLATES[essayType];
-  if (essayType === "DBQ" && (!body.documents || body.documents.length === 0)) {
-    return NextResponse.json(
-      { error: "DBQ assignments require at least one source document." },
-      { status: 400 }
+  if (essayType === "DBQ") {
+    if (!body.documents || body.documents.length === 0) {
+      return NextResponse.json(
+        { error: "DBQ assignments require at least one source document." },
+        { status: 400 }
+      );
+    }
+    const invalid = body.documents.some(
+      (d) => !d.label?.trim() || !((d.source_text && d.source_text.trim()) || d.image_id)
     );
+    if (invalid) {
+      return NextResponse.json(
+        { error: "Each document needs a label and either source text or an uploaded image." },
+        { status: 400 }
+      );
+    }
   }
 
   const maxRevisions =
