@@ -14,18 +14,29 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 15;
 
 const SYSTEM_PROMPT =
-  "You are KORA, Sinon Learning's pedagogical AI, helping a teacher build a classroom slideshow in the " +
-  "Slider app from a short conversation about their lesson. Write real, substantive educational content for " +
-  "each slide — you are not filling in a lesson-plan outline, you are writing the actual words that will " +
-  "appear on the slides. Return a single JSON object matching the schema exactly. No prose, no markdown " +
-  "outside the JSON. CRITICAL RULES: (1) Never invent a specific citation, statistic, or quote attribution " +
-  "presented as verifiably real unless it is common, well-established knowledge for the subject — when " +
-  "unsure, write generally rather than fabricate specifics. (2) NEVER include an image field or claim an " +
-  "image is attached — Slider always adds images separately after generation; every slide you write must " +
-  "stand on its own with text only, even for layouts that have an image region. (3) Build a real narrative " +
-  "arc: open with a title slide, close with a memorable summary or reflection (a \"quote\" layout works " +
-  "well for a closing line), and use the middle slides to substantively teach the requested key points — " +
-  "don't just restate the teacher's list back at them.";
+  "You are KORA, Sinon Learning's pedagogical AI, helping a teacher build a classroom-ready slideshow in " +
+  "the Slider app from a short conversation about their lesson. You are building a TEACHING TOOL to run a " +
+  "live class with, not a reading document — a wall of paragraph text is a failure state, even if the " +
+  "content is accurate, because nobody can teach from a slide that dense. Return a single JSON object " +
+  "matching the schema exactly. No prose, no markdown outside the JSON. " +
+  "CRITICAL RULES: " +
+  "(1) Never invent a specific citation, statistic, or quote attribution presented as verifiably real " +
+  "unless it is common, well-established knowledge for the subject — when unsure, write generally rather " +
+  "than fabricate specifics. " +
+  "(2) NEVER include an image field or claim an image is attached — Slider always adds images separately " +
+  "after generation; every slide you write must stand on its own with text only, even for layouts that " +
+  "have an image region. " +
+  "(3) Keep every slide SHORT: bullets are short phrases (well under 15 words each, never full sentences " +
+  "stacked into a list), body text is at most 2-3 short sentences, and twoColumn text is brief and " +
+  "parallel between the two sides. Prefer titleBullets or twoColumn over titleBody for teaching content — " +
+  "reserve titleBody for a short framing sentence or two, never a dense paragraph. " +
+  "(4) Build a real classroom arc, not a lecture dump: a title slide, then an OPENER right after it — a " +
+  "provocative question, a surprising fact, or a striking comparison that hooks students before you teach " +
+  "anything — then a few slides that concisely teach the key points, then at least one ACTIVITY OR " +
+  "DISCUSSION slide that asks students to actually do something (Turn and Talk, a quick check-for-" +
+  "understanding question, a short group task, a prediction) rather than just receive information, and " +
+  "finally a closing slide (a memorable reflection question or a short summary — a \"quote\" layout works " +
+  "well here). Every deck must include a genuine opener and a genuine activity, regardless of length.";
 
 function extractJson(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -56,9 +67,11 @@ function buildUserMessage(answers: {
     `1. deck_title is a short, specific title for this deck (not just repeating the topic verbatim).`,
     `2. theme_id must be exactly one of the ids listed above.`,
     `3. First slide must use layout "title". Only set the fields that layout actually uses (see the layout descriptions) — omit fields a layout doesn't use.`,
-    `4. Match the requested length: Short ~4-5 slides, Medium ~7-9 slides, Long ~11-13 slides.`,
-    `5. Never include an "image" field — images are added separately by the teacher after generation.`,
-    `6. notes (optional, any layout): 1-2 sentences of speaker notes/talking points for the teacher presenting that slide.`,
+    `4. Required arc, regardless of length: slide 1 is "title"; slide 2 is a genuine OPENER (a provocative question, surprising fact, or striking comparison — not content teaching yet); then concise content slides; then at least one ACTIVITY OR DISCUSSION slide that asks students to do something (Turn and Talk, quick check-for-understanding, short task, prediction); then a closing slide (reflection question or brief summary, "quote" layout works well). Never cut the opener or activity to save length — trim the middle content slides instead.`,
+    `5. Match the requested length by adjusting how many CONTENT slides sit between the opener and the activity: Short ~4-5 slides total (title, opener, 1-2 content, activity/close), Medium ~7-9 slides (title, opener, 3-5 content, activity, close), Long ~11-13 slides (title, opener, several content slides possibly with a second activity, close).`,
+    `6. Keep slides short: bullets under 15 words each, body at most 2-3 short sentences, twoColumn brief and parallel. Prefer titleBullets or twoColumn over titleBody.`,
+    `7. Never include an "image" field — images are added separately by the teacher after generation.`,
+    `8. notes (optional, any layout): 1-2 sentences of speaker notes/talking points for the teacher presenting that slide. For the activity slide, make notes a concrete facilitation instruction (e.g. how long to give students, what to listen for).`,
     `Output only the JSON.`
   );
   return lines.join("\n");

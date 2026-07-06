@@ -9,6 +9,7 @@ import LayoutPicker from "./LayoutPicker";
 import ThemePicker from "./ThemePicker";
 import ImageSuggestionsPanel from "./ImageSuggestionsPanel";
 import ExportPptxButton from "./ExportPptxButton";
+import SliderModal from "./SliderModal";
 import { useMountReveal } from "@/lib/marginsMotion";
 
 function newId(): string {
@@ -145,9 +146,15 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
       </div>
 
       {showThemePicker && (
-        <div className="editor-panel rounded-2xl border border-stone-100 bg-white p-4" style={{ opacity: 0 }}>
-          <ThemePicker value={themeId} onSelect={(id) => setThemeId(id)} />
-        </div>
+        <SliderModal title="Change theme" onClose={() => setShowThemePicker(false)}>
+          <ThemePicker
+            value={themeId}
+            onSelect={(id) => {
+              setThemeId(id);
+              setShowThemePicker(false);
+            }}
+          />
+        </SliderModal>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
