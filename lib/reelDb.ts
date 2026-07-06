@@ -311,3 +311,34 @@ export async function getLatestJob(
   );
   return rows[0];
 }
+
+// An in-flight job for a project+kind, if any — used to de-dupe render requests
+// so a teacher can't stack duplicate renders of the same output.
+export async function getActiveJob(
+  projectId: string,
+  kind: ReelJobKind
+): Promise<ReelJobRow | undefined> {
+  await ensureReelSchema();
+  const { rows } = await query<ReelJobRow>(
+    `SELECT ${JOB_COLUMNS} FROM reel_render_jobs
+     WHERE project_id = $1 AND kind = $2 AND status IN ('queued', 'rendering')
+     ORDER BY created_at DESC LIMIT 1`,
+    [projectId, kind]
+  );
+  return rows[0];
+}
+
+// Fail jobs stuck 'rendering' past the cutoff so a crashed worker never leaves
+// the editor polling forever. Called opportunistically by the worker loop and
+// by the status endpoint.
+export async function reapStaleJobs(maxRenderingMs = 10 * 60 * 1000): Promise<number> {
+  await ensureReelSchema();
+  const cutoff = new Date(Date.now() - maxRenderingMs).toISOString();
+  const { rowCount } = await query(
+    `UPDATE reel_render_jobs
+     SET status = 'failed', error = 'Render timed out.', updated_at = now()
+     WHERE status = 'rendering' AND updated_at < $1`,
+    [cutoff]
+  );
+  return rowCount ?? 0;
+}

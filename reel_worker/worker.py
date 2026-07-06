@@ -16,10 +16,13 @@ import sys
 import time
 import traceback
 
-from db import connect, claim_next_job, get_project, complete_job, fail_job
+from db import connect, claim_next_job, get_project, complete_job, fail_job, reap_stale_jobs
 from render import build_video
 
 POLL_SECONDS = 3
+# Sweep hung 'rendering' jobs roughly every this many idle poll cycles
+# (3s * 20 ≈ 1 min). Cheap self-heal against a crashed render.
+REAP_EVERY_IDLE_CYCLES = 20
 
 
 def process_one() -> bool:
@@ -47,15 +50,35 @@ def process_one() -> bool:
         conn.close()
 
 
+def _reap() -> None:
+    """Best-effort sweep of hung jobs; never fatal to the loop."""
+    conn = connect()
+    try:
+        reaped = reap_stale_jobs(conn)
+        if reaped:
+            print(f"[reel_worker] reaped {reaped} stale job(s)", flush=True)
+    except Exception:  # noqa: BLE001 — a reap failure must not kill the worker
+        traceback.print_exc()
+    finally:
+        conn.close()
+
+
 def loop() -> None:
     print("[reel_worker] started; polling for jobs…", flush=True)
+    _reap()  # clear anything a previous crashed run left hung
+    idle_cycles = 0
     while True:
         try:
             handled = process_one()
         except Exception:  # noqa: BLE001 — never let the loop die on a transient DB error
             traceback.print_exc()
             handled = False
-        if not handled:
+        if handled:
+            idle_cycles = 0
+        else:
+            idle_cycles += 1
+            if idle_cycles % REAP_EVERY_IDLE_CYCLES == 0:
+                _reap()
             time.sleep(POLL_SECONDS)
 
 

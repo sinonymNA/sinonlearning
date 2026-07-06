@@ -25,6 +25,27 @@ def connect() -> psycopg.Connection:
     return psycopg.connect(_dsn(), row_factory=dict_row)
 
 
+def reap_stale_jobs(conn: psycopg.Connection, max_rendering_seconds: int = 600) -> int:
+    """Fail jobs stuck in 'rendering' past the cutoff (mirrors reelDb.reapStaleJobs).
+
+    A worker that crashes mid-render leaves its claimed job hung forever, which
+    would keep the editor polling. Sweeping these on each poll self-heals it.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            UPDATE reel_render_jobs
+            SET status = 'failed', error = 'Render timed out.', updated_at = now()
+            WHERE status = 'rendering'
+              AND updated_at < now() - make_interval(secs => %s)
+            """,
+            (max_rendering_seconds,),
+        )
+        count = cur.rowcount
+    conn.commit()
+    return count
+
+
 def claim_next_job(conn: psycopg.Connection) -> Optional[dict[str, Any]]:
     """Atomically claim the oldest queued job (mirrors reelDb.claimNextJob)."""
     with conn.cursor() as cur:

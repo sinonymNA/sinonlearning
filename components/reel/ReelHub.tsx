@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Sparkles, Clapperboard, Clock } from "lucide-react";
 import ReelLogo from "@/components/ReelLogo";
+import HowReelWorks from "./HowReelWorks";
 import type { ReelProjectRow } from "@/lib/reelDb";
 
 function timeAgo(iso: string): string {
@@ -123,6 +124,10 @@ export default function ReelHub({ name, projects }: { name: string; projects: Re
             ))}
           </div>
         )}
+
+        <div className="mt-4">
+          <HowReelWorks />
+        </div>
       </main>
     </div>
   );

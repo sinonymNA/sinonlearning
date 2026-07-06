@@ -13,6 +13,8 @@ import {
   Upload,
   ImageIcon,
   Sparkles,
+  GripVertical,
+  AlertTriangle,
 } from "lucide-react";
 import ReelLogo from "@/components/ReelLogo";
 import BeatPreview from "./BeatPreview";
@@ -36,8 +38,13 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
   const [finalNonce, setFinalNonce] = useState(0);
   const [teleprompterOpen, setTeleprompterOpen] = useState(false);
 
+  const [previewElapsed, setPreviewElapsed] = useState(0);
+  const [finalElapsed, setFinalElapsed] = useState(0);
+  const [showProduceWarn, setShowProduceWarn] = useState(false);
+
   const isFirstRender = useRef(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragIndex = useRef<number | null>(null);
 
   const selected = beats[Math.min(selectedIndex, beats.length - 1)];
   const selectedTemplate = getTemplate(selected.templateId);
@@ -96,6 +103,16 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
     setBeats((bs) => (bs.length <= 1 ? bs : bs.filter((_, idx) => idx !== i)));
     setSelectedIndex((idx) => Math.max(0, Math.min(idx, beats.length - 2)));
   }
+  function moveBeat(from: number, to: number) {
+    if (from === to) return;
+    setBeats((bs) => {
+      const next = [...bs];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+    setSelectedIndex(to);
+  }
   function changeTemplate(templateId: ReelTemplateId) {
     // Preserve narration + seconds; reset params to the new template's shape.
     const fresh = createBeat(templateId);
@@ -119,6 +136,21 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
     return false;
   }
 
+  // Tick an elapsed-seconds counter while a job runs so a slow worker shows
+  // progress instead of an inert spinner.
+  useEffect(() => {
+    if (preview !== "working") return;
+    setPreviewElapsed(0);
+    const t = setInterval(() => setPreviewElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [preview]);
+  useEffect(() => {
+    if (finalPhase !== "working") return;
+    setFinalElapsed(0);
+    const t = setInterval(() => setFinalElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [finalPhase]);
+
   async function renderPreview() {
     setPreview("working");
     await fetch(`/api/reel/projects/${project.id}/render`, {
@@ -133,6 +165,20 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
     } else {
       setPreview("failed");
     }
+  }
+
+  // Beats that would produce a silent/blank stretch in the final video.
+  const produceIssues = beats
+    .map((b, i) => ({ b, i }))
+    .filter(({ b }) => !b.audioId || (getTemplate(b.templateId).usesImage && !b.imageId));
+
+  function onProduceClick() {
+    if (produceIssues.length > 0 && !showProduceWarn) {
+      setShowProduceWarn(true);
+      return;
+    }
+    setShowProduceWarn(false);
+    void produceFinal();
   }
 
   async function produceFinal() {
@@ -156,46 +202,57 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="relative flex h-16 items-center justify-between bg-white px-6">
-        <div className="flex items-center gap-4">
-          <Link href="/reel">
+      <header className="relative flex h-16 items-center justify-between gap-2 bg-white px-4 sm:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-4">
+          <Link href="/reel" className="shrink-0">
             <ReelLogo width={92} />
           </Link>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="rounded-md px-2 py-1 text-sm font-semibold text-slate-800 outline-none hover:bg-slate-50 focus:bg-slate-50"
+            className="min-w-0 flex-1 rounded-md px-2 py-1 text-sm font-semibold text-slate-800 outline-none hover:bg-slate-50 focus:bg-slate-50 sm:flex-none"
           />
-          <span className="text-xs text-slate-400">
+          <span className="hidden shrink-0 text-xs text-slate-400 sm:inline">
             {saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved" : ""}
           </span>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex shrink-0 items-center gap-2.5">
           <Link href="/reel" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700">
-            <ArrowLeft size={13} /> All videos
+            <ArrowLeft size={13} /> <span className="hidden sm:inline">All videos</span>
           </Link>
         </div>
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-sky-400 via-sky-600 to-sky-400" />
       </header>
 
-      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 py-8 lg:grid-cols-[220px_1fr_320px]">
+      <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[220px_1fr_320px]">
         {/* Filmstrip */}
         <div className="flex flex-col gap-2">
           <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Beats</p>
           {beats.map((b, i) => (
-            <button
+            <div
               key={b.id}
+              draggable
+              onDragStart={() => (dragIndex.current = i)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (dragIndex.current !== null) moveBeat(dragIndex.current, i);
+                dragIndex.current = null;
+              }}
               onClick={() => setSelectedIndex(i)}
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
+              className={`group flex cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 py-2 text-left text-sm transition-colors ${
                 i === selectedIndex
                   ? "border-sky-300 bg-sky-50 text-sky-800"
                   : "border-slate-100 bg-white text-slate-600 hover:border-slate-200"
               }`}
             >
+              <GripVertical
+                size={13}
+                className="shrink-0 cursor-grab text-slate-300 group-hover:text-slate-400"
+              />
               <span className="text-[11px] font-bold text-slate-400">{i + 1}</span>
               <span className="flex-1 truncate">{getTemplate(b.templateId).label}</span>
               {b.audioId && <Mic size={12} className="text-emerald-500" />}
-            </button>
+            </div>
           ))}
           <div className="mt-1 flex flex-wrap gap-1.5">
             {REEL_TEMPLATES.map((t) => (
@@ -251,7 +308,7 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
               <Mic size={15} /> Record voice-over
             </button>
             <button
-              onClick={produceFinal}
+              onClick={onProduceClick}
               disabled={finalPhase === "working"}
               className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-sky-200 transition-all hover:shadow-md disabled:opacity-60"
             >
@@ -260,7 +317,56 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
             </button>
           </div>
 
-          {preview === "failed" && <p className="text-sm text-red-600">Preview render failed. Try again.</p>}
+          {(preview === "working" || finalPhase === "working") && (
+            <p className="text-[13px] text-slate-500">
+              {finalPhase === "working"
+                ? `Producing your final video — ${finalElapsed}s elapsed.`
+                : `Rendering preview — ${previewElapsed}s elapsed.`}{" "}
+              {(finalPhase === "working" ? finalElapsed : previewElapsed) > 30
+                ? "The render worker may be waking up; this can take a minute."
+                : "Beats render on the worker; hang tight."}
+            </p>
+          )}
+
+          {showProduceWarn && finalPhase !== "working" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-800">
+                <AlertTriangle size={14} /> {produceIssues.length} beat
+                {produceIssues.length === 1 ? "" : "s"} may be silent or blank
+              </p>
+              <ul className="mt-1.5 space-y-0.5 text-[12px] text-amber-700">
+                {produceIssues.slice(0, 6).map(({ b, i }) => (
+                  <li key={b.id}>
+                    Beat {i + 1}: {!b.audioId ? "no narration recorded" : "missing image"}
+                  </li>
+                ))}
+                {produceIssues.length > 6 && <li>…and {produceIssues.length - 6} more</li>}
+              </ul>
+              <div className="mt-2.5 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowProduceWarn(false);
+                    void produceFinal();
+                  }}
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-amber-700"
+                >
+                  Produce anyway
+                </button>
+                <button
+                  onClick={() => setShowProduceWarn(false)}
+                  className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-amber-700 hover:bg-amber-100"
+                >
+                  Keep editing
+                </button>
+              </div>
+            </div>
+          )}
+
+          {preview === "failed" && (
+            <p className="text-sm text-red-600">
+              Preview render failed — check that the worker service is running, then try again.
+            </p>
+          )}
           {preview === "done" && (
             <div>
               <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-slate-400">Silent preview</p>
@@ -272,7 +378,11 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
               />
             </div>
           )}
-          {finalPhase === "failed" && <p className="text-sm text-red-600">Final render failed. Try again.</p>}
+          {finalPhase === "failed" && (
+            <p className="text-sm text-red-600">
+              Final render failed — check that the worker service is running, then try again.
+            </p>
+          )}
           {finalPhase === "done" && (
             <div>
               <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-emerald-500">Final video</p>
@@ -377,6 +487,10 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
         <Teleprompter
           projectId={project.id}
           beats={beats}
+          previewReady={preview === "done"}
+          previewUrl={preview === "done" ? `/api/reel/projects/${project.id}/video?kind=render&t=${previewNonce}` : null}
+          previewWorking={preview === "working"}
+          onRequestPreview={renderPreview}
           onBeatAudio={setBeatAudio}
           onClose={() => setTeleprompterOpen(false)}
         />
