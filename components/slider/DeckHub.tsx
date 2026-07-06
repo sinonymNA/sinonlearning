@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Presentation } from "lucide-react";
+import { Plus, Presentation, Sparkles } from "lucide-react";
 import { getTheme, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 import type { SliderDeck } from "@/lib/sliderTypes";
 import ThemePicker from "./ThemePicker";
@@ -41,13 +41,21 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-stone-900">Your decks</h1>
-        <button
-          type="button"
-          onClick={() => setShowPicker((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all"
-        >
-          <Plus size={15} /> New deck
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/slider/build"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors"
+          >
+            <Sparkles size={15} /> Build with KORA
+          </Link>
+          <button
+            type="button"
+            onClick={() => setShowPicker((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all"
+          >
+            <Plus size={15} /> New deck
+          </button>
+        </div>
       </div>
 
       {showPicker && (
@@ -68,7 +76,7 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
 
       {decks.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 p-10 text-center text-sm text-stone-400">
-          No decks yet — create your first one above.
+          No decks yet — create one from scratch or let KORA build a first draft above.
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

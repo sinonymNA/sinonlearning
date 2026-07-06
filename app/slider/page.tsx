@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/marginsAuth";
 import { getDecksByTeacher } from "@/lib/sliderDb";
 import SliderHeader from "@/components/slider/SliderHeader";
 import DeckHub from "@/components/slider/DeckHub";
+import HowSliderWorks from "@/components/slider/HowSliderWorks";
 
 export default async function SliderHubPage() {
   const user = await getCurrentUser();
@@ -14,7 +15,8 @@ export default async function SliderHubPage() {
   return (
     <div className="min-h-screen bg-stone-50">
       <SliderHeader name={user.name} />
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-10 flex flex-col gap-8">
+        <HowSliderWorks />
         <DeckHub decks={decks} />
       </main>
     </div>
