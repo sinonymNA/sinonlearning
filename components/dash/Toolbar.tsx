@@ -17,6 +17,7 @@ import {
   Copy,
   Check,
   LayoutDashboard,
+  LayoutGrid,
 } from "lucide-react";
 import VideoMenu from "./VideoMenu";
 import DashLogo from "@/components/DashLogo";
@@ -50,6 +51,7 @@ export default function Toolbar({
   onSetMode,
   jamCode,
   isTeacher,
+  role = "teacher",
 }: {
   widgets: WidgetState;
   onToggleWidget: (key: keyof WidgetState) => void;
@@ -61,6 +63,7 @@ export default function Toolbar({
   onSetMode: (mode: DashMode) => void;
   jamCode?: string;
   isTeacher?: boolean;
+  role?: "teacher" | "student";
 }) {
   const [now, setNow] = useState<Date>(() => new Date());
   const [videoMenuOpen, setVideoMenuOpen] = useState(false);
@@ -93,11 +96,11 @@ export default function Toolbar({
     <div className="relative z-40 flex items-center justify-between gap-3 border-b border-navy-900/8 bg-cream-50/90 px-4 py-2.5 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <Link
-          href="/teachers"
+          href={role === "teacher" ? "/teachers" : "/students"}
           className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
         >
-          <ArrowLeft size={13} />
-          Exit
+          <LayoutGrid size={13} />
+          <span className="hidden sm:inline">All apps</span>
         </Link>
         <span className="ml-1 hidden sm:inline">
           <DashLogo width={64} />

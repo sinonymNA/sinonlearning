@@ -16,5 +16,5 @@ export default async function ReelPage() {
   if (user.role !== "teacher") redirect("/margins/student");
 
   const projects = await getReelProjectsByTeacher(user.id);
-  return <ReelHub name={user.name} projects={projects} />;
+  return <ReelHub name={user.name} projects={projects} role={user.role} />;
 }

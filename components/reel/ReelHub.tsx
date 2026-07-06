@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Sparkles, Clapperboard, Clock } from "lucide-react";
+import { Plus, Sparkles, Clapperboard, Clock, LayoutGrid } from "lucide-react";
 import ReelLogo from "@/components/ReelLogo";
 import HowReelWorks from "./HowReelWorks";
 import type { ReelProjectRow } from "@/lib/reelDb";
@@ -19,7 +19,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export default function ReelHub({ name, projects }: { name: string; projects: ReelProjectRow[] }) {
+export default function ReelHub({ name, projects, role = "teacher" }: { name: string; projects: ReelProjectRow[]; role?: "teacher" | "student" }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
 
@@ -44,7 +44,15 @@ export default function ReelHub({ name, projects }: { name: string; projects: Re
         <Link href="/reel">
           <ReelLogo width={110} />
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <Link
+            href={role === "teacher" ? "/teachers" : "/students"}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <LayoutGrid size={13} />
+            <span className="hidden sm:inline">All apps</span>
+          </Link>
+          <span className="hidden text-slate-200 sm:inline">|</span>
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-[11px] font-bold text-sky-700">
             {name.charAt(0).toUpperCase()}
           </span>

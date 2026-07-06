@@ -11,7 +11,7 @@ export default async function SliderBuildPage() {
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <SliderHeader name={user.name} />
+      <SliderHeader name={user.name} role={user.role} />
       <main className="mx-auto max-w-2xl px-6 py-10">
         <Link href="/slider" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
           ← All decks

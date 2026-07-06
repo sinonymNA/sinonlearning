@@ -16,5 +16,5 @@ export default async function ReelEditorPage({
   const project = await getReelProjectById(projectId);
   if (!project || project.teacher_id !== user.id) notFound();
 
-  return <ReelEditor project={project} />;
+  return <ReelEditor project={project} role={user.role} />;
 }

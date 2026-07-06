@@ -42,9 +42,11 @@ interface PipVideo {
 export default function Dash({
   isTeacher = false,
   resumeBoardId,
+  role = "teacher",
 }: {
   isTeacher?: boolean;
   resumeBoardId?: string;
+  role?: "teacher" | "student";
 }) {
   const [mounted, setMounted] = useState(false);
   const [widgets, setWidgets] = useLocalStorageState<WidgetState>(
@@ -131,6 +133,7 @@ export default function Dash({
         onSetMode={setMode}
         jamCode={jamSession?.code}
         isTeacher={isTeacher}
+        role={role}
       />
 
       <div className="relative h-[calc(100%-3rem)] w-full">

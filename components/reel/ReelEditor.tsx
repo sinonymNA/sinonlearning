@@ -15,6 +15,7 @@ import {
   Sparkles,
   GripVertical,
   AlertTriangle,
+  LayoutGrid,
 } from "lucide-react";
 import ReelLogo from "@/components/ReelLogo";
 import BeatPreview from "./BeatPreview";
@@ -26,7 +27,7 @@ import type { ImageResult } from "@/lib/imageSearch";
 
 type JobPhase = "idle" | "working" | "done" | "failed";
 
-export default function ReelEditor({ project }: { project: ReelProjectRow }) {
+export default function ReelEditor({ project, role = "teacher" }: { project: ReelProjectRow; role?: "teacher" | "student" }) {
   const [title, setTitle] = useState(project.title);
   const [beats, setBeats] = useState<Beat[]>(project.beats.length ? project.beats : [createBeat("titleCard")]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -217,6 +218,14 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
+          <Link
+            href={role === "teacher" ? "/teachers" : "/students"}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700"
+          >
+            <LayoutGrid size={13} />
+            <span className="hidden sm:inline">All apps</span>
+          </Link>
+          <span className="hidden text-slate-200 sm:inline">|</span>
           <Link href="/reel" className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700">
             <ArrowLeft size={13} /> <span className="hidden sm:inline">All videos</span>
           </Link>
