@@ -49,6 +49,11 @@ kora_model/outputs/*
 !kora_model/outputs/.gitkeep
 *.safetensors
 *.bin
+
+# reel_worker (Python Manim render worker)
+reel_worker/.venv/
+reel_worker/media/
+reel_worker/*.mp4
 *.pt
 *.ckpt
 

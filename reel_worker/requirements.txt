@@ -1,0 +1,6 @@
+# Reel render worker — renders beat animations with Manim and muxes narration.
+# Deliberately NO LaTeX: templates use Manim's Pango-based Text/MarkupText, so
+# the Docker image only needs libcairo2 + libpango1.0 + ffmpeg (see Dockerfile).
+manim==0.18.1
+psycopg[binary]==3.2.3
+Pillow==11.0.0
