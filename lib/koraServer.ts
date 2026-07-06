@@ -68,9 +68,13 @@ export async function callKoraStructured<S extends z.ZodType>(
     output_config: { format: zodOutputFormat(params.schema) },
   };
 
+  // Use the streaming API rather than `messages.parse` (non-streaming): the SDK
+  // hard-caps non-streaming calls at 10 minutes, and Opus with adaptive thinking
+  // can legitimately run longer than that on a big beat/slide script — a
+  // streamed call has no such ceiling since tokens arrive incrementally.
   let first: Anthropic.Messages.Message & { parsed_output?: unknown };
   try {
-    first = await anthropic.messages.parse({ ...base, messages: params.messages });
+    first = await anthropic.messages.stream({ ...base, messages: params.messages }).finalMessage();
   } catch (err) {
     if (err instanceof KoraConfigError) throw err;
     throw new KoraUpstreamError(String(err));
@@ -88,7 +92,7 @@ export async function callKoraStructured<S extends z.ZodType>(
 
   let second: Anthropic.Messages.Message & { parsed_output?: unknown };
   try {
-    second = await anthropic.messages.parse({ ...base, messages: repairMessages });
+    second = await anthropic.messages.stream({ ...base, messages: repairMessages }).finalMessage();
   } catch (err) {
     throw new KoraUpstreamError(String(err));
   }
