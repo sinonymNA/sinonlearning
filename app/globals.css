@@ -21,6 +21,19 @@
   --color-cream-100: #f8f2e6;
   --color-cream-200: #f0e7d3;
   --color-cream-300: #e6d9bd;
+
+  /* Slider brand blue — sampled from the slider logo artwork */
+  --color-slider-50: #f0f5ff;
+  --color-slider-100: #dbe8ff;
+  --color-slider-200: #bdd5fe;
+  --color-slider-300: #9bbffd;
+  --color-slider-400: #77a8fd;
+  --color-slider-500: #6099fb;
+  --color-slider-600: #367bf2;
+  --color-slider-700: #1660df;
+  --color-slider-800: #154dac;
+  --color-slider-900: #153a79;
+  --color-slider-950: #10264c;
 }
 
 body {

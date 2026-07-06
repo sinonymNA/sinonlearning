@@ -71,7 +71,7 @@ const tools = [
     slug: "slider",
     href: "/slider",
     status: "live" as const,
-    bgClass: "bg-gradient-to-br from-orange-500 to-pink-600",
+    bgClass: "bg-gradient-to-br from-slider-500 to-slider-800",
     logo: <SliderLogo width={190} light />,
     logoSub: "Slideshow Builder",
     name: "Slider",

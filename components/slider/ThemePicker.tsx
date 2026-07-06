@@ -17,7 +17,7 @@ export default function ThemePicker({ value, onSelect }: Props) {
           onClick={() => onSelect(theme.id)}
           className={[
             "rounded-xl border p-3 text-left transition-all overflow-hidden",
-            value === theme.id ? "border-violet-500 ring-2 ring-violet-100" : "border-stone-200 hover:border-violet-200",
+            value === theme.id ? "border-slider-500 ring-2 ring-slider-100" : "border-stone-200 hover:border-slider-200",
           ].join(" ")}
         >
           <div

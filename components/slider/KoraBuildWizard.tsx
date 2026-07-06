@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { animate } from "animejs";
 import { Sparkles, Send, Loader2 } from "lucide-react";
 import { useMountReveal } from "@/lib/marginsMotion";
 
@@ -51,19 +52,30 @@ const QUESTIONS: Question[] = [
   },
 ];
 
+function KoraAvatar({ size = 32 }: { size?: number }) {
+  return (
+    <span
+      className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slider-400 to-slider-700 text-white shadow-sm shadow-slider-200"
+      style={{ width: size, height: size }}
+    >
+      <Sparkles size={size * 0.5} />
+    </span>
+  );
+}
+
 function ChatBubble({ from, children }: { from: "kora" | "teacher"; children: React.ReactNode }) {
   const isKora = from === "kora";
   return (
-    <div className={`flex ${isKora ? "justify-start" : "justify-end"}`}>
+    <div className={`flex items-end gap-2 ${isKora ? "justify-start" : "justify-end"}`}>
+      {isKora && <KoraAvatar size={28} />}
       <div
         className={[
-          "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-          isKora ? "bg-orange-50 text-stone-800 rounded-tl-sm" : "bg-gradient-to-br from-orange-500 to-pink-600 text-white rounded-tr-sm",
+          "max-w-[78%] rounded-2xl px-4 py-2.5 text-[13.5px] leading-relaxed",
+          isKora
+            ? "bg-slider-50 text-stone-800 rounded-bl-sm border border-slider-100"
+            : "bg-gradient-to-br from-slider-500 to-slider-700 text-white rounded-br-sm shadow-sm shadow-slider-200",
         ].join(" ")}
       >
-        {isKora && (
-          <span className="block text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-0.5">KORA</span>
-        )}
         {children}
       </div>
     </div>
@@ -79,6 +91,7 @@ export default function KoraBuildWizard() {
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const latestRef = useRef<HTMLDivElement>(null);
 
   useMountReveal(containerRef, ".chat-panel", { stagger: 90, translateY: 16, duration: 420 });
 
@@ -87,6 +100,9 @@ export default function KoraBuildWizard() {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (latestRef.current) {
+      animate(latestRef.current, { opacity: [0, 1], translateY: [10, 0], duration: 320, easing: "outQuart" });
+    }
   }, [stepIndex]);
 
   function submitAnswer(value: string) {
@@ -122,77 +138,100 @@ export default function KoraBuildWizard() {
 
   return (
     <div ref={containerRef} className="flex flex-col gap-4">
-      <div
-        ref={scrollRef}
-        className="chat-panel rounded-2xl border border-stone-100 bg-white p-5 flex flex-col gap-3 max-h-[480px] overflow-y-auto"
-        style={{ opacity: 0 }}
-      >
-        {QUESTIONS.slice(0, stepIndex).map((q) => (
-          <div key={q.key} className="flex flex-col gap-2">
-            <ChatBubble from="kora">{q.bot(answers)}</ChatBubble>
-            <ChatBubble from="teacher">{answers[q.key] || "(skipped)"}</ChatBubble>
-          </div>
+      {/* Progress */}
+      <div className="chat-panel flex items-center gap-1.5" style={{ opacity: 0 }}>
+        {QUESTIONS.map((_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${i <= stepIndex ? "bg-slider-500" : "bg-stone-200"}`}
+          />
         ))}
-        {!isDone && current && <ChatBubble from="kora">{current.bot(answers)}</ChatBubble>}
-        {isDone && <ChatBubble from="kora">Perfect — let me put this together for you.</ChatBubble>}
       </div>
 
-      {!isDone && current ? (
-        <div className="chat-panel flex flex-col gap-2" style={{ opacity: 0 }}>
-          {current.quickReplies ? (
-            <div className="flex flex-wrap gap-2">
-              {current.quickReplies.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => submitAnswer(r)}
-                  className="rounded-full border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-700 hover:bg-orange-100 transition-colors"
-                >
-                  {r}
-                </button>
-              ))}
+      {/* Chat card */}
+      <div className="chat-panel rounded-2xl border border-stone-100 bg-white shadow-sm overflow-hidden" style={{ opacity: 0 }}>
+        <div className="flex items-center gap-2.5 border-b border-stone-100 px-5 py-3.5 bg-gradient-to-r from-slider-50 to-white">
+          <KoraAvatar size={30} />
+          <div>
+            <p className="text-[13px] font-bold text-stone-800">KORA</p>
+            <p className="text-[11px] text-stone-400 flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Building your slideshow with you
+            </p>
+          </div>
+        </div>
+
+        <div ref={scrollRef} className="flex flex-col gap-3 p-5 max-h-[420px] overflow-y-auto">
+          {QUESTIONS.slice(0, stepIndex).map((q) => (
+            <div key={q.key} className="flex flex-col gap-2.5">
+              <ChatBubble from="kora">{q.bot(answers)}</ChatBubble>
+              <ChatBubble from="teacher">{answers[q.key] || "(skipped)"}</ChatBubble>
             </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitAnswer(draft)}
-                placeholder={current.placeholder}
-                className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-sm outline-none focus:border-orange-400 focus:bg-white transition-all"
-              />
+          ))}
+          <div ref={latestRef} style={{ opacity: 0 }}>
+            {!isDone && current && <ChatBubble from="kora">{current.bot(answers)}</ChatBubble>}
+            {isDone && <ChatBubble from="kora">Perfect — let me put this together for you.</ChatBubble>}
+          </div>
+        </div>
+
+        {!isDone && current ? (
+          <div className="border-t border-stone-100 p-4 flex flex-col gap-2.5 bg-stone-50/50">
+            {current.quickReplies ? (
+              <div className="flex flex-wrap gap-2">
+                {current.quickReplies.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => submitAnswer(r)}
+                    className="rounded-full border border-slider-200 bg-white px-4 py-2 text-sm font-semibold text-slider-700 hover:bg-slider-50 hover:border-slider-300 transition-colors"
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitAnswer(draft)}
+                  placeholder={current.placeholder}
+                  autoFocus
+                  className="flex-1 rounded-xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-slider-400 focus:ring-2 focus:ring-slider-100 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => submitAnswer(draft)}
+                  className="shrink-0 rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 p-2.5 text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            )}
+            {current.optional && (
               <button
                 type="button"
-                onClick={() => submitAnswer(draft)}
-                className="rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 p-2.5 text-white hover:shadow-md transition-all"
+                onClick={() => submitAnswer("")}
+                className="self-start text-xs text-stone-400 hover:text-stone-600 transition-colors"
               >
-                <Send size={16} />
+                Skip this question
               </button>
-            </div>
-          )}
-          {current.optional && (
+            )}
+          </div>
+        ) : (
+          <div className="border-t border-stone-100 p-4 flex justify-end bg-stone-50/50">
             <button
               type="button"
-              onClick={() => submitAnswer("")}
-              className="self-start text-xs text-stone-400 hover:text-stone-600 transition-colors"
+              onClick={handleBuild}
+              disabled={building}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all disabled:opacity-60"
             >
-              Skip
+              {building ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
+              {building ? "Building your slideshow…" : "Build my slideshow"}
             </button>
-          )}
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={handleBuild}
-          disabled={building}
-          className="chat-panel self-end inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all disabled:opacity-60"
-          style={{ opacity: 0 }}
-        >
-          {building ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-          {building ? "Building your slideshow…" : "Build my slideshow"}
-        </button>
-      )}
+          </div>
+        )}
+      </div>
 
       {error && <p className="text-[12px] text-red-600">{error}</p>}
     </div>

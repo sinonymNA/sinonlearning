@@ -88,7 +88,7 @@ export default function LayoutPicker({ value, onSelect }: Props) {
           title={l.description}
           className={[
             "flex flex-col items-center gap-1.5 rounded-xl border p-2 transition-all",
-            value === l.value ? "border-violet-500 bg-violet-50" : "border-stone-200 bg-white hover:border-violet-200",
+            value === l.value ? "border-slider-500 bg-slider-50" : "border-stone-200 bg-white hover:border-slider-200",
           ].join(" ")}
         >
           <LayoutIcon layout={l.value} />

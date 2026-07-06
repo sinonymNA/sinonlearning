@@ -42,7 +42,7 @@ export default function ExportPptxButton({ deckId }: { deckId: string }) {
         type="button"
         onClick={handleExport}
         disabled={loading}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-orange-200 hover:shadow-md transition-all disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all disabled:opacity-60"
       >
         {loading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
         {loading ? "Exporting…" : "Export as PPTX"}

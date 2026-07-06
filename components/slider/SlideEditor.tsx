@@ -136,7 +136,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
           <button
             type="button"
             onClick={() => setShowThemePicker((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 hover:border-violet-300 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-600 hover:border-slider-300 transition-colors"
           >
             <Palette size={13} /> Theme
           </button>
@@ -168,7 +168,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                 onClick={() => setSelectedIndex(i)}
                 className={[
                   "relative rounded-lg border p-1 text-left transition-all cursor-grab active:cursor-grabbing",
-                  i === selectedIndex ? "border-violet-500 ring-2 ring-violet-100" : "border-stone-200 hover:border-violet-200",
+                  i === selectedIndex ? "border-slider-500 ring-2 ring-slider-100" : "border-stone-200 hover:border-slider-200",
                 ].join(" ")}
               >
                 <SlideRenderer slide={s} theme={theme} />
@@ -183,7 +183,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
             <button
               type="button"
               onClick={() => setShowAddLayout((v) => !v)}
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-violet-300 bg-violet-50/50 py-2.5 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors"
+              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-slider-300 bg-slider-50/50 py-2.5 text-xs font-semibold text-slider-600 hover:bg-slider-50 transition-colors"
             >
               <Plus size={13} /> Add slide
             </button>
@@ -207,7 +207,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                 <button
                   type="button"
                   onClick={() => setShowChangeLayout((v) => !v)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-semibold text-stone-500 hover:border-violet-300 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-xs font-semibold text-stone-500 hover:border-slider-300 transition-colors"
                 >
                   <LayoutTemplate size={13} /> Change layout
                 </button>
@@ -221,7 +221,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                 <button
                   type="button"
                   onClick={() => duplicateSlide(selectedIndex)}
-                  className="text-stone-400 hover:text-violet-600 transition-colors"
+                  className="text-stone-400 hover:text-slider-600 transition-colors"
                   title="Duplicate slide"
                 >
                   <Copy size={15} />
@@ -260,7 +260,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                 value={selected.notes ?? ""}
                 onChange={(e) => updateSelected({ notes: e.target.value })}
                 placeholder="Optional — not shown on the slide itself"
-                className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-[13px] outline-none focus:border-violet-400 resize-none"
+                className="rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-[13px] outline-none focus:border-slider-400 resize-none"
               />
             </label>
           </div>
@@ -284,7 +284,7 @@ function SlideContentFields({
   onRemoveBullet: (i: number) => void;
 }) {
   const inputCls =
-    "rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-[14px] outline-none focus:border-violet-400 focus:bg-white transition-all";
+    "rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-2 text-[14px] outline-none focus:border-slider-400 focus:bg-white transition-all";
 
   switch (slide.layout) {
     case "title":
@@ -333,7 +333,7 @@ function SlideContentFields({
                 )}
               </div>
             ))}
-            <button type="button" onClick={onAddBullet} className="self-start mt-1 inline-flex items-center gap-1 text-xs font-semibold text-violet-600 hover:text-violet-700">
+            <button type="button" onClick={onAddBullet} className="self-start mt-1 inline-flex items-center gap-1 text-xs font-semibold text-slider-600 hover:text-slider-700">
               <Plus size={12} /> Add bullet
             </button>
           </div>

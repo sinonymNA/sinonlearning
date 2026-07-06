@@ -78,13 +78,13 @@ export default function ImageSuggestionsPanel({ initialQuery, onAdd }: Props) {
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Search topic, e.g. Boston Tea Party"
-          className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[13px] outline-none focus:border-violet-400"
+          className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[13px] outline-none focus:border-slider-400"
         />
         <button
           type="button"
           onClick={handleSearch}
           disabled={searching}
-          className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors disabled:opacity-60"
+          className="inline-flex items-center gap-1 rounded-lg bg-slider-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slider-700 transition-colors disabled:opacity-60"
         >
           {searching ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />}
           Search
@@ -105,7 +105,7 @@ export default function ImageSuggestionsPanel({ initialQuery, onAdd }: Props) {
                 disabled={addingUrl === r.url}
                 className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/40 transition-colors"
               >
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-violet-700 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-slider-700 opacity-0 group-hover:opacity-100 transition-opacity">
                   {addingUrl === r.url ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
                   Add
                 </span>

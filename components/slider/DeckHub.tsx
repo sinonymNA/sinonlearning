@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Presentation, Sparkles } from "lucide-react";
+import { Plus, Presentation, Sparkles, Clock } from "lucide-react";
 import { getTheme, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 import type { SliderDeck } from "@/lib/sliderTypes";
+import { useMountReveal } from "@/lib/marginsMotion";
 import ThemePicker from "./ThemePicker";
+import SliderModal from "./SliderModal";
+
+function timeAgo(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
   const router = useRouter();
@@ -14,6 +28,9 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
   const [showPicker, setShowPicker] = useState(false);
   const [themeId, setThemeId] = useState(DEFAULT_THEME_ID);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useMountReveal(containerRef, ".hub-block", { stagger: 90, translateY: 16, duration: 420 });
 
   async function handleCreate() {
     setError(null);
@@ -38,20 +55,23 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-stone-900">Your decks</h1>
-        <div className="flex items-center gap-2">
+    <div ref={containerRef} className="flex flex-col gap-6">
+      <div className="hub-block flex flex-wrap items-center justify-between gap-4" style={{ opacity: 0 }}>
+        <div>
+          <h1 className="text-xl font-bold text-stone-900">Your decks</h1>
+          <p className="text-sm text-stone-400 mt-0.5">Pick up where you left off, or start something new.</p>
+        </div>
+        <div className="flex items-center gap-2.5">
           <Link
             href="/slider/build"
-            className="inline-flex items-center gap-1.5 rounded-xl border border-orange-200 bg-white px-4 py-2.5 text-sm font-semibold text-orange-700 hover:bg-orange-50 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slider-200 bg-white px-4 py-2.5 text-sm font-semibold text-slider-700 hover:bg-slider-50 hover:border-slider-300 transition-colors"
           >
-            <Sparkles size={15} /> Build with KORA
+            <Sparkles size={15} className="text-slider-500" /> Build with KORA
           </Link>
           <button
             type="button"
-            onClick={() => setShowPicker((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all"
+            onClick={() => setShowPicker(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all"
           >
             <Plus size={15} /> New deck
           </button>
@@ -59,46 +79,65 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
       </div>
 
       {showPicker && (
-        <div className="rounded-2xl border border-stone-100 bg-white p-5 flex flex-col gap-4">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-400">Pick a theme to start</p>
+        <SliderModal title="Pick a theme to start" onClose={() => setShowPicker(false)}>
           <ThemePicker value={themeId} onSelect={setThemeId} />
           {error && <p className="text-[12px] text-red-600">{error}</p>}
           <button
             type="button"
             onClick={handleCreate}
             disabled={creating}
-            className="self-end rounded-xl bg-gradient-to-br from-orange-500 to-pink-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md transition-all disabled:opacity-60"
+            className="self-end rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all disabled:opacity-60"
           >
             {creating ? "Creating…" : "Create deck"}
           </button>
-        </div>
+        </SliderModal>
       )}
 
       {decks.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 p-10 text-center text-sm text-stone-400">
-          No decks yet — create one from scratch or let KORA build a first draft above.
+        <div className="hub-block rounded-2xl border border-dashed border-slider-200 bg-slider-50/40 p-12 text-center flex flex-col items-center gap-3" style={{ opacity: 0 }}>
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-slider-500 to-slider-700 text-white shadow-sm shadow-slider-200">
+            <Presentation size={22} />
+          </span>
+          <p className="text-sm font-semibold text-stone-700">No decks yet</p>
+          <p className="text-[13px] text-stone-400 max-w-xs">
+            Create one from scratch, or let KORA build a first draft from a short chat above.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="hub-block grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ opacity: 0 }}>
           {decks.map((deck) => {
             const theme = getTheme(deck.theme_id);
             return (
               <Link
                 key={deck.id}
                 href={`/slider/${deck.id}`}
-                className="rounded-2xl border border-stone-100 bg-white p-4 hover:border-violet-200 hover:shadow-sm transition-all flex flex-col gap-3"
+                className="group rounded-2xl border border-stone-100 bg-white p-4 hover:border-slider-200 hover:shadow-lg hover:shadow-slider-100 hover:-translate-y-0.5 transition-all flex flex-col gap-3"
               >
                 <div
-                  className="rounded-lg aspect-video flex items-center justify-center"
+                  className="relative rounded-lg aspect-video flex items-center justify-center overflow-hidden"
                   style={{ background: theme.colors.background }}
                 >
-                  <Presentation size={22} style={{ color: theme.colors.accent }} />
+                  <Presentation
+                    size={26}
+                    className="transition-transform group-hover:scale-110"
+                    style={{ color: theme.colors.accent }}
+                  />
+                  <span
+                    className="absolute bottom-1.5 right-1.5 h-1.5 w-1.5 rounded-full"
+                    style={{ background: theme.colors.accent }}
+                  />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-stone-800 truncate">{deck.title}</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">
-                    {deck.slides.length} slide{deck.slides.length === 1 ? "" : "s"} · {theme.name}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[11px] text-stone-400">
+                      {deck.slides.length} slide{deck.slides.length === 1 ? "" : "s"} · {theme.name}
+                    </p>
+                    <span className="text-stone-200">·</span>
+                    <p className="text-[11px] text-stone-400 flex items-center gap-1">
+                      <Clock size={10} /> {timeAgo(deck.updated_at)}
+                    </p>
+                  </div>
                 </div>
               </Link>
             );
