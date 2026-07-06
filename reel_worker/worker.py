@@ -87,6 +87,40 @@ def render_sample(out_path: str) -> None:
                 "imageId": None,
                 "animationSeconds": 5,
             },
+            {
+                "id": "b4",
+                "templateId": "labeledDiagram",
+                "params": {
+                    "centerLabel": "Scarcity",
+                    "labels": ["Land", "Labor", "Capital", "Time"],
+                },
+                "imageId": None,
+                "animationSeconds": 8,
+            },
+            {
+                "id": "b5",
+                "templateId": "beforeAfter",
+                "params": {
+                    "leftTitle": "Study",
+                    "leftBody": "2 hours",
+                    "rightTitle": "Gave up",
+                    "rightBody": "Time with friends",
+                    "arrowLabel": "opportunity cost",
+                },
+                "animationSeconds": 7,
+            },
+            {
+                "id": "b6",
+                "templateId": "timeline",
+                "params": {"events": ["Choose", "Give up", "Gain"]},
+                "animationSeconds": 7,
+            },
+            {
+                "id": "b7",
+                "templateId": "simpleGraph",
+                "params": {"xLabel": "Demand", "yLabel": "Price", "trend": "up", "caption": "As demand rises, price rises"},
+                "animationSeconds": 6,
+            },
         ],
     }
 

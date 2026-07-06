@@ -22,8 +22,10 @@ const SYSTEM_PROMPT =
   "outside the JSON. " +
   "CRITICAL RULES: " +
   "(1) You never write animation code — you only pick a template_id per beat and fill its fields. Only set the " +
-  "fields a given template uses (titleCard: headline, subtitle; bulletReveal: heading, bullets; imageCaption: " +
-  "caption + image_query). Leave the rest unset. " +
+  "fields a given template uses, and leave all others unset: titleCard → headline, subtitle; bulletReveal → " +
+  "heading, bullets; imageCaption → caption + image_query; labeledDiagram → center_label, labels[] (2-4), " +
+  "optional image_query; beforeAfter → left_title, left_body, right_title, right_body, arrow_label; timeline → " +
+  "events[] as 'label: detail' strings; simpleGraph → x_label, y_label, trend ('up'|'down'|'flat'), caption. " +
   "(2) For any beat that references a concrete real-world thing (a place, a person, a book, a chart, an object), " +
   "prefer the imageCaption template and set image_query to a short web-image search phrase for it (e.g. 'New York " +
   "Stock Exchange trading floor', 'cover of the book Educated by Tara Westover'). Do NOT invent image URLs or " +
@@ -64,14 +66,33 @@ function buildUserMessage(answers: {
 // Map KORA's flat beat output into a full Beat with per-template params.
 function toBeat(b: ReelBeatOutput): Beat {
   const template = getTemplate(b.template_id);
+  // Map KORA's flat fields onto each template param by key.
+  const flat: Record<string, string | string[] | undefined> = {
+    headline: b.headline,
+    subtitle: b.subtitle,
+    heading: b.heading,
+    caption: b.caption,
+    bullets: b.bullets,
+    centerLabel: b.center_label,
+    labels: b.labels,
+    leftTitle: b.left_title,
+    leftBody: b.left_body,
+    rightTitle: b.right_title,
+    rightBody: b.right_body,
+    arrowLabel: b.arrow_label,
+    events: b.events,
+    xLabel: b.x_label,
+    yLabel: b.y_label,
+    trend: b.trend,
+  };
   const params: Record<string, string | string[]> = {};
   for (const p of template.params) {
-    if (p.key === "headline") params[p.key] = b.headline ?? "";
-    else if (p.key === "subtitle") params[p.key] = b.subtitle ?? "";
-    else if (p.key === "heading") params[p.key] = b.heading ?? "";
-    else if (p.key === "caption") params[p.key] = b.caption ?? "";
-    else if (p.key === "bullets") params[p.key] = b.bullets && b.bullets.length ? b.bullets : [""];
-    else params[p.key] = p.kind === "list" ? [""] : "";
+    const v = flat[p.key];
+    if (p.kind === "list") {
+      params[p.key] = Array.isArray(v) && v.length ? v : [""];
+    } else {
+      params[p.key] = typeof v === "string" ? v : "";
+    }
   }
   const seconds = Number.isFinite(b.animation_seconds)
     ? Math.min(30, Math.max(2, Math.round(b.animation_seconds)))

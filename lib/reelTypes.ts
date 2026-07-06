@@ -6,7 +6,14 @@
 // image. KORA never writes animation code — it only picks a template per beat
 // and fills the blanks, exactly like Slider's layout system.
 
-export type ReelTemplateId = "titleCard" | "bulletReveal" | "imageCaption";
+export type ReelTemplateId =
+  | "titleCard"
+  | "bulletReveal"
+  | "imageCaption"
+  | "labeledDiagram"
+  | "beforeAfter"
+  | "timeline"
+  | "simpleGraph";
 
 export interface Beat {
   id: string;

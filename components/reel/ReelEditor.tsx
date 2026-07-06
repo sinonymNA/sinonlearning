@@ -41,6 +41,9 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
 
   const selected = beats[Math.min(selectedIndex, beats.length - 1)];
   const selectedTemplate = getTemplate(selected.templateId);
+  const missingImages = beats
+    .map((b, i) => ({ b, i }))
+    .filter(({ b }) => getTemplate(b.templateId).usesImage && !b.imageId);
 
   // ── Autosave (debounced PATCH, mirrors SlideEditor) ──
   async function save(next: { title: string; beats: Beat[] }) {
@@ -209,6 +212,27 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
 
         {/* Center: preview + render */}
         <div className="flex flex-col gap-4">
+          {missingImages.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold text-amber-800">
+                <ImageIcon size={14} /> {missingImages.length} beat{missingImages.length === 1 ? "" : "s"} still
+                need an image
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {missingImages.map(({ b, i }) => (
+                  <button
+                    key={b.id}
+                    onClick={() => setSelectedIndex(i)}
+                    className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-[12px] text-amber-800 hover:border-amber-300"
+                  >
+                    Beat {i + 1}
+                    {b.imageQuery ? ` · ${b.imageQuery}` : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <BeatPreview beat={selected} />
 
           <div className="flex flex-wrap items-center gap-2.5">
@@ -319,7 +343,7 @@ export default function ReelEditor({ project }: { project: ReelProjectRow }) {
           ))}
 
           {selectedTemplate.usesImage && (
-            <ImagePicker beat={selected} onPick={(imageId) => updateBeat({ imageId })} />
+            <ImagePicker key={selected.id} beat={selected} onPick={(imageId) => updateBeat({ imageId })} />
           )}
 
           <label className="flex flex-col gap-1">

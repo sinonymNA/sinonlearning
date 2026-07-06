@@ -56,6 +56,54 @@ export const REEL_TEMPLATES: ReelTemplate[] = [
     usesImage: true,
     defaultSeconds: 6,
   },
+  {
+    id: "labeledDiagram",
+    label: "Labeled Diagram",
+    description: "A central idea with arrows drawing out to 2–4 surrounding labels — great for causes, parts, or effects. Can include an image in the center.",
+    params: [
+      { key: "centerLabel", label: "Center label", kind: "text", placeholder: "Scarcity" },
+      { key: "labels", label: "Surrounding labels", kind: "list", placeholder: "One label per line" },
+    ],
+    usesImage: true,
+    defaultSeconds: 8,
+  },
+  {
+    id: "beforeAfter",
+    label: "Before → After",
+    description: "Two side-by-side panels with an arrow between them — great for contrast, cause→effect, or change over time.",
+    params: [
+      { key: "leftTitle", label: "Left title", kind: "text", placeholder: "Before" },
+      { key: "leftBody", label: "Left detail", kind: "text", placeholder: "Short phrase" },
+      { key: "rightTitle", label: "Right title", kind: "text", placeholder: "After" },
+      { key: "rightBody", label: "Right detail", kind: "text", placeholder: "Short phrase" },
+      { key: "arrowLabel", label: "Arrow label", kind: "text", placeholder: "leads to" },
+    ],
+    usesImage: false,
+    defaultSeconds: 7,
+  },
+  {
+    id: "timeline",
+    label: "Timeline",
+    description: "A horizontal line that draws left-to-right with events popping in — great for sequences and history. Each event: 'label: detail'.",
+    params: [
+      { key: "events", label: "Events (label: detail)", kind: "list", placeholder: "1929: The Crash" },
+    ],
+    usesImage: false,
+    defaultSeconds: 9,
+  },
+  {
+    id: "simpleGraph",
+    label: "Trend Graph",
+    description: "Labeled axes with a line that plots an up, down, or flat trend — great for showing a relationship or change.",
+    params: [
+      { key: "xLabel", label: "X-axis label", kind: "text", placeholder: "Time" },
+      { key: "yLabel", label: "Y-axis label", kind: "text", placeholder: "Price" },
+      { key: "trend", label: "Trend (up / down / flat)", kind: "text", placeholder: "up" },
+      { key: "caption", label: "Caption", kind: "text", placeholder: "As demand rises, price rises" },
+    ],
+    usesImage: false,
+    defaultSeconds: 7,
+  },
 ];
 
 const TEMPLATE_BY_ID: Record<ReelTemplateId, ReelTemplate> = REEL_TEMPLATES.reduce(
