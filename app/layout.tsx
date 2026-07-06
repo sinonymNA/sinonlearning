@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Sinon Learning — Free Curriculum & Classroom Tools",
   description:
     "Sinon Learning is building a free library of modern curriculum, digital textbooks, visual resources, and simple classroom tools for real teachers and real students.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
