@@ -1,8 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { ImportAssignmentSchema } from "@/lib/marginsGradingTypes";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -22,33 +26,18 @@ const SYSTEM_PROMPT =
   "correct when the upload doesn't show one. If the upload clearly includes primary-source excerpts (for a " +
   "DBQ), you MAY transcribe their visible text into \"documents\" — this is copying real text already in " +
   "front of you, not writing new content. Never fabricate rubric point values, criteria, or document text " +
-  "that isn't actually visible. Return a single JSON object matching the schema exactly. No prose, no " +
-  "markdown outside the JSON.";
-
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
+  "that isn't actually visible.";
 
 const USER_MESSAGE =
-  "Transcribe the essay assignment shown in the attached file into this JSON schema exactly:\n" +
-  `{"essay_type":"DBQ"|"LEQ"|"SAQ","title":string,"prompt_text":string,` +
-  `"rubric":[{"category":string,"points_possible":number,"description":string}](optional — omit if no rubric is visible),` +
-  `"documents":[{"label":string,"source_text":string}](optional — omit if no source documents are visible, DBQ only)}\n` +
+  "Transcribe the essay assignment shown in the attached file.\n" +
   "Rules:\n" +
   "1. essay_type: determine from the assignment's structure (DBQ = document-based with sources, LEQ = long essay with no documents, SAQ = three short labeled parts a/b/c).\n" +
   "2. title: a short descriptive title for this assignment — invent a plain, neutral one only if none is visible.\n" +
   "3. prompt_text: transcribe the actual essay prompt/question verbatim as closely as legibility allows.\n" +
   "4. rubric: only include if actual point values/criteria are visible in the upload — never invent generic AP rubric language.\n" +
-  "5. documents: only include if actual source document text/images are visible in the upload — transcribe their visible text faithfully, never summarize or invent.\n" +
-  "Output only the JSON.";
+  "5. documents: only include if actual source document text/images are visible in the upload — transcribe their visible text faithfully, never summarize or invent. Omit the rubric and documents fields entirely when they aren't visible.";
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const user = await getCurrentUser();
   if (!user || user.role !== "teacher") {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
@@ -86,13 +75,15 @@ export async function POST(request: NextRequest) {
 
   const base64Data = Buffer.from(await file.arrayBuffer()).toString("base64");
 
-  let raw = "";
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    // Transcription accuracy matters most here — runs on Opus with adaptive
+    // thinking; the larger token budget leaves room for the thinking pass.
+    const { data } = await callKoraStructured({
+      model: "claude-opus-4-8",
+      maxTokens: 8192,
       system: SYSTEM_PROMPT,
+      cacheSystemPrompt: true,
+      thinking: { type: "adaptive" },
       messages: [
         {
           role: "user",
@@ -114,29 +105,17 @@ export async function POST(request: NextRequest) {
           ],
         },
       ],
+      schema: ImportAssignmentSchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    return NextResponse.json({ assignment: data });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA couldn't read that file as an assignment." }, { status: 422 });
+    }
     console.error("[margins/import-assignment] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[margins/import-assignment] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = ImportAssignmentSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error("[margins/import-assignment] Zod validation failed:", result.error.flatten());
-    return NextResponse.json(
-      { error: "KORA couldn't read that file as an assignment.", issues: result.error.flatten().fieldErrors },
-      { status: 422 }
-    );
-  }
-
-  return NextResponse.json({ assignment: result.data });
 }

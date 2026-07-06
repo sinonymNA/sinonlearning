@@ -1,7 +1,16 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import type { KoraConcept } from "@/lib/koraDemoConcepts";
+import {
+  KoraDemoQuestionSchema,
+  KoraDemoAnalyzeSchema,
+  KoraDemoRemediateSchema,
+} from "@/lib/koraSchemas";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +34,6 @@ interface DemoRequestBody {
   assessment_history: ConversationTurn[];
   mental_model?: MentalModel;
   remediation_history?: ConversationTurn[];
-}
-
-function extractJson(text: string): string {
-  // Try fenced code block first
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenced) return fenced[1].trim();
-  // Fall back to finding the outermost JSON object
-  const objMatch = text.match(/\{[\s\S]*\}/);
-  if (objMatch) return objMatch[0].trim();
-  return text.trim();
 }
 
 function formatHistory(turns: ConversationTurn[]): string {
@@ -176,11 +175,6 @@ Return ONLY valid JSON:
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const ip = getClientIp(request);
   if (isRateLimited(`kora-demo:${ip}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
     return NextResponse.json(
@@ -206,10 +200,13 @@ export async function POST(request: NextRequest) {
   }
 
   let prompt: string;
+  let schema;
   if (phase === "question") {
     prompt = buildQuestionPrompt(concept, assessment_history);
+    schema = KoraDemoQuestionSchema;
   } else if (phase === "analyze") {
     prompt = buildAnalyzePrompt(concept, assessment_history);
+    schema = KoraDemoAnalyzeSchema;
   } else if (phase === "remediate") {
     if (!mental_model) {
       return NextResponse.json({ error: "mental_model is required for remediate phase." }, { status: 400 });
@@ -220,25 +217,29 @@ export async function POST(request: NextRequest) {
       mental_model,
       remediation_history ?? []
     );
+    schema = KoraDemoRemediateSchema;
   } else {
     return NextResponse.json({ error: "Invalid phase." }, { status: 400 });
   }
 
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const { data } = await callKoraStructured({
       model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      maxTokens: 4096,
       messages: [{ role: "user", content: prompt }],
+      schema,
     });
-
-    const raw =
-      message.content[0].type === "text" ? message.content[0].text : "";
-
-    const jsonStr = extractJson(raw);
-    const data = JSON.parse(jsonStr);
     return NextResponse.json({ data });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json(
+        { error: "KORA could not generate a response. Please try again." },
+        { status: 422 }
+      );
+    }
     console.error("[KORA Demo API]", err);
     return NextResponse.json(
       { error: "KORA could not generate a response. Please try again." },

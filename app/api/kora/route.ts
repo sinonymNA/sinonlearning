@@ -1,7 +1,12 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import type { KoraTaskType } from "@/lib/koraTypes";
+import { KORA_TASK_SCHEMAS } from "@/lib/koraSchemas";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -13,22 +18,12 @@ const KORA_SYSTEM_PROMPT =
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 20;
 
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
-
 interface KoraRequestBody {
   task_type: KoraTaskType;
   user_message: string;
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const ip = getClientIp(request);
   if (isRateLimited(`kora:${ip}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
     return NextResponse.json(
@@ -52,35 +47,34 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let raw = "";
+  const schema = KORA_TASK_SCHEMAS[task_type];
+  if (!schema) {
+    return NextResponse.json({ error: "Unknown task_type." }, { status: 400 });
+  }
+
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const { data } = await callKoraStructured({
       model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      maxTokens: 4096,
       system: KORA_SYSTEM_PROMPT,
       messages: [{ role: "user", content: user_message }],
+      schema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    return NextResponse.json({ data });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json(
+        { error: "KORA returned an unreadable response. Please try again." },
+        { status: 422 }
+      );
+    }
     console.error("[KORA API] Claude call failed:", err);
     return NextResponse.json(
       { error: "KORA inference service is unavailable. Please try again." },
       { status: 502 }
     );
   }
-
-  let data: unknown;
-  try {
-    const jsonStr = extractJson(raw);
-    data = JSON.parse(jsonStr);
-  } catch {
-    console.error("[KORA API] JSON parse failed. Raw output:", raw.slice(0, 500));
-    return NextResponse.json(
-      { error: "KORA returned an unreadable response. Please try again." },
-      { status: 422 }
-    );
-  }
-
-  return NextResponse.json({ data });
 }

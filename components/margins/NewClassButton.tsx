@@ -87,6 +87,7 @@ export default function NewClassButton() {
       <button
         type="button"
         onClick={() => setOpen(false)}
+        aria-label="Cancel"
         className="rounded-lg p-1.5 text-stone-400 hover:text-stone-600"
       >
         <X size={14} />

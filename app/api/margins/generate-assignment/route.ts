@@ -1,9 +1,13 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { AssignmentGenerateSchema } from "@/lib/marginsGradingTypes";
 import type { EssayType } from "@/lib/marginsRubrics";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +24,9 @@ const SYSTEM_PROMPT =
   "primary sources presented as real would mis-teach students preparing for an actual exam — this rule is " +
   "never optional.";
 
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
-
 const ESSAY_TYPES: EssayType[] = ["DBQ", "LEQ", "SAQ"];
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-
   const user = await getCurrentUser();
   if (!user || user.role !== "teacher") {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
@@ -69,41 +65,26 @@ export async function POST(request: NextRequest) {
     `Essay Type: ${essayType}`,
     `Topic/Unit: ${topic}`,
     `\nTask: ${typeInstructions[essayType]}`,
-    `\nReturn JSON matching this schema exactly:`,
-    `{"essay_type":"${essayType}","title":string,"prompt_text":string,"suggested_document_topics":string[](optional)}`,
-    `Output only the JSON.`,
+    `\nSet essay_type to "${essayType}".`,
   ].join("\n");
 
-  let raw = "";
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const { data } = await callKoraStructured({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      maxTokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
+      schema: AssignmentGenerateSchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    return NextResponse.json({ assignment: data });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA returned an invalid assignment structure." }, { status: 422 });
+    }
     console.error("[margins/generate-assignment] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[margins/generate-assignment] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = AssignmentGenerateSchema.safeParse(parsed);
-  if (!result.success) {
-    return NextResponse.json(
-      { error: "KORA returned an invalid assignment structure.", issues: result.error.flatten().fieldErrors },
-      { status: 422 }
-    );
-  }
-
-  return NextResponse.json({ assignment: result.data });
 }

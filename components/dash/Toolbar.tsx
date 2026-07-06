@@ -16,6 +16,7 @@ import {
   ImageOff,
   Copy,
   Check,
+  LayoutDashboard,
 } from "lucide-react";
 import VideoMenu from "./VideoMenu";
 import DashLogo from "@/components/DashLogo";
@@ -48,6 +49,7 @@ export default function Toolbar({
   mode,
   onSetMode,
   jamCode,
+  isTeacher,
 }: {
   widgets: WidgetState;
   onToggleWidget: (key: keyof WidgetState) => void;
@@ -58,6 +60,7 @@ export default function Toolbar({
   mode: DashMode;
   onSetMode: (mode: DashMode) => void;
   jamCode?: string;
+  isTeacher?: boolean;
 }) {
   const [now, setNow] = useState<Date>(() => new Date());
   const [videoMenuOpen, setVideoMenuOpen] = useState(false);
@@ -117,6 +120,15 @@ export default function Toolbar({
             Jamboard
           </button>
         </div>
+        {isTeacher && (
+          <Link
+            href="/dash/mine"
+            className="ml-1 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
+          >
+            <LayoutDashboard size={13} />
+            <span className="hidden sm:inline">My Dashes</span>
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-1 items-center justify-center gap-1.5">

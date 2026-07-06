@@ -485,7 +485,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                     className="flex-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm font-medium outline-none focus:border-violet-400"
                   />
                   {documents.length > 1 && (
-                    <button type="button" onClick={() => removeDocument(i)} className="text-stone-300 hover:text-red-500">
+                    <button type="button" onClick={() => removeDocument(i)} aria-label="Remove document" className="text-stone-300 hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -502,6 +502,7 @@ export default function AssignmentWizard({ classId }: { classId: string }) {
                     <button
                       type="button"
                       onClick={() => updateDocumentField(i, { image_id: undefined })}
+                      aria-label="Remove image"
                       className="absolute top-1.5 right-1.5 rounded-full bg-black/60 text-white p-1 hover:bg-black/80"
                     >
                       <X size={12} />

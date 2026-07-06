@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/marginsAuth";
@@ -11,6 +11,11 @@ import {
   getUploadedImage,
 } from "@/lib/marginsDb";
 import { EssayEvalSchema } from "@/lib/marginsGradingTypes";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -39,11 +44,6 @@ const SYSTEM_PROMPT =
   "counts — be honest and specific, never inflated, but always find the real good in the writing first. " +
   "When grading a resubmission, you will be shown the student's prior attempt's feedback — use it to explicitly " +
   "recognize genuine improvement, reinforcing their growth as a writer.";
-
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
 
 type GradingDocument = { label: string; source_text?: string; image_id?: string };
 
@@ -76,12 +76,6 @@ function buildRubricEssayTail(params: {
   }
   lines.push(`\nStudent Essay:\n${essayText}`);
   lines.push(
-    `\nReturn JSON matching this schema exactly:`,
-    `{"essay_type":"DBQ"|"LEQ"|"SAQ","overall_score":number,"max_score":number,` +
-      `"rubric_breakdown":[{"category":string,"points_earned":number,"points_possible":number,"justification":string}],` +
-      `"annotations":[{"quote":string,"category":string,"type":"praise"|"growth","comment":string}],` +
-      `"overall_feedback":string,"strengths":string[],` +
-      `"next_steps":[{"issue":string,"why_it_matters":string,"how_to_fix":string,"skill":string}]}`,
     `\nRules:`,
     `1. rubric_breakdown must have exactly one row per rubric category given above, in the same order, with the same points_possible.`,
     `2. max_score must equal the sum of points_possible across the rubric.`,
@@ -92,8 +86,7 @@ function buildRubricEssayTail(params: {
     `7. Never write a "how_to_fix" that supplies actual essay content (a sentence, thesis, or piece of analysis) — describe the MOVE to make, never the words to use. The student must do the writing.` +
       (priorGrading
         ? ` This is a REVISION — the student already received the feedback above and worked through a guided revision process before resubmitting. In overall_feedback, explicitly and specifically acknowledge what they improved compared to their previous attempt (reference the actual change, not a generic "good improvement"). If a previously flagged growth area is still present, treat it gently as an area for continued practice, not a repeated failure.`
-        : ""),
-    `Output only the JSON.`
+        : "")
   );
   return lines.join("\n");
 }
@@ -157,11 +150,6 @@ async function buildMultimodalContent(params: {
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authorized." }, { status: 401 });
 
@@ -211,9 +199,8 @@ export async function POST(request: NextRequest) {
 
   const hasImageDocuments = (assignment.documents ?? []).some((d) => d.image_id);
 
-  let raw = "";
+  let evaluation;
   try {
-    const client = new Anthropic({ apiKey });
     const content = hasImageDocuments
       ? await buildMultimodalContent({
           essayType: assignment.essay_type,
@@ -231,44 +218,38 @@ export async function POST(request: NextRequest) {
           essayText: submission.essay_text,
           priorGrading,
         });
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    // The highest-stakes call in Margins — runs on Opus with adaptive
+    // thinking; the larger token budget leaves room for the thinking pass.
+    const { data } = await callKoraStructured({
+      model: "claude-opus-4-8",
+      maxTokens: 8192,
       system: SYSTEM_PROMPT,
+      cacheSystemPrompt: true,
+      thinking: { type: "adaptive" },
       messages: [{ role: "user", content }],
+      schema: EssayEvalSchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    evaluation = data;
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA returned an invalid grading structure." }, { status: 422 });
+    }
     console.error("[margins/grade] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[margins/grade] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = EssayEvalSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error("[margins/grade] Zod validation failed:", result.error.flatten());
-    return NextResponse.json(
-      { error: "KORA returned an invalid grading structure.", issues: result.error.flatten().fieldErrors },
-      { status: 422 }
-    );
-  }
-
   const grading = await createGrading({
     submissionId,
-    overallScore: result.data.overall_score,
-    maxScore: result.data.max_score,
-    rubricBreakdown: result.data.rubric_breakdown,
-    annotations: result.data.annotations,
-    overallFeedback: result.data.overall_feedback,
-    strengths: result.data.strengths,
-    nextSteps: result.data.next_steps,
+    overallScore: evaluation.overall_score,
+    maxScore: evaluation.max_score,
+    rubricBreakdown: evaluation.rubric_breakdown,
+    annotations: evaluation.annotations,
+    overallFeedback: evaluation.overall_feedback,
+    strengths: evaluation.strengths,
+    nextSteps: evaluation.next_steps,
   });
 
   return NextResponse.json({ grading });

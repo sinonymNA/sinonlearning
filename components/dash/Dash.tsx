@@ -39,7 +39,13 @@ interface PipVideo {
   videoId: string;
 }
 
-export default function Dash() {
+export default function Dash({
+  isTeacher = false,
+  resumeBoardId,
+}: {
+  isTeacher?: boolean;
+  resumeBoardId?: string;
+}) {
   const [mounted, setMounted] = useState(false);
   const [widgets, setWidgets] = useLocalStorageState<WidgetState>(
     "classboard:widgets",
@@ -59,6 +65,13 @@ export default function Dash() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- gate first client paint until after hydration so localStorage-derived state never causes a mismatch
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    // Arriving from "My Dashes" with a specific board: the jamboard has to be
+    // visible for the resume to mean anything, whatever mode was last saved.
+    if (resumeBoardId) setMode("jamboard");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeBoardId]);
 
   const bringToFront = (id: string) => {
     const newZ = topZ + 1;
@@ -117,6 +130,7 @@ export default function Dash() {
         mode={mode}
         onSetMode={setMode}
         jamCode={jamSession?.code}
+        isTeacher={isTeacher}
       />
 
       <div className="relative h-[calc(100%-3rem)] w-full">
@@ -154,7 +168,11 @@ export default function Dash() {
             ))}
           </AnimatePresence>
         ) : (
-          <JamboardHost session={jamSession} onSessionCreated={setJamSession} />
+          <JamboardHost
+            session={jamSession}
+            onSessionCreated={setJamSession}
+            resumeBoardId={resumeBoardId}
+          />
         )}
       </div>
     </div>

@@ -13,6 +13,9 @@ const columns = [
     title: "Teachers",
     links: [
       { label: "Teacher Apps", href: "/teachers" },
+      { label: "Margins — Essay Grading", href: "/margins" },
+      { label: "Slider — Slideshow Builder", href: "/slider" },
+      { label: "Dash — Classroom Display", href: "/dash" },
       { label: "Scaffold — Notes Generator", href: "/notesheet" },
       { label: "Classroom Tools", href: "/tools" },
       { label: "Simulations & Games", href: "/simulations" },

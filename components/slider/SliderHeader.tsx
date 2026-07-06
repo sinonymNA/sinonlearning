@@ -1,16 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import SliderLogo from "@/components/SliderLogo";
 
 export default function SliderHeader({ name }: { name: string }) {
-  const router = useRouter();
-
   async function handleLogout() {
     await fetch("/api/margins/auth/logout", { method: "POST" });
-    router.push("/slider");
-    router.refresh();
+    // Hard navigation: the header can be mounted on /slider itself, where a
+    // client-side push to the same URL is a no-op and leaves stale UI up.
+    window.location.href = "/margins/login";
   }
 
   return (

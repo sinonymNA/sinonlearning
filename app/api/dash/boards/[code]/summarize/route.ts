@@ -1,7 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getBoardByCode, getBoardPosts, BoardSummarySchema } from "@/lib/dashJam";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +15,9 @@ const RATE_LIMIT_MAX = 20;
 const SYSTEM_PROMPT =
   "You are KORA, Sinon Learning's pedagogical AI. A teacher is looking at a live classroom jamboard full of " +
   "student posts and wants a quick summary. Cluster the posts into a handful of clear themes and write one " +
-  "encouraging, specific overall takeaway a teacher could say out loud to the class. " +
-  "Return a single JSON object matching the schema exactly. No prose, no markdown outside the JSON.";
-
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
+  "encouraging, specific overall takeaway a teacher could say out loud to the class.";
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ code: string }> }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-
   const ip = getClientIp(_request);
   if (isRateLimited(`dash-jam-summarize:${ip}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
     return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
@@ -50,38 +45,26 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     `There are ${posts.length} posts on this jamboard:`,
     ...postLines,
     `\nTask: Cluster these posts into 2-5 clear themes (skip themes with only image/link posts if they don't cluster meaningfully), and write one overall takeaway.`,
-    `\nReturn JSON matching this schema exactly:`,
-    `{"themes":[{"title":string,"summary":string}],"overall_takeaway":string}`,
-    `Output only the JSON.`,
   ].join("\n");
 
-  let raw = "";
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
+    const { data } = await callKoraStructured({
       model: "claude-sonnet-4-6",
-      max_tokens: 1024,
+      maxTokens: 1024,
       system: SYSTEM_PROMPT,
+      cacheSystemPrompt: true,
       messages: [{ role: "user", content: userMessage }],
+      schema: BoardSummarySchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    return NextResponse.json({ summary: data });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA returned an invalid summary structure." }, { status: 422 });
+    }
     console.error("[dash/boards/summarize] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[dash/boards/summarize] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = BoardSummarySchema.safeParse(parsed);
-  if (!result.success) {
-    return NextResponse.json({ error: "KORA returned an invalid summary structure." }, { status: 422 });
-  }
-
-  return NextResponse.json({ summary: result.data });
 }

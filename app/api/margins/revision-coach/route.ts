@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/marginsAuth";
@@ -11,6 +10,11 @@ import {
   createRevisionPlan,
 } from "@/lib/marginsDb";
 import { RevisionPlanSchema } from "@/lib/marginsGradingTypes";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -30,13 +34,7 @@ const SYSTEM_PROMPT =
   "at, or what kind of connector word to consider) but still requires the student to supply the historical " +
   "content and words themselves. If you are ever tempted to write actual historical content, stop and turn it " +
   "into a question instead. Match the encouraging, non-punitive tone of the grading feedback — this is a " +
-  "coaching conversation, not a second round of criticism. Return a single JSON object matching the schema " +
-  "exactly. No prose, no markdown outside the JSON.";
-
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
+  "coaching conversation, not a second round of criticism.";
 
 function buildUserMessage(params: {
   essayType: string;
@@ -60,8 +58,6 @@ function buildUserMessage(params: {
   );
   lines.push(`\nStudent's current essay:\n${essayText}`);
   lines.push(
-    `\nReturn JSON matching this schema exactly:`,
-    `{"steps":[{"based_on_issue":string,"restatement":string,"guiding_question":string,"scaffold":string,"hint":string}]}`,
     `\nRules:`,
     `1. Produce exactly one step per next_step given above, in the same order (most important first).`,
     `2. "based_on_issue" must exactly copy the issue text given above so the UI can link the step back to its grading note.`,
@@ -69,18 +65,12 @@ function buildUserMessage(params: {
     `4. "guiding_question" is a genuine Socratic question that gets the student thinking about THEIR essay's actual content without you supplying it (e.g. "Look at your second body paragraph — after your evidence about [topic from essay], what unstated assumption connects it to your thesis?").`,
     `5. "scaffold" is a reusable sentence-structure template with blanks the student fills in themselves — never a worked example with real content plugged in.`,
     `6. "hint" is only shown if the student asks for extra help — it should be more specific than the guiding_question (e.g. naming a technique or where to look) but must still stop short of supplying actual words or analysis.`,
-    `7. NEVER include real historical facts, argument content, or finished sentences about the essay's topic in any field.`,
-    `Output only the JSON.`
+    `7. NEVER include real historical facts, argument content, or finished sentences about the essay's topic in any field.`
   );
   return lines.join("\n");
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not authorized." }, { status: 401 });
 
@@ -118,13 +108,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Too many requests. Try again in an hour." }, { status: 429 });
   }
 
-  let raw = "";
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    // Coaching quality directly shapes the student's revision — runs on Opus
+    // with adaptive thinking; larger budget leaves room for the thinking pass.
+    const { data } = await callKoraStructured({
+      model: "claude-opus-4-8",
+      maxTokens: 8192,
       system: SYSTEM_PROMPT,
+      cacheSystemPrompt: true,
+      thinking: { type: "adaptive" },
       messages: [
         {
           role: "user",
@@ -137,30 +129,18 @@ export async function POST(request: NextRequest) {
           }),
         },
       ],
+      schema: RevisionPlanSchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    const plan = await createRevisionPlan(submissionId, data.steps);
+    return NextResponse.json({ plan });
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA returned an invalid revision plan." }, { status: 422 });
+    }
     console.error("[margins/revision-coach] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[margins/revision-coach] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = RevisionPlanSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error("[margins/revision-coach] Zod validation failed:", result.error.flatten());
-    return NextResponse.json(
-      { error: "KORA returned an invalid revision plan.", issues: result.error.flatten().fieldErrors },
-      { status: 422 }
-    );
-  }
-
-  const plan = await createRevisionPlan(submissionId, result.data.steps);
-  return NextResponse.json({ plan });
 }

@@ -92,6 +92,7 @@ export default function NotesheetSectionEditor({ section, onSave, onClose }: Pro
           <h2 className="text-[15px] font-bold text-stone-900">Edit Section</h2>
           <button
             onClick={close}
+            aria-label="Close"
             className="w-7 h-7 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors"
           >
             <X size={15} />

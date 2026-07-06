@@ -1,6 +1,7 @@
 import { randomUUID, randomBytes } from "crypto";
 import { z } from "zod";
 import { query } from "./db";
+import { ensureMarginsSchema } from "./marginsDb";
 
 export const BoardSummarySchema = z.object({
   themes: z
@@ -22,6 +23,7 @@ export interface DashBoard {
   code: string;
   host_token: string;
   title: string;
+  teacher_id: string | null;
   created_at: string;
 }
 
@@ -78,6 +80,14 @@ export function ensureDashJamSchema(): Promise<void> {
       .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS x REAL NOT NULL DEFAULT 10`))
       .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS y REAL NOT NULL DEFAULT 10`))
       .then(() => query(`ALTER TABLE dash_board_posts ADD COLUMN IF NOT EXISTS z INTEGER NOT NULL DEFAULT 0`))
+      // teacher_id references margins_users, so that schema must exist first —
+      // Dash is reachable anonymously and can otherwise win the race on a fresh DB.
+      .then(() => ensureMarginsSchema())
+      .then(() =>
+        query(
+          `ALTER TABLE dash_boards ADD COLUMN IF NOT EXISTS teacher_id UUID REFERENCES margins_users(id) ON DELETE CASCADE`
+        )
+      )
       .then(() => undefined);
   }
   return schemaReady;
@@ -94,7 +104,7 @@ function generateBoardCode(): string {
   return code;
 }
 
-export async function createBoard(title?: string): Promise<DashBoard> {
+export async function createBoard(title?: string, teacherId?: string): Promise<DashBoard> {
   await ensureDashJamSchema();
   const id = randomUUID();
   const hostToken = randomBytes(24).toString("hex");
@@ -102,10 +112,10 @@ export async function createBoard(title?: string): Promise<DashBoard> {
     const code = generateBoardCode();
     try {
       const { rows } = await query<DashBoard>(
-        `INSERT INTO dash_boards (id, code, host_token, title)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, code, host_token, title, created_at`,
-        [id, code, hostToken, title?.trim() || "Class Jamboard"]
+        `INSERT INTO dash_boards (id, code, host_token, title, teacher_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, code, host_token, title, teacher_id, created_at`,
+        [id, code, hostToken, title?.trim() || "Class Jamboard", teacherId ?? null]
       );
       return rows[0];
     } catch (err) {
@@ -119,10 +129,38 @@ export async function createBoard(title?: string): Promise<DashBoard> {
 export async function getBoardByCode(code: string): Promise<DashBoard | undefined> {
   await ensureDashJamSchema();
   const { rows } = await query<DashBoard>(
-    `SELECT id, code, host_token, title, created_at FROM dash_boards WHERE code = $1`,
+    `SELECT id, code, host_token, title, teacher_id, created_at FROM dash_boards WHERE code = $1`,
     [code.toUpperCase().trim()]
   );
   return rows[0];
+}
+
+export async function getBoardById(id: string): Promise<DashBoard | undefined> {
+  await ensureDashJamSchema();
+  const { rows } = await query<DashBoard>(
+    `SELECT id, code, host_token, title, teacher_id, created_at FROM dash_boards WHERE id = $1`,
+    [id]
+  );
+  return rows[0];
+}
+
+export async function getBoardsByTeacher(teacherId: string): Promise<DashBoard[]> {
+  await ensureDashJamSchema();
+  const { rows } = await query<DashBoard>(
+    `SELECT id, code, host_token, title, teacher_id, created_at
+     FROM dash_boards WHERE teacher_id = $1 ORDER BY created_at DESC`,
+    [teacherId]
+  );
+  return rows;
+}
+
+export async function deleteBoard(boardId: string, teacherId: string): Promise<boolean> {
+  await ensureDashJamSchema();
+  const { rowCount } = await query(`DELETE FROM dash_boards WHERE id = $1 AND teacher_id = $2`, [
+    boardId,
+    teacherId,
+  ]);
+  return (rowCount ?? 0) > 0;
 }
 
 export async function getBoardPosts(boardId: string): Promise<DashBoardPost[]> {

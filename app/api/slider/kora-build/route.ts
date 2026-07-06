@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
@@ -7,6 +6,11 @@ import { createDeck } from "@/lib/sliderDb";
 import { SLIDE_LAYOUTS, type Slide } from "@/lib/sliderTypes";
 import { SLIDER_THEMES, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 import { SliderKoraBuildSchema } from "@/lib/sliderAiTypes";
+import {
+  callKoraStructured,
+  KoraConfigError,
+  KoraValidationError,
+} from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +42,6 @@ const SYSTEM_PROMPT =
   "finally a closing slide (a memorable reflection question or a short summary — a \"quote\" layout works " +
   "well here). Every deck must include a genuine opener and a genuine activity, regardless of length.";
 
-function extractJson(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  return (fenced ? fenced[1] : text).trim();
-}
-
 function buildUserMessage(answers: {
   topic: string;
   audience: string;
@@ -61,8 +60,6 @@ function buildUserMessage(answers: {
     SLIDE_LAYOUTS.map((l) => `- "${l.value}": ${l.description}`).join("\n"),
     `\nAvailable themes (pick the one that best fits the subject/tone):`,
     SLIDER_THEMES.map((t) => `- "${t.id}": ${t.name}`).join("\n"),
-    `\nReturn JSON matching this schema exactly:`,
-    `{"deck_title":string,"theme_id":string,"slides":[{"layout":"title"|"titleBody"|"titleBullets"|"twoColumn"|"titleImageBody"|"imageFull"|"quote","title":string(optional),"subtitle":string(optional),"body":string(optional),"bullets":string[](optional),"columns":[string,string](optional),"quoteText":string(optional),"quoteAttribution":string(optional),"notes":string(optional)}]}`,
     `\nRules:`,
     `1. deck_title is a short, specific title for this deck (not just repeating the topic verbatim).`,
     `2. theme_id must be exactly one of the ids listed above.`,
@@ -72,17 +69,12 @@ function buildUserMessage(answers: {
     `6. Keep slides short: bullets under 15 words each, body at most 2-3 short sentences, twoColumn brief and parallel. Prefer titleBullets or twoColumn over titleBody.`,
     `7. Never include an "image" field — images are added separately by the teacher after generation.`,
     `8. notes (optional, any layout): 1-2 sentences of speaker notes/talking points for the teacher presenting that slide. For the activity slide, make notes a concrete facilitation instruction (e.g. how long to give students, what to listen for).`,
-    `Output only the JSON.`
+    `9. columns (twoColumn layout only) must contain exactly two strings.`
   );
   return lines.join("\n");
 }
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
-  }
-
   const user = await getCurrentUser();
   if (!user || user.role !== "teacher") {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
@@ -114,53 +106,46 @@ export async function POST(request: NextRequest) {
     notes: (body.notes ?? "").trim(),
   });
 
-  let raw = "";
+  let output;
   try {
-    const client = new Anthropic({ apiKey });
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+    // Highest-stakes generation in Slider — runs on Opus with adaptive
+    // thinking; the larger token budget leaves room for the thinking pass.
+    const { data } = await callKoraStructured({
+      model: "claude-opus-4-8",
+      maxTokens: 8192,
       system: SYSTEM_PROMPT,
+      cacheSystemPrompt: true,
+      thinking: { type: "adaptive" },
       messages: [{ role: "user", content: userMessage }],
+      schema: SliderKoraBuildSchema,
     });
-    raw = message.content[0].type === "text" ? message.content[0].text : "";
+    output = data;
   } catch (err) {
+    if (err instanceof KoraConfigError) {
+      return NextResponse.json({ error: "KORA is not configured." }, { status: 503 });
+    }
+    if (err instanceof KoraValidationError) {
+      return NextResponse.json({ error: "KORA returned an invalid slideshow structure." }, { status: 422 });
+    }
     console.error("[slider/kora-build] Claude call failed:", err);
     return NextResponse.json({ error: "KORA is unavailable right now. Please try again." }, { status: 502 });
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(raw));
-  } catch {
-    console.error("[slider/kora-build] JSON parse failed. Raw:", raw.slice(0, 500));
-    return NextResponse.json({ error: "KORA returned an unreadable response." }, { status: 422 });
-  }
-
-  const result = SliderKoraBuildSchema.safeParse(parsed);
-  if (!result.success) {
-    console.error("[slider/kora-build] Zod validation failed:", result.error.flatten());
-    return NextResponse.json(
-      { error: "KORA returned an invalid slideshow structure.", issues: result.error.flatten().fieldErrors },
-      { status: 422 }
-    );
-  }
-
-  const themeId = SLIDER_THEMES.some((t) => t.id === result.data.theme_id) ? result.data.theme_id : DEFAULT_THEME_ID;
-  const slides: Slide[] = result.data.slides.map((s) => ({
+  const themeId = SLIDER_THEMES.some((t) => t.id === output.theme_id) ? output.theme_id : DEFAULT_THEME_ID;
+  const slides: Slide[] = output.slides.map((s) => ({
     id: randomUUID(),
     layout: s.layout,
     title: s.title,
     subtitle: s.subtitle,
     body: s.body,
     bullets: s.bullets,
-    columns: s.columns,
+    columns: s.columns ? ([s.columns[0], s.columns[1]] as [string, string]) : undefined,
     image: null,
     quoteText: s.quoteText,
     quoteAttribution: s.quoteAttribution,
     notes: s.notes,
   }));
 
-  const deck = await createDeck({ teacherId: user.id, title: result.data.deck_title, themeId, slides });
+  const deck = await createDeck({ teacherId: user.id, title: output.deck_title, themeId, slides });
   return NextResponse.json({ deckId: deck.id });
 }

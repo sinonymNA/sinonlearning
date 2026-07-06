@@ -230,6 +230,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                   onClick={() => duplicateSlide(selectedIndex)}
                   className="text-stone-400 hover:text-slider-600 transition-colors"
                   title="Duplicate slide"
+                  aria-label="Duplicate slide"
                 >
                   <Copy size={15} />
                 </button>
@@ -239,6 +240,7 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
                   disabled={slides.length <= 1}
                   className="text-stone-400 hover:text-red-500 transition-colors disabled:opacity-30"
                   title="Delete slide"
+                  aria-label="Delete slide"
                 >
                   <Trash2 size={15} />
                 </button>
@@ -334,7 +336,7 @@ function SlideContentFields({
               <div key={i} className="flex items-center gap-2">
                 <input type="text" value={b} onChange={(e) => onUpdateBullet(i, e.target.value)} className={`${inputCls} flex-1`} />
                 {(slide.bullets ?? []).length > 1 && (
-                  <button type="button" onClick={() => onRemoveBullet(i)} className="text-stone-300 hover:text-red-500">
+                  <button type="button" onClick={() => onRemoveBullet(i)} aria-label="Remove bullet" className="text-stone-300 hover:text-red-500">
                     <Trash2 size={14} />
                   </button>
                 )}

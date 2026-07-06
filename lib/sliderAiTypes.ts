@@ -18,7 +18,10 @@ export const KoraSlideSchema = z.object({
   subtitle: z.string().optional(),
   body: z.string().optional(),
   bullets: z.array(z.string()).optional(),
-  columns: z.tuple([z.string(), z.string()]).optional(),
+  // A fixed-length tuple isn't expressible in the structured-outputs JSON
+  // schema subset, so this is an array with the 2-item bound validated
+  // client-side by the SDK.
+  columns: z.array(z.string()).min(2).max(2).optional(),
   quoteText: z.string().optional(),
   quoteAttribution: z.string().optional(),
   notes: z.string().optional(),
