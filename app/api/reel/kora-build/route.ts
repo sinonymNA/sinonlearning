@@ -21,11 +21,18 @@ const SYSTEM_PROMPT =
   "will read aloud over it. Return a single JSON object matching the schema exactly. No prose, no markdown " +
   "outside the JSON. " +
   "CRITICAL RULES: " +
-  "(1) You never write animation code — you only pick a template_id per beat and fill its fields. Only set the " +
-  "fields a given template uses, and leave all others unset: titleCard → headline, subtitle; bulletReveal → " +
-  "heading, bullets; imageCaption → caption + image_query; labeledDiagram → center_label, labels[] (2-4), " +
-  "optional image_query; beforeAfter → left_title, left_body, right_title, right_body, arrow_label; timeline → " +
-  "events[] as 'label: detail' strings; simpleGraph → x_label, y_label, trend ('up'|'down'|'flat'), caption. " +
+  "(1) You never write animation code — you only pick a template_id per beat and fill a small set of GENERIC " +
+  "fields: text1, text2, text3, text4, text5 (short strings) and items (a string array). Every template reuses " +
+  "these same generic slots for different purposes — set ONLY the slots below for the template you picked, and " +
+  "leave every other field (including image_query unless noted) unset: " +
+  "titleCard → text1 (headline), text2 (subtitle); " +
+  "bulletReveal → text1 (heading), items (2-5 short bullet phrases); " +
+  "imageCaption → text1 (caption), image_query; " +
+  "labeledDiagram → text1 (center label), items (2-4 surrounding labels), optional image_query; " +
+  "beforeAfter → text1 (left title), text2 (left detail), text3 (right title), text4 (right detail), text5 " +
+  "(arrow label, e.g. 'leads to'); " +
+  "timeline → items (events, each formatted as 'label: detail'); " +
+  "simpleGraph → text1 (x-axis label), text2 (y-axis label), text3 (trend: 'up'|'down'|'flat'), text4 (caption). " +
   "(2) For any beat that references a concrete real-world thing (a place, a person, a book, a chart, an object), " +
   "prefer the imageCaption template and set image_query to a short web-image search phrase for it (e.g. 'New York " +
   "Stock Exchange trading floor', 'cover of the book Educated by Tara Westover'). Do NOT invent image URLs or " +
@@ -63,31 +70,35 @@ function buildUserMessage(answers: {
   return lines.join("\n");
 }
 
-// Map KORA's flat beat output into a full Beat with per-template params.
+// Which generic slot (see lib/reelAiTypes.ts) holds each template's real param,
+// per template_id. A beat only ever uses one template, so slot reuse across
+// templates never collides.
+const SLOT_MAP: Record<string, Record<string, "text1" | "text2" | "text3" | "text4" | "text5" | "items">> = {
+  titleCard: { headline: "text1", subtitle: "text2" },
+  bulletReveal: { heading: "text1", bullets: "items" },
+  imageCaption: { caption: "text1" },
+  labeledDiagram: { centerLabel: "text1", labels: "items" },
+  beforeAfter: { leftTitle: "text1", leftBody: "text2", rightTitle: "text3", rightBody: "text4", arrowLabel: "text5" },
+  timeline: { events: "items" },
+  simpleGraph: { xLabel: "text1", yLabel: "text2", trend: "text3", caption: "text4" },
+};
+
+// Map KORA's flat generic-slot beat output into a full Beat with per-template params.
 function toBeat(b: ReelBeatOutput): Beat {
   const template = getTemplate(b.template_id);
-  // Map KORA's flat fields onto each template param by key.
-  const flat: Record<string, string | string[] | undefined> = {
-    headline: b.headline,
-    subtitle: b.subtitle,
-    heading: b.heading,
-    caption: b.caption,
-    bullets: b.bullets,
-    centerLabel: b.center_label,
-    labels: b.labels,
-    leftTitle: b.left_title,
-    leftBody: b.left_body,
-    rightTitle: b.right_title,
-    rightBody: b.right_body,
-    arrowLabel: b.arrow_label,
-    events: b.events,
-    xLabel: b.x_label,
-    yLabel: b.y_label,
-    trend: b.trend,
+  const slots: Record<string, string | string[] | undefined> = {
+    text1: b.text1,
+    text2: b.text2,
+    text3: b.text3,
+    text4: b.text4,
+    text5: b.text5,
+    items: b.items,
   };
+  const slotMap = SLOT_MAP[b.template_id] ?? {};
   const params: Record<string, string | string[]> = {};
   for (const p of template.params) {
-    const v = flat[p.key];
+    const slotKey = slotMap[p.key];
+    const v = slotKey ? slots[slotKey] : undefined;
     if (p.kind === "list") {
       params[p.key] = Array.isArray(v) && v.length ? v : [""];
     } else {
