@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { LayoutGrid } from "lucide-react";
 import MarginsLogo from "@/components/MarginsLogo";
 
 interface Props {
@@ -28,6 +29,14 @@ export default function MarginsHeader({ name, role, homeHref }: Props) {
         </span>
       </Link>
       <div className="flex items-center gap-4">
+        <Link
+          href={role === "teacher" ? "/teachers" : "/students"}
+          className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-stone-700 transition-colors"
+        >
+          <LayoutGrid size={13} />
+          <span className="hidden sm:inline">All apps</span>
+        </Link>
+        <span className="hidden text-stone-200 sm:inline">|</span>
         <span className="text-sm text-stone-500">{name}</span>
         <button
           onClick={handleLogout}
