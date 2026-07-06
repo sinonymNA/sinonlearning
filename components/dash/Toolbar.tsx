@@ -120,13 +120,21 @@ export default function Toolbar({
             Jamboard
           </button>
         </div>
-        {isTeacher && (
+        {isTeacher ? (
           <Link
             href="/dash/mine"
             className="ml-1 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-navy-700/60 transition-colors hover:bg-navy-900/5 hover:text-navy-900"
           >
             <LayoutDashboard size={13} />
             <span className="hidden sm:inline">My Dashes</span>
+          </Link>
+        ) : (
+          <Link
+            href="/margins/login?next=/dash/mine"
+            className="ml-1 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-500/10"
+          >
+            <LayoutDashboard size={13} />
+            <span className="hidden sm:inline">Log in to save</span>
           </Link>
         )}
       </div>

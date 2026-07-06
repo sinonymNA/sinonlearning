@@ -50,6 +50,12 @@ export default function Navbar() {
               <span className="absolute -bottom-0.5 left-0 h-px w-full origin-left scale-x-0 bg-teal-600 transition-transform duration-200 group-hover:scale-x-100" />
             </Link>
           ))}
+          <Link
+            href="/margins/login"
+            className="rounded-full bg-teal-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+          >
+            Log in
+          </Link>
         </div>
 
         <button
@@ -81,6 +87,13 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              <Link
+                href="/margins/login"
+                className="mt-1 self-start rounded-full bg-teal-600 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-700"
+                onClick={() => setOpen(false)}
+              >
+                Log in
+              </Link>
             </div>
           </motion.div>
         )}

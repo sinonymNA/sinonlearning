@@ -4,7 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { animate } from "animejs";
-import MarginsLogo from "@/components/MarginsLogo";
+import SinonWordmark from "@/components/SinonWordmark";
 import { useMountReveal } from "@/lib/marginsMotion";
 
 type Role = "teacher" | "student";
@@ -70,9 +70,11 @@ function MarginsSignupForm() {
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
       <header className="px-6 h-16 flex items-center justify-between">
-        <MarginsLogo width={110} />
-        <Link href="/margins" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
-          Back
+        <Link href="/">
+          <SinonWordmark width={150} />
+        </Link>
+        <Link href="/" className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+          Back to site
         </Link>
       </header>
 
@@ -85,7 +87,7 @@ function MarginsSignupForm() {
         >
           <div className="form-field" style={{ opacity: 0 }}>
             <h1 className="text-lg font-bold text-stone-900">Create your account</h1>
-            <p className="text-[13px] text-stone-400 mt-1">Free for teachers and students.</p>
+            <p className="text-[13px] text-stone-400 mt-1">One free login for Margins, Slider, and Dash.</p>
           </div>
 
           <div className="form-field grid grid-cols-2 gap-2" style={{ opacity: 0 }}>
