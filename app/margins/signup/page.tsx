@@ -1,16 +1,33 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { animate } from "animejs";
 import MarginsLogo from "@/components/MarginsLogo";
 import { useMountReveal } from "@/lib/marginsMotion";
 
 type Role = "teacher" | "student";
 
+// Only relative, single-segment-leading-slash paths are honored (never "//host"
+// or "https://...") so this can't be turned into an open redirect.
+function safeNext(next: string | null): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 export default function MarginsSignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <MarginsSignupForm />
+    </Suspense>
+  );
+}
+
+function MarginsSignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNext(searchParams.get("next"));
   const [role, setRole] = useState<Role>("teacher");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +58,7 @@ export default function MarginsSignupPage() {
         setError(data.error ?? "Signup failed.");
         return;
       }
-      router.push(role === "teacher" ? "/margins/teacher" : "/margins/student");
+      router.push(next ?? (role === "teacher" ? "/margins/teacher" : "/margins/student"));
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -141,7 +158,10 @@ export default function MarginsSignupPage() {
 
           <p className="form-field text-center text-[13px] text-stone-400" style={{ opacity: 0 }}>
             Already have an account?{" "}
-            <Link href="/margins/login" className="text-violet-600 font-medium hover:text-violet-700">
+            <Link
+              href={next ? `/margins/login?next=${encodeURIComponent(next)}` : "/margins/login"}
+              className="text-violet-600 font-medium hover:text-violet-700"
+            >
               Log in
             </Link>
           </p>

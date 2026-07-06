@@ -1,14 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { animate } from "animejs";
 import MarginsLogo from "@/components/MarginsLogo";
 import { useMountReveal } from "@/lib/marginsMotion";
 
+// Only relative, single-segment-leading-slash paths are honored (never "//host"
+// or "https://...") so this can't be turned into an open redirect.
+function safeNext(next: string | null): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
 export default function MarginsLoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <MarginsLoginForm />
+    </Suspense>
+  );
+}
+
+function MarginsLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = safeNext(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +54,7 @@ export default function MarginsLoginPage() {
         setError(data.error ?? "Login failed.");
         return;
       }
-      router.push(data.user.role === "teacher" ? "/margins/teacher" : "/margins/student");
+      router.push(next ?? (data.user.role === "teacher" ? "/margins/teacher" : "/margins/student"));
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -106,7 +123,10 @@ export default function MarginsLoginPage() {
 
           <p className="form-field text-center text-[13px] text-stone-400" style={{ opacity: 0 }}>
             Need an account?{" "}
-            <Link href="/margins/signup" className="text-violet-600 font-medium hover:text-violet-700">
+            <Link
+              href={next ? `/margins/signup?next=${encodeURIComponent(next)}` : "/margins/signup"}
+              className="text-violet-600 font-medium hover:text-violet-700"
+            >
               Sign up
             </Link>
           </p>

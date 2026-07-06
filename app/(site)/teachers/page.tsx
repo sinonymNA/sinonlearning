@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
 import DashLogo from "@/components/DashLogo";
+import SliderLogo from "@/components/SliderLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -65,6 +66,16 @@ const tools = [
     logoSub: "Classroom Display",
     name: "Dash",
     tagline: "Live agenda, timer, student randomizer, polls, and exit tickets — the front-of-room display for your classroom.",
+  },
+  {
+    slug: "slider",
+    href: "/slider",
+    status: "live" as const,
+    bgClass: "bg-gradient-to-br from-orange-500 to-pink-600",
+    logo: <SliderLogo width={190} light />,
+    logoSub: "Slideshow Builder",
+    name: "Slider",
+    tagline: "Pick a beautiful template, fill in your content, and find the right images — export straight to PowerPoint or Google Slides.",
   },
   {
     slug: "kora-game",

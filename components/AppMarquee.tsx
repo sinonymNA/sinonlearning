@@ -12,6 +12,7 @@ import {
 import FadeIn from "./FadeIn";
 import MarginsLogo from "./MarginsLogo";
 import DashLogo from "./DashLogo";
+import SliderLogo from "./SliderLogo";
 
 interface MarqueeApp {
   href: string;
@@ -62,6 +63,12 @@ const apps: MarqueeApp[] = [
     label: "Dash",
     sub: "Run the room",
     mark: <DashLogo width={80} />,
+  },
+  {
+    href: "/slider",
+    label: "Slider",
+    sub: "Slideshow builder",
+    mark: <SliderLogo width={90} />,
   },
   {
     href: "/game-shows",
