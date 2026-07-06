@@ -121,7 +121,11 @@ def _concat(clips: list[str], out: str, tmpdir: str) -> None:
     with open(listfile, "w") as fh:
         for c in clips:
             fh.write(f"file '{c}'\n")
-    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile, "-c", "copy", out])
+    # +faststart moves the moov atom to the front of the file (a second, fast
+    # remux pass — works fine with `-c copy`, no re-encode). Without it the
+    # index sits at the end, which combined with byte-range serving makes
+    # Safari/iOS refuse to play the video at all instead of just seeking slowly.
+    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile, "-c", "copy", "-movflags", "+faststart", out])
 
 
 def _prepare_image(conn, beat: dict[str, Any], tmpdir: str, index: int) -> Optional[str]:
