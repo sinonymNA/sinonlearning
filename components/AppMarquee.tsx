@@ -13,6 +13,7 @@ import FadeIn from "./FadeIn";
 import MarginsLogo from "./MarginsLogo";
 import DashLogo from "./DashLogo";
 import SliderLogo from "./SliderLogo";
+import ReelLogo from "./ReelLogo";
 
 interface MarqueeApp {
   href: string;
@@ -69,6 +70,12 @@ const apps: MarqueeApp[] = [
     label: "Slider",
     sub: "Slideshow builder",
     mark: <SliderLogo width={90} />,
+  },
+  {
+    href: "/reel",
+    label: "Reel",
+    sub: "Explainer videos",
+    mark: <ReelLogo width={82} />,
   },
   {
     href: "/game-shows",

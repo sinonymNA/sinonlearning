@@ -6,6 +6,7 @@ import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
 import DashLogo from "@/components/DashLogo";
 import SliderLogo from "@/components/SliderLogo";
+import ReelLogo from "@/components/ReelLogo";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -76,6 +77,16 @@ const tools = [
     logoSub: "Slideshow Builder",
     name: "Slider",
     tagline: "Pick a beautiful template, fill in your content, and find the right images — export straight to PowerPoint or Google Slides.",
+  },
+  {
+    slug: "reel",
+    href: "/reel",
+    status: "live" as const,
+    bgClass: "bg-gradient-to-br from-sky-500 to-slate-900",
+    logo: <ReelLogo width={190} light />,
+    logoSub: "Explainer Videos",
+    name: "Reel",
+    tagline: "Script a short lesson video with KORA, drop in images, and record your voice-over with a synced teleprompter — export a finished MP4.",
   },
   {
     slug: "kora-game",

@@ -80,3 +80,16 @@ git push -u origin <branch-name>
 4. Railway sets the `PORT` environment variable automatically; Next.js respects it
    out of the box, so no extra configuration is required.
 5. Deploy. Railway will give you a public URL once the build finishes.
+
+### Reel render worker (second Railway service)
+
+**Reel** (`/reel`) lets teachers script a short explainer video with KORA, add
+images, record a voice-over with a synced teleprompter, and export a finished
+MP4. The web app enqueues render jobs in Postgres; a **separate Python worker**
+renders the animations with [Manim](https://www.manim.community/) + ffmpeg and
+writes the MP4 back. That worker lives in [`reel_worker/`](reel_worker/) and must
+be deployed as a **second service** in the same Railway project, sharing the same
+`DATABASE_URL`. See [`reel_worker/README.md`](reel_worker/README.md) for the
+step-by-step deploy (set the service root to `reel_worker`, share `DATABASE_URL`,
+no public port, one instance). Until that service is running, the rest of Reel
+works but the **Render preview** / **Produce** steps stay queued.

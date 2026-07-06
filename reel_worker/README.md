@@ -37,7 +37,31 @@ python worker.py                          # long-running poll loop (production)
 
 ## Deploy on Railway
 
-Add a second service in the same project pointing at this folder (Dockerfile
-build). Give it the shared `DATABASE_URL`. No public port is needed — it only
-talks to Postgres. Scale to a single instance (the `SKIP LOCKED` claim also makes
-multiple instances safe if you ever need throughput).
+The web app and this worker are **two services in the same Railway project**,
+sharing one Postgres database as the job queue. Step by step:
+
+1. **New service → same repo.** In the project that already hosts the Next.js
+   app, add a second service from this same GitHub repo.
+2. **Set the root directory to `reel_worker`.** Service → *Settings → Root
+   Directory* = `reel_worker`. Railway then reads `reel_worker/railway.json`
+   and `reel_worker/Dockerfile` (config-as-code — no manual build settings).
+3. **Share `DATABASE_URL`.** Add a variable reference so the worker uses the
+   **same** database as the web app, e.g. `DATABASE_URL =
+   ${{Postgres.DATABASE_URL}}` (or reference the web service's variable).
+   The worker touches only the shared `reel_*` tables the web app creates.
+4. **No public networking.** The worker has no HTTP port — it only polls
+   Postgres. Leave it without a generated domain.
+5. **One instance.** `railway.json` pins `numReplicas: 1`. The `FOR UPDATE SKIP
+   LOCKED` claim makes multiple instances safe if you ever need throughput, but
+   one is right for launch.
+
+`railway.json` also sets an `ON_FAILURE` restart policy, so a crashed render
+process is restarted automatically; the web app's stale-job reaper releases any
+job that was mid-render when it died.
+
+### Verify the deploy
+
+- Worker logs should print `[reel_worker] started; polling for jobs…`.
+- In the app, open a Reel project and click **Render preview** — a
+  `reel_render_jobs` row goes `queued → rendering → done` and the silent
+  preview appears. That confirms the shared-DB job loop end to end.
