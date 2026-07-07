@@ -170,6 +170,42 @@ export function ensureMarginsSchema(): Promise<void> {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
       )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS margins_practice_progress (
+          id UUID PRIMARY KEY,
+          student_id UUID NOT NULL REFERENCES margins_users(id) ON DELETE CASCADE,
+          course_id TEXT NOT NULL,
+          current_module INTEGER NOT NULL DEFAULT 0,
+          completed_at TIMESTAMPTZ,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          UNIQUE (student_id, course_id)
+        )`)
+      )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS margins_practice_attempts (
+          id UUID PRIMARY KEY,
+          progress_id UUID NOT NULL REFERENCES margins_practice_progress(id) ON DELETE CASCADE,
+          module_id TEXT NOT NULL,
+          prompt_id TEXT NOT NULL,
+          response_text TEXT NOT NULL,
+          passed BOOLEAN NOT NULL,
+          feedback JSONB NOT NULL,
+          skill TEXT NOT NULL,
+          score_label TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`)
+      )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS margins_skill_mastery (
+          id UUID PRIMARY KEY,
+          student_id UUID NOT NULL REFERENCES margins_users(id) ON DELETE CASCADE,
+          skill TEXT NOT NULL,
+          level TEXT NOT NULL CHECK (level IN ('not_yet_shown','emerging','solid','strong')),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          UNIQUE (student_id, skill)
+        )`)
+      )
       .then(() => undefined);
   }
   return schemaReady;
@@ -793,4 +829,160 @@ export async function getUploadedImage(id: string): Promise<MarginsUploadedImage
     [id]
   );
   return rows[0];
+}
+
+// ── Practice courses (Scout) ──
+
+export type MasteryLevel = "not_yet_shown" | "emerging" | "solid" | "strong";
+
+export interface MarginsPracticeProgress {
+  id: string;
+  student_id: string;
+  course_id: string;
+  current_module: number;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MarginsPracticeAttempt {
+  id: string;
+  progress_id: string;
+  module_id: string;
+  prompt_id: string;
+  response_text: string;
+  passed: boolean;
+  feedback: unknown;
+  skill: string;
+  score_label: MasteryLevel;
+  created_at: string;
+}
+
+export interface MarginsSkillMastery {
+  id: string;
+  student_id: string;
+  skill: string;
+  level: MasteryLevel;
+  updated_at: string;
+}
+
+const PRACTICE_PROGRESS_COLUMNS =
+  "id, student_id, course_id, current_module, completed_at, created_at, updated_at";
+
+// Scoped to (student_id, course_id) — the same student re-entering a course
+// always resumes the same progress row instead of starting over.
+export async function getOrCreatePracticeProgress(
+  studentId: string,
+  courseId: string
+): Promise<MarginsPracticeProgress> {
+  await ensureMarginsSchema();
+  const id = randomUUID();
+  const { rows } = await query<MarginsPracticeProgress>(
+    `INSERT INTO margins_practice_progress (id, student_id, course_id)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (student_id, course_id) DO UPDATE SET updated_at = margins_practice_progress.updated_at
+     RETURNING ${PRACTICE_PROGRESS_COLUMNS}`,
+    [id, studentId, courseId]
+  );
+  return rows[0];
+}
+
+export async function advancePracticeProgress(
+  progressId: string,
+  nextModule: number,
+  completed = false
+): Promise<MarginsPracticeProgress | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsPracticeProgress>(
+    `UPDATE margins_practice_progress
+     SET current_module = $2, completed_at = CASE WHEN $3 THEN now() ELSE completed_at END, updated_at = now()
+     WHERE id = $1
+     RETURNING ${PRACTICE_PROGRESS_COLUMNS}`,
+    [progressId, nextModule, completed]
+  );
+  return rows[0];
+}
+
+const PRACTICE_ATTEMPT_COLUMNS =
+  "id, progress_id, module_id, prompt_id, response_text, passed, feedback, skill, score_label, created_at";
+
+export async function recordPracticeAttempt(params: {
+  progressId: string;
+  moduleId: string;
+  promptId: string;
+  responseText: string;
+  passed: boolean;
+  feedback: unknown;
+  skill: string;
+  scoreLabel: MasteryLevel;
+}): Promise<MarginsPracticeAttempt> {
+  await ensureMarginsSchema();
+  const id = randomUUID();
+  const { rows } = await query<MarginsPracticeAttempt>(
+    `INSERT INTO margins_practice_attempts
+       (id, progress_id, module_id, prompt_id, response_text, passed, feedback, skill, score_label)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING ${PRACTICE_ATTEMPT_COLUMNS}`,
+    [
+      id,
+      params.progressId,
+      params.moduleId,
+      params.promptId,
+      params.responseText,
+      params.passed,
+      JSON.stringify(params.feedback),
+      params.skill,
+      params.scoreLabel,
+    ]
+  );
+  return rows[0];
+}
+
+const MASTERY_LEVELS: MasteryLevel[] = ["not_yet_shown", "emerging", "solid", "strong"];
+const MASTERY_LEVEL_VALUES: Record<MasteryLevel, number> = {
+  not_yet_shown: 0,
+  emerging: 1,
+  solid: 2,
+  strong: 3,
+};
+
+// Mastery = average of a skill's last 3 attempts (pass or fail — both are
+// diagnostic signal), bucketed back into the 4 discrete levels. Recomputed
+// on every attempt so one lucky/unlucky rep never fully swings the level.
+export async function recomputeAndUpsertSkillMastery(
+  studentId: string,
+  skill: string
+): Promise<MarginsSkillMastery> {
+  await ensureMarginsSchema();
+  const { rows } = await query<{ score_label: MasteryLevel }>(
+    `SELECT a.score_label
+     FROM margins_practice_attempts a
+     JOIN margins_practice_progress p ON p.id = a.progress_id
+     WHERE p.student_id = $1 AND a.skill = $2
+     ORDER BY a.created_at DESC
+     LIMIT 3`,
+    [studentId, skill]
+  );
+  const values = rows.map((r) => MASTERY_LEVEL_VALUES[r.score_label] ?? 0);
+  const average = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const level = MASTERY_LEVELS[Math.min(3, Math.max(0, Math.round(average)))];
+
+  const id = randomUUID();
+  const { rows: upserted } = await query<MarginsSkillMastery>(
+    `INSERT INTO margins_skill_mastery (id, student_id, skill, level)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (student_id, skill) DO UPDATE SET level = EXCLUDED.level, updated_at = now()
+     RETURNING id, student_id, skill, level, updated_at`,
+    [id, studentId, skill, level]
+  );
+  return upserted[0];
+}
+
+export async function getSkillMasteryForStudent(studentId: string): Promise<MarginsSkillMastery[]> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsSkillMastery>(
+    `SELECT id, student_id, skill, level, updated_at FROM margins_skill_mastery WHERE student_id = $1`,
+    [studentId]
+  );
+  return rows;
 }

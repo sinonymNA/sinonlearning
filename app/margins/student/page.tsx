@@ -100,6 +100,26 @@ export default async function StudentDashboardPage() {
             })}
           </RevealGroup>
         )}
+
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3 mt-10">Practice</h2>
+        <RevealGroup className="flex flex-col gap-2.5" stagger={60} translateY={14}>
+          <Link
+            href="/margins/student/practice"
+            className="reveal-item group flex items-center justify-between gap-3 rounded-xl border border-teal-100 bg-white px-4 py-3.5 hover:border-teal-300 hover:shadow-sm transition-all"
+            style={{ opacity: 0 }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-teal-600">
+                SCOUT
+              </span>
+              <div className="min-w-0">
+                <p className="font-medium text-stone-800">Build your SAQ skills</p>
+                <p className="text-xs text-stone-400">Quick reps, instant feedback, no pressure.</p>
+              </div>
+            </div>
+            <span className="shrink-0 text-teal-500 text-sm">→</span>
+          </Link>
+        </RevealGroup>
       </main>
     </div>
   );

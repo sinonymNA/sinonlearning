@@ -93,13 +93,14 @@ export default async function TeacherClassDetailPage({
           ) : (
             <RevealGroup className="flex flex-wrap gap-2" stagger={40} translateY={8}>
               {roster.map((s) => (
-                <span
+                <Link
                   key={s.id}
-                  className="reveal-item rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600"
+                  href={`/margins/teacher/classes/${cls.id}/students/${s.id}`}
+                  className="reveal-item rounded-full border border-stone-100 bg-white px-3.5 py-1.5 text-sm text-stone-600 hover:border-teal-200 hover:text-teal-700 transition-colors"
                   style={{ opacity: 0 }}
                 >
                   {s.name}
-                </span>
+                </Link>
               ))}
             </RevealGroup>
           )}
