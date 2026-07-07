@@ -38,6 +38,14 @@ export function ensureSchema(): Promise<void> {
       .then(() =>
         query(`ALTER TABLE materials ADD COLUMN IF NOT EXISTS position INTEGER NOT NULL DEFAULT 0`)
       )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS email_subscribers (
+          id SERIAL PRIMARY KEY,
+          email TEXT NOT NULL UNIQUE,
+          source TEXT NOT NULL DEFAULT 'site_popup',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`)
+      )
       .then(() => undefined);
   }
   return schemaReady;
