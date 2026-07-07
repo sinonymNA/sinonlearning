@@ -206,6 +206,12 @@ export function ensureMarginsSchema(): Promise<void> {
           UNIQUE (student_id, skill)
         )`)
       )
+      .then(() =>
+        // Modules are now a sequence of pages (lesson pages + a trailing check
+        // page) — current_module still marks which module is unlocked, this
+        // tracks position within that module's page list.
+        query(`ALTER TABLE margins_practice_progress ADD COLUMN IF NOT EXISTS current_page INTEGER NOT NULL DEFAULT 0`)
+      )
       .then(() => undefined);
   }
   return schemaReady;
@@ -840,6 +846,7 @@ export interface MarginsPracticeProgress {
   student_id: string;
   course_id: string;
   current_module: number;
+  current_page: number;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -867,7 +874,7 @@ export interface MarginsSkillMastery {
 }
 
 const PRACTICE_PROGRESS_COLUMNS =
-  "id, student_id, course_id, current_module, completed_at, created_at, updated_at";
+  "id, student_id, course_id, current_module, current_page, completed_at, created_at, updated_at";
 
 // Scoped to (student_id, course_id) — the same student re-entering a course
 // always resumes the same progress row instead of starting over.
@@ -890,15 +897,16 @@ export async function getOrCreatePracticeProgress(
 export async function advancePracticeProgress(
   progressId: string,
   nextModule: number,
+  nextPage: number,
   completed = false
 ): Promise<MarginsPracticeProgress | undefined> {
   await ensureMarginsSchema();
   const { rows } = await query<MarginsPracticeProgress>(
     `UPDATE margins_practice_progress
-     SET current_module = $2, completed_at = CASE WHEN $3 THEN now() ELSE completed_at END, updated_at = now()
+     SET current_module = $2, current_page = $3, completed_at = CASE WHEN $4 THEN now() ELSE completed_at END, updated_at = now()
      WHERE id = $1
      RETURNING ${PRACTICE_PROGRESS_COLUMNS}`,
-    [progressId, nextModule, completed]
+    [progressId, nextModule, nextPage, completed]
   );
   return rows[0];
 }

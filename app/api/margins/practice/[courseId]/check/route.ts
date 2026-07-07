@@ -9,13 +9,7 @@ import {
   type MasteryLevel,
   type MarginsSkillMastery,
 } from "@/lib/marginsDb";
-import {
-  isPracticeCourseId,
-  getPracticeCourse,
-  getPracticeModule,
-  getPracticePrompt,
-  getFullSaqPrompt,
-} from "@/lib/marginsPracticeCourses";
+import { isPracticeCourseId, getPracticeCourse, getPracticeModule, getModuleCheckPage } from "@/lib/marginsPracticeCourses";
 import { generatePracticeCheck } from "@/lib/marginsPracticeKoraGenerate";
 import { generateGrade } from "@/lib/marginsKoraGenerate";
 import { RUBRIC_TEMPLATES } from "@/lib/marginsRubrics";
@@ -61,9 +55,16 @@ export async function POST(
   const module_ = getPracticeModule(courseId, moduleId);
   if (!module_) return NextResponse.json({ error: "Unknown module." }, { status: 404 });
 
+  const checkPage = getModuleCheckPage(module_);
+  if (!checkPage) return NextResponse.json({ error: "This module has no check page." }, { status: 500 });
+  const checkPageIndex = module_.pages.indexOf(checkPage);
+
   const progress = await getOrCreatePracticeProgress(user.id, courseId);
   if (module_.order !== progress.current_module) {
     return NextResponse.json({ error: "This module isn't unlocked yet." }, { status: 403 });
+  }
+  if (progress.current_page !== checkPageIndex) {
+    return NextResponse.json({ error: "Read through the module's pages before checking in." }, { status: 403 });
   }
 
   const ip = getClientIp(request);
@@ -74,8 +75,8 @@ export async function POST(
   const isLastModule = module_.order === course.modules.length - 1;
 
   try {
-    if (module_.kind === "full_saq") {
-      const prompt = getFullSaqPrompt(courseId, moduleId, promptId);
+    if (checkPage.kind === "full_saq_check") {
+      const prompt = checkPage.prompts.find((p) => p.id === promptId);
       if (!prompt) return NextResponse.json({ error: "Unknown prompt." }, { status: 404 });
 
       const promptText = [
@@ -113,7 +114,7 @@ export async function POST(
 
       const passed = output.overall_score >= output.max_score;
       const updatedProgress = passed
-        ? await advancePracticeProgress(progress.id, module_.order + 1, isLastModule)
+        ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastModule)
         : progress;
 
       return NextResponse.json({
@@ -125,12 +126,12 @@ export async function POST(
       });
     }
 
-    const prompt = getPracticePrompt(courseId, moduleId, promptId);
-    if (!prompt || !module_.skill) return NextResponse.json({ error: "Unknown prompt." }, { status: 404 });
+    const prompt = checkPage.prompts.find((p) => p.id === promptId);
+    if (!prompt) return NextResponse.json({ error: "Unknown prompt." }, { status: 404 });
 
     const output = await generatePracticeCheck({
       moduleId,
-      skill: module_.skill,
+      skill: checkPage.skill,
       promptText: prompt.prompt,
       responseText,
     });
@@ -142,13 +143,13 @@ export async function POST(
       responseText,
       passed: output.passed,
       feedback: output,
-      skill: module_.skill,
+      skill: checkPage.skill,
       scoreLabel: output.score_label,
     });
-    const newMastery = await recomputeAndUpsertSkillMastery(user.id, module_.skill);
+    const newMastery = await recomputeAndUpsertSkillMastery(user.id, checkPage.skill);
 
     const updatedProgress = output.passed
-      ? await advancePracticeProgress(progress.id, module_.order + 1, isLastModule && output.passed)
+      ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastModule)
       : progress;
 
     return NextResponse.json({

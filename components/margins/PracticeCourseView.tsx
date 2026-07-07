@@ -14,6 +14,7 @@ interface Props {
   courseId: string;
   course: PracticeCourse;
   initialCurrentModule: number;
+  initialCurrentPage: number;
 }
 
 interface CheckMastery {
@@ -49,8 +50,16 @@ function isFullSaqResult(result: PracticeCheckResult | FullSaqResult): result is
   return "overall_score" in result;
 }
 
-export default function PracticeCourseView({ courseId, course, initialCurrentModule }: Props) {
+function clampPage(module_: PracticeModule, page: number): number {
+  return Math.min(Math.max(page, 0), module_.pages.length - 1);
+}
+
+export default function PracticeCourseView({ courseId, course, initialCurrentModule, initialCurrentPage }: Props) {
   const [moduleIndex, setModuleIndex] = useState(Math.min(initialCurrentModule, course.modules.length));
+  const [pageIndex, setPageIndex] = useState(() => {
+    const mod = course.modules[Math.min(initialCurrentModule, course.modules.length - 1)];
+    return mod ? clampPage(mod, initialCurrentPage) : 0;
+  });
   const [promptIndex, setPromptIndex] = useState(0);
   const [responseText, setResponseText] = useState("");
   const [partResponses, setPartResponses] = useState(["", "", ""]);
@@ -58,11 +67,12 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [error, setError] = useState<string | null>(null);
   const [checkResult, setCheckResult] = useState<CheckResponse | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const stepCardRef = useRef<HTMLDivElement>(null);
+  const pageCardRef = useRef<HTMLDivElement>(null);
   const masteryRef = useRef<Record<string, MasteryLevel>>({});
 
   const isDone = moduleIndex >= course.modules.length;
   const module_: PracticeModule | null = !isDone ? course.modules[moduleIndex] : null;
+  const page = module_ ? module_.pages[pageIndex] : null;
 
   useEffect(() => {
     if (wrapperRef.current) {
@@ -72,10 +82,10 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   }, [isDone]);
 
   useEffect(() => {
-    if (stepCardRef.current) {
-      animate(stepCardRef.current, { opacity: [0, 1], translateY: [12, 0], duration: 360, easing: "outQuart" });
+    if (pageCardRef.current) {
+      animate(pageCardRef.current, { opacity: [0, 1], translateY: [12, 0], duration: 360, easing: "outQuart" });
     }
-  }, [moduleIndex]);
+  }, [moduleIndex, pageIndex]);
 
   function fireConfetti(newMastery: CheckMastery[]) {
     const leveledUp = newMastery.some(
@@ -93,19 +103,42 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     });
   }
 
-  async function handleCheck() {
+  async function handleLessonContinue() {
     if (!module_) return;
     setError(null);
-    const isFullSaq = module_.kind === "full_saq";
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/margins/practice/${courseId}/advance`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ moduleId: module_.id, fromPage: pageIndex }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Couldn't move to the next page.");
+        setSubmitting(false);
+        return;
+      }
+      setPageIndex((i) => i + 1);
+    } catch {
+      setError("Network error. Please try again.");
+    }
+    setSubmitting(false);
+  }
+
+  async function handleCheck() {
+    if (!module_ || !page || (page.kind !== "check" && page.kind !== "full_saq_check")) return;
+    setError(null);
+    const isFullSaq = page.kind === "full_saq_check";
 
     let promptId: string;
     let text: string;
-    if (module_.kind === "full_saq") {
-      const prompt = module_.fullSaqPrompts![promptIndex % module_.fullSaqPrompts!.length];
+    if (page.kind === "full_saq_check") {
+      const prompt = page.prompts[promptIndex % page.prompts.length];
       promptId = prompt.id;
       text = prompt.parts.map((p, i) => `Part ${p.label}: ${partResponses[i]}`).join("\n\n");
     } else {
-      const prompt = module_.prompts![promptIndex % module_.prompts!.length];
+      const prompt = page.prompts[promptIndex % page.prompts.length];
       promptId = prompt.id;
       text = responseText;
     }
@@ -137,21 +170,21 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     setSubmitting(false);
   }
 
-  function handleContinue() {
+  function handleContinueAfterPass() {
     setCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
     setPromptIndex(0);
+    setPageIndex(0);
     setModuleIndex((i) => i + 1);
   }
 
   function handleRetry() {
-    if (!module_) return;
-    const count = module_.kind === "full_saq" ? module_.fullSaqPrompts!.length : module_.prompts!.length;
+    if (!page || (page.kind !== "check" && page.kind !== "full_saq_check")) return;
     setCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
-    setPromptIndex((i) => (i + 1) % count);
+    setPromptIndex((i) => (i + 1) % page.prompts.length);
   }
 
   if (isDone) {
@@ -166,36 +199,63 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     );
   }
 
-  const isFullSaq = module_!.kind === "full_saq";
-  const prompt = isFullSaq
-    ? module_!.fullSaqPrompts![promptIndex % module_!.fullSaqPrompts!.length]
-    : module_!.prompts![promptIndex % module_!.prompts!.length];
+  const isCheckPage = page!.kind === "check" || page!.kind === "full_saq_check";
+  const isFullSaqCheck = page!.kind === "full_saq_check";
 
   return (
     <div ref={wrapperRef} className="flex flex-col gap-5">
       <div className="course-panel flex items-center gap-2" style={{ opacity: 0 }}>
-        {course.modules.map((_, i) => (
-          <span
-            key={i}
-            className={`h-1.5 flex-1 rounded-full ${i <= moduleIndex ? "bg-teal-500" : "bg-stone-200"}`}
-          />
-        ))}
+        {course.modules.map((m, i) => {
+          const fraction = i < moduleIndex ? 1 : i > moduleIndex ? 0 : pageIndex / m.pages.length;
+          return (
+            <span key={m.id} className="relative h-1.5 flex-1 rounded-full bg-stone-200 overflow-hidden">
+              <span
+                className="absolute inset-y-0 left-0 rounded-full bg-teal-500 transition-all"
+                style={{ width: `${Math.round(fraction * 100)}%` }}
+              />
+            </span>
+          );
+        })}
       </div>
       <p className="course-panel text-xs text-stone-400" style={{ opacity: 0 }}>
-        Module {moduleIndex + 1} of {course.modules.length}
+        Module {moduleIndex + 1} of {course.modules.length} · Page {pageIndex + 1} of {module_!.pages.length}
       </p>
 
-      <div ref={stepCardRef} className="rounded-2xl border border-teal-100 bg-white p-6" style={{ opacity: 0 }}>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-teal-500 mb-1">{module_!.title}</p>
-        <p className="text-[13px] text-stone-500 mb-4">{module_!.tagline}</p>
+      <div ref={pageCardRef} className="rounded-2xl border border-teal-100 bg-white p-6" style={{ opacity: 0 }}>
+        {pageIndex === 0 && (
+          <>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-teal-500 mb-1">{module_!.title}</p>
+            <p className="text-[13px] text-stone-500 mb-4">{module_!.tagline}</p>
+          </>
+        )}
 
-        {!checkResult && isFullSaq && (
+        {page!.kind === "lesson" && (
+          <>
+            <p className="text-[17px] font-semibold text-stone-800 mb-3">{page!.title}</p>
+            <div className="flex flex-col gap-3">
+              {page!.body.map((paragraph, i) => (
+                <p key={i} className="text-[14px] text-stone-700 leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
+
+        {isCheckPage && !checkResult && (
+          <>
+            <p className="text-[17px] font-semibold text-stone-800 mb-1">{page!.title}</p>
+            <p className="text-[13px] text-stone-500 mb-4">{(page as { intro: string }).intro}</p>
+          </>
+        )}
+
+        {!checkResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
           <>
             <p className="text-[14px] text-stone-700 leading-relaxed mb-4 whitespace-pre-wrap">
-              {(prompt as { stimulus: string }).stimulus}
+              {page!.prompts[promptIndex % page!.prompts.length].stimulus}
             </p>
             <div className="flex flex-col gap-3">
-              {(prompt as { parts: { label: string; skill: string; prompt: string }[] }).parts.map((part, i) => (
+              {page!.prompts[promptIndex % page!.prompts.length].parts.map((part, i) => (
                 <div key={part.label}>
                   <p className="text-[13px] font-semibold text-stone-800 mb-1.5">
                     Part {part.label}: {part.prompt}
@@ -217,9 +277,11 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {!checkResult && !isFullSaq && (
+        {!checkResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && (
           <>
-            <p className="text-[14px] text-stone-700 leading-relaxed mb-3">{(prompt as { prompt: string }).prompt}</p>
+            <p className="text-[14px] text-stone-700 leading-relaxed mb-3">
+              {page!.prompts[promptIndex % page!.prompts.length].prompt}
+            </p>
             <textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
@@ -248,9 +310,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               hint={checkResult.result.hint}
               scoreLabel={checkResult.result.score_label}
               skillLabel={
-                isFullSaq
-                  ? "Full SAQ"
-                  : AP_SKILL_LABELS[module_!.skill!]
+                isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : AP_SKILL_LABELS[page!.skill]
               }
             />
           ))}
@@ -263,7 +323,17 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
       </div>
 
       <div className="course-panel flex items-center justify-end" style={{ opacity: 0 }}>
-        {!checkResult && (
+        {page!.kind === "lesson" && (
+          <button
+            onClick={handleLessonContinue}
+            disabled={submitting}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all disabled:opacity-60"
+          >
+            {submitting ? "One sec…" : "Continue"}
+            {!submitting && <ArrowRight size={15} />}
+          </button>
+        )}
+        {isCheckPage && !checkResult && (
           <button
             onClick={handleCheck}
             disabled={submitting}
@@ -276,7 +346,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         )}
         {checkResult && checkResult.passed && (
           <button
-            onClick={handleContinue}
+            onClick={handleContinueAfterPass}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
           >
             {moduleIndex === course.modules.length - 1 ? "Finish course" : "Next module"}

@@ -28,7 +28,12 @@ export default async function PracticeCoursePage({
         <h1 className="text-xl font-bold text-stone-900 mb-1">{course.title}</h1>
         <p className="text-sm text-stone-400 mb-6">{course.description}</p>
 
-        <PracticeCourseView courseId={courseId} course={course} initialCurrentModule={progress.current_module} />
+        <PracticeCourseView
+          courseId={courseId}
+          course={course}
+          initialCurrentModule={progress.current_module}
+          initialCurrentPage={progress.current_page}
+        />
       </main>
     </div>
   );

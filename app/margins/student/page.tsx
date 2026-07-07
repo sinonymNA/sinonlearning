@@ -101,23 +101,23 @@ export default async function StudentDashboardPage() {
           </RevealGroup>
         )}
 
-        <h2 className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3 mt-10">Practice</h2>
-        <RevealGroup className="flex flex-col gap-2.5" stagger={60} translateY={14}>
+        <RevealGroup className="mt-10" stagger={0}>
           <Link
             href="/margins/student/practice"
-            className="reveal-item group flex items-center justify-between gap-3 rounded-xl border border-teal-100 bg-white px-4 py-3.5 hover:border-teal-300 hover:shadow-sm transition-all"
+            className="reveal-item group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-5 shadow-sm shadow-teal-200 hover:shadow-md transition-all"
             style={{ opacity: 0 }}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-bold text-teal-600">
-                SCOUT
-              </span>
-              <div className="min-w-0">
-                <p className="font-medium text-stone-800">Build your SAQ skills</p>
-                <p className="text-xs text-stone-400">Quick reps, instant feedback, no pressure.</p>
-              </div>
+            <div className="absolute -right-6 -top-8 h-28 w-28 rounded-full bg-white/10" />
+            <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-white/10" />
+            <span className="relative shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-white/15 text-white text-lg font-bold ring-1 ring-white/30">
+              S
+            </span>
+            <div className="relative min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-teal-100">Practice with Scout · not graded</p>
+              <p className="font-semibold text-white mt-0.5">Build your SAQ skills, one quick rep at a time</p>
+              <p className="text-[13px] text-teal-50/90 mt-0.5">A self-paced mini-course — instant feedback, zero pressure.</p>
             </div>
-            <span className="shrink-0 text-teal-500 text-sm">→</span>
+            <span className="relative shrink-0 text-white text-lg group-hover:translate-x-0.5 transition-transform">→</span>
           </Link>
         </RevealGroup>
       </main>
