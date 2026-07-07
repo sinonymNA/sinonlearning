@@ -5,6 +5,7 @@ import { buildBeatFromSlots } from "./reelBeatSlots";
 import type { Beat } from "./reelTypes";
 import { ReelBuildSchema, type ReelBeatOutput, type ReelBuildOutput } from "./reelAiTypes";
 import { callKoraStructured } from "./koraServer";
+import { buildReferenceExamplesBlock } from "./koraLabReference";
 import type { KoraLabGenerateOverrides, KoraLabGenerateResult } from "./koraLab/registry";
 
 const REEL_SYSTEM_PROMPT =
@@ -78,7 +79,8 @@ export async function generateReelScript(
   input: ReelBuildInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult<ReelBuildOutput>> {
-  const system = overrides?.systemPromptOverride ?? REEL_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("reel_build");
+  const system = (overrides?.systemPromptOverride ?? REEL_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-opus-4-8";
   const thinking = overrides?.thinking ?? true;
   const maxTokens = 8192;

@@ -9,6 +9,7 @@ import {
 } from "./marginsGradingTypes";
 import { RUBRIC_TEMPLATES, type EssayType } from "./marginsRubrics";
 import { callKoraStructured } from "./koraServer";
+import { buildReferenceExamplesBlock } from "./koraLabReference";
 import type { KoraLabGenerateOverrides, KoraLabGenerateResult } from "./koraLab/registry";
 
 // Generation logic extracted from the production KORA routes under
@@ -42,7 +43,8 @@ export async function generateRubric(
   input: RubricGenerateInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult> {
-  const system = overrides?.systemPromptOverride ?? RUBRIC_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("margins_rubric");
+  const system = (overrides?.systemPromptOverride ?? RUBRIC_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-sonnet-4-6";
   const maxTokens = 1536;
   const { data } = await callKoraStructured({
@@ -102,7 +104,8 @@ export async function generateAssignment(
   input: AssignmentGenerateInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult> {
-  const system = overrides?.systemPromptOverride ?? ASSIGNMENT_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("margins_assignment");
+  const system = (overrides?.systemPromptOverride ?? ASSIGNMENT_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-sonnet-4-6";
   const maxTokens = 1024;
   const { data } = await callKoraStructured({
@@ -239,7 +242,8 @@ export async function generateGrade(
   input: GradeInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult<EssayEvalOutput>> {
-  const system = overrides?.systemPromptOverride ?? GRADE_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("margins_grade");
+  const system = (overrides?.systemPromptOverride ?? GRADE_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-opus-4-8";
   const thinking = overrides?.thinking ?? true;
   const maxTokens = 8192;
@@ -319,7 +323,8 @@ export async function generateRevisionPlan(
   input: RevisionCoachInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult<RevisionPlanOutput>> {
-  const system = overrides?.systemPromptOverride ?? REVISION_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("margins_revision_coach");
+  const system = (overrides?.systemPromptOverride ?? REVISION_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-opus-4-8";
   const thinking = overrides?.thinking ?? true;
   const maxTokens = 8192;

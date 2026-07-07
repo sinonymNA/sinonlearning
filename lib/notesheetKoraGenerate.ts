@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { NotesheetPlanSchema } from "./notesheetTypes";
 import { callKoraStructured } from "./koraServer";
+import { buildReferenceExamplesBlock } from "./koraLabReference";
 import type { KoraLabGenerateOverrides, KoraLabGenerateResult } from "./koraLab/registry";
 
 const NOTESHEET_SYSTEM_PROMPT =
@@ -51,7 +52,8 @@ export async function generateNotesheetPlan(
   input: NotesheetGenerateInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult> {
-  const system = overrides?.systemPromptOverride ?? NOTESHEET_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("notesheet_generate");
+  const system = (overrides?.systemPromptOverride ?? NOTESHEET_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-sonnet-4-6";
   const maxTokens = 2048;
   const clampedPages = Math.max(1, Math.min(4, Math.round(input.targetPages)));

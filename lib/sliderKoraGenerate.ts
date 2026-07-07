@@ -3,6 +3,7 @@ import { SLIDE_LAYOUTS } from "./sliderTypes";
 import { SLIDER_THEMES } from "./sliderThemes";
 import { SliderKoraBuildSchema, type SliderKoraBuildOutput } from "./sliderAiTypes";
 import { callKoraStructured } from "./koraServer";
+import { buildReferenceExamplesBlock } from "./koraLabReference";
 import type { KoraLabGenerateOverrides, KoraLabGenerateResult } from "./koraLab/registry";
 
 const SLIDER_SYSTEM_PROMPT =
@@ -69,7 +70,8 @@ export async function generateSliderDeck(
   input: SliderBuildInput,
   overrides?: KoraLabGenerateOverrides
 ): Promise<KoraLabGenerateResult<SliderKoraBuildOutput>> {
-  const system = overrides?.systemPromptOverride ?? SLIDER_SYSTEM_PROMPT;
+  const referenceBlock = await buildReferenceExamplesBlock("slider_build");
+  const system = (overrides?.systemPromptOverride ?? SLIDER_SYSTEM_PROMPT) + referenceBlock;
   const model = overrides?.model ?? "claude-opus-4-8";
   const thinking = overrides?.thinking ?? true;
   const maxTokens = 8192;

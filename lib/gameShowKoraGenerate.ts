@@ -3,6 +3,7 @@ import { GAME_SHOW_TYPES, type RacePayload } from "./gameShowTypes";
 import { GAME_SHOW_SCHEMAS } from "./gameShowSchemas";
 import { buildGenerationPrompt } from "./gameShowPrompts";
 import { callKoraStructured, KoraValidationError } from "./koraServer";
+import { buildReferenceExamplesBlock } from "./koraLabReference";
 import type { KoraLabGenerateOverrides, KoraLabGenerateResult } from "./koraLab/registry";
 
 export const GameShowGenerateInputSchema = z.object({
@@ -22,11 +23,14 @@ export async function generateGameShow(
   // teacher's content are combined into one user message per-type, so a
   // systemPromptOverride isn't supported here (there's no separable
   // instructions channel to swap out without also dropping rawContent).
-  // The no-content version of the template stands in as the lineage snapshot.
+  // The no-content version of the template stands in as the lineage snapshot;
+  // the reference block gets appended there too, since it's part of what
+  // actually shaped this generation even though it isn't a system message.
+  const referenceBlock = await buildReferenceExamplesBlock("game_show_generate");
   const { data } = await callKoraStructured({
     model,
     maxTokens,
-    messages: [{ role: "user", content: buildGenerationPrompt(type, input.rawContent) }],
+    messages: [{ role: "user", content: buildGenerationPrompt(type, input.rawContent) + referenceBlock }],
     schema: GAME_SHOW_SCHEMAS[type],
   });
 
@@ -39,7 +43,7 @@ export async function generateGameShow(
   }
 
   return {
-    system: buildGenerationPrompt(type, ""),
+    system: buildGenerationPrompt(type, "") + referenceBlock,
     output: data,
     configUsed: { model, thinking: false, maxTokens, label: overrides?.label },
   };

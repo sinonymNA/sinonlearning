@@ -12,6 +12,7 @@ import {
 } from "@/lib/marginsDb";
 import { EssayEvalSchema } from "@/lib/marginsGradingTypes";
 import { generateGrade, GRADE_SYSTEM_PROMPT, buildRubricEssayTail, type PriorGrading } from "@/lib/marginsKoraGenerate";
+import { buildReferenceExamplesBlock } from "@/lib/koraLabReference";
 import {
   callKoraStructured,
   KoraConfigError,
@@ -127,10 +128,11 @@ export async function POST(request: NextRequest) {
       });
       // The highest-stakes call in Margins — runs on Opus with adaptive
       // thinking; the larger token budget leaves room for the thinking pass.
+      const referenceBlock = await buildReferenceExamplesBlock("margins_grade");
       const { data } = await callKoraStructured({
         model: "claude-opus-4-8",
         maxTokens: 8192,
-        system: GRADE_SYSTEM_PROMPT,
+        system: GRADE_SYSTEM_PROMPT + referenceBlock,
         cacheSystemPrompt: true,
         thinking: { type: "adaptive" },
         messages: [{ role: "user", content }],

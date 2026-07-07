@@ -23,6 +23,7 @@ export interface KoraLabPairRow {
   winner: KoraLabWinner;
   reason: string | null;
   rated_by: string;
+  use_as_reference: boolean;
   created_at: string;
 }
 
@@ -49,16 +50,19 @@ export function ensureKoraLabSchema(): Promise<void> {
         winner TEXT NOT NULL CHECK (winner IN ('a', 'b', 'tie', 'both_bad')),
         reason TEXT,
         rated_by TEXT NOT NULL DEFAULT 'admin',
+        use_as_reference BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`
-    ).then(() => undefined);
+    )
+      .then(() => query(`ALTER TABLE kora_lab_pairs ADD COLUMN IF NOT EXISTS use_as_reference BOOLEAN NOT NULL DEFAULT false`))
+      .then(() => undefined);
   }
   return schemaReady;
 }
 
 const PAIR_COLUMNS =
   "id, task_type, input_context, system_prompt_snapshot, candidate_a, candidate_a_config, " +
-  "candidate_b, candidate_b_config, winner, reason, rated_by, created_at";
+  "candidate_b, candidate_b_config, winner, reason, rated_by, use_as_reference, created_at";
 
 export async function insertKoraLabPair(params: {
   taskType: string;
@@ -140,6 +144,38 @@ export async function getKoraLabStats(): Promise<KoraLabStatRow[]> {
      GROUP BY task_type, winner ORDER BY task_type, winner`
   );
   return rows.map((r) => ({ task_type: r.task_type, winner: r.winner, count: parseInt(r.count, 10) }));
+}
+
+export async function getKoraLabPairById(id: string): Promise<KoraLabPairRow | null> {
+  await ensureKoraLabSchema();
+  const { rows } = await query<KoraLabPairRow>(`SELECT ${PAIR_COLUMNS} FROM kora_lab_pairs WHERE id = $1`, [id]);
+  return rows[0] ?? null;
+}
+
+// Only a/b winners can be marked as a reference example — a tie or both_bad
+// pair has no clear "chosen" output to feed back into future generations.
+export async function setKoraLabPairReference(id: string, useAsReference: boolean): Promise<KoraLabPairRow | null> {
+  await ensureKoraLabSchema();
+  const { rows } = await query<KoraLabPairRow>(
+    `UPDATE kora_lab_pairs SET use_as_reference = $2
+     WHERE id = $1 AND (winner IN ('a', 'b') OR $2 = false)
+     RETURNING ${PAIR_COLUMNS}`,
+    [id, useAsReference]
+  );
+  return rows[0] ?? null;
+}
+
+// Admin-curated winning outputs for a task, most recently marked first — the
+// few-shot reference examples KORA's live generation calls draw on.
+export async function getReferenceExamplesForTask(taskType: string, limit = 3): Promise<KoraLabPairRow[]> {
+  await ensureKoraLabSchema();
+  const { rows } = await query<KoraLabPairRow>(
+    `SELECT ${PAIR_COLUMNS} FROM kora_lab_pairs
+     WHERE task_type = $1 AND use_as_reference = true AND winner IN ('a', 'b')
+     ORDER BY created_at DESC LIMIT $2`,
+    [taskType, limit]
+  );
+  return rows;
 }
 
 export async function exportKoraLabPairs(params: { taskType?: string }): Promise<KoraLabPairRow[]> {
