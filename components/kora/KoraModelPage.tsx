@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import KoraHero from "./KoraHero";
 import KoraFlowDiagram from "./KoraFlowDiagram";
+import KoraNetworkGraph from "./KoraNetworkGraph";
+import KoraEvidenceModel from "./KoraEvidenceModel";
 import KoraLogo from "@/components/KoraLogo";
 import FadeIn from "@/components/FadeIn";
 import RelatedResources from "@/components/RelatedResources";
@@ -298,6 +300,28 @@ export default function KoraModelPage() {
         </div>
       </section>
 
+      {/* ── How it all connects ── */}
+      <section className="px-6 py-24 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <FadeIn>
+            <p className="text-center text-sm font-semibold uppercase tracking-[0.14em] text-violet-600">
+              How it all connects
+            </p>
+            <div className="mx-auto mt-4 h-1 w-14 rounded-full bg-gradient-to-r from-teal-500 via-rose-300 to-amber-400" />
+            <h2 className="mt-6 text-center font-display text-3xl font-medium leading-tight text-navy-900 sm:text-4xl">
+              Every capability traces back to a principle.
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-center text-lg leading-relaxed text-navy-700/75">
+              This isn&rsquo;t a decorative diagram — every connection below is grounded in the actual instructions
+              KORA runs on. Explore the web of what KORA can build and the constraints it never breaks.
+            </p>
+          </FadeIn>
+          <div className="mt-12">
+            <KoraNetworkGraph />
+          </div>
+        </div>
+      </section>
+
       {/* ── Live now: Scaffold ── */}
       <section className="px-6 py-24 lg:px-8">
         <div className="mx-auto max-w-5xl">
@@ -395,6 +419,8 @@ export default function KoraModelPage() {
           </div>
         </div>
       </section>
+
+      <KoraEvidenceModel />
 
       {/* ── Rules KORA will never break ── */}
       <section className="px-6 py-24 lg:px-8">

@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isGameShowType, type RacePayload } from "@/lib/gameShowTypes";
-import { GAME_SHOW_SCHEMAS } from "@/lib/gameShowSchemas";
-import { buildGenerationPrompt } from "@/lib/gameShowPrompts";
+import { isGameShowType } from "@/lib/gameShowTypes";
+import { generateGameShow } from "@/lib/gameShowKoraGenerate";
 import { getClientIp, isRateLimited } from "@/lib/rateLimit";
-import {
-  callKoraStructured,
-  KoraConfigError,
-  KoraValidationError,
-} from "@/lib/koraServer";
+import { KoraConfigError, KoraValidationError } from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
 
@@ -42,30 +37,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { data } = await callKoraStructured({
-      model: "claude-sonnet-4-6",
-      maxTokens: 4096,
-      messages: [{ role: "user", content: buildGenerationPrompt(type, rawContent) }],
-      schema: GAME_SHOW_SCHEMAS[type],
-    });
-
-    // Cross-field check the schema can't express: each race question's
-    // correctIndex must point at one of its own choices.
-    if (type === "race") {
-      const race = data as RacePayload;
-      const badIndex = race.questions.some((q) => q.correctIndex >= q.choices.length);
-      if (badIndex) {
-        return NextResponse.json(
-          {
-            error:
-              "The AI generated content that didn't quite fit the game format. You can try again or fill in the content manually.",
-          },
-          { status: 502 }
-        );
-      }
-    }
-
-    return NextResponse.json({ data });
+    const { output } = await generateGameShow({ type, rawContent });
+    return NextResponse.json({ data: output });
   } catch (err) {
     if (err instanceof KoraConfigError) {
       return NextResponse.json(
