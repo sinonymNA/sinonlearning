@@ -30,6 +30,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/research",
     "/research/kora-model",
     "/mission",
+    "/shop-fundraisers",
+    "/shop-fundraisers/financial-framework",
   ].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(),

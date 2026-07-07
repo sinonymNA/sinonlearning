@@ -13,6 +13,7 @@ const links = [
   { href: "/students", label: "Students" },
   { href: "/research", label: "Research" },
   { href: "/mission", label: "Mission" },
+  { href: "/shop-fundraisers", label: "Shop & Fundraisers" },
 ];
 
 export default function Navbar() {
