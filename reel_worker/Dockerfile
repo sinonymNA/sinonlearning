@@ -3,6 +3,7 @@ FROM python:3.12-slim
 
 # Runtime system deps for Manim (Cairo + Pango) and ffmpeg for muxing/concat.
 # Installed as "manual" so the build-deps purge below never auto-removes them.
+# fontconfig (for fc-cache) registers the theme fonts bundled in fonts/ below.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ffmpeg \
       libcairo2 \
@@ -10,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libpangocairo-1.0-0 \
       libgdk-pixbuf-2.0-0 \
       fonts-dejavu-core \
+      fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -28,6 +30,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .
+
+# Register the theme fonts (Inter, Fraunces, Patrick Hand — see fonts/OFL-*.txt
+# for licenses) under their real family names so Pango/Manim can reference them
+# by name, matching lib/reelTypes.ts's REEL_THEMES exactly.
+RUN mkdir -p /usr/share/fonts/truetype/reel \
+    && cp fonts/*.ttf /usr/share/fonts/truetype/reel/ \
+    && fc-cache -f
 
 # DATABASE_URL is provided by Railway (shared with the web service).
 CMD ["python", "worker.py"]

@@ -67,7 +67,7 @@ def claim_next_job(conn: psycopg.Connection) -> Optional[dict[str, Any]]:
 def get_project(conn: psycopg.Connection, project_id: str) -> Optional[dict[str, Any]]:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id, title, beats FROM reel_projects WHERE id = %s", (project_id,)
+            "SELECT id, title, beats, theme_id FROM reel_projects WHERE id = %s", (project_id,)
         )
         return cur.fetchone()
 

@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { query } from "./db";
 import { ensureMarginsSchema } from "./marginsDb";
+import { DEFAULT_REEL_THEME_ID } from "./reelTypes";
 import type { Beat, ReelStatus } from "./reelTypes";
 
 export interface ReelProjectRow {
@@ -9,6 +10,7 @@ export interface ReelProjectRow {
   title: string;
   beats: Beat[];
   status: ReelStatus;
+  theme_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,9 +65,15 @@ export function ensureReelSchema(): Promise<void> {
           title TEXT NOT NULL DEFAULT 'Untitled video',
           beats JSONB NOT NULL DEFAULT '[]',
           status TEXT NOT NULL DEFAULT 'draft',
+          theme_id TEXT NOT NULL DEFAULT 'cream-rose',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
+      )
+      .then(() =>
+        // Column added after theme_id existed only as a hardcoded look — keep
+        // this default in lockstep with DEFAULT_REEL_THEME_ID in lib/reelTypes.ts.
+        query(`ALTER TABLE reel_projects ADD COLUMN IF NOT EXISTS theme_id TEXT NOT NULL DEFAULT 'cream-rose'`)
       )
       .then(() =>
         query(`CREATE TABLE IF NOT EXISTS reel_images (
@@ -115,20 +123,27 @@ export function ensureReelSchema(): Promise<void> {
 
 // ── Projects ──
 
-const PROJECT_COLUMNS = "id, teacher_id, title, beats, status, created_at, updated_at";
+const PROJECT_COLUMNS = "id, teacher_id, title, beats, status, theme_id, created_at, updated_at";
 
 export async function createReelProject(params: {
   teacherId: string;
   title?: string;
   beats?: Beat[];
+  themeId?: string;
 }): Promise<ReelProjectRow> {
   await ensureReelSchema();
   const id = randomUUID();
   const { rows } = await query<ReelProjectRow>(
-    `INSERT INTO reel_projects (id, teacher_id, title, beats)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO reel_projects (id, teacher_id, title, beats, theme_id)
+     VALUES ($1, $2, $3, $4, $5)
      RETURNING ${PROJECT_COLUMNS}`,
-    [id, params.teacherId, params.title?.trim() || "Untitled video", JSON.stringify(params.beats ?? [])]
+    [
+      id,
+      params.teacherId,
+      params.title?.trim() || "Untitled video",
+      JSON.stringify(params.beats ?? []),
+      params.themeId ?? DEFAULT_REEL_THEME_ID,
+    ]
   );
   return rows[0];
 }
@@ -153,7 +168,7 @@ export async function getReelProjectsByTeacher(teacherId: string): Promise<ReelP
 
 export async function updateReelProject(
   id: string,
-  patch: { title?: string; beats?: Beat[]; status?: ReelStatus }
+  patch: { title?: string; beats?: Beat[]; status?: ReelStatus; themeId?: string }
 ): Promise<ReelProjectRow | undefined> {
   await ensureReelSchema();
   const { rows } = await query<ReelProjectRow>(
@@ -161,10 +176,17 @@ export async function updateReelProject(
        title = COALESCE($2, title),
        beats = COALESCE($3, beats),
        status = COALESCE($4, status),
+       theme_id = COALESCE($5, theme_id),
        updated_at = now()
      WHERE id = $1
      RETURNING ${PROJECT_COLUMNS}`,
-    [id, patch.title?.trim() || null, patch.beats ? JSON.stringify(patch.beats) : null, patch.status ?? null]
+    [
+      id,
+      patch.title?.trim() || null,
+      patch.beats ? JSON.stringify(patch.beats) : null,
+      patch.status ?? null,
+      patch.themeId ?? null,
+    ]
   );
   return rows[0];
 }

@@ -1,19 +1,33 @@
 "use client";
 
-import { REEL_THEME } from "@/lib/reelTypes";
+import { getReelTheme } from "@/lib/reelTypes";
 import type { Beat } from "@/lib/reelTypes";
+import { reelFontClass } from "@/lib/reelFonts";
 
-function Panel({ title, body }: { title: string; body: string }) {
+function Panel({
+  title,
+  body,
+  accent,
+  panel,
+  bodyColor,
+  headingFont,
+  bodyFont,
+}: {
+  title: string;
+  body: string;
+  accent: string;
+  panel: string;
+  bodyColor: string;
+  headingFont: string;
+  bodyFont: string;
+}) {
   return (
-    <div
-      className="flex-1 rounded-lg border p-4 text-center"
-      style={{ borderColor: REEL_THEME.accent, background: REEL_THEME.panel }}
-    >
-      <div className="text-sm font-bold sm:text-lg" style={{ color: REEL_THEME.accent }}>
+    <div className="flex-1 rounded-lg border p-4 text-center" style={{ borderColor: accent, background: panel }}>
+      <div className={`text-sm font-bold sm:text-lg ${headingFont}`} style={{ color: accent }}>
         {title}
       </div>
       {body && (
-        <div className="mt-1 text-xs sm:text-sm" style={{ color: REEL_THEME.body }}>
+        <div className={`mt-1 text-xs sm:text-sm ${bodyFont}`} style={{ color: bodyColor }}>
           {body}
         </div>
       )}
@@ -23,8 +37,14 @@ function Panel({ title, body }: { title: string; body: string }) {
 
 // A rough on-canvas approximation of a beat — a guide for the teacher while
 // editing. The Manim render (reel_worker/templates.py) is the source of truth
-// for the actual video; this only needs to convey layout and content.
-export default function BeatPreview({ beat }: { beat: Beat }) {
+// for the actual video; this only needs to convey layout, content, and the
+// active theme's look (colors + fonts) closely enough to preview it.
+export default function BeatPreview({ beat, themeId }: { beat: Beat; themeId?: string }) {
+  const theme = getReelTheme(themeId);
+  const { background, heading, body: bodyColor, accent, panel } = theme.colors;
+  const headingFont = reelFontClass(theme.fonts.heading);
+  const bodyFont = reelFontClass(theme.fonts.body);
+
   const p = beat.params;
   const asText = (v: unknown) => (typeof v === "string" ? v : "");
   const asList = (v: unknown) => (Array.isArray(v) ? v.filter((x) => String(x).trim()) : []);
@@ -32,15 +52,15 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
   return (
     <div
       className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl"
-      style={{ background: REEL_THEME.background }}
+      style={{ background }}
     >
       {beat.templateId === "titleCard" && (
         <div className="px-8 text-center">
-          <div className="text-2xl font-bold sm:text-4xl" style={{ color: REEL_THEME.heading }}>
+          <div className={`text-2xl font-bold sm:text-4xl ${headingFont}`} style={{ color: heading }}>
             {asText(p.headline) || "Headline"}
           </div>
           {asText(p.subtitle) && (
-            <div className="mt-3 text-sm sm:text-lg" style={{ color: REEL_THEME.body }}>
+            <div className={`mt-3 text-sm sm:text-lg ${bodyFont}`} style={{ color: bodyColor }}>
               {asText(p.subtitle)}
             </div>
           )}
@@ -49,12 +69,12 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
 
       {beat.templateId === "bulletReveal" && (
         <div className="w-full px-10">
-          <div className="mb-4 text-lg font-bold sm:text-2xl" style={{ color: REEL_THEME.accent }}>
+          <div className={`mb-4 text-lg font-bold sm:text-2xl ${headingFont}`} style={{ color: accent }}>
             {asText(p.heading) || "Heading"}
           </div>
           <ul className="space-y-2">
             {(asList(p.bullets).length ? asList(p.bullets) : ["Point one", "Point two"]).slice(0, 5).map((b, i) => (
-              <li key={i} className="text-sm sm:text-lg" style={{ color: REEL_THEME.body }}>
+              <li key={i} className={`text-sm sm:text-lg ${bodyFont}`} style={{ color: bodyColor }}>
                 •&nbsp;&nbsp;{b}
               </li>
             ))}
@@ -74,13 +94,13 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
           ) : (
             <div
               className="flex h-32 w-56 items-center justify-center rounded-md border border-dashed text-xs"
-              style={{ borderColor: REEL_THEME.body, color: REEL_THEME.body }}
+              style={{ borderColor: bodyColor, color: bodyColor }}
             >
               Image goes here
             </div>
           )}
           {asText(p.caption) && (
-            <div className="text-center text-sm sm:text-base" style={{ color: REEL_THEME.body }}>
+            <div className={`text-center text-sm sm:text-base ${bodyFont}`} style={{ color: bodyColor }}>
               {asText(p.caption)}
             </div>
           )}
@@ -92,9 +112,9 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
           {(asList(p.labels).length ? asList(p.labels) : ["Label"]).slice(0, 4).map((l, i) => (
             <div
               key={i}
-              className="text-xs sm:text-sm"
+              className={`text-xs sm:text-sm ${bodyFont}`}
               style={{
-                color: REEL_THEME.body,
+                color: bodyColor,
                 gridColumn: i % 2 === 0 ? 1 : 3,
                 gridRow: i < 2 ? 1 : 3,
               }}
@@ -103,8 +123,8 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
             </div>
           ))}
           <div
-            className="col-start-2 row-start-2 rounded-lg border px-4 py-2 text-sm font-bold sm:text-lg"
-            style={{ borderColor: REEL_THEME.accent, color: REEL_THEME.heading }}
+            className={`col-start-2 row-start-2 rounded-lg border px-4 py-2 text-sm font-bold sm:text-lg ${headingFont}`}
+            style={{ borderColor: accent, color: heading }}
           >
             {asText(p.centerLabel) || "Core idea"}
           </div>
@@ -113,26 +133,42 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
 
       {beat.templateId === "beforeAfter" && (
         <div className="flex w-full items-center justify-center gap-3 px-6">
-          <Panel title={asText(p.leftTitle) || "Before"} body={asText(p.leftBody)} />
-          <div className="text-xl" style={{ color: REEL_THEME.accent }}>
+          <Panel
+            title={asText(p.leftTitle) || "Before"}
+            body={asText(p.leftBody)}
+            accent={accent}
+            panel={panel}
+            bodyColor={bodyColor}
+            headingFont={headingFont}
+            bodyFont={bodyFont}
+          />
+          <div className="text-xl" style={{ color: accent }}>
             →
           </div>
-          <Panel title={asText(p.rightTitle) || "After"} body={asText(p.rightBody)} />
+          <Panel
+            title={asText(p.rightTitle) || "After"}
+            body={asText(p.rightBody)}
+            accent={accent}
+            panel={panel}
+            bodyColor={bodyColor}
+            headingFont={headingFont}
+            bodyFont={bodyFont}
+          />
         </div>
       )}
 
       {beat.templateId === "timeline" && (
         <div className="w-full px-8">
-          <div className="relative flex items-center justify-between border-t-2 pt-4" style={{ borderColor: REEL_THEME.accent }}>
+          <div className="relative flex items-center justify-between border-t-2 pt-4" style={{ borderColor: accent }}>
             {(asList(p.events).length ? asList(p.events) : ["1929: Event"]).slice(0, 5).map((e, i) => {
               const [head, ...rest] = e.split(":");
               return (
                 <div key={i} className="max-w-[18%] text-center">
-                  <div className="text-xs font-bold sm:text-sm" style={{ color: REEL_THEME.accent }}>
+                  <div className={`text-xs font-bold sm:text-sm ${headingFont}`} style={{ color: accent }}>
                     {head}
                   </div>
                   {rest.join(":").trim() && (
-                    <div className="text-[10px] sm:text-xs" style={{ color: REEL_THEME.body }}>
+                    <div className={`text-[10px] sm:text-xs ${bodyFont}`} style={{ color: bodyColor }}>
                       {rest.join(":").trim()}
                     </div>
                   )}
@@ -145,11 +181,11 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
 
       {beat.templateId === "simpleGraph" && (
         <div className="flex w-full flex-col items-center gap-2 px-10">
-          <div className="relative h-32 w-full max-w-md border-b-2 border-l-2" style={{ borderColor: REEL_THEME.accent }}>
+          <div className="relative h-32 w-full max-w-md border-b-2 border-l-2" style={{ borderColor: accent }}>
             <div
               className="absolute bottom-0 left-0 h-full w-full"
               style={{
-                background: `linear-gradient(to top right, transparent calc(50% - 2px), ${REEL_THEME.accent} calc(50% - 2px), ${REEL_THEME.accent} calc(50% + 2px), transparent calc(50% + 2px))`,
+                background: `linear-gradient(to top right, transparent calc(50% - 2px), ${accent} calc(50% - 2px), ${accent} calc(50% + 2px), transparent calc(50% + 2px))`,
                 transform:
                   asText(p.trend).toLowerCase().includes("down")
                     ? "scaleY(-1)"
@@ -160,17 +196,17 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
               }}
             />
             {asText(p.trend).toLowerCase().includes("flat") && (
-              <div className="absolute left-0 top-1/2 h-[3px] w-full" style={{ background: REEL_THEME.accent }} />
+              <div className="absolute left-0 top-1/2 h-[3px] w-full" style={{ background: accent }} />
             )}
-            <span className="absolute -left-1 -top-5 text-[10px]" style={{ color: REEL_THEME.body }}>
+            <span className={`absolute -left-1 -top-5 text-[10px] ${bodyFont}`} style={{ color: bodyColor }}>
               {asText(p.yLabel)}
             </span>
-            <span className="absolute -bottom-5 right-0 text-[10px]" style={{ color: REEL_THEME.body }}>
+            <span className={`absolute -bottom-5 right-0 text-[10px] ${bodyFont}`} style={{ color: bodyColor }}>
               {asText(p.xLabel)}
             </span>
           </div>
           {asText(p.caption) && (
-            <div className="mt-4 text-center text-sm" style={{ color: REEL_THEME.heading }}>
+            <div className={`mt-4 text-center text-sm ${headingFont}`} style={{ color: heading }}>
               {asText(p.caption)}
             </div>
           )}

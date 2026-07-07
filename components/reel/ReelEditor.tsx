@@ -16,11 +16,15 @@ import {
   GripVertical,
   AlertTriangle,
   LayoutGrid,
+  Palette,
 } from "lucide-react";
 import ReelLogo from "@/components/ReelLogo";
 import BeatPreview from "./BeatPreview";
 import Teleprompter from "./Teleprompter";
+import ThemePicker from "./ThemePicker";
+import ReelModal from "./ReelModal";
 import { REEL_TEMPLATES, createBeat, getTemplate } from "@/lib/reelTemplates";
+import { DEFAULT_REEL_THEME_ID } from "@/lib/reelTypes";
 import type { Beat, ReelTemplateId } from "@/lib/reelTypes";
 import type { ReelProjectRow } from "@/lib/reelDb";
 import type { ImageResult } from "@/lib/imageSearch";
@@ -30,8 +34,10 @@ type JobPhase = "idle" | "working" | "done" | "failed";
 export default function ReelEditor({ project, role = "teacher" }: { project: ReelProjectRow; role?: "teacher" | "student" }) {
   const [title, setTitle] = useState(project.title);
   const [beats, setBeats] = useState<Beat[]>(project.beats.length ? project.beats : [createBeat("titleCard")]);
+  const [themeId, setThemeId] = useState(project.theme_id || DEFAULT_REEL_THEME_ID);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [showThemePicker, setShowThemePicker] = useState(false);
 
   const [preview, setPreview] = useState<JobPhase>("idle");
   const [previewNonce, setPreviewNonce] = useState(0);
@@ -54,7 +60,7 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
     .filter(({ b }) => getTemplate(b.templateId).usesImage && !b.imageId);
 
   // ── Autosave (debounced PATCH, mirrors SlideEditor) ──
-  async function save(next: { title: string; beats: Beat[] }) {
+  async function save(next: { title: string; beats: Beat[]; themeId: string }) {
     setSaveState("saving");
     try {
       await fetch(`/api/reel/projects/${project.id}`, {
@@ -74,12 +80,12 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
     }
     setSaveState("idle");
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => save({ title, beats }), 900);
+    saveTimer.current = setTimeout(() => save({ title, beats, themeId }), 900);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, beats]);
+  }, [title, beats, themeId]);
 
   // ── Beat mutations ──
   function updateBeat(patch: Partial<Beat>) {
@@ -218,6 +224,15 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
+          {role === "teacher" && (
+            <button
+              type="button"
+              onClick={() => setShowThemePicker(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition-colors hover:border-sky-300"
+            >
+              <Palette size={13} /> Look
+            </button>
+          )}
           <Link
             href={role === "teacher" ? "/teachers" : "/students"}
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-700"
@@ -232,6 +247,18 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
         </div>
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-gradient-to-r from-sky-400 via-sky-600 to-sky-400" />
       </header>
+
+      {showThemePicker && (
+        <ReelModal title="Change look" onClose={() => setShowThemePicker(false)}>
+          <ThemePicker
+            value={themeId}
+            onSelect={(id) => {
+              setThemeId(id);
+              setShowThemePicker(false);
+            }}
+          />
+        </ReelModal>
+      )}
 
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[220px_1fr_320px]">
         {/* Filmstrip */}
@@ -299,7 +326,7 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
             </div>
           )}
 
-          <BeatPreview beat={selected} />
+          <BeatPreview beat={selected} themeId={themeId} />
 
           <div className="flex flex-wrap items-center gap-2.5">
             <button

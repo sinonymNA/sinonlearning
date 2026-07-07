@@ -7,6 +7,7 @@ import {
 } from "@/lib/reelDb";
 import { isReelTemplateId } from "@/lib/reelTemplates";
 import type { Beat } from "@/lib/reelTypes";
+import { REEL_THEMES } from "@/lib/reelTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
   }
 
-  let body: { title?: string; beats?: unknown; status?: "draft" | "rendered" | "produced" };
+  let body: { title?: string; beats?: unknown; status?: "draft" | "rendered" | "produced"; themeId?: string };
   try {
     body = await request.json();
   } catch {
@@ -64,11 +65,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (body.beats !== undefined && !validateBeats(body.beats)) {
     return NextResponse.json({ error: "Invalid beats." }, { status: 400 });
   }
+  if (body.themeId !== undefined && !REEL_THEMES.some((t) => t.id === body.themeId)) {
+    return NextResponse.json({ error: "Unknown themeId." }, { status: 400 });
+  }
 
   const updated = await updateReelProject(projectId, {
     title: body.title,
     beats: body.beats as Beat[] | undefined,
     status: body.status,
+    themeId: body.themeId,
   });
   return NextResponse.json({ project: updated });
 }

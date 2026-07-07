@@ -48,7 +48,9 @@ def _image_extension(mime: str) -> str:
     }.get(mime, ".png")
 
 
-def _render_beat_clip(beat: dict[str, Any], image_path: Optional[str], tmpdir: str, index: int) -> str:
+def _render_beat_clip(
+    beat: dict[str, Any], image_path: Optional[str], tmpdir: str, index: int, theme_id: Optional[str]
+) -> str:
     """Render one beat to a silent MP4 via Manim; return its path."""
     name = f"beat_{index}"
     seconds = float(beat.get("animationSeconds") or 5)
@@ -68,6 +70,7 @@ def _render_beat_clip(beat: dict[str, Any], image_path: Optional[str], tmpdir: s
         scene.beat = beat
         scene.image_path = image_path
         scene.seconds = seconds
+        scene.theme_id = theme_id
         scene.render()
 
     matches = glob.glob(os.path.join(tmpdir, "media", "**", f"{name}.mp4"), recursive=True)
@@ -148,12 +151,13 @@ def build_video(conn, project: dict[str, Any], kind: str) -> bytes:
     if not beats:
         raise RuntimeError("Project has no beats to render.")
     project_id = project["id"]
+    theme_id = project.get("theme_id")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         normalized: list[str] = []
         for i, beat in enumerate(beats):
             image_path = _prepare_image(conn, beat, tmpdir, i)
-            silent = _render_beat_clip(beat, image_path, tmpdir, i)
+            silent = _render_beat_clip(beat, image_path, tmpdir, i, theme_id)
 
             audio_path = None
             if kind == "mux":
