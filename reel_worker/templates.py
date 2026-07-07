@@ -36,10 +36,11 @@ from manim import (
 )
 
 # Theme — mirrors REEL_THEME in lib/reelTypes.ts.
-BG = "#0f172a"
-HEADING = "#f8fafc"
-BODY = "#cbd5e1"
-ACCENT = "#38bdf8"
+BG = "#F8F2E6"  # warm cream (matches the site's own cream-100 brand token)
+HEADING = "#0D1B2E"  # deep navy — matches the site's primary text color, for legibility
+BODY = "#8B7D87"  # muted warm mauve-taupe — softer secondary text
+ACCENT = "#B0567A"  # dusty pastel rose — lines, arrows, dots, bold highlight text
+PANEL = "#F0E6D3"  # soft neutral panel fill (replaces a hardcoded dark fill from the old dark theme)
 FONT = "sans-serif"  # Pango family; Inter falls back to sans-serif if absent
 
 
@@ -199,7 +200,7 @@ class BeatScene(Scene):
     def _before_after(self, params: dict[str, Any], seconds: float) -> None:
         def panel(title: str, body: str, x: float):
             box = RoundedRectangle(corner_radius=0.2, width=5.0, height=3.2, color=ACCENT)
-            box.set_fill("#1e293b", opacity=0.6)
+            box.set_fill(PANEL, opacity=0.9)
             box.move_to([x, 0, 0])
             t = Text(title or "", font=FONT, color=ACCENT, weight="BOLD", font_size=40)
             t.move_to(box.get_top() + DOWN * 0.9)
@@ -209,7 +210,7 @@ class BeatScene(Scene):
 
         left = panel(_s(params.get("leftTitle")) or "Before", _s(params.get("leftBody")), -3.6)
         right = panel(_s(params.get("rightTitle")) or "After", _s(params.get("rightBody")), 3.6)
-        arrow = Arrow(start=[-1.0, 0, 0], end=[1.0, 0, 0], color=HEADING, stroke_width=6)
+        arrow = Arrow(start=[-1.0, 0, 0], end=[1.0, 0, 0], color=ACCENT, stroke_width=6)
         arrow_label = _s(params.get("arrowLabel"))
 
         self.play(FadeIn(left, shift=RIGHT * 0.3), run_time=0.6)
@@ -246,8 +247,8 @@ class BeatScene(Scene):
     # ── simpleGraph ──
     def _simple_graph(self, params: dict[str, Any], seconds: float) -> None:
         origin = [-5.0, -2.8, 0]
-        x_axis = Arrow(start=origin, end=[5.0, -2.8, 0], color=BODY, stroke_width=4, buff=0)
-        y_axis = Arrow(start=origin, end=[-5.0, 3.0, 0], color=BODY, stroke_width=4, buff=0)
+        x_axis = Arrow(start=origin, end=[5.0, -2.8, 0], color=ACCENT, stroke_width=4, buff=0)
+        y_axis = Arrow(start=origin, end=[-5.0, 3.0, 0], color=ACCENT, stroke_width=4, buff=0)
         self.play(Create(x_axis), Create(y_axis), run_time=0.8)
 
         x_label = _s(params.get("xLabel"))

@@ -51,10 +51,11 @@ export interface ReelProject {
 // as the contract between the TS preview and the Python renderer — the worker
 // hardcodes the same values.
 export const REEL_THEME = {
-  background: "#0f172a", // slate-900
-  heading: "#f8fafc", // slate-50
-  body: "#cbd5e1", // slate-300
-  accent: "#38bdf8", // sky-400
+  background: "#F8F2E6", // warm cream (site's own cream-100 brand token)
+  heading: "#0D1B2E", // deep navy — matches the site's primary text color
+  body: "#8B7D87", // muted warm mauve-taupe
+  accent: "#B0567A", // dusty pastel rose
+  panel: "#F0E6D3", // soft neutral panel fill (beforeAfter boxes)
   font: "Inter", // a common font; the worker falls back gracefully
 } as const;
 

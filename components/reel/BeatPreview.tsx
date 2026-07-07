@@ -7,7 +7,7 @@ function Panel({ title, body }: { title: string; body: string }) {
   return (
     <div
       className="flex-1 rounded-lg border p-4 text-center"
-      style={{ borderColor: REEL_THEME.accent, background: "rgba(30,41,59,0.6)" }}
+      style={{ borderColor: REEL_THEME.accent, background: REEL_THEME.panel }}
     >
       <div className="text-sm font-bold sm:text-lg" style={{ color: REEL_THEME.accent }}>
         {title}
@@ -114,7 +114,7 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
       {beat.templateId === "beforeAfter" && (
         <div className="flex w-full items-center justify-center gap-3 px-6">
           <Panel title={asText(p.leftTitle) || "Before"} body={asText(p.leftBody)} />
-          <div className="text-xl" style={{ color: REEL_THEME.heading }}>
+          <div className="text-xl" style={{ color: REEL_THEME.accent }}>
             →
           </div>
           <Panel title={asText(p.rightTitle) || "After"} body={asText(p.rightBody)} />
@@ -145,7 +145,7 @@ export default function BeatPreview({ beat }: { beat: Beat }) {
 
       {beat.templateId === "simpleGraph" && (
         <div className="flex w-full flex-col items-center gap-2 px-10">
-          <div className="relative h-32 w-full max-w-md border-b-2 border-l-2" style={{ borderColor: REEL_THEME.body }}>
+          <div className="relative h-32 w-full max-w-md border-b-2 border-l-2" style={{ borderColor: REEL_THEME.accent }}>
             <div
               className="absolute bottom-0 left-0 h-full w-full"
               style={{
