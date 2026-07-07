@@ -1,5 +1,6 @@
 import { randomUUID, randomBytes } from "crypto";
 import { query } from "./db";
+import { AP_SKILL_IDS, WRITING_MECHANICS_SKILL_IDS } from "./marginsPracticeCourses";
 
 export type MarginsRole = "teacher" | "student";
 
@@ -211,6 +212,12 @@ export function ensureMarginsSchema(): Promise<void> {
         // page) — current_module still marks which module is unlocked, this
         // tracks position within that module's page list.
         query(`ALTER TABLE margins_practice_progress ADD COLUMN IF NOT EXISTS current_page INTEGER NOT NULL DEFAULT 0`)
+      )
+      .then(() =>
+        // Holds a student's own answer to "what's the weakest part of what you
+        // just wrote" — captured before feedback is revealed, on pages that
+        // opt into the self-diagnosis interstitial.
+        query(`ALTER TABLE margins_practice_attempts ADD COLUMN IF NOT EXISTS self_diagnosis TEXT`)
       )
       .then(() => undefined);
   }
@@ -862,6 +869,7 @@ export interface MarginsPracticeAttempt {
   feedback: unknown;
   skill: string;
   score_label: MasteryLevel;
+  self_diagnosis: string | null;
   created_at: string;
 }
 
@@ -912,7 +920,7 @@ export async function advancePracticeProgress(
 }
 
 const PRACTICE_ATTEMPT_COLUMNS =
-  "id, progress_id, module_id, prompt_id, response_text, passed, feedback, skill, score_label, created_at";
+  "id, progress_id, module_id, prompt_id, response_text, passed, feedback, skill, score_label, self_diagnosis, created_at";
 
 export async function recordPracticeAttempt(params: {
   progressId: string;
@@ -931,6 +939,9 @@ export async function recordPracticeAttempt(params: {
        (id, progress_id, module_id, prompt_id, response_text, passed, feedback, skill, score_label)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING ${PRACTICE_ATTEMPT_COLUMNS}`,
+    // self_diagnosis is deliberately left out of this INSERT — it's written
+    // later via updatePracticeAttemptSelfDiagnosis(), after the student
+    // answers the "what's weakest" prompt, and defaults to NULL until then.
     [
       id,
       params.progressId,
@@ -942,6 +953,45 @@ export async function recordPracticeAttempt(params: {
       params.skill,
       params.scoreLabel,
     ]
+  );
+  return rows[0];
+}
+
+// Looks up a prior attempt at the exact same prompt within the exact same
+// progress row — used to enforce "single attempt" pages (the timed
+// capstone): if one already exists, the route returns it instead of
+// re-grading, rather than burning another live grading call on a replay.
+export async function findPracticeAttempt(
+  progressId: string,
+  moduleId: string,
+  promptId: string
+): Promise<MarginsPracticeAttempt | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsPracticeAttempt>(
+    `SELECT ${PRACTICE_ATTEMPT_COLUMNS} FROM margins_practice_attempts
+     WHERE progress_id = $1 AND module_id = $2 AND prompt_id = $3
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [progressId, moduleId, promptId]
+  );
+  return rows[0];
+}
+
+// Ownership-checked: only writes if the attempt actually belongs to the
+// given progress row, so a student can't overwrite another student's attempt
+// by guessing an attempt id.
+export async function updatePracticeAttemptSelfDiagnosis(
+  attemptId: string,
+  progressId: string,
+  selfDiagnosis: string
+): Promise<MarginsPracticeAttempt | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsPracticeAttempt>(
+    `UPDATE margins_practice_attempts
+     SET self_diagnosis = $3
+     WHERE id = $1 AND progress_id = $2
+     RETURNING ${PRACTICE_ATTEMPT_COLUMNS}`,
+    [attemptId, progressId, selfDiagnosis]
   );
   return rows[0];
 }
@@ -986,11 +1036,31 @@ export async function recomputeAndUpsertSkillMastery(
   return upserted[0];
 }
 
+// Explicitly filtered to the six official AP historical-thinking skills —
+// margins_skill_mastery also holds the separate writing-mechanics dimension
+// (see getWritingMechanicsForStudent), and this keeps that boundary a fact
+// about the query, not an incidental side effect of what SkillMasteryPanel
+// happens to render.
 export async function getSkillMasteryForStudent(studentId: string): Promise<MarginsSkillMastery[]> {
   await ensureMarginsSchema();
   const { rows } = await query<MarginsSkillMastery>(
-    `SELECT id, student_id, skill, level, updated_at FROM margins_skill_mastery WHERE student_id = $1`,
-    [studentId]
+    `SELECT id, student_id, skill, level, updated_at FROM margins_skill_mastery
+     WHERE student_id = $1 AND skill = ANY($2::text[])`,
+    [studentId, AP_SKILL_IDS]
+  );
+  return rows;
+}
+
+// The course-specific "SAQ writing mechanics" dimension (claim / evidence /
+// reasoning / identify-vs-explain) — same table, same mastery math, kept
+// separate from the six official AP skills above by an explicit filter, not
+// a schema split, since both dimensions share identical semantics today.
+export async function getWritingMechanicsForStudent(studentId: string): Promise<MarginsSkillMastery[]> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsSkillMastery>(
+    `SELECT id, student_id, skill, level, updated_at FROM margins_skill_mastery
+     WHERE student_id = $1 AND skill = ANY($2::text[])`,
+    [studentId, WRITING_MECHANICS_SKILL_IDS]
   );
   return rows;
 }

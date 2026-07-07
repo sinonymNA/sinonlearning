@@ -1,18 +1,22 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { getSkillMasteryForStudent } from "@/lib/marginsDb";
+import { getSkillMasteryForStudent, getWritingMechanicsForStudent } from "@/lib/marginsDb";
 import { PRACTICE_COURSES } from "@/lib/marginsPracticeCourses";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import RevealGroup from "@/components/margins/RevealGroup";
 import SkillMasteryPanel from "@/components/margins/SkillMasteryPanel";
+import WritingMechanicsPanel from "@/components/margins/WritingMechanicsPanel";
 
 export default async function PracticeCoursesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/margins/login");
   if (user.role !== "student") redirect("/margins/teacher");
 
-  const mastery = await getSkillMasteryForStudent(user.id);
+  const [mastery, mechanics] = await Promise.all([
+    getSkillMasteryForStudent(user.id),
+    getWritingMechanicsForStudent(user.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -45,7 +49,10 @@ export default async function PracticeCoursesPage() {
           ))}
         </RevealGroup>
 
-        <SkillMasteryPanel mastery={mastery} />
+        <div className="flex flex-col gap-6">
+          <WritingMechanicsPanel mastery={mechanics} />
+          <SkillMasteryPanel mastery={mastery} />
+        </div>
       </main>
     </div>
   );

@@ -6,7 +6,8 @@ import { isPracticeCourseId, getPracticeCourse, getPracticeModule } from "@/lib/
 export const dynamic = "force-dynamic";
 
 // Moves a student past a lesson page — no grading, no AI call. Check pages
-// (the last page in every module) only ever advance via /check, on a pass.
+// only ever advance via /check, on a pass (or unconditionally for optional
+// single-attempt pages) — never through this route.
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }

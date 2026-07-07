@@ -4,12 +4,20 @@ import { getCurrentUser } from "@/lib/marginsAuth";
 import {
   getOrCreatePracticeProgress,
   recordPracticeAttempt,
+  findPracticeAttempt,
   advancePracticeProgress,
   recomputeAndUpsertSkillMastery,
   type MasteryLevel,
   type MarginsSkillMastery,
 } from "@/lib/marginsDb";
-import { isPracticeCourseId, getPracticeCourse, getPracticeModule, getModuleCheckPage } from "@/lib/marginsPracticeCourses";
+import {
+  isPracticeCourseId,
+  getPracticeCourse,
+  getPracticeModule,
+  getLastRequiredModule,
+  skillTagLabel,
+  type ScoutRegister,
+} from "@/lib/marginsPracticeCourses";
 import { generatePracticeCheck } from "@/lib/marginsPracticeKoraGenerate";
 import { generateGrade } from "@/lib/marginsKoraGenerate";
 import { RUBRIC_TEMPLATES } from "@/lib/marginsRubrics";
@@ -55,16 +63,17 @@ export async function POST(
   const module_ = getPracticeModule(courseId, moduleId);
   if (!module_) return NextResponse.json({ error: "Unknown module." }, { status: 404 });
 
-  const checkPage = getModuleCheckPage(module_);
-  if (!checkPage) return NextResponse.json({ error: "This module has no check page." }, { status: 500 });
-  const checkPageIndex = module_.pages.indexOf(checkPage);
-
   const progress = await getOrCreatePracticeProgress(user.id, courseId);
   if (module_.order !== progress.current_module) {
     return NextResponse.json({ error: "This module isn't unlocked yet." }, { status: 403 });
   }
-  if (progress.current_page !== checkPageIndex) {
-    return NextResponse.json({ error: "Read through the module's pages before checking in." }, { status: 403 });
+
+  // No more "find the module's one check page" lookup — current_page IS the
+  // answer, however many check-kind pages this module has and wherever they
+  // sit in its sequence.
+  const checkPage = module_.pages[progress.current_page];
+  if (!checkPage || (checkPage.kind !== "check" && checkPage.kind !== "full_saq_check")) {
+    return NextResponse.json({ error: "You're not currently on a check page." }, { status: 403 });
   }
 
   const ip = getClientIp(request);
@@ -72,7 +81,25 @@ export async function POST(
     return NextResponse.json({ error: "Too many requests. Try again in a bit." }, { status: 429 });
   }
 
-  const isLastModule = module_.order === course.modules.length - 1;
+  // Single-attempt pages (the timed capstone) never re-grade a replay — the
+  // stored result comes back instead, both to avoid burning another live
+  // grading call and to give a clean "you already did this" UX.
+  if (checkPage.singleAttempt) {
+    const prior = await findPracticeAttempt(progress.id, moduleId, promptId);
+    if (prior) {
+      return NextResponse.json({
+        result: prior.feedback,
+        passed: prior.passed,
+        newMastery: [],
+        advanced: false,
+        progress,
+        alreadyAttempted: true,
+      });
+    }
+  }
+
+  const lastRequiredModule = getLastRequiredModule(course);
+  const isLastRequiredModule = module_.order === lastRequiredModule.order;
 
   try {
     if (checkPage.kind === "full_saq_check") {
@@ -93,36 +120,43 @@ export async function POST(
       });
 
       const newMastery: MarginsSkillMastery[] = [];
+      let firstAttemptId: string | null = null;
       for (let i = 0; i < prompt.parts.length; i++) {
         const part = prompt.parts[i];
         const breakdown = output.rubric_breakdown[i];
         const earned = breakdown?.points_earned ?? 0;
         const possible = breakdown?.points_possible ?? 1;
         const scoreLabel = scoreLabelForPoints(earned, possible);
-        await recordPracticeAttempt({
+        // Store the whole graded result (not just this part's breakdown) on
+        // every part's row, so a single-attempt replay can reconstruct the
+        // full result from any one of them.
+        const attempt = await recordPracticeAttempt({
           progressId: progress.id,
           moduleId,
           promptId,
           responseText,
           passed: earned >= possible,
-          feedback: breakdown ?? null,
+          feedback: output,
           skill: part.skill,
           scoreLabel,
         });
+        if (i === 0) firstAttemptId = attempt.id;
         newMastery.push(await recomputeAndUpsertSkillMastery(user.id, part.skill));
       }
 
       const passed = output.overall_score >= output.max_score;
-      const updatedProgress = passed
-        ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastModule)
-        : progress;
+      const updatedProgress =
+        passed || module_.optional
+          ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastRequiredModule)
+          : progress;
 
       return NextResponse.json({
         result: output,
         passed,
         newMastery,
-        advanced: passed,
+        advanced: passed || Boolean(module_.optional),
         progress: updatedProgress,
+        attemptId: firstAttemptId,
       });
     }
 
@@ -131,33 +165,37 @@ export async function POST(
 
     const output = await generatePracticeCheck({
       moduleId,
-      skill: checkPage.skill,
+      skillLabel: skillTagLabel(checkPage.skill),
+      register: (module_.register ?? "ap") as ScoutRegister,
       promptText: prompt.prompt,
       responseText,
+      givenContext: prompt.givenContext,
     });
 
-    await recordPracticeAttempt({
+    const attempt = await recordPracticeAttempt({
       progressId: progress.id,
       moduleId,
       promptId,
       responseText,
       passed: output.passed,
       feedback: output,
-      skill: checkPage.skill,
+      skill: checkPage.skill.id,
       scoreLabel: output.score_label,
     });
-    const newMastery = await recomputeAndUpsertSkillMastery(user.id, checkPage.skill);
+    const newMastery = await recomputeAndUpsertSkillMastery(user.id, checkPage.skill.id);
 
-    const updatedProgress = output.passed
-      ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastModule)
-      : progress;
+    const updatedProgress =
+      output.passed || module_.optional
+        ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastRequiredModule)
+        : progress;
 
     return NextResponse.json({
       result: output,
       passed: output.passed,
       newMastery: [newMastery],
-      advanced: output.passed,
+      advanced: output.passed || Boolean(module_.optional),
       progress: updatedProgress,
+      attemptId: attempt.id,
     });
   } catch (err) {
     if (err instanceof KoraConfigError) {

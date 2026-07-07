@@ -5,10 +5,11 @@ import { animate } from "animejs";
 import confetti from "canvas-confetti";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { revealStagger } from "@/lib/marginsMotion";
-import { AP_SKILL_LABELS, type PracticeCourse, type PracticeModule } from "@/lib/marginsPracticeCourses";
+import { getLastRequiredModule, skillTagLabel, type PracticeCourse, type PracticeModule } from "@/lib/marginsPracticeCourses";
 import type { MasteryLevel } from "@/lib/marginsDb";
 import PracticeFeedbackCard from "./PracticeFeedbackCard";
 import GradingReport from "./GradingReport";
+import CapstoneTimer from "./CapstoneTimer";
 
 interface Props {
   courseId: string;
@@ -42,9 +43,12 @@ interface CheckResponse {
   result: PracticeCheckResult | FullSaqResult;
   passed: boolean;
   newMastery: CheckMastery[];
+  attemptId?: string | null;
+  alreadyAttempted?: boolean;
 }
 
 const LEVEL_ORDER: Record<MasteryLevel, number> = { not_yet_shown: 0, emerging: 1, solid: 2, strong: 3 };
+const CAPSTONE_MINUTES = 15;
 
 function isFullSaqResult(result: PracticeCheckResult | FullSaqResult): result is FullSaqResult {
   return "overall_score" in result;
@@ -66,6 +70,9 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkResult, setCheckResult] = useState<CheckResponse | null>(null);
+  const [pendingCheckResult, setPendingCheckResult] = useState<CheckResponse | null>(null);
+  const [selfDiagnosisText, setSelfDiagnosisText] = useState("");
+  const [atCapstoneChoice, setAtCapstoneChoice] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pageCardRef = useRef<HTMLDivElement>(null);
   const masteryRef = useRef<Record<string, MasteryLevel>>({});
@@ -74,12 +81,16 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const module_: PracticeModule | null = !isDone ? course.modules[moduleIndex] : null;
   const page = module_ ? module_.pages[pageIndex] : null;
 
+  const lastRequiredModule = getLastRequiredModule(course);
+  const hasOptionalCapstone = course.modules.some((m) => m.optional);
+  const isAtLastRequiredModule = module_ ? module_.order === lastRequiredModule.order : false;
+
   useEffect(() => {
     if (wrapperRef.current) {
       revealStagger(wrapperRef.current, ".course-panel", { stagger: 90, translateY: 16, duration: 420 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDone]);
+  }, [isDone, atCapstoneChoice]);
 
   useEffect(() => {
     if (pageCardRef.current) {
@@ -101,6 +112,12 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     newMastery.forEach((m) => {
       masteryRef.current[m.skill] = m.level;
     });
+  }
+
+  function revealFeedback(data: CheckResponse) {
+    setCheckResult(data);
+    if (data.passed) fireConfetti(data.newMastery);
+    else data.newMastery.forEach((m) => { masteryRef.current[m.skill] = m.level; });
   }
 
   async function handleLessonContinue() {
@@ -155,26 +172,53 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moduleId: module_.id, promptId, responseText: text }),
       });
-      const data = await res.json();
+      const data: CheckResponse = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Scout couldn't check that one.");
+        setError((data as unknown as { error?: string }).error ?? "Scout couldn't check that one.");
         setSubmitting(false);
         return;
       }
-      setCheckResult(data);
-      if (data.passed) fireConfetti(data.newMastery);
-      else data.newMastery.forEach((m: CheckMastery) => { masteryRef.current[m.skill] = m.level; });
+      if (data.alreadyAttempted) {
+        setCheckResult(data);
+      } else if (page.selfDiagnosis) {
+        setSelfDiagnosisText("");
+        setPendingCheckResult(data);
+      } else {
+        revealFeedback(data);
+      }
     } catch {
       setError("Network error. Please try again.");
     }
     setSubmitting(false);
   }
 
+  async function proceedFromSelfDiagnosis() {
+    if (!pendingCheckResult) return;
+    const text = selfDiagnosisText.trim();
+    if (text && pendingCheckResult.attemptId) {
+      fetch(`/api/margins/practice/${courseId}/self-diagnosis`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId: pendingCheckResult.attemptId, selfDiagnosisText: text }),
+      }).catch(() => {
+        // fire-and-forget — never blocks feedback reveal
+      });
+    }
+    const data = pendingCheckResult;
+    setPendingCheckResult(null);
+    revealFeedback(data);
+  }
+
   function handleContinueAfterPass() {
     setCheckResult(null);
+    setPendingCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
     setPromptIndex(0);
+    if (isAtLastRequiredModule && hasOptionalCapstone) {
+      setAtCapstoneChoice(true);
+      return;
+    }
     setPageIndex(0);
     setModuleIndex((i) => i + 1);
   }
@@ -187,13 +231,54 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     setPromptIndex((i) => (i + 1) % page.prompts.length);
   }
 
+  function finishWithoutCapstone() {
+    setAtCapstoneChoice(false);
+    setModuleIndex(course.modules.length);
+  }
+
+  function continueToCapstone() {
+    setAtCapstoneChoice(false);
+    const capstoneIndex = course.modules.findIndex((m) => m.optional);
+    setPageIndex(0);
+    setModuleIndex(capstoneIndex);
+  }
+
+  if (atCapstoneChoice) {
+    return (
+      <div ref={wrapperRef} className="flex flex-col gap-5">
+        <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
+          <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
+          <p className="text-sm text-stone-500 mt-1 mb-5">
+            Scout&rsquo;s proud of you. Want one more, just for fun — a second full SAQ under a real clock?
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={finishWithoutCapstone}
+              className="rounded-xl border border-teal-200 bg-white px-5 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-all"
+            >
+              You&rsquo;re done!
+            </button>
+            <button
+              onClick={continueToCapstone}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
+            >
+              Try the timed capstone
+              <ArrowRight size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isDone) {
     return (
       <div ref={wrapperRef} className="flex flex-col gap-5">
         <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
           <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
           <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
-          <p className="text-sm text-stone-500 mt-1">Scout's proud of you. Keep an eye on your skill mastery — it only goes up from here.</p>
+          <p className="text-sm text-stone-500 mt-1">Scout&rsquo;s proud of you. Keep an eye on your skill mastery — it only goes up from here.</p>
         </div>
       </div>
     );
@@ -201,6 +286,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   const isCheckPage = page!.kind === "check" || page!.kind === "full_saq_check";
   const isFullSaqCheck = page!.kind === "full_saq_check";
+  const isSingleAttemptPage = isCheckPage && Boolean((page as { singleAttempt?: boolean }).singleAttempt);
+  const currentPrompt = page!.kind === "check" ? page!.prompts[promptIndex % page!.prompts.length] : null;
 
   return (
     <div ref={wrapperRef} className="flex flex-col gap-5">
@@ -208,7 +295,10 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         {course.modules.map((m, i) => {
           const fraction = i < moduleIndex ? 1 : i > moduleIndex ? 0 : pageIndex / m.pages.length;
           return (
-            <span key={m.id} className="relative h-1.5 flex-1 rounded-full bg-stone-200 overflow-hidden">
+            <span
+              key={m.id}
+              className={`relative h-1.5 flex-1 rounded-full bg-stone-200 overflow-hidden ${m.optional ? "opacity-50" : ""}`}
+            >
               <span
                 className="absolute inset-y-0 left-0 rounded-full bg-teal-500 transition-all"
                 style={{ width: `${Math.round(fraction * 100)}%` }}
@@ -218,7 +308,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         })}
       </div>
       <p className="course-panel text-xs text-stone-400" style={{ opacity: 0 }}>
-        Module {moduleIndex + 1} of {course.modules.length} · Page {pageIndex + 1} of {module_!.pages.length}
+        {module_!.optional ? "Bonus" : `Module ${moduleIndex + 1} of ${course.modules.length}`} · Page {pageIndex + 1} of{" "}
+        {module_!.pages.length}
       </p>
 
       <div ref={pageCardRef} className="rounded-2xl border border-teal-100 bg-white p-6" style={{ opacity: 0 }}>
@@ -242,14 +333,19 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {isCheckPage && !checkResult && (
+        {isCheckPage && !checkResult && !pendingCheckResult && (
           <>
             <p className="text-[17px] font-semibold text-stone-800 mb-1">{page!.title}</p>
             <p className="text-[13px] text-stone-500 mb-4">{(page as { intro: string }).intro}</p>
+            {module_!.optional && page!.kind === "full_saq_check" && (
+              <div className="mb-4 flex justify-center">
+                <CapstoneTimer initialMinutes={CAPSTONE_MINUTES} />
+              </div>
+            )}
           </>
         )}
 
-        {!checkResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
+        {!checkResult && !pendingCheckResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
           <>
             <p className="text-[14px] text-stone-700 leading-relaxed mb-4 whitespace-pre-wrap">
               {page!.prompts[promptIndex % page!.prompts.length].stimulus}
@@ -277,19 +373,58 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {!checkResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && (
+        {!checkResult && !pendingCheckResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && currentPrompt && (
           <>
-            <p className="text-[14px] text-stone-700 leading-relaxed mb-3">
-              {page!.prompts[promptIndex % page!.prompts.length].prompt}
-            </p>
+            {currentPrompt.stimulus && (
+              <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-stone-50 border border-stone-100 p-3 whitespace-pre-wrap">
+                {currentPrompt.stimulus}
+              </p>
+            )}
+            <p className="text-[14px] text-stone-700 leading-relaxed mb-3">{currentPrompt.prompt}</p>
+            {currentPrompt.givenContext && (
+              <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-teal-50/50 border border-teal-100 p-3">
+                <span className="font-semibold text-teal-700">Already given: </span>
+                {currentPrompt.givenContext}
+              </p>
+            )}
             <textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
               rows={3}
-              placeholder="One sentence — go."
+              placeholder={currentPrompt.givenContext ? "Your reasoning sentence — go." : "One sentence — go."}
               className="w-full rounded-xl border border-stone-200 bg-white p-3.5 text-[14px] leading-relaxed text-stone-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 resize-none"
             />
           </>
+        )}
+
+        {pendingCheckResult && !checkResult && (
+          <div>
+            <p className="text-[15px] font-semibold text-stone-800 mb-1.5">
+              Before I tell you what I think — what&rsquo;s the weakest part of what you just wrote?
+            </p>
+            <p className="text-[13px] text-stone-500 mb-3">
+              Take a real second with it if you can — this one&rsquo;s optional, but it&rsquo;s genuinely worth doing.
+            </p>
+            <textarea
+              value={selfDiagnosisText}
+              onChange={(e) => setSelfDiagnosisText(e.target.value)}
+              rows={2}
+              placeholder="I think the weakest part is…"
+              className="w-full rounded-xl border border-stone-200 bg-white p-3 text-[14px] leading-relaxed text-stone-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 resize-none"
+            />
+            <div className="mt-3 flex items-center gap-4">
+              <button
+                onClick={proceedFromSelfDiagnosis}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
+              >
+                Reveal feedback
+                <ArrowRight size={15} />
+              </button>
+              <button onClick={proceedFromSelfDiagnosis} className="text-sm text-stone-400 hover:text-stone-600 transition-colors">
+                Just show me
+              </button>
+            </div>
+          </div>
         )}
 
         {checkResult &&
@@ -309,9 +444,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               feedback={checkResult.result.feedback}
               hint={checkResult.result.hint}
               scoreLabel={checkResult.result.score_label}
-              skillLabel={
-                isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : AP_SKILL_LABELS[page!.skill]
-              }
+              skillLabel={isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : skillTagLabel(page!.skill)}
             />
           ))}
 
@@ -333,7 +466,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
             {!submitting && <ArrowRight size={15} />}
           </button>
         )}
-        {isCheckPage && !checkResult && (
+        {isCheckPage && !checkResult && !pendingCheckResult && (
           <button
             onClick={handleCheck}
             disabled={submitting}
@@ -344,7 +477,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
             {!submitting && <ArrowRight size={15} />}
           </button>
         )}
-        {checkResult && checkResult.passed && (
+        {checkResult && (checkResult.passed || isSingleAttemptPage) && (
           <button
             onClick={handleContinueAfterPass}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
@@ -353,7 +486,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
             <ArrowRight size={15} />
           </button>
         )}
-        {checkResult && !checkResult.passed && (
+        {checkResult && !checkResult.passed && !isSingleAttemptPage && (
           <button
             onClick={handleRetry}
             className="inline-flex items-center gap-2 rounded-xl bg-white border border-teal-200 px-6 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-all"

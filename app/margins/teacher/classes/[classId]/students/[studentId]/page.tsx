@@ -1,9 +1,16 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { getClassById, isStudentInClass, getUserById, getSkillMasteryForStudent } from "@/lib/marginsDb";
+import {
+  getClassById,
+  isStudentInClass,
+  getUserById,
+  getSkillMasteryForStudent,
+  getWritingMechanicsForStudent,
+} from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import SkillMasteryPanel from "@/components/margins/SkillMasteryPanel";
+import WritingMechanicsPanel from "@/components/margins/WritingMechanicsPanel";
 
 export default async function TeacherStudentDetailPage({
   params,
@@ -24,7 +31,10 @@ export default async function TeacherStudentDetailPage({
   ]);
   if (!inClass || !student) notFound();
 
-  const mastery = await getSkillMasteryForStudent(studentId);
+  const [mastery, mechanics] = await Promise.all([
+    getSkillMasteryForStudent(studentId),
+    getWritingMechanicsForStudent(studentId),
+  ]);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -43,7 +53,10 @@ export default async function TeacherStudentDetailPage({
           Skill mastery from Scout practice reps — course-agnostic, so it'll carry over as new practice courses ship.
         </p>
 
-        <SkillMasteryPanel mastery={mastery} />
+        <div className="flex flex-col gap-6">
+          <WritingMechanicsPanel mastery={mechanics} />
+          <SkillMasteryPanel mastery={mastery} />
+        </div>
       </main>
     </div>
   );
