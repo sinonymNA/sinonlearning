@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { NotebookPen } from "lucide-react";
+import { NotebookPen, Search } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByStudent, getAssignmentsForStudent } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
@@ -104,18 +104,24 @@ export default async function StudentDashboardPage() {
         <RevealGroup className="mt-10" stagger={0}>
           <Link
             href="/margins/student/practice"
-            className="reveal-item group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-5 shadow-sm shadow-teal-200 hover:shadow-md transition-all"
+            className="reveal-item group relative flex items-center gap-5 overflow-hidden rounded-2xl border border-teal-700/20 bg-gradient-to-br from-teal-600 via-teal-700 to-violet-700 px-6 py-6 shadow-md shadow-teal-900/10 hover:shadow-lg hover:-translate-y-0.5 transition-all"
             style={{ opacity: 0 }}
           >
-            <div className="absolute -right-6 -top-8 h-28 w-28 rounded-full bg-white/10" />
-            <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-white/10" />
-            <span className="relative shrink-0 flex items-center justify-center w-12 h-12 rounded-full bg-white/15 text-white text-lg font-bold ring-1 ring-white/30">
-              S
+            <div
+              className="absolute inset-0 opacity-[0.08]"
+              style={{ backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)", backgroundSize: "18px 18px" }}
+            />
+            <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-white/10" />
+            <div className="absolute -right-3 bottom-0 h-20 w-20 rounded-full bg-white/10" />
+            <span className="relative shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 text-white ring-1 ring-white/30 rotate-[-6deg] shadow-sm">
+              <Search size={24} strokeWidth={2} />
             </span>
             <div className="relative min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-widest text-teal-100">Practice with Scout · not graded</p>
-              <p className="font-semibold text-white mt-0.5">Build your SAQ skills, one quick rep at a time</p>
-              <p className="text-[13px] text-teal-50/90 mt-0.5">A self-paced mini-course — instant feedback, zero pressure.</p>
+              <p className="text-lg font-bold text-white mt-1">How to Write an SAQ</p>
+              <p className="text-[13px] text-teal-50/90 mt-0.5">
+                Solve a mystery, one sentence at a time — the &ldquo;Claim to Point&rdquo; course.
+              </p>
             </div>
             <span className="relative shrink-0 text-white text-lg group-hover:translate-x-0.5 transition-transform">→</span>
           </Link>
