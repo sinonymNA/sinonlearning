@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { createDeck, getDecksByTeacher } from "@/lib/sliderDb";
-import { SLIDER_THEMES, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
+import { createDeck, getDecksByTeacher, isOwnedThemeId } from "@/lib/sliderDb";
+import { DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   const themeId =
-    body.themeId && SLIDER_THEMES.some((t) => t.id === body.themeId) ? body.themeId : DEFAULT_THEME_ID;
+    body.themeId && (await isOwnedThemeId(body.themeId, user.id)) ? body.themeId : DEFAULT_THEME_ID;
 
   const deck = await createDeck({ teacherId: user.id, title: body.title, themeId });
   return NextResponse.json({ deck });

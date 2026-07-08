@@ -4,9 +4,10 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Presentation, Sparkles, Clock } from "lucide-react";
-import { getTheme, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
+import { resolveTheme, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 import type { SliderDeck } from "@/lib/sliderTypes";
 import { useMountReveal } from "@/lib/marginsMotion";
+import { useSliderCustomThemes } from "@/lib/useSliderCustomThemes";
 import ThemePicker from "./ThemePicker";
 import SliderModal from "./SliderModal";
 
@@ -29,6 +30,7 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
   const [themeId, setThemeId] = useState(DEFAULT_THEME_ID);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { customThemes, refresh: refreshCustomThemes } = useSliderCustomThemes();
 
   useMountReveal(containerRef, ".hub-block", { stagger: 90, translateY: 16, duration: 420 });
 
@@ -80,7 +82,12 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
 
       {showPicker && (
         <SliderModal title="Pick a theme to start" onClose={() => setShowPicker(false)}>
-          <ThemePicker value={themeId} onSelect={setThemeId} />
+          <ThemePicker
+            value={themeId}
+            onSelect={setThemeId}
+            customThemes={customThemes}
+            onCustomThemesChange={refreshCustomThemes}
+          />
           {error && <p className="text-[12px] text-red-600">{error}</p>}
           <button
             type="button"
@@ -106,7 +113,7 @@ export default function DeckHub({ decks }: { decks: SliderDeck[] }) {
       ) : (
         <div className="hub-block grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" style={{ opacity: 0 }}>
           {decks.map((deck) => {
-            const theme = getTheme(deck.theme_id);
+            const theme = resolveTheme(deck.theme_id, customThemes);
             return (
               <Link
                 key={deck.id}

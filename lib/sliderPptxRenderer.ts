@@ -19,7 +19,7 @@ function addHeader(
     fontSize: 26,
     bold: true,
     valign: "middle",
-    fontFace: theme.fonts.heading,
+    fontFace: theme.fonts.heading.pptx,
     color: hex(theme.colors.heading),
   });
   pptxSlide.addShape("rect", {
@@ -43,8 +43,8 @@ export function renderSlideToPptx(
   const pptxSlide = pptx.addSlide();
   pptxSlide.background = { color: hex(theme.colors.background) };
 
-  const headingFont = { fontFace: theme.fonts.heading, color: hex(theme.colors.heading) };
-  const bodyFont = { fontFace: theme.fonts.body, color: hex(theme.colors.body) };
+  const headingFont = { fontFace: theme.fonts.heading.pptx, color: hex(theme.colors.heading) };
+  const bodyFont = { fontFace: theme.fonts.body.pptx, color: hex(theme.colors.body) };
 
   switch (slide.layout) {
     case "title":

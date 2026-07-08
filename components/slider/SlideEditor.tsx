@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Copy, LayoutTemplate, Palette, GripVertical } from "lucide-react";
 import { createSlide, hasImageRegion, type Slide, type SlideLayout, type SliderDeck } from "@/lib/sliderTypes";
-import { getTheme } from "@/lib/sliderThemes";
+import { resolveTheme } from "@/lib/sliderThemes";
+import { useSliderCustomThemes } from "@/lib/useSliderCustomThemes";
 import SlideRenderer from "./SlideRenderer";
 import LayoutPicker from "./LayoutPicker";
 import ThemePicker from "./ThemePicker";
@@ -33,8 +34,9 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useMountReveal(containerRef, ".editor-panel", { stagger: 90, translateY: 16, duration: 420 });
+  const { customThemes, refresh: refreshCustomThemes } = useSliderCustomThemes();
 
-  const theme = getTheme(themeId);
+  const theme = resolveTheme(themeId, customThemes);
   const selected = slides[Math.min(selectedIndex, slides.length - 1)];
 
   async function saveDeck() {
@@ -153,6 +155,8 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
               setThemeId(id);
               setShowThemePicker(false);
             }}
+            customThemes={customThemes}
+            onCustomThemesChange={refreshCustomThemes}
           />
         </SliderModal>
       )}

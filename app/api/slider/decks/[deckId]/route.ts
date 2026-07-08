@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { getDeckById, updateDeck, deleteDeck } from "@/lib/sliderDb";
+import { getDeckById, updateDeck, deleteDeck, isOwnedThemeId } from "@/lib/sliderDb";
 import { SLIDE_LAYOUTS, type Slide } from "@/lib/sliderTypes";
-import { SLIDER_THEMES } from "@/lib/sliderThemes";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +36,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ deckId: string }> }) {
   const { deckId } = await params;
-  const { error } = await getOwnedDeck(deckId);
+  const { deck, error } = await getOwnedDeck(deckId);
   if (error) return error;
 
   let body: { title?: string; themeId?: string; slides?: unknown };
@@ -47,7 +46,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  if (body.themeId !== undefined && !SLIDER_THEMES.some((t) => t.id === body.themeId)) {
+  if (body.themeId !== undefined && !(await isOwnedThemeId(body.themeId, deck!.teacher_id))) {
     return NextResponse.json({ error: "Unknown themeId." }, { status: 400 });
   }
   if (body.slides !== undefined && !isValidSlides(body.slides)) {

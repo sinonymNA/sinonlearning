@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { query } from "./db";
 import type { Slide } from "./sliderTypes";
-import { DEFAULT_THEME_ID } from "./sliderThemes";
+import { DEFAULT_THEME_ID, SLIDER_THEMES, type SliderTheme } from "./sliderThemes";
 
 export interface SliderDeckRow {
   id: string;
@@ -48,6 +48,16 @@ export function ensureSliderSchema(): Promise<void> {
           byte_size INTEGER NOT NULL,
           source_url TEXT,
           attribution TEXT,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )`)
+      )
+      .then(() =>
+        query(`CREATE TABLE IF NOT EXISTS slider_custom_themes (
+          id UUID PRIMARY KEY,
+          teacher_id UUID NOT NULL REFERENCES margins_users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          colors JSONB NOT NULL,
+          fonts JSONB NOT NULL,
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
       )
@@ -160,4 +170,76 @@ export async function getSliderImage(id: string): Promise<SliderImageRow | undef
     [id]
   );
   return rows[0];
+}
+
+// ── Custom themes ──
+
+interface SliderCustomThemeRow {
+  id: string;
+  teacher_id: string;
+  name: string;
+  colors: SliderTheme["colors"];
+  fonts: SliderTheme["fonts"];
+  created_at: string;
+}
+
+function toSliderTheme(row: SliderCustomThemeRow): SliderTheme {
+  return { id: row.id, name: row.name, colors: row.colors, fonts: row.fonts, custom: true };
+}
+
+export async function createCustomTheme(params: {
+  teacherId: string;
+  name: string;
+  colors: SliderTheme["colors"];
+  fonts: SliderTheme["fonts"];
+}): Promise<SliderTheme> {
+  await ensureSliderSchema();
+  const id = randomUUID();
+  const { rows } = await query<SliderCustomThemeRow>(
+    `INSERT INTO slider_custom_themes (id, teacher_id, name, colors, fonts)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, teacher_id, name, colors, fonts, created_at`,
+    [id, params.teacherId, params.name.trim() || "Untitled theme", JSON.stringify(params.colors), JSON.stringify(params.fonts)]
+  );
+  return toSliderTheme(rows[0]);
+}
+
+export async function getCustomThemesByTeacher(teacherId: string): Promise<SliderTheme[]> {
+  await ensureSliderSchema();
+  const { rows } = await query<SliderCustomThemeRow>(
+    `SELECT id, teacher_id, name, colors, fonts, created_at
+     FROM slider_custom_themes WHERE teacher_id = $1 ORDER BY created_at DESC`,
+    [teacherId]
+  );
+  return rows.map(toSliderTheme);
+}
+
+export async function getCustomTheme(id: string, teacherId: string): Promise<SliderTheme | undefined> {
+  await ensureSliderSchema();
+  const { rows } = await query<SliderCustomThemeRow>(
+    `SELECT id, teacher_id, name, colors, fonts, created_at
+     FROM slider_custom_themes WHERE id = $1 AND teacher_id = $2`,
+    [id, teacherId]
+  );
+  return rows[0] ? toSliderTheme(rows[0]) : undefined;
+}
+
+export async function deleteCustomTheme(id: string, teacherId: string): Promise<void> {
+  await ensureSliderSchema();
+  await query(`DELETE FROM slider_custom_themes WHERE id = $1 AND teacher_id = $2`, [id, teacherId]);
+}
+
+// True if themeId is a built-in preset, or a custom theme owned by teacherId.
+export async function isOwnedThemeId(themeId: string, teacherId: string): Promise<boolean> {
+  if (SLIDER_THEMES.some((t) => t.id === themeId)) return true;
+  return !!(await getCustomTheme(themeId, teacherId));
+}
+
+// Resolves a deck's theme_id to a full SliderTheme, checking custom themes
+// (scoped to teacherId) when the id isn't one of the built-in presets.
+export async function resolveDeckTheme(themeId: string, teacherId: string): Promise<SliderTheme> {
+  const builtin = SLIDER_THEMES.find((t) => t.id === themeId);
+  if (builtin) return builtin;
+  const custom = await getCustomTheme(themeId, teacherId);
+  return custom ?? SLIDER_THEMES[0];
 }

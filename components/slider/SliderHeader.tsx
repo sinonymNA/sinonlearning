@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
 import SliderLogo from "@/components/SliderLogo";
+import GoogleFontsLoader from "./GoogleFontsLoader";
 
 export default function SliderHeader({ name, role = "teacher" }: { name: string; role?: "teacher" | "student" }) {
   async function handleLogout() {
@@ -14,6 +15,7 @@ export default function SliderHeader({ name, role = "teacher" }: { name: string;
 
   return (
     <header className="relative px-6 h-16 flex items-center justify-between bg-white">
+      <GoogleFontsLoader />
       <Link href="/slider" className="flex items-center gap-3">
         <SliderLogo width={110} />
       </Link>

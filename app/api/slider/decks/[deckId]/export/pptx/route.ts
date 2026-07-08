@@ -1,8 +1,7 @@
 import PptxGenJS from "pptxgenjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { getDeckById, getSliderImage } from "@/lib/sliderDb";
-import { getTheme } from "@/lib/sliderThemes";
+import { getDeckById, getSliderImage, resolveDeckTheme } from "@/lib/sliderDb";
 import { renderSlideToPptx } from "@/lib/sliderPptxRenderer";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +21,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 
-  const theme = getTheme(deck.theme_id);
+  const theme = await resolveDeckTheme(deck.theme_id, user.id);
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_16x9";
 

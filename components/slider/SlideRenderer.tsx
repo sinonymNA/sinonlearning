@@ -21,7 +21,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
         <>
           <div
             className="absolute flex items-center justify-center text-center px-4"
-            style={{ top: "36%", left: "5%", width: "90%", height: "22%", color: theme.colors.heading, fontFamily: theme.fonts.heading }}
+            style={{ top: "36%", left: "5%", width: "90%", height: "22%", color: theme.colors.heading, fontFamily: theme.fonts.heading.css }}
           >
             <p className="font-bold text-[7cqw] leading-tight" style={{ fontSize: "clamp(14px, 5cqw, 40px)" }}>
               {slide.title || "Untitled"}
@@ -30,7 +30,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
           {slide.subtitle && (
             <div
               className="absolute text-center px-4"
-              style={{ top: "58%", left: "10%", width: "80%", height: "10%", color: theme.colors.body, fontFamily: theme.fonts.body }}
+              style={{ top: "58%", left: "10%", width: "80%", height: "10%", color: theme.colors.body, fontFamily: theme.fonts.body.css }}
             >
               <p style={{ fontSize: "clamp(10px, 2.2cqw, 18px)" }}>{slide.subtitle}</p>
             </div>
@@ -42,7 +42,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
         <>
           <div
             className="absolute flex items-center"
-            style={{ top: "6%", left: "6%", width: "88%", height: "14%", color: theme.colors.heading, fontFamily: theme.fonts.heading }}
+            style={{ top: "6%", left: "6%", width: "88%", height: "14%", color: theme.colors.heading, fontFamily: theme.fonts.heading.css }}
           >
             <p className="font-bold" style={{ fontSize: "clamp(12px, 3.2cqw, 26px)" }}>{slide.title || "Untitled"}</p>
           </div>
@@ -53,7 +53,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
       {slide.layout === "titleBody" && (
         <div
           className="absolute overflow-hidden whitespace-pre-wrap"
-          style={{ top: "26%", left: "6%", width: "88%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body, fontSize: "clamp(9px, 1.8cqw, 16px)" }}
+          style={{ top: "26%", left: "6%", width: "88%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body.css, fontSize: "clamp(9px, 1.8cqw, 16px)" }}
         >
           {slide.body}
         </div>
@@ -62,7 +62,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
       {slide.layout === "titleBullets" && (
         <ul
           className="absolute list-disc pl-5 overflow-hidden"
-          style={{ top: "26%", left: "6%", width: "88%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body, fontSize: "clamp(9px, 1.8cqw, 16px)" }}
+          style={{ top: "26%", left: "6%", width: "88%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body.css, fontSize: "clamp(9px, 1.8cqw, 16px)" }}
         >
           {(slide.bullets ?? []).filter((b) => b.trim()).map((b, i) => (
             <li key={i}>{b}</li>
@@ -74,13 +74,13 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
         <>
           <div
             className="absolute overflow-hidden whitespace-pre-wrap"
-            style={{ top: "26%", left: "6%", width: "42%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body, fontSize: "clamp(9px, 1.6cqw, 14px)" }}
+            style={{ top: "26%", left: "6%", width: "42%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body.css, fontSize: "clamp(9px, 1.6cqw, 14px)" }}
           >
             {slide.columns?.[0]}
           </div>
           <div
             className="absolute overflow-hidden whitespace-pre-wrap"
-            style={{ top: "26%", left: "52%", width: "42%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body, fontSize: "clamp(9px, 1.6cqw, 14px)" }}
+            style={{ top: "26%", left: "52%", width: "42%", height: "64%", color: theme.colors.body, fontFamily: theme.fonts.body.css, fontSize: "clamp(9px, 1.6cqw, 14px)" }}
           >
             {slide.columns?.[1]}
           </div>
@@ -113,7 +113,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
               width: imageSrc ? "44%" : "88%",
               height: "64%",
               color: theme.colors.body,
-              fontFamily: theme.fonts.body,
+              fontFamily: theme.fonts.body.css,
               fontSize: "clamp(9px, 1.6cqw, 16px)",
             }}
           >
@@ -144,7 +144,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
         <>
           <div
             className="absolute flex items-center justify-center text-center px-8"
-            style={{ top: "28%", left: "10%", width: "80%", height: "40%", color: theme.colors.heading, fontFamily: theme.fonts.heading }}
+            style={{ top: "28%", left: "10%", width: "80%", height: "40%", color: theme.colors.heading, fontFamily: theme.fonts.heading.css }}
           >
             <p className="italic font-semibold" style={{ fontSize: "clamp(12px, 3cqw, 26px)" }}>
               {slide.quoteText ? `“${slide.quoteText}”` : ""}
@@ -153,7 +153,7 @@ export default function SlideRenderer({ slide, theme, className = "" }: Props) {
           {slide.quoteAttribution && (
             <div
               className="absolute text-center"
-              style={{ top: "70%", left: "10%", width: "80%", height: "10%", color: theme.colors.body, fontFamily: theme.fonts.body }}
+              style={{ top: "70%", left: "10%", width: "80%", height: "10%", color: theme.colors.body, fontFamily: theme.fonts.body.css }}
             >
               <p style={{ fontSize: "clamp(10px, 2cqw, 16px)" }}>— {slide.quoteAttribution}</p>
             </div>
