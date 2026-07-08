@@ -977,6 +977,28 @@ export async function findPracticeAttempt(
   return rows[0];
 }
 
+// Looks up the most recent attempt recorded anywhere in a module, regardless
+// of prompt — used to review a completed check page's result without
+// already knowing which of its prompts (or which retry) the student passed
+// with. Only meaningful for modules the student has already moved past, so
+// the latest row is always the one that actually got them through (full-SAQ
+// check pages record one row per rubric part, all sharing the same
+// `feedback` JSON, so "latest" is fine there too).
+export async function findLatestAttemptForModule(
+  progressId: string,
+  moduleId: string
+): Promise<MarginsPracticeAttempt | undefined> {
+  await ensureMarginsSchema();
+  const { rows } = await query<MarginsPracticeAttempt>(
+    `SELECT ${PRACTICE_ATTEMPT_COLUMNS} FROM margins_practice_attempts
+     WHERE progress_id = $1 AND module_id = $2
+     ORDER BY created_at DESC
+     LIMIT 1`,
+    [progressId, moduleId]
+  );
+  return rows[0];
+}
+
 // Ownership-checked: only writes if the attempt actually belongs to the
 // given progress row, so a student can't overwrite another student's attempt
 // by guessing an attempt id.

@@ -3,13 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { animate } from "animejs";
 import confetti from "canvas-confetti";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Map as MapIcon, CheckCircle2 } from "lucide-react";
 import { revealStagger } from "@/lib/marginsMotion";
 import { getLastRequiredModule, skillTagLabel, type PracticeCourse, type PracticeModule } from "@/lib/marginsPracticeCourses";
 import type { MasteryLevel } from "@/lib/marginsDb";
 import PracticeFeedbackCard from "./PracticeFeedbackCard";
 import GradingReport from "./GradingReport";
 import CapstoneTimer from "./CapstoneTimer";
+import CourseMapDrawer from "./CourseMapDrawer";
+import { getModuleTheme } from "./moduleThemes";
 import PracticeContentBlockView from "./blocks/PracticeContentBlockView";
 import EvidenceExhibitCard from "./blocks/EvidenceExhibitCard";
 import ComparisonChart from "./blocks/ComparisonChart";
@@ -43,12 +45,23 @@ interface FullSaqResult {
   next_steps: { issue: string; why_it_matters: string; how_to_fix: string; skill: string }[];
 }
 
+interface ProgressPointer {
+  current_module: number;
+  current_page: number;
+}
+
 interface CheckResponse {
   result: PracticeCheckResult | FullSaqResult;
   passed: boolean;
   newMastery: CheckMastery[];
   attemptId?: string | null;
   alreadyAttempted?: boolean;
+  progress?: ProgressPointer;
+}
+
+interface AttemptResponse {
+  found: boolean;
+  feedback?: PracticeCheckResult | FullSaqResult;
 }
 
 const LEVEL_ORDER: Record<MasteryLevel, number> = { not_yet_shown: 0, emerging: 1, solid: 2, strong: 3 };
@@ -60,6 +73,18 @@ function isFullSaqResult(result: PracticeCheckResult | FullSaqResult): result is
 
 function clampPage(module_: PracticeModule, page: number): number {
   return Math.min(Math.max(page, 0), module_.pages.length - 1);
+}
+
+// Mirrors the server's page-aware advance logic (app/api/margins/practice/
+// [courseId]/check/route.ts) for *local-only* review navigation — moving the
+// viewing pointer forward through already-completed pages never calls the
+// write endpoints, so it has to independently know when a check page is the
+// last page of its module (only then does the next module start).
+function nextPageAfter(course: PracticeCourse, moduleOrder: number, pageIdx: number): { moduleOrder: number; pageIdx: number } {
+  const mod = course.modules.find((m) => m.order === moduleOrder);
+  if (!mod) return { moduleOrder, pageIdx };
+  const isLastPageInModule = pageIdx === mod.pages.length - 1;
+  return isLastPageInModule ? { moduleOrder: moduleOrder + 1, pageIdx: 0 } : { moduleOrder, pageIdx: pageIdx + 1 };
 }
 
 export default function PracticeCourseView({ courseId, course, initialCurrentModule, initialCurrentPage }: Props) {
@@ -77,6 +102,18 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [pendingCheckResult, setPendingCheckResult] = useState<CheckResponse | null>(null);
   const [selfDiagnosisText, setSelfDiagnosisText] = useState("");
   const [atCapstoneChoice, setAtCapstoneChoice] = useState(false);
+  // The "furthest reached" pointer — distinct from moduleIndex/pageIndex
+  // (what's currently displayed) so the course map can let a student look
+  // back at earlier pages without disturbing their real progress. Only ever
+  // moves forward, and only from a server-confirmed advance/check response.
+  const [furthestModule, setFurthestModule] = useState(Math.min(initialCurrentModule, course.modules.length));
+  const [furthestPage, setFurthestPage] = useState(() => {
+    const mod = course.modules[Math.min(initialCurrentModule, course.modules.length - 1)];
+    return mod ? clampPage(mod, initialCurrentPage) : 0;
+  });
+  const [isCourseMapOpen, setIsCourseMapOpen] = useState(false);
+  const [reviewAttempt, setReviewAttempt] = useState<AttemptResponse | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pageCardRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<HTMLDivElement>(null);
@@ -89,6 +126,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const lastRequiredModule = getLastRequiredModule(course);
   const hasOptionalCapstone = course.modules.some((m) => m.optional);
   const isAtLastRequiredModule = module_ ? module_.order === lastRequiredModule.order : false;
+  const isReviewing = moduleIndex < furthestModule || (moduleIndex === furthestModule && pageIndex < furthestPage);
 
   useEffect(() => {
     if (wrapperRef.current) {
@@ -105,6 +143,31 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
       revealStagger(blocksRef.current, ".content-block", { delay: 150, stagger: 80, duration: 420 });
     }
   }, [moduleIndex, pageIndex]);
+
+  useEffect(() => {
+    if (!isReviewing || !module_ || !page || (page.kind !== "check" && page.kind !== "full_saq_check")) {
+      setReviewAttempt(null);
+      return;
+    }
+    let cancelled = false;
+    setReviewLoading(true);
+    setReviewAttempt(null);
+    fetch(`/api/margins/practice/${courseId}/attempt?moduleId=${module_.id}`)
+      .then((res) => res.json() as Promise<AttemptResponse>)
+      .then((data) => {
+        if (!cancelled) setReviewAttempt(data);
+      })
+      .catch(() => {
+        if (!cancelled) setReviewAttempt({ found: false });
+      })
+      .finally(() => {
+        if (!cancelled) setReviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleIndex, pageIndex, isReviewing]);
 
   function fireConfetti(newMastery: CheckMastery[]) {
     const leveledUp = newMastery.some(
@@ -130,6 +193,12 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   async function handleLessonContinue() {
     if (!module_) return;
+    // Reviewing an already-passed page — just step the viewing pointer
+    // forward, no network call (this page was already recorded as reached).
+    if (isReviewing) {
+      setPageIndex((i) => i + 1);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -138,21 +207,47 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ moduleId: module_.id, fromPage: pageIndex }),
       });
-      const data = await res.json();
+      const data: { progress?: ProgressPointer; error?: string } = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Couldn't move to the next page.");
         setSubmitting(false);
         return;
       }
-      setPageIndex((i) => i + 1);
+      if (data.progress) {
+        setModuleIndex(data.progress.current_module);
+        setPageIndex(data.progress.current_page);
+        setFurthestModule(data.progress.current_module);
+        setFurthestPage(data.progress.current_page);
+      } else {
+        setPageIndex((i) => i + 1);
+      }
     } catch {
       setError("Network error. Please try again.");
     }
     setSubmitting(false);
   }
 
+  function handleReviewContinue() {
+    if (!module_) return;
+    const next = nextPageAfter(course, module_.order, pageIndex);
+    setModuleIndex(next.moduleOrder);
+    setPageIndex(next.pageIdx);
+  }
+
+  function handleNavigate(moduleOrder: number, pageIdx: number) {
+    setModuleIndex(moduleOrder);
+    setPageIndex(pageIdx);
+    setIsCourseMapOpen(false);
+    setCheckResult(null);
+    setPendingCheckResult(null);
+    setResponseText("");
+    setPartResponses(["", "", ""]);
+    setPromptIndex(0);
+    setError(null);
+  }
+
   async function handleCheck() {
-    if (!module_ || !page || (page.kind !== "check" && page.kind !== "full_saq_check")) return;
+    if (!module_ || !page || (page.kind !== "check" && page.kind !== "full_saq_check") || isReviewing) return;
     setError(null);
     const isFullSaq = page.kind === "full_saq_check";
 
@@ -218,17 +313,39 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   }
 
   function handleContinueAfterPass() {
+    const finishedModuleOrder = module_?.order;
+    // The capstone singleAttempt-replay path never re-advances server
+    // progress (see check/route.ts) — blindly stepping forward is what
+    // correctly finishes the course in that narrow recovery case, exactly as
+    // it did before the furthest/review-mode split below existed.
+    const wasReplay = checkResult?.alreadyAttempted === true;
+    const serverProgress = checkResult?.progress;
+
     setCheckResult(null);
     setPendingCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
     setPromptIndex(0);
-    if (isAtLastRequiredModule && hasOptionalCapstone) {
+
+    if (wasReplay || !serverProgress) {
+      if (isAtLastRequiredModule && hasOptionalCapstone) {
+        setAtCapstoneChoice(true);
+        return;
+      }
+      setPageIndex(0);
+      setModuleIndex((i) => i + 1);
+      return;
+    }
+
+    const crossedModuleBoundary = finishedModuleOrder !== undefined && serverProgress.current_module > finishedModuleOrder;
+    if (crossedModuleBoundary && isAtLastRequiredModule && hasOptionalCapstone) {
       setAtCapstoneChoice(true);
       return;
     }
-    setPageIndex(0);
-    setModuleIndex((i) => i + 1);
+    setModuleIndex(serverProgress.current_module);
+    setPageIndex(serverProgress.current_page);
+    setFurthestModule(serverProgress.current_module);
+    setFurthestPage(serverProgress.current_page);
   }
 
   function handleRetry() {
@@ -275,7 +392,24 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               <ArrowRight size={15} />
             </button>
           </div>
+          <button
+            onClick={() => setIsCourseMapOpen(true)}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
+          >
+            <MapIcon size={13} /> Review the course
+          </button>
         </div>
+        {isCourseMapOpen && (
+          <CourseMapDrawer
+            course={course}
+            moduleOrder={-1}
+            pageIndex={-1}
+            furthestModule={course.modules.length - 1}
+            furthestPage={Number.MAX_SAFE_INTEGER}
+            onNavigate={handleNavigate}
+            onClose={() => setIsCourseMapOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -287,7 +421,24 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
           <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
           <p className="text-sm text-stone-500 mt-1">Scout&rsquo;s proud of you. Keep an eye on your skill mastery — it only goes up from here.</p>
+          <button
+            onClick={() => setIsCourseMapOpen(true)}
+            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
+          >
+            <MapIcon size={13} /> Review the course
+          </button>
         </div>
+        {isCourseMapOpen && (
+          <CourseMapDrawer
+            course={course}
+            moduleOrder={-1}
+            pageIndex={-1}
+            furthestModule={course.modules.length - 1}
+            furthestPage={Number.MAX_SAFE_INTEGER}
+            onNavigate={handleNavigate}
+            onClose={() => setIsCourseMapOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -297,35 +448,55 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const isSingleAttemptPage = isCheckPage && Boolean((page as { singleAttempt?: boolean }).singleAttempt);
   const currentPrompt = page!.kind === "check" ? page!.prompts[promptIndex % page!.prompts.length] : null;
 
+  const currentTheme = getModuleTheme(module_!.id);
+  const CurrentModuleIcon = currentTheme.icon;
+
   return (
     <div ref={wrapperRef} className="flex flex-col gap-5">
       <div className="course-panel flex items-center gap-2" style={{ opacity: 0 }}>
         {course.modules.map((m, i) => {
-          const fraction = i < moduleIndex ? 1 : i > moduleIndex ? 0 : pageIndex / m.pages.length;
+          const theme = getModuleTheme(m.id);
+          const fraction = i < furthestModule ? 1 : i > furthestModule ? 0 : furthestPage / m.pages.length;
           return (
             <span
               key={m.id}
               className={`relative h-1.5 flex-1 rounded-full bg-stone-200 overflow-hidden ${m.optional ? "opacity-50" : ""}`}
             >
               <span
-                className="absolute inset-y-0 left-0 rounded-full bg-teal-500 transition-all"
+                className={`absolute inset-y-0 left-0 rounded-full ${theme.pill} transition-all`}
                 style={{ width: `${Math.round(fraction * 100)}%` }}
               />
             </span>
           );
         })}
       </div>
-      <p className="course-panel text-xs text-stone-400" style={{ opacity: 0 }}>
-        {module_!.optional ? "Bonus" : `Module ${moduleIndex + 1} of ${course.modules.length}`} · Page {pageIndex + 1} of{" "}
-        {module_!.pages.length}
-      </p>
+      <div className="course-panel flex items-center justify-between" style={{ opacity: 0 }}>
+        <p className="text-xs text-stone-400 flex items-center gap-2">
+          {module_!.optional ? "Bonus" : `Module ${moduleIndex + 1} of ${course.modules.length}`} · Page {pageIndex + 1} of{" "}
+          {module_!.pages.length}
+          {isReviewing && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+              Reviewing
+            </span>
+          )}
+        </p>
+        <button
+          onClick={() => setIsCourseMapOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
+        >
+          <MapIcon size={13} /> Course map
+        </button>
+      </div>
 
-      <div ref={pageCardRef} className="rounded-2xl border border-teal-100 bg-white p-6" style={{ opacity: 0 }}>
-        {pageIndex === 0 && (
-          <>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-teal-500 mb-1">{module_!.title}</p>
-            <p className="text-[13px] italic text-stone-500 mb-4">{module_!.tagline}</p>
-          </>
+      <div ref={pageCardRef} className={`rounded-2xl border ${currentTheme.cardBorder} bg-white p-6`} style={{ opacity: 0 }}>
+        <div className="mb-1 flex items-center gap-1.5">
+          <CurrentModuleIcon size={12} className={currentTheme.iconText} />
+          <p className={`text-[11px] font-bold uppercase tracking-widest ${currentTheme.labelText}`}>{module_!.title}</p>
+        </div>
+        {pageIndex === 0 ? (
+          <p className="text-[13px] italic text-stone-500 mb-4">{module_!.tagline}</p>
+        ) : (
+          <div className="mb-3" />
         )}
 
         {page!.kind === "lesson" && (
@@ -341,7 +512,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {isCheckPage && !checkResult && !pendingCheckResult && (
+        {isCheckPage && !isReviewing && !checkResult && !pendingCheckResult && (
           <>
             <p className="text-[19px] font-bold tracking-tight text-stone-900 mb-1">{page!.title}</p>
             <p className="text-[13px] text-stone-500 mb-4">{(page as { intro: string }).intro}</p>
@@ -353,7 +524,42 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {!checkResult && !pendingCheckResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
+        {isCheckPage && isReviewing && (
+          <>
+            <p className="text-[19px] font-bold tracking-tight text-stone-900 mb-1">{page!.title}</p>
+            <p className="mb-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
+              <CheckCircle2 size={12} /> Reviewing your completed answer
+            </p>
+            {reviewLoading && <p className="text-[13px] text-stone-400">Loading your results…</p>}
+            {!reviewLoading && reviewAttempt?.found === false && (
+              <p className="text-[13px] text-stone-400">No record found for this page.</p>
+            )}
+            {!reviewLoading &&
+              reviewAttempt?.found &&
+              reviewAttempt.feedback &&
+              (isFullSaqResult(reviewAttempt.feedback) ? (
+                <GradingReport
+                  overallScore={reviewAttempt.feedback.overall_score}
+                  maxScore={reviewAttempt.feedback.max_score}
+                  rubricBreakdown={reviewAttempt.feedback.rubric_breakdown}
+                  overallFeedback={reviewAttempt.feedback.overall_feedback}
+                  strengths={reviewAttempt.feedback.strengths}
+                  nextSteps={reviewAttempt.feedback.next_steps}
+                  essayType="SAQ"
+                />
+              ) : (
+                <PracticeFeedbackCard
+                  passed={reviewAttempt.feedback.passed}
+                  feedback={reviewAttempt.feedback.feedback}
+                  hint={reviewAttempt.feedback.hint}
+                  scoreLabel={reviewAttempt.feedback.score_label}
+                  skillLabel={isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : skillTagLabel(page!.skill)}
+                />
+              ))}
+          </>
+        )}
+
+        {!isReviewing && !checkResult && !pendingCheckResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
           <>
             {(() => {
               const fullSaqPrompt = page!.prompts[promptIndex % page!.prompts.length];
@@ -404,7 +610,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </>
         )}
 
-        {!checkResult && !pendingCheckResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && currentPrompt && (
+        {!isReviewing && !checkResult && !pendingCheckResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && currentPrompt && (
           <>
             {currentPrompt.stimulus && currentPrompt.stimulusVisual?.kind === "comparisonChart" ? (
               <div className="mb-3">
@@ -522,7 +728,16 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
             {!submitting && <ArrowRight size={15} />}
           </button>
         )}
-        {isCheckPage && !checkResult && !pendingCheckResult && (
+        {isCheckPage && isReviewing && (
+          <button
+            onClick={handleReviewContinue}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
+          >
+            Continue
+            <ArrowRight size={15} />
+          </button>
+        )}
+        {isCheckPage && !isReviewing && !checkResult && !pendingCheckResult && (
           <button
             onClick={handleCheck}
             disabled={submitting}
@@ -551,6 +766,18 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           </button>
         )}
       </div>
+
+      {isCourseMapOpen && (
+        <CourseMapDrawer
+          course={course}
+          moduleOrder={module_!.order}
+          pageIndex={pageIndex}
+          furthestModule={furthestModule}
+          furthestPage={furthestPage}
+          onNavigate={handleNavigate}
+          onClose={() => setIsCourseMapOpen(false)}
+        />
+      )}
     </div>
   );
 }

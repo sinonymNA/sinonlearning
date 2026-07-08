@@ -100,6 +100,13 @@ export async function POST(
 
   const lastRequiredModule = getLastRequiredModule(course);
   const isLastRequiredModule = module_.order === lastRequiredModule.order;
+  // A module can hold more than one check page (e.g. the-alibi: alibi-check,
+  // then a lesson page, then alibi-echo-check) — passing one only moves to
+  // the next module if it's actually the module's last page; otherwise it
+  // just steps to the next page within the same module.
+  const isLastPageInModule = progress.current_page === module_.pages.length - 1;
+  const nextModuleOrder = isLastPageInModule ? module_.order + 1 : module_.order;
+  const nextPage = isLastPageInModule ? 0 : progress.current_page + 1;
 
   try {
     if (checkPage.kind === "full_saq_check") {
@@ -147,7 +154,12 @@ export async function POST(
       const passed = output.overall_score >= output.max_score;
       const updatedProgress =
         passed || module_.optional
-          ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastRequiredModule)
+          ? await advancePracticeProgress(
+              progress.id,
+              nextModuleOrder,
+              nextPage,
+              isLastRequiredModule && isLastPageInModule
+            )
           : progress;
 
       return NextResponse.json({
@@ -186,7 +198,12 @@ export async function POST(
 
     const updatedProgress =
       output.passed || module_.optional
-        ? await advancePracticeProgress(progress.id, module_.order + 1, 0, isLastRequiredModule)
+        ? await advancePracticeProgress(
+            progress.id,
+            nextModuleOrder,
+            nextPage,
+            isLastRequiredModule && isLastPageInModule
+          )
         : progress;
 
     return NextResponse.json({
