@@ -66,22 +66,142 @@ export const SCOUT_REGISTERS = ["story", "transitional", "ap"] as const;
 
 export type ScoutRegister = (typeof SCOUT_REGISTERS)[number];
 
+// The fictional cast — fixed identity (initials/color) lives here since it's
+// shared vocabulary across every module that quotes them. A character's
+// in-story status (e.g. "ALIBI: DINER 11:04PM") changes as the plot
+// develops, so it's passed per-usage at the call site, not stored here.
+export type CharacterId = "devon" | "priya" | "jonah" | "marisol" | "wren";
+
+export const CHARACTER_META: Record<CharacterId, { initials: string; colorClass: string }> = {
+  devon: { initials: "D", colorClass: "bg-teal-100 text-teal-700" },
+  priya: { initials: "P", colorClass: "bg-violet-100 text-violet-700" },
+  jonah: { initials: "J", colorClass: "bg-stone-200 text-stone-700" },
+  marisol: { initials: "M", colorClass: "bg-sky-100 text-sky-700" },
+  // Wren never appears "on screen" — the one source you never hear from
+  // directly, only through forwarded/secondhand texts.
+  wren: { initials: "W", colorClass: "bg-amber-100 text-amber-700" },
+};
+
+// A lesson page's body is a sequence of typed content blocks — not just
+// paragraphs — so visuals (a quoted text thread, a pinned evidence card, a
+// claim/evidence/reasoning diagram, a timeline, a chart) sit directly in the
+// narrative flow instead of being appended after a wall of prose. A closed,
+// purpose-built union (not a generic "embed named component" escape hatch)
+// keeps every block statically checked and keeps PracticeContentBlockView's
+// dispatch a plain switch, no dynamic component registry.
+export interface ParagraphBlock {
+  type: "paragraph";
+  text: string;
+}
+
+export interface ChatMessageBlock {
+  type: "chatMessage";
+  sender: CharacterId;
+  text: string;
+  timestamp?: string;
+}
+
+// A run of consecutive chat lines rendered as one contiguous conversation
+// card instead of separately floating bubbles.
+export interface ChatExchangeBlock {
+  type: "chatExchange";
+  messages: { sender: CharacterId; text: string; timestamp?: string }[];
+}
+
+// A "pinned to the investigation board" reveal — a diner timestamp, a
+// currency-portrait detail, a quoted historical source excerpt.
+export interface EvidenceExhibitBlock {
+  type: "evidenceExhibit";
+  label: string;
+  content: string;
+  annotation?: string;
+}
+
+// The recurring claim -> evidence -> reasoning anatomy-of-a-sentence
+// diagram. `highlight` dims the other two steps to isolate the one a page is
+// drilling (e.g. a reasoning-only rep).
+export interface AnatomyDiagramBlock {
+  type: "anatomyDiagram";
+  claim: string;
+  evidence: string;
+  reasoning: string;
+  highlight?: "claim" | "evidence" | "reasoning";
+}
+
+// A sequence of real-history dated events.
+export interface TimelineBlock {
+  type: "timeline";
+  events: { date: string; label: string; detail: string }[];
+}
+
+// Explicitly illustrative/schematic bar or line data — `illustrative` is
+// required (not optional) so a chart can never silently imply it's precise
+// verified statistics; the rendering component always shows `caption` as a
+// visible disclaimer strip.
+export interface SchematicChartBlock {
+  type: "schematicChart";
+  chartKind: "bar" | "line";
+  caption: string;
+  points: { label: string; value: number }[];
+  illustrative: true;
+}
+
+// Side-by-side comparison of two things across shared dimensions.
+export interface ComparisonChartBlock {
+  type: "comparisonChart";
+  leftLabel: string;
+  rightLabel: string;
+  rows: { dimension: string; left: string; right: string }[];
+}
+
+// A "Weak — .../ Strong — ..." contrast pair.
+export interface ContrastCardBlock {
+  type: "contrastCard";
+  weak: string;
+  strong: string;
+  weakNote?: string;
+  strongNote?: string;
+}
+
+export type PracticeContentBlock =
+  | ParagraphBlock
+  | ChatMessageBlock
+  | ChatExchangeBlock
+  | EvidenceExhibitBlock
+  | AnatomyDiagramBlock
+  | TimelineBlock
+  | SchematicChartBlock
+  | ComparisonChartBlock
+  | ContrastCardBlock;
+
 export interface PracticeLessonPage {
   id: string;
   kind: "lesson";
   title: string;
-  body: string[];
+  body: PracticeContentBlock[];
 }
+
+// A stimulus/given-context can optionally carry a richer visual — additive,
+// falls back to the plain-text field's existing rendering when unset, so no
+// existing prompt breaks by not having one authored yet.
+export type StimulusVisual =
+  | { kind: "document"; label: string }
+  | { kind: "comparisonChart"; leftLabel: string; rightLabel: string; rows: { dimension: string; left: string; right: string }[] };
 
 export interface PracticePrompt {
   id: string;
   prompt: string;
   // Real Unit 1 source excerpt shown above the question (stimulus-based reps).
   stimulus?: string;
+  // Richer visual for `stimulus` — renders instead of the plain text box when set.
+  stimulusVisual?: StimulusVisual;
   // Fixed claim+evidence text shown above the response box, when a check page
   // isolates one part of the claim/evidence/reasoning chain by giving the
   // rest already written (e.g. "write only the reasoning sentence").
   givenContext?: string;
+  // Richer visual for `givenContext` — renders via AnatomyDiagram(highlight="reasoning")
+  // instead of the plain text box when set.
+  givenContextAnatomy?: { claim: string; evidence: string };
 }
 
 export interface PracticeCheckPage {
@@ -108,6 +228,7 @@ export interface FullSaqPart {
 export interface FullSaqPrompt {
   id: string;
   stimulus: string;
+  stimulusVisual?: StimulusVisual;
   parts: [FullSaqPart, FullSaqPart, FullSaqPart];
 }
 

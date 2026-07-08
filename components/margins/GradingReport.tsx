@@ -2,10 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { animate } from "animejs";
-import { Patrick_Hand } from "next/font/google";
 import { animateNumber, revealStagger } from "@/lib/marginsMotion";
-
-const handwriting = Patrick_Hand({ subsets: ["latin"], weight: "400" });
+import { handwriting } from "@/lib/marginsFonts";
 
 interface RubricRow {
   category: string;

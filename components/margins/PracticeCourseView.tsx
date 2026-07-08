@@ -10,6 +10,10 @@ import type { MasteryLevel } from "@/lib/marginsDb";
 import PracticeFeedbackCard from "./PracticeFeedbackCard";
 import GradingReport from "./GradingReport";
 import CapstoneTimer from "./CapstoneTimer";
+import PracticeContentBlockView from "./blocks/PracticeContentBlockView";
+import EvidenceExhibitCard from "./blocks/EvidenceExhibitCard";
+import ComparisonChart from "./blocks/ComparisonChart";
+import AnatomyDiagram from "./blocks/AnatomyDiagram";
 
 interface Props {
   courseId: string;
@@ -75,6 +79,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [atCapstoneChoice, setAtCapstoneChoice] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pageCardRef = useRef<HTMLDivElement>(null);
+  const blocksRef = useRef<HTMLDivElement>(null);
   const masteryRef = useRef<Record<string, MasteryLevel>>({});
 
   const isDone = moduleIndex >= course.modules.length;
@@ -95,6 +100,9 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   useEffect(() => {
     if (pageCardRef.current) {
       animate(pageCardRef.current, { opacity: [0, 1], translateY: [12, 0], duration: 360, easing: "outQuart" });
+    }
+    if (blocksRef.current) {
+      revealStagger(blocksRef.current, ".content-block", { delay: 150, stagger: 80, duration: 420 });
     }
   }, [moduleIndex, pageIndex]);
 
@@ -323,11 +331,11 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         {page!.kind === "lesson" && (
           <>
             <p className="text-[17px] font-semibold text-stone-800 mb-3">{page!.title}</p>
-            <div className="flex flex-col gap-3">
-              {page!.body.map((paragraph, i) => (
-                <p key={i} className="text-[14px] text-stone-700 leading-relaxed">
-                  {paragraph}
-                </p>
+            <div ref={blocksRef} className="flex flex-col gap-4">
+              {page!.body.map((block, i) => (
+                <div key={i} className="content-block" style={{ opacity: 0 }}>
+                  <PracticeContentBlockView block={block} />
+                </div>
               ))}
             </div>
           </>
@@ -347,9 +355,32 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
         {!checkResult && !pendingCheckResult && isFullSaqCheck && page!.kind === "full_saq_check" && (
           <>
-            <p className="text-[14px] text-stone-700 leading-relaxed mb-4 whitespace-pre-wrap">
-              {page!.prompts[promptIndex % page!.prompts.length].stimulus}
-            </p>
+            {(() => {
+              const fullSaqPrompt = page!.prompts[promptIndex % page!.prompts.length];
+              if (fullSaqPrompt.stimulusVisual?.kind === "comparisonChart") {
+                return (
+                  <div className="mb-4">
+                    <ComparisonChart
+                      leftLabel={fullSaqPrompt.stimulusVisual.leftLabel}
+                      rightLabel={fullSaqPrompt.stimulusVisual.rightLabel}
+                      rows={fullSaqPrompt.stimulusVisual.rows}
+                    />
+                  </div>
+                );
+              }
+              if (fullSaqPrompt.stimulusVisual?.kind === "document") {
+                return (
+                  <div className="mb-4">
+                    <EvidenceExhibitCard label={fullSaqPrompt.stimulusVisual.label} content={fullSaqPrompt.stimulus} />
+                  </div>
+                );
+              }
+              return (
+                <p className="text-[14px] text-stone-700 leading-relaxed mb-4 whitespace-pre-wrap">
+                  {fullSaqPrompt.stimulus}
+                </p>
+              );
+            })()}
             <div className="flex flex-col gap-3">
               {page!.prompts[promptIndex % page!.prompts.length].parts.map((part, i) => (
                 <div key={part.label}>
@@ -375,17 +406,42 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
         {!checkResult && !pendingCheckResult && isCheckPage && !isFullSaqCheck && page!.kind === "check" && currentPrompt && (
           <>
-            {currentPrompt.stimulus && (
-              <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-stone-50 border border-stone-100 p-3 whitespace-pre-wrap">
-                {currentPrompt.stimulus}
-              </p>
+            {currentPrompt.stimulus && currentPrompt.stimulusVisual?.kind === "comparisonChart" ? (
+              <div className="mb-3">
+                <ComparisonChart
+                  leftLabel={currentPrompt.stimulusVisual.leftLabel}
+                  rightLabel={currentPrompt.stimulusVisual.rightLabel}
+                  rows={currentPrompt.stimulusVisual.rows}
+                />
+              </div>
+            ) : currentPrompt.stimulus && currentPrompt.stimulusVisual?.kind === "document" ? (
+              <div className="mb-3">
+                <EvidenceExhibitCard label={currentPrompt.stimulusVisual.label} content={currentPrompt.stimulus} />
+              </div>
+            ) : (
+              currentPrompt.stimulus && (
+                <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-stone-50 border border-stone-100 p-3 whitespace-pre-wrap">
+                  {currentPrompt.stimulus}
+                </p>
+              )
             )}
             <p className="text-[14px] text-stone-700 leading-relaxed mb-3">{currentPrompt.prompt}</p>
-            {currentPrompt.givenContext && (
-              <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-teal-50/50 border border-teal-100 p-3">
-                <span className="font-semibold text-teal-700">Already given: </span>
-                {currentPrompt.givenContext}
-              </p>
+            {currentPrompt.givenContextAnatomy ? (
+              <div className="mb-3">
+                <AnatomyDiagram
+                  claim={currentPrompt.givenContextAnatomy.claim}
+                  evidence={currentPrompt.givenContextAnatomy.evidence}
+                  reasoning="Your turn — write it below."
+                  highlight="reasoning"
+                />
+              </div>
+            ) : (
+              currentPrompt.givenContext && (
+                <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-teal-50/50 border border-teal-100 p-3">
+                  <span className="font-semibold text-teal-700">Already given: </span>
+                  {currentPrompt.givenContext}
+                </p>
+              )
             )}
             <textarea
               value={responseText}
