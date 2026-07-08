@@ -163,6 +163,24 @@ export interface ContrastCardBlock {
   strongNote?: string;
 }
 
+// Scout breaking from the story narration to talk directly to the student —
+// a teaching aside, not plot. Gets its own tinted callout treatment instead
+// of reading as an ordinary paragraph (or, worse, a stray quote mark).
+export interface CalloutBlock {
+  type: "callout";
+  text: string;
+  label?: string;
+}
+
+// A story illustration — "photo evidence" pinned to the investigation
+// board. `src` is a path under /public.
+export interface ImageBlock {
+  type: "image";
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
 export type PracticeContentBlock =
   | ParagraphBlock
   | ChatMessageBlock
@@ -172,7 +190,9 @@ export type PracticeContentBlock =
   | TimelineBlock
   | SchematicChartBlock
   | ComparisonChartBlock
-  | ContrastCardBlock;
+  | ContrastCardBlock
+  | CalloutBlock
+  | ImageBlock;
 
 export interface PracticeLessonPage {
   id: string;

@@ -324,13 +324,13 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         {pageIndex === 0 && (
           <>
             <p className="text-[11px] font-bold uppercase tracking-widest text-teal-500 mb-1">{module_!.title}</p>
-            <p className="text-[13px] text-stone-500 mb-4">{module_!.tagline}</p>
+            <p className="text-[13px] italic text-stone-500 mb-4">{module_!.tagline}</p>
           </>
         )}
 
         {page!.kind === "lesson" && (
           <>
-            <p className="text-[17px] font-semibold text-stone-800 mb-3">{page!.title}</p>
+            <p className="text-[19px] font-bold tracking-tight text-stone-900 mb-3">{page!.title}</p>
             <div ref={blocksRef} className="flex flex-col gap-4">
               {page!.body.map((block, i) => (
                 <div key={i} className="content-block" style={{ opacity: 0 }}>
@@ -343,7 +343,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
         {isCheckPage && !checkResult && !pendingCheckResult && (
           <>
-            <p className="text-[17px] font-semibold text-stone-800 mb-1">{page!.title}</p>
+            <p className="text-[19px] font-bold tracking-tight text-stone-900 mb-1">{page!.title}</p>
             <p className="text-[13px] text-stone-500 mb-4">{(page as { intro: string }).intro}</p>
             {module_!.optional && page!.kind === "full_saq_check" && (
               <div className="mb-4 flex justify-center">

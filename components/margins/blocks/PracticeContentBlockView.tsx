@@ -6,6 +6,8 @@ import HistoryTimeline from "./HistoryTimeline";
 import SchematicChart from "./SchematicChart";
 import ComparisonChart from "./ComparisonChart";
 import ContrastCard from "./ContrastCard";
+import CalloutCard from "./CalloutCard";
+import LessonImage from "./LessonImage";
 
 interface Props {
   block: PracticeContentBlock;
@@ -14,7 +16,11 @@ interface Props {
 export default function PracticeContentBlockView({ block }: Props) {
   switch (block.type) {
     case "paragraph":
-      return <p className="text-[14px] text-stone-700 leading-relaxed">{block.text}</p>;
+      return <p className="text-[15px] text-stone-700 leading-relaxed">{block.text}</p>;
+    case "callout":
+      return <CalloutCard text={block.text} label={block.label} />;
+    case "image":
+      return <LessonImage src={block.src} alt={block.alt} caption={block.caption} />;
     case "chatMessage":
       return <ChatBubble characterId={block.sender} text={block.text} timestamp={block.timestamp} />;
     case "chatExchange":

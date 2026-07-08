@@ -27,12 +27,38 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "Monday morning, and Marisol's not here",
         body: [
           {
-            type: "paragraph",
-            text: "Here's what everyone actually agrees on: Friday night, there was a bonfire out at Ferryhollow Point — the rocky little peninsula past the marina where everyone ends up eventually. Marisol was there. Devon was there. Priya was there, and so was Jonah. Somewhere around 11pm, Marisol and Priya got into it — a real screaming match, the kind that makes everyone else suddenly very interested in their phones. Nobody heard the whole thing. And then Marisol just... wasn't at the bonfire anymore. Nobody thought much of it Friday night. People leave parties.",
+            type: "image",
+            src: "/margins/claim-to-point/bonfire-gathering.webp",
+            alt: "A group of teenagers gathered around a bonfire at a rocky point at night, with a marina and lit houses in the background.",
+            caption: "Friday night. Ferryhollow Point.",
           },
           {
             type: "paragraph",
-            text: "Except she didn't show up to first period Monday. Or second. By lunch, her mom had called the school. By the end of the day, half of Ferryhollow High had a theory, and none of them had actually talked to each other about it.",
+            text: "Here's what everyone actually agrees on: Friday night, there was a bonfire out at Ferryhollow Point — the rocky little peninsula past the marina where everyone ends up eventually. Marisol was there. Devon was there. Priya was there, and so was Jonah.",
+          },
+          {
+            type: "image",
+            src: "/margins/claim-to-point/bonfire-confrontation.webp",
+            alt: "Two teenage girls facing off and arguing in front of the bonfire while everyone else around them looks at their phones.",
+            caption: "Somewhere around 11pm, it got loud.",
+          },
+          {
+            type: "paragraph",
+            text: "Marisol and Priya got into it — a real screaming match, the kind that makes everyone else suddenly very interested in their phones. Nobody heard the whole thing. And then Marisol just... wasn't at the bonfire anymore. Nobody thought much of it Friday night. People leave parties.",
+          },
+          {
+            type: "paragraph",
+            text: "Except she didn't show up to first period Monday. Or second. By lunch, her mom had called the school.",
+          },
+          {
+            type: "image",
+            src: "/margins/claim-to-point/hallway-gossip.webp",
+            alt: "Students clustered in a high school hallway between classes, whispering and looking concerned.",
+            caption: "By lunch, half the school had a theory.",
+          },
+          {
+            type: "paragraph",
+            text: "By the end of the day, half of Ferryhollow High had a theory, and none of them had actually talked to each other about it.",
           },
           {
             type: "paragraph",
@@ -104,8 +130,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "One more test before you write yours",
         body: [
           {
-            type: "paragraph",
-            text: '\'Quick gut check Scout runs on every claim: could you swap out the subject and the sentence would still basically work? "Something\'s off" works for literally any mystery ever told. "Priya\'s been avoiding eye contact with Devon since Saturday" only works for THIS one — it names a specific person, a specific behavior, a specific timeframe. That specificity is what makes it a real claim instead of atmosphere.\'',
+            type: "callout",
+            text: "Quick gut check Scout runs on every claim: could you swap out the subject and the sentence would still basically work? \"Something's off\" works for literally any mystery ever told. \"Priya's been avoiding eye contact with Devon since Saturday\" only works for THIS one — it names a specific person, a specific behavior, a specific timeframe. That specificity is what makes it a real claim instead of atmosphere.",
           },
           {
             type: "paragraph",
@@ -176,12 +202,12 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "A claim needs backup — ONE real piece of it",
         body: [
           {
-            type: "paragraph",
-            text: '\'Last module you learned to spot a real claim. Now: a claim by itself is still just an accusation. "Devon\'s lying" is a real claim — it could be false — but it\'s floating with nothing under it. The next move is attaching ONE specific, concrete piece of evidence that actually supports it.\'',
+            type: "callout",
+            text: "Last module you learned to spot a real claim. Now: a claim by itself is still just an accusation. \"Devon's lying\" is a real claim — it could be false — but it's floating with nothing under it. The next move is attaching ONE specific, concrete piece of evidence that actually supports it.",
           },
           {
-            type: "paragraph",
-            text: '\'"Devon\'s being shady" — vague. Could describe literally anyone having an off week. "Devon\'s phone number was logged at a downtown diner at 11:04pm, the same night she says she was home asleep by 11" — that\'s not shady, that\'s a timestamp, a location, and a name. It\'s checkable. Nobody can argue with a fact that specific; they can only argue with a vibe.\'',
+            type: "callout",
+            text: "\"Devon's being shady\" — vague. Could describe literally anyone having an off week. \"Devon's phone number was logged at a downtown diner at 11:04pm, the same night she says she was home asleep by 11\" — that's not shady, that's a timestamp, a location, and a name. It's checkable. Nobody can argue with a fact that specific; they can only argue with a vibe.",
           },
         ],
       },
@@ -235,8 +261,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
             text: "Same exact skill — claim, plus one specific detail that actually backs it up — except this time it's aimed at something real that actually happened, a couple hundred years ago, not a diner receipt.",
           },
           {
-            type: "paragraph",
-            text: '\'In 1791, King Louis XVI of France tried to secretly flee Paris in disguise with his family, hoping to reach royalist troops near the eastern border and escape the Revolution entirely. His "alibi," more or less, was that this was all a normal, unremarkable trip. It fell apart in the town of Varennes when a local postmaster recognized the king\'s face — because it was printed on the paper currency everyone in France carried around in their pocket. Same shape as Devon\'s alibi: a cover story, and one specific, checkable detail that blew it apart.\'',
+            type: "callout",
+            text: "In 1791, King Louis XVI of France tried to secretly flee Paris in disguise with his family, hoping to reach royalist troops near the eastern border and escape the Revolution entirely. His \"alibi,\" more or less, was that this was all a normal, unremarkable trip. It fell apart in the town of Varennes when a local postmaster recognized the king's face — because it was printed on the paper currency everyone in France carried around in their pocket. Same shape as Devon's alibi: a cover story, and one specific, checkable detail that blew it apart.",
           },
           {
             type: "timeline",
@@ -296,8 +322,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
             text: "Turns out Devon's diner trip was nothing — she panic-drove to get fries after the fight because she was too upset to go straight home, then lied about the timing because she didn't want to admit how shaken up she was. Dead end. Sorry.",
           },
           {
-            type: "paragraph",
-            text: '\'But here\'s what came out this week: Priya told everyone the fight was "about nothing, just a dumb misunderstanding." Except Jonah finally admitted — reluctantly, and only after being asked directly twice — that the fight was actually about Marisol finding out Priya had been talking to Marisol\'s ex behind her back for weeks. That\'s not nothing. That\'s a real motive Priya has been actively hiding since Friday.\'',
+            type: "callout",
+            text: "But here's what came out this week: Priya told everyone the fight was \"about nothing, just a dumb misunderstanding.\" Except Jonah finally admitted — reluctantly, and only after being asked directly twice — that the fight was actually about Marisol finding out Priya had been talking to Marisol's ex behind her back for weeks. That's not nothing. That's a real motive Priya has been actively hiding since Friday.",
           },
         ],
       },
@@ -311,8 +337,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
             text: "You've now got two moves down: a real claim, and a claim backed by one specific piece of evidence. Here's the piece almost everyone skips, and it's the single biggest point-loser on a real SAQ: reasoning — the sentence that actually explains WHY your evidence proves your claim, instead of just restating the evidence in different words.",
           },
           {
-            type: "paragraph",
-            text: '\'Watch the trap: "Priya lied about the fight, because she told everyone it was about nothing when it was actually about her talking to Marisol\'s ex." That sentence is 100% just... the evidence again, worded slightly differently. It never actually explains WHY that evidence matters — it just repeats it.\'',
+            type: "callout",
+            text: "Watch the trap: \"Priya lied about the fight, because she told everyone it was about nothing when it was actually about her talking to Marisol's ex.\" That sentence is 100% just... the evidence again, worded slightly differently. It never actually explains WHY that evidence matters — it just repeats it.",
           },
         ],
       },
@@ -346,8 +372,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "One heads-up before you write",
         body: [
           {
-            type: "paragraph",
-            text: '\'One more thing before you jump in: right after you submit, Scout\'s going to ask you a quick question BEFORE showing you any feedback — just "what do you think is the weakest part of what you just wrote?" You can skip it if you want, but genuinely take a second with it if you can. Catching your own weak spot before someone else points it out is basically the whole skill, one level up.\'',
+            type: "callout",
+            text: "One more thing before you jump in: right after you submit, Scout's going to ask you a quick question BEFORE showing you any feedback — just \"what do you think is the weakest part of what you just wrote?\" You can skip it if you want, but genuinely take a second with it if you can. Catching your own weak spot before someone else points it out is basically the whole skill, one level up.",
           },
         ],
       },
@@ -567,8 +593,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "Jonah's version doesn't fully match Devon's",
         body: [
           {
-            type: "paragraph",
-            text: '\'Devon says she heard Marisol mention "needing space for a while" earlier that night, before the fight even started. Jonah says he never heard that — and he was standing closer to Marisol than Devon was most of the night. Either one of them misremembered a chaotic night, or one of them is protecting someone by leaving something out. Hard to say yet.\'',
+            type: "callout",
+            text: "Devon says she heard Marisol mention \"needing space for a while\" earlier that night, before the fight even started. Jonah says he never heard that — and he was standing closer to Marisol than Devon was most of the night. Either one of them misremembered a chaotic night, or one of them is protecting someone by leaving something out. Hard to say yet.",
           },
           {
             type: "paragraph",
@@ -598,8 +624,8 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
             text: "Real SAQ prompts — the ones you'll actually see on the exam — don't all ask for the same thing, and mixing them up is one of the most common ways students lose easy points. Some parts are IDENTIFY or DESCRIBE: they just want accurate, specific information. No reasoning chain required — name the thing correctly and you've got the point.",
           },
           {
-            type: "paragraph",
-            text: '\'Other parts are EXPLAIN or ANALYZE: they want the full reasoning chain — not just a fact, but WHY or HOW it connects to something else. Watch the verbs: "Identify ONE effect..." just wants a specific effect, named correctly. "Explain ONE reason..." wants the actual mechanism — the how or why, not just a fact sitting there.\'',
+            type: "callout",
+            text: "Other parts are EXPLAIN or ANALYZE: they want the full reasoning chain — not just a fact, but WHY or HOW it connects to something else. Watch the verbs: \"Identify ONE effect...\" just wants a specific effect, named correctly. \"Explain ONE reason...\" wants the actual mechanism — the how or why, not just a fact sitting there.",
           },
         ],
       },
