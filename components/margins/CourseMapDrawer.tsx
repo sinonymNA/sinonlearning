@@ -38,6 +38,7 @@ export default function CourseMapDrawer({
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">
+          <p className="mb-3 text-[11px] text-stone-400">Tap any dot to revisit a page.</p>
           <div className="flex flex-col gap-2">
             {course.modules.map((m) => {
               const theme = getModuleTheme(m.id);
@@ -86,10 +87,11 @@ export default function CourseMapDrawer({
                                 key={pIdx}
                                 onClick={() => onNavigate(m.order, pIdx)}
                                 aria-label={`Go to ${m.title}, page ${pIdx + 1}`}
-                                className={`h-2.5 w-2.5 rounded-full transition-all ${
+                                title={`Go to ${m.title}, page ${pIdx + 1}`}
+                                className={`h-3 w-3 cursor-pointer rounded-full transition-transform hover:scale-125 ${
                                   isCurrentPage
                                     ? `${theme.pill} ring-2 ring-offset-1 ${theme.ring}`
-                                    : `${theme.pill} opacity-40 hover:opacity-70`
+                                    : `${theme.pill} opacity-40 hover:opacity-80`
                                 }`}
                               />
                             );

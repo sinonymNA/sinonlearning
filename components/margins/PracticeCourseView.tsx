@@ -1,21 +1,50 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { animate } from "animejs";
 import confetti from "canvas-confetti";
-import { ArrowRight, Sparkles, Map as MapIcon, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Sparkles, Map as MapIcon, CheckCircle2, FolderPlus } from "lucide-react";
 import { revealStagger } from "@/lib/marginsMotion";
-import { getLastRequiredModule, skillTagLabel, type PracticeCourse, type PracticeModule } from "@/lib/marginsPracticeCourses";
+import {
+  getLastRequiredModule,
+  skillTagLabel,
+  type PracticeCourse,
+  type PracticeModule,
+  type PracticeContentBlock,
+} from "@/lib/marginsPracticeCourses";
 import type { MasteryLevel } from "@/lib/marginsDb";
 import PracticeFeedbackCard from "./PracticeFeedbackCard";
 import GradingReport from "./GradingReport";
 import CapstoneTimer from "./CapstoneTimer";
 import CourseMapDrawer from "./CourseMapDrawer";
+import CoachMark from "./CoachMark";
+import EvidenceFolderPanel, { type EvidenceFolderEntry } from "./EvidenceFolderPanel";
 import { getModuleTheme } from "./moduleThemes";
 import PracticeContentBlockView from "./blocks/PracticeContentBlockView";
+import AddToEvidenceButton from "./blocks/AddToEvidenceButton";
 import EvidenceExhibitCard from "./blocks/EvidenceExhibitCard";
 import ComparisonChart from "./blocks/ComparisonChart";
 import AnatomyDiagram from "./blocks/AnatomyDiagram";
+
+const EVIDENCE_COACHMARK_KEY = "margins-evidence-coachmark-seen";
+
+// The only two block kinds that count as "a piece of evidence" worth
+// collecting — matches what students actually asked to save (chat threads,
+// pinned exhibit cards), not every content block.
+function buildEvidenceEntry(id: string, block: PracticeContentBlock): EvidenceFolderEntry | null {
+  if (block.type === "chatExchange") {
+    return {
+      id,
+      kind: "chatExchange",
+      label: "Group chat",
+      preview: block.messages.map((m) => `${m.sender}: ${m.text}`).join(" · "),
+    };
+  }
+  if (block.type === "evidenceExhibit") {
+    return { id, kind: "evidenceExhibit", label: block.label, preview: block.content };
+  }
+  return null;
+}
 
 interface Props {
   courseId: string;
@@ -114,6 +143,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [isCourseMapOpen, setIsCourseMapOpen] = useState(false);
   const [reviewAttempt, setReviewAttempt] = useState<AttemptResponse | null>(null);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [evidenceEntries, setEvidenceEntries] = useState<EvidenceFolderEntry[]>([]);
+  const [hasSeenEvidenceCoachMark, setHasSeenEvidenceCoachMark] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pageCardRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<HTMLDivElement>(null);
@@ -127,6 +158,14 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const hasOptionalCapstone = course.modules.some((m) => m.optional);
   const isAtLastRequiredModule = module_ ? module_.order === lastRequiredModule.order : false;
   const isReviewing = moduleIndex < furthestModule || (moduleIndex === furthestModule && pageIndex < furthestPage);
+
+  useLayoutEffect(() => {
+    try {
+      if (localStorage.getItem(EVIDENCE_COACHMARK_KEY) === "1") setHasSeenEvidenceCoachMark(true);
+    } catch {
+      // localStorage unavailable (privacy mode, etc.) — coach mark just shows every visit
+    }
+  }, []);
 
   useEffect(() => {
     if (wrapperRef.current) {
@@ -232,6 +271,23 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     const next = nextPageAfter(course, module_.order, pageIndex);
     setModuleIndex(next.moduleOrder);
     setPageIndex(next.pageIdx);
+  }
+
+  function toggleEvidence(entry: EvidenceFolderEntry) {
+    setEvidenceEntries((prev) => (prev.some((e) => e.id === entry.id) ? prev.filter((e) => e.id !== entry.id) : [...prev, entry]));
+  }
+
+  function isEvidenceSaved(id: string) {
+    return evidenceEntries.some((e) => e.id === id);
+  }
+
+  function dismissEvidenceCoachMark() {
+    setHasSeenEvidenceCoachMark(true);
+    try {
+      localStorage.setItem(EVIDENCE_COACHMARK_KEY, "1");
+    } catch {
+      // best-effort persistence only
+    }
   }
 
   function handleNavigate(moduleOrder: number, pageIdx: number) {
@@ -370,75 +426,87 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   if (atCapstoneChoice) {
     return (
-      <div ref={wrapperRef} className="flex flex-col gap-5">
-        <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
-          <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
-          <p className="text-sm text-stone-500 mt-1 mb-5">
-            Scout&rsquo;s proud of you. Want one more, just for fun — a second full SAQ under a real clock?
-          </p>
-          <div className="flex items-center justify-center gap-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[42rem_280px]">
+        <div ref={wrapperRef} className="flex flex-col gap-5">
+          <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
+            <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
+            <p className="text-sm text-stone-500 mt-1 mb-5">
+              Scout&rsquo;s proud of you. Want one more, just for fun — a second full SAQ under a real clock?
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={finishWithoutCapstone}
+                className="rounded-xl border border-teal-200 bg-white px-5 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-all"
+              >
+                You&rsquo;re done!
+              </button>
+              <button
+                onClick={continueToCapstone}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
+              >
+                Try the timed capstone
+                <ArrowRight size={15} />
+              </button>
+            </div>
             <button
-              onClick={finishWithoutCapstone}
-              className="rounded-xl border border-teal-200 bg-white px-5 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-all"
+              onClick={() => setIsCourseMapOpen(true)}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
             >
-              You&rsquo;re done!
-            </button>
-            <button
-              onClick={continueToCapstone}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-teal-200 hover:shadow-md transition-all"
-            >
-              Try the timed capstone
-              <ArrowRight size={15} />
+              <MapIcon size={13} /> Review the course
             </button>
           </div>
-          <button
-            onClick={() => setIsCourseMapOpen(true)}
-            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
-          >
-            <MapIcon size={13} /> Review the course
-          </button>
+          {isCourseMapOpen && (
+            <CourseMapDrawer
+              course={course}
+              moduleOrder={-1}
+              pageIndex={-1}
+              furthestModule={course.modules.length - 1}
+              furthestPage={Number.MAX_SAFE_INTEGER}
+              onNavigate={handleNavigate}
+              onClose={() => setIsCourseMapOpen(false)}
+            />
+          )}
         </div>
-        {isCourseMapOpen && (
-          <CourseMapDrawer
-            course={course}
-            moduleOrder={-1}
-            pageIndex={-1}
-            furthestModule={course.modules.length - 1}
-            furthestPage={Number.MAX_SAFE_INTEGER}
-            onNavigate={handleNavigate}
-            onClose={() => setIsCourseMapOpen(false)}
-          />
-        )}
+        <EvidenceFolderPanel
+          entries={evidenceEntries}
+          onRemove={(id) => setEvidenceEntries((prev) => prev.filter((e) => e.id !== id))}
+        />
       </div>
     );
   }
 
   if (isDone) {
     return (
-      <div ref={wrapperRef} className="flex flex-col gap-5">
-        <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
-          <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
-          <p className="text-sm text-stone-500 mt-1">Scout&rsquo;s proud of you. Keep an eye on your skill mastery — it only goes up from here.</p>
-          <button
-            onClick={() => setIsCourseMapOpen(true)}
-            className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
-          >
-            <MapIcon size={13} /> Review the course
-          </button>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[42rem_280px]">
+        <div ref={wrapperRef} className="flex flex-col gap-5">
+          <div className="course-panel rounded-2xl border border-teal-100 bg-teal-50/50 p-6 text-center" style={{ opacity: 0 }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">Course complete</p>
+            <p className="text-lg font-semibold text-stone-800">You made it through {course.title} 🎉</p>
+            <p className="text-sm text-stone-500 mt-1">Scout&rsquo;s proud of you. Keep an eye on your skill mastery — it only goes up from here.</p>
+            <button
+              onClick={() => setIsCourseMapOpen(true)}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-stone-500 hover:text-stone-700 transition-colors"
+            >
+              <MapIcon size={13} /> Review the course
+            </button>
+          </div>
+          {isCourseMapOpen && (
+            <CourseMapDrawer
+              course={course}
+              moduleOrder={-1}
+              pageIndex={-1}
+              furthestModule={course.modules.length - 1}
+              furthestPage={Number.MAX_SAFE_INTEGER}
+              onNavigate={handleNavigate}
+              onClose={() => setIsCourseMapOpen(false)}
+            />
+          )}
         </div>
-        {isCourseMapOpen && (
-          <CourseMapDrawer
-            course={course}
-            moduleOrder={-1}
-            pageIndex={-1}
-            furthestModule={course.modules.length - 1}
-            furthestPage={Number.MAX_SAFE_INTEGER}
-            onNavigate={handleNavigate}
-            onClose={() => setIsCourseMapOpen(false)}
-          />
-        )}
+        <EvidenceFolderPanel
+          entries={evidenceEntries}
+          onRemove={(id) => setEvidenceEntries((prev) => prev.filter((e) => e.id !== id))}
+        />
       </div>
     );
   }
@@ -451,7 +519,16 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const currentTheme = getModuleTheme(module_!.id);
   const CurrentModuleIcon = currentTheme.icon;
 
+  // The coach mark should surface exactly once, the first time a student
+  // reaches a lesson page containing collectible evidence — not on every
+  // page, and not for check-page stimulus evidence (that's always later
+  // than a lesson encounter in this course's content order).
+  const currentPageHasCollectible =
+    page!.kind === "lesson" && page!.body.some((b) => b.type === "chatExchange" || b.type === "evidenceExhibit");
+  const showEvidenceCoachMark = currentPageHasCollectible && !hasSeenEvidenceCoachMark;
+
   return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[42rem_280px]">
     <div ref={wrapperRef} className="flex flex-col gap-5">
       <div className="course-panel flex items-center gap-2" style={{ opacity: 0 }}>
         {course.modules.map((m, i) => {
@@ -503,11 +580,17 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           <>
             <p className="text-[19px] font-bold tracking-tight text-stone-900 mb-3">{page!.title}</p>
             <div ref={blocksRef} className="flex flex-col gap-4">
-              {page!.body.map((block, i) => (
-                <div key={i} className="content-block" style={{ opacity: 0 }}>
-                  <PracticeContentBlockView block={block} />
-                </div>
-              ))}
+              {page!.body.map((block, i) => {
+                const entry = buildEvidenceEntry(`${module_!.id}:${page!.id}:body:${i}`, block);
+                return (
+                  <div key={i} className={`content-block ${entry ? "relative" : ""}`} style={{ opacity: 0 }}>
+                    {entry && (
+                      <AddToEvidenceButton saved={isEvidenceSaved(entry.id)} onToggle={() => toggleEvidence(entry)} />
+                    )}
+                    <PracticeContentBlockView block={block} />
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -575,9 +658,22 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
                 );
               }
               if (fullSaqPrompt.stimulusVisual?.kind === "document") {
+                const entryId = `${module_!.id}:${page!.id}:stimulus:${fullSaqPrompt.id}`;
+                const stimulusVisual = fullSaqPrompt.stimulusVisual;
                 return (
-                  <div className="mb-4">
-                    <EvidenceExhibitCard label={fullSaqPrompt.stimulusVisual.label} content={fullSaqPrompt.stimulus} />
+                  <div className="relative mb-4">
+                    <AddToEvidenceButton
+                      saved={isEvidenceSaved(entryId)}
+                      onToggle={() =>
+                        toggleEvidence({
+                          id: entryId,
+                          kind: "evidenceExhibit",
+                          label: stimulusVisual.label,
+                          preview: fullSaqPrompt.stimulus,
+                        })
+                      }
+                    />
+                    <EvidenceExhibitCard label={stimulusVisual.label} content={fullSaqPrompt.stimulus} />
                   </div>
                 );
               }
@@ -621,9 +717,27 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
                 />
               </div>
             ) : currentPrompt.stimulus && currentPrompt.stimulusVisual?.kind === "document" ? (
-              <div className="mb-3">
-                <EvidenceExhibitCard label={currentPrompt.stimulusVisual.label} content={currentPrompt.stimulus} />
-              </div>
+              (() => {
+                const stimulusVisual = currentPrompt.stimulusVisual;
+                const stimulusText = currentPrompt.stimulus!;
+                const entryId = `${module_!.id}:${page!.id}:stimulus:${currentPrompt.id}`;
+                return (
+                  <div className="relative mb-3">
+                    <AddToEvidenceButton
+                      saved={isEvidenceSaved(entryId)}
+                      onToggle={() =>
+                        toggleEvidence({
+                          id: entryId,
+                          kind: "evidenceExhibit",
+                          label: stimulusVisual.label,
+                          preview: stimulusText,
+                        })
+                      }
+                    />
+                    <EvidenceExhibitCard label={stimulusVisual.label} content={stimulusText} />
+                  </div>
+                );
+              })()
             ) : (
               currentPrompt.stimulus && (
                 <p className="text-[13px] text-stone-600 leading-relaxed mb-3 rounded-lg bg-stone-50 border border-stone-100 p-3 whitespace-pre-wrap">
@@ -778,6 +892,27 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           onClose={() => setIsCourseMapOpen(false)}
         />
       )}
+
+      {showEvidenceCoachMark && (
+        <CoachMark
+          title="Build your Evidence Folder"
+          body="See the folder icon in the corner of things like this? Click it to save a piece of evidence — then pull up your Evidence Folder anytime you're writing an answer."
+          ctaLabel="Got it"
+          onDismiss={dismissEvidenceCoachMark}
+          preview={
+            <div className="relative flex h-12 w-20 items-center justify-center rounded-lg border border-stone-200 bg-stone-50">
+              <span className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full border border-teal-300 bg-white text-teal-600 shadow-sm">
+                <FolderPlus size={12} />
+              </span>
+            </div>
+          }
+        />
+      )}
+    </div>
+    <EvidenceFolderPanel
+      entries={evidenceEntries}
+      onRemove={(id) => setEvidenceEntries((prev) => prev.filter((e) => e.id !== id))}
+    />
     </div>
   );
 }
