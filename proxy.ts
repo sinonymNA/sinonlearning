@@ -4,6 +4,7 @@ export default function proxy(request: NextRequest) {
   const hasSession = request.cookies.has("margins_session");
   if (!hasSession) {
     const loginUrl = new URL("/margins/login", request.url);
+    loginUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
   return NextResponse.next();
