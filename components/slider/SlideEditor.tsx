@@ -11,6 +11,7 @@ import ThemePicker from "./ThemePicker";
 import ImageSuggestionsPanel from "./ImageSuggestionsPanel";
 import ExportPptxButton from "./ExportPptxButton";
 import SliderModal from "./SliderModal";
+import KoraBuildNotes from "./KoraBuildNotes";
 import { useMountReveal } from "@/lib/marginsMotion";
 
 function newId(): string {
@@ -146,6 +147,8 @@ export default function SlideEditor({ deck }: { deck: SliderDeck }) {
           <ExportPptxButton deckId={deck.id} />
         </div>
       </div>
+
+      {deck.kora_gap_statement && <KoraBuildNotes gapStatement={deck.kora_gap_statement} />}
 
       {showThemePicker && (
         <SliderModal title="Change theme" onClose={() => setShowThemePicker(false)}>

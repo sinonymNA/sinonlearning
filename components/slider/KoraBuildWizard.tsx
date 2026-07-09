@@ -52,6 +52,16 @@ const QUESTIONS: Question[] = [
   },
 ];
 
+// KORA now runs a few sequential passes (design, build, quality check) rather
+// than one call, so a single "Building…" label would sit still for much
+// longer than before — step through these to show real progress.
+const BUILD_STATUS_MESSAGES = [
+  "Researching the standards…",
+  "Designing the lesson…",
+  "Building your slides…",
+  "Checking exam readiness…",
+];
+
 function KoraAvatar({ size = 32 }: { size?: number }) {
   return (
     <span
@@ -88,6 +98,7 @@ export default function KoraBuildWizard() {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState("");
   const [building, setBuilding] = useState(false);
+  const [statusIndex, setStatusIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -113,6 +124,15 @@ export default function KoraBuildWizard() {
     setDraft("");
     setStepIndex((i) => i + 1);
   }
+
+  useEffect(() => {
+    if (!building) return;
+    setStatusIndex(0);
+    const interval = setInterval(() => {
+      setStatusIndex((i) => Math.min(i + 1, BUILD_STATUS_MESSAGES.length - 1));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [building]);
 
   async function handleBuild() {
     setError(null);
@@ -227,7 +247,7 @@ export default function KoraBuildWizard() {
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-slider-500 to-slider-700 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-slider-200 hover:shadow-md transition-all disabled:opacity-60"
             >
               {building ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {building ? "Building your slideshow…" : "Build my slideshow"}
+              {building ? BUILD_STATUS_MESSAGES[statusIndex] : "Build my slideshow"}
             </button>
           </div>
         )}

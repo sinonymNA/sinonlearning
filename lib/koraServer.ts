@@ -37,6 +37,14 @@ export interface KoraCallParams<S extends z.ZodType> {
   messages: Anthropic.Messages.MessageParam[];
   schema: S;
   thinking?: { type: "adaptive" };
+  /**
+   * Model to use for the schema-repair retry, if it should differ from `model`.
+   * Repair is mechanical JSON-shape fixing, not a judgment task, so callers can
+   * route it to a cheaper model. Defaults to `model`. Note: the repair call never
+   * carries `thinking` regardless of `params.thinking` — cheaper repair models
+   * (e.g. Haiku 4.5) don't support adaptive thinking, and repair doesn't need it.
+   */
+  repairModel?: string;
 }
 
 export interface KoraCallResult<T> {
@@ -84,15 +92,18 @@ export async function callKoraStructured<S extends z.ZodType>(
   }
 
   // One repair attempt: hand the model its own reply plus a corrective turn.
+  // Never carries `thinking` — a repair model like Haiku 4.5 may not support
+  // adaptive thinking, and pure JSON-shape fixing doesn't need it anyway.
   const repairMessages: Anthropic.Messages.MessageParam[] = [
     ...params.messages,
     { role: "assistant", content: first.content as Anthropic.Messages.ContentBlockParam[] },
     { role: "user", content: REPAIR_INSTRUCTION },
   ];
+  const repairBase = { ...base, model: params.repairModel ?? params.model, thinking: undefined };
 
   let second: Anthropic.Messages.Message & { parsed_output?: unknown };
   try {
-    second = await anthropic.messages.stream({ ...base, messages: repairMessages }).finalMessage();
+    second = await anthropic.messages.stream({ ...repairBase, messages: repairMessages }).finalMessage();
   } catch (err) {
     throw new KoraUpstreamError(String(err));
   }

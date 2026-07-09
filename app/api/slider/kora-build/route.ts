@@ -9,6 +9,14 @@ import { generateSliderDeck } from "@/lib/sliderKoraGenerate";
 import { KoraConfigError, KoraValidationError } from "@/lib/koraServer";
 
 export const dynamic = "force-dynamic";
+// generateSliderDeck() now runs a multi-phase pipeline (Design Brief -> Build
+// -> Red Team -> conditional Revise) — several sequential Claude calls that
+// can take 1-3 minutes total. This is a Vercel/Next.js serverless route
+// segment config; it has no effect if this app is deployed as a long-running
+// Node server (no vercel.json is present in this repo) — verify your actual
+// host's request-timeout/reverse-proxy setting separately if builds are
+// timing out.
+export const maxDuration = 300;
 
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX = 15;
@@ -73,6 +81,12 @@ export async function POST(request: NextRequest) {
     notes: s.notes,
   }));
 
-  const deck = await createDeck({ teacherId: user.id, title: output.deck_title, themeId, slides });
+  const deck = await createDeck({
+    teacherId: user.id,
+    title: output.deck_title,
+    themeId,
+    slides,
+    koraGapStatement: output.gapStatement ?? null,
+  });
   return NextResponse.json({ deckId: deck.id });
 }

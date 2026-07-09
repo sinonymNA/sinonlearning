@@ -9,6 +9,7 @@ export interface SliderDeckRow {
   title: string;
   theme_id: string;
   slides: Slide[];
+  kora_gap_statement: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -61,24 +62,26 @@ export function ensureSliderSchema(): Promise<void> {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`)
       )
+      .then(() => query(`ALTER TABLE slider_decks ADD COLUMN IF NOT EXISTS kora_gap_statement TEXT`))
       .then(() => undefined);
   }
   return schemaReady;
 }
 
-const DECK_COLUMNS = "id, teacher_id, title, theme_id, slides, created_at, updated_at";
+const DECK_COLUMNS = "id, teacher_id, title, theme_id, slides, kora_gap_statement, created_at, updated_at";
 
 export async function createDeck(params: {
   teacherId: string;
   title?: string;
   themeId?: string;
   slides?: Slide[];
+  koraGapStatement?: string | null;
 }): Promise<SliderDeckRow> {
   await ensureSliderSchema();
   const id = randomUUID();
   const { rows } = await query<SliderDeckRow>(
-    `INSERT INTO slider_decks (id, teacher_id, title, theme_id, slides)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO slider_decks (id, teacher_id, title, theme_id, slides, kora_gap_statement)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING ${DECK_COLUMNS}`,
     [
       id,
@@ -86,6 +89,7 @@ export async function createDeck(params: {
       params.title?.trim() || "Untitled deck",
       params.themeId ?? DEFAULT_THEME_ID,
       JSON.stringify(params.slides ?? []),
+      params.koraGapStatement ?? null,
     ]
   );
   return rows[0];

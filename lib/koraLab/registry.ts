@@ -89,11 +89,15 @@ export const KORA_LAB_TASKS: Record<string, KoraLabTaskDef> = {
   },
   slider_build: {
     label: "Slider — Slideshow generation",
-    description: "Builds a classroom slideshow from topic/audience/key points.",
+    description:
+      "Builds a classroom slideshow via a 3-phase pipeline (Design Brief → Build → Red Team, " +
+      "conditional Revise) instead of one call. defaultModel/defaultThinking below describe the Build " +
+      "phase only, which is the one phase systemPromptOverride can currently target; an explicit " +
+      "model/thinking override in the Lab applies uniformly to all phases.",
     inputSchema: SliderBuildInputSchema,
-    defaultModel: "claude-opus-4-8",
+    defaultModel: "claude-sonnet-5",
     defaultMaxTokens: 8192,
-    defaultThinking: true,
+    defaultThinking: false,
     generate: generateSliderDeck,
   },
   reel_build: {

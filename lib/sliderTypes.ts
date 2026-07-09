@@ -32,6 +32,7 @@ export interface SliderDeck {
   title: string;
   theme_id: string;
   slides: Slide[];
+  kora_gap_statement?: string | null;
   created_at: string;
   updated_at: string;
 }
