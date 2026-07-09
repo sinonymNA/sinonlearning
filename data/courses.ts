@@ -1,3 +1,6 @@
+import type { LucideIcon } from "lucide-react";
+import { Scale, TrendingUpDown, Briefcase, Landmark, CreditCard, Sprout, Building2, Globe2 } from "lucide-react";
+
 export type CourseStatus = "First Build" | "Planned" | "Coming Later";
 
 export interface Course {
@@ -109,4 +112,21 @@ export const firstBuildRoadmap = [
   "Taxes",
   "Investing",
   "Adult Life Simulation",
+];
+
+export interface EconomicsUnit {
+  title: string;
+  blurb: string;
+  icon: LucideIcon;
+}
+
+export const economicsUnits: EconomicsUnit[] = [
+  { title: "Choices & Scarcity", blurb: "Why we can't have everything.", icon: Scale },
+  { title: "Supply & Demand", blurb: "Why prices go up or down.", icon: TrendingUpDown },
+  { title: "Work, Wages & Careers", blurb: "Why people get paid differently.", icon: Briefcase },
+  { title: "Money, Banking & Inflation", blurb: "Why your dollar changes over time.", icon: Landmark },
+  { title: "Credit, Debt & Big Purchases", blurb: "Borrow smart. Avoid traps.", icon: CreditCard },
+  { title: "Investing & Wealth", blurb: "How money can grow.", icon: Sprout },
+  { title: "Government & the Economy", blurb: "How policies affect your life.", icon: Building2 },
+  { title: "The Future Economy", blurb: "AI, automation, climate, and jobs.", icon: Globe2 },
 ];

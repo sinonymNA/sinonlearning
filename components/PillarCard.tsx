@@ -1,17 +1,19 @@
 import type { LucideIcon } from "lucide-react";
 
-type Tint = "teal" | "rose" | "amber";
+type Tint = "teal" | "rose" | "amber" | "econ";
 
 const tintClasses: Record<Tint, string> = {
   teal: "bg-teal-50 text-teal-700",
   rose: "bg-rose-50 text-rose-700",
   amber: "bg-amber-50 text-amber-700",
+  econ: "bg-econ-100 text-econ-700",
 };
 
 const tintClassesDark: Record<Tint, string> = {
   teal: "bg-teal-400/10 text-teal-300",
   rose: "bg-rose-400/10 text-rose-300",
   amber: "bg-amber-400/10 text-amber-300",
+  econ: "bg-econ-400/10 text-econ-300",
 };
 
 export default function PillarCard({

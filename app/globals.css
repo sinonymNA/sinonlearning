@@ -34,6 +34,19 @@
   --color-slider-800: #154dac;
   --color-slider-900: #153a79;
   --color-slider-950: #10264c;
+
+  /* Everyday Economics brand green — an editorial forest green accent */
+  --color-econ-50: #f0f5f0;
+  --color-econ-100: #dce9dd;
+  --color-econ-200: #b9d3bb;
+  --color-econ-300: #8fb693;
+  --color-econ-400: #62966a;
+  --color-econ-500: #457a4d;
+  --color-econ-600: #33613a;
+  --color-econ-700: #294e2f;
+  --color-econ-800: #1f3d24;
+  --color-econ-900: #16301a;
+  --color-econ-950: #0d1f10;
 }
 
 body {
