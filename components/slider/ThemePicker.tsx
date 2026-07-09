@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { SLIDER_THEMES } from "@/lib/sliderThemes";
+import { SLIDER_THEMES, DEFAULT_THEME_ID } from "@/lib/sliderThemes";
 import type { SliderTheme } from "@/lib/sliderThemes";
 import ThemeEditor from "./ThemeEditor";
 
@@ -35,6 +35,7 @@ export default function ThemePicker({ value, onSelect, customThemes = [], onCust
     setDeletingId(themeId);
     try {
       await fetch(`/api/slider/themes/${themeId}`, { method: "DELETE" });
+      if (value === themeId) onSelect(DEFAULT_THEME_ID);
       onCustomThemesChange?.();
     } finally {
       setDeletingId(null);

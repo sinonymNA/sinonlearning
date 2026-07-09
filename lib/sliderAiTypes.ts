@@ -30,7 +30,7 @@ export const KoraSlideSchema = z.object({
 export const SliderKoraBuildSchema = z.object({
   deck_title: z.string().min(1),
   theme_id: z.string().min(1),
-  slides: z.array(KoraSlideSchema).min(5).max(16),
+  slides: z.array(KoraSlideSchema).min(3).max(16),
 });
 export type SliderKoraBuildOutput = z.infer<typeof SliderKoraBuildSchema>;
 
