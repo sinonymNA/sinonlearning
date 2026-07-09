@@ -1,6 +1,7 @@
 import { FlaskConical } from "lucide-react";
 import Button from "@/components/Button";
 import FadeIn from "@/components/FadeIn";
+import { corePhilosophy, courseStats } from "@/data/economicsCourse";
 
 export default function EconHero() {
   return (
@@ -12,14 +13,13 @@ export default function EconHero() {
         <div>
           <FadeIn>
             <span className="font-mono text-xs uppercase tracking-[0.2em] text-econ-700">
-              Yesterday. Today. Tomorrow.
+              A semester-long inquiry-driven course
             </span>
             <h1 className="mt-4 font-display text-4xl font-medium leading-tight text-navy-900 sm:text-6xl">
               Everyday Economics
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-navy-700/80">
-              Understand how people solve problems with money and the economy — then use that
-              knowledge to build a better future.
+              {corePhilosophy.centralQuestion}
             </p>
           </FadeIn>
 
@@ -37,7 +37,7 @@ export default function EconHero() {
 
           <FadeIn delay={0.14}>
             <p className="mt-6 text-sm font-medium text-navy-700/60">
-              Real stories. Real choices. Real life.
+              Every lesson tells a real story. Every story lands in a student&apos;s actual life.
             </p>
           </FadeIn>
         </div>
@@ -45,13 +45,12 @@ export default function EconHero() {
         <FadeIn delay={0.1}>
           <div className="relative rounded-3xl border border-navy-900/8 bg-white p-7 shadow-[0_20px_60px_rgba(13,27,46,0.08)]">
             <p className="font-display text-2xl italic leading-snug text-navy-900">
-              &ldquo;Economics isn&apos;t about numbers. It&apos;s about people and
-              choices.&rdquo;
+              &ldquo;{corePhilosophy.quote}&rdquo;
             </p>
             <div className="mt-6 h-px bg-navy-900/8" />
             <div className="mt-6 flex items-center justify-between text-xs text-navy-700/50">
-              <span>8 units</span>
-              <span>Digital textbook · Slides · Activities</span>
+              <span>{courseStats.units} units · {courseStats.scheduledDays} days</span>
+              <span>{courseStats.aksCoverage} AKS coverage</span>
             </div>
           </div>
         </FadeIn>

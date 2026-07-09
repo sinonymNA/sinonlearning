@@ -3,10 +3,14 @@ import FadeIn from "@/components/FadeIn";
 import Button from "@/components/Button";
 import CourseMaterialsSection from "@/components/materials/CourseMaterialsSection";
 import EconHero from "@/components/curriculum/EconHero";
-import EconTimeline from "@/components/curriculum/EconTimeline";
-import EconPillars from "@/components/curriculum/EconPillars";
+import EconPhases from "@/components/curriculum/EconPhases";
+import EconLessonDNA from "@/components/curriculum/EconLessonDNA";
 import EconUnitGrid from "@/components/curriculum/EconUnitGrid";
+import EconSampleDay from "@/components/curriculum/EconSampleDay";
+import EconCalendar from "@/components/curriculum/EconCalendar";
+import EconFlagshipProjects from "@/components/curriculum/EconFlagshipProjects";
 import EconSupplyDemandLab from "@/components/curriculum/EconSupplyDemandLab";
+import EconStandards from "@/components/curriculum/EconStandards";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +18,14 @@ export default function EverydayEconomicsPage() {
   return (
     <>
       <EconHero />
-      <EconTimeline />
-      <EconPillars />
+      <EconPhases />
+      <EconLessonDNA />
       <EconUnitGrid />
+      <EconSampleDay />
+      <EconCalendar />
+      <EconFlagshipProjects />
       <EconSupplyDemandLab />
+      <EconStandards />
 
       <section className="px-6 py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
