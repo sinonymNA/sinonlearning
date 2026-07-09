@@ -11,7 +11,12 @@ import {
 } from "../marginsKoraGenerate";
 import { generateNotesheetPlan, NotesheetGenerateInputSchema } from "../notesheetKoraGenerate";
 import { generateGameShow, GameShowGenerateInputSchema } from "../gameShowKoraGenerate";
-import { generateSliderDeck, SliderBuildInputSchema } from "../sliderKoraGenerate";
+import {
+  generateSliderDeck,
+  SliderBuildInputSchema,
+  generateSliderDeckFromContent,
+  SliderContentFillInputSchema,
+} from "../sliderKoraGenerate";
 import { generateReelScript, ReelBuildInputSchema } from "../reelKoraGenerate";
 
 // KORA Lab task registry — the single place that maps a task id to the exact
@@ -99,6 +104,18 @@ export const KORA_LAB_TASKS: Record<string, KoraLabTaskDef> = {
     defaultMaxTokens: 8192,
     defaultThinking: false,
     generate: generateSliderDeck,
+  },
+  slider_fill: {
+    label: "Slider — Content-fill generation",
+    description:
+      "Formats a teacher's own pasted lesson content into Slider's slide templates using a single " +
+      "fixed master prompt, rather than inventing content from a topic — one call, no Design Brief " +
+      "or Red Team pass.",
+    inputSchema: SliderContentFillInputSchema,
+    defaultModel: "claude-sonnet-5",
+    defaultMaxTokens: 8192,
+    defaultThinking: false,
+    generate: generateSliderDeckFromContent,
   },
   reel_build: {
     label: "Reel — Explainer video script generation",

@@ -33,7 +33,7 @@ export default function HeroIntro() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-teal-500" />
         </span>
-        Now building: Economics &amp; Personal Finance
+        Now building: Everyday Economics
       </motion.span>
 
       <motion.h1

@@ -45,7 +45,7 @@ const startHere = [
 
 const featuredNow = [
   {
-    title: "Economics & Personal Finance",
+    title: "Everyday Economics",
     description: "The first complete Everyday Curriculum course, ready for the classroom.",
     href: "/curriculum/everyday-economics",
     cta: "Explore the course",
@@ -182,8 +182,8 @@ export default function Home() {
           <FadeIn>
             <SectionHeader
               eyebrow="Now Building"
-              title="First focus: Everyday Economics and Personal Finance."
-              subtitle="Economics and personal finance are some of the most important subjects students can learn, but teachers often have to piece together disconnected resources. The first Everyday Curriculum project is a modern, classroom-ready economics and personal finance library."
+              title="First focus: Everyday Economics."
+              subtitle="Economics is one of the most important subjects students can learn, but teachers often have to piece together disconnected resources. The first Everyday Curriculum project is a modern, classroom-ready economics course, mapped day-by-day to a full semester."
             />
           </FadeIn>
 

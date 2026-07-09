@@ -1,3 +1,5 @@
+import { economicsUnits } from "./economicsCourse";
+
 export type CourseStatus = "First Build" | "Planned" | "Coming Later";
 
 export interface Course {
@@ -16,14 +18,6 @@ export const courses: Course[] = [
     description:
       "A modern, classroom-ready introduction to how people, markets, and money actually work.",
     includes: ["Digital textbook", "Daily lessons", "Slides & activities"],
-  },
-  {
-    slug: "everyday-personal-finance",
-    name: "Everyday Personal Finance",
-    status: "First Build",
-    description:
-      "Practical money skills—budgeting, credit, taxes, and investing—built for real student life.",
-    includes: ["Complete units", "Assessments", "Visual resources"],
   },
   {
     slug: "everyday-government",
@@ -90,23 +84,8 @@ export const courseIncludes = [
   "Teacher guides",
 ];
 
-export const homeRoadmap = [
-  "Thinking Like an Economist",
-  "Supply & Demand",
-  "Budgeting",
-  "Credit & Debt",
-  "Taxes",
-  "Investing",
-  "Adult Life Simulation",
-];
+// Both roadmaps mirror the real 7-unit Everyday Economics structure defined
+// in data/economicsCourse.ts, rather than an invented list.
+export const homeRoadmap = economicsUnits.map((u) => u.title);
 
-export const firstBuildRoadmap = [
-  "Thinking Like an Economist",
-  "Supply and Demand",
-  "Money and Banking",
-  "Budgeting",
-  "Credit and Debt",
-  "Taxes",
-  "Investing",
-  "Adult Life Simulation",
-];
+export const firstBuildRoadmap = economicsUnits.map((u) => u.title);

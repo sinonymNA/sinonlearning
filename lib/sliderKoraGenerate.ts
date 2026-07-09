@@ -1,5 +1,6 @@
+import { randomUUID } from "crypto";
 import { z } from "zod";
-import { SLIDE_LAYOUTS } from "./sliderTypes";
+import { SLIDE_LAYOUTS, type Slide } from "./sliderTypes";
 import { SLIDER_THEMES } from "./sliderThemes";
 import {
   SliderKoraBuildSchema,
@@ -80,6 +81,29 @@ function buildDesignBriefUserMessage(input: SliderBuildInput): string {
 
 // ── Phase 2: Build ──
 
+// Shared slide-formatting constraints reused by every Build-phase-shaped
+// system prompt — both the wizard's invent-from-scratch Build phase and the
+// paste-your-content fill phase (see CONTENT_FILL_SYSTEM_PROMPT below) render
+// into the exact same slide schema, so the arc structure, brevity limits, and
+// no-image-field rule must never drift between the two.
+const SLIDE_FORMAT_RULES =
+  "NEVER include an image field or claim an image is attached — Slider always adds images " +
+  "separately after generation; every slide you write must stand on its own with text only, even " +
+  "for layouts that have an image region. " +
+  "Keep every slide SHORT: bullets are short phrases (well under 15 words each, never full " +
+  "sentences stacked into a list), body text is at most 2-3 short sentences, and twoColumn text is " +
+  "brief and parallel between the two sides. Prefer titleBullets or twoColumn over titleBody for " +
+  "teaching content — reserve titleBody for a short framing sentence or two, never a dense " +
+  "paragraph. " +
+  "Build a real classroom arc, not a lecture dump: a title slide, then an OPENER right after it — a " +
+  "provocative question, a surprising fact, or a striking comparison that hooks students before you " +
+  "teach anything — then a few slides that concisely teach the content, then at least one ACTIVITY " +
+  "OR DISCUSSION slide that asks students to actually do something (Turn and Talk, a quick check-" +
+  "for-understanding question, a short group task, a prediction) rather than just receive " +
+  "information, and finally a closing slide (a memorable reflection question or a short summary — a " +
+  "\"quote\" layout works well here). Every deck must include a genuine opener and a genuine " +
+  "activity, regardless of length.";
+
 const SLIDER_SYSTEM_PROMPT =
   "You are KORA, Sinon Learning's pedagogical AI, helping a teacher build a classroom-ready slideshow in " +
   "the Slider app from a short conversation about their lesson. You are building a TEACHING TOOL to run a " +
@@ -90,24 +114,98 @@ const SLIDER_SYSTEM_PROMPT =
   "(1) Never invent a specific citation, statistic, or quote attribution presented as verifiably real " +
   "unless it is common, well-established knowledge for the subject — when unsure, write generally rather " +
   "than fabricate specifics. " +
-  "(2) NEVER include an image field or claim an image is attached — Slider always adds images separately " +
-  "after generation; every slide you write must stand on its own with text only, even for layouts that " +
-  "have an image region. " +
-  "(3) Keep every slide SHORT: bullets are short phrases (well under 15 words each, never full sentences " +
-  "stacked into a list), body text is at most 2-3 short sentences, and twoColumn text is brief and " +
-  "parallel between the two sides. Prefer titleBullets or twoColumn over titleBody for teaching content — " +
-  "reserve titleBody for a short framing sentence or two, never a dense paragraph. " +
-  "(4) Build a real classroom arc, not a lecture dump: a title slide, then an OPENER right after it — a " +
-  "provocative question, a surprising fact, or a striking comparison that hooks students before you teach " +
-  "anything — then a few slides that concisely teach the key points, then at least one ACTIVITY OR " +
-  "DISCUSSION slide that asks students to actually do something (Turn and Talk, a quick check-for-" +
-  "understanding question, a short group task, a prediction) rather than just receive information, and " +
-  "finally a closing slide (a memorable reflection question or a short summary — a \"quote\" layout works " +
-  "well here). Every deck must include a genuine opener and a genuine activity, regardless of length. " +
-  "(5) You will be given a Design Brief with binding decisions already made — the activity moment, the " +
+  "(2) " + SLIDE_FORMAT_RULES + " " +
+  "(3) You will be given a Design Brief with binding decisions already made — the activity moment, the " +
   "personal connection, the vivid detail, and the closing question. Do not re-derive or replace these " +
   "decisions; build the slide sequence to implement them faithfully, placing each where the content has " +
   "earned it rather than forcing it into an arbitrary slide.";
+
+// ── Content Fill: a separate, single-phase entry point for teachers who ──
+// ── already have their own material and just want it formatted into ──
+// ── Slider's slide templates, rather than invented from a topic. ──
+
+export const SliderContentFillInputSchema = z.object({
+  rawContent: z.string().min(1),
+  audience: z.string().default(""),
+  notes: z.string().default(""),
+});
+export type SliderContentFillInput = z.infer<typeof SliderContentFillInputSchema>;
+
+// The "master prompt" for content-fill: one fixed prompt used identically on
+// every request, so a teacher pasting in their own material always gets the
+// same reliable template-filling behavior — unlike the wizard's Build phase,
+// this never receives per-request invented pedagogical decisions.
+const CONTENT_FILL_SYSTEM_PROMPT =
+  "You are KORA, Sinon Learning's pedagogical AI, formatting a teacher's OWN lesson content into a " +
+  "classroom-ready slideshow in the Slider app. This is a FORMATTING task, not an authoring task — the " +
+  "teacher has already written or gathered the material below; your job is to distribute it across " +
+  "Slider's fixed slide templates faithfully, not to invent new pedagogical content. Return a single " +
+  "JSON object matching the schema exactly. No prose, no markdown outside the JSON. " +
+  "CRITICAL RULES: " +
+  "(1) Do not introduce any fact, example, statistic, or claim that is not present in the provided " +
+  "content. You may add a title slide and brief connective framing — an opening hook question, a " +
+  "closing reflection question — but every substantive slide must trace back to the source text. If " +
+  "the provided content is sparse, produce a shorter deck rather than padding it with invented " +
+  "material. " +
+  "(2) " + SLIDE_FORMAT_RULES + " " +
+  "(3) Reorganize, condense, and lightly rephrase for slide brevity as needed, but never change what " +
+  "the content actually says.";
+
+function buildContentFillUserMessage(input: SliderContentFillInput): string {
+  const lines = [`Content to format into slides:`, input.rawContent];
+  if (input.audience) lines.push(``, `Audience: ${input.audience}`);
+  if (input.notes) lines.push(`Additional notes from the teacher: ${input.notes}`);
+
+  lines.push(
+    `\nAvailable slide layouts (use a mix, choose what fits each idea):`,
+    SLIDE_LAYOUTS.map((l) => `- "${l.value}": ${l.description}`).join("\n"),
+    `\nAvailable themes (pick the one that best fits the subject/tone):`,
+    SLIDER_THEMES.map((t) => `- "${t.id}": ${t.name}`).join("\n"),
+    `\nRules:`,
+    `1. deck_title is a short, specific title describing this content (not a generic label).`,
+    `2. theme_id must be exactly one of the ids listed above.`,
+    `3. First slide must use layout "title". Only set the fields that layout actually uses — omit fields a layout doesn't use.`,
+    `4. Build a real arc from the provided content: slide 1 is "title"; slide 2 is a genuine OPENER drawn from or framing the content; then slides that distribute the actual provided material; then at least one ACTIVITY OR DISCUSSION slide; then a closing slide (a reflection question fits well as a "quote" layout). Let the amount of provided content determine how many slides you need — do not pad to hit a target length.`,
+    `5. Keep slides short: bullets under 15 words each, body at most 2-3 short sentences, twoColumn brief and parallel. Prefer titleBullets or twoColumn over titleBody.`,
+    `6. Never include an "image" field — images are added separately by the teacher after generation.`,
+    `7. notes (optional, any layout): 1-2 sentences of speaker notes/talking points for the teacher presenting that slide.`,
+    `8. columns (twoColumn layout only) must contain exactly two strings.`
+  );
+  return lines.join("\n");
+}
+
+export async function generateSliderDeckFromContent(
+  input: SliderContentFillInput,
+  overrides?: KoraLabGenerateOverrides
+): Promise<KoraLabGenerateResult<SliderKoraBuildOutput>> {
+  const referenceBlock = await buildReferenceExamplesBlock("slider_fill");
+  const system = (overrides?.systemPromptOverride ?? CONTENT_FILL_SYSTEM_PROMPT) + referenceBlock;
+  const model = overrides?.model;
+  const thinking = resolveThinking(false, overrides?.thinking);
+
+  const built = await callKoraStructured({
+    model: model ?? DEFAULT_MODEL,
+    repairModel: REPAIR_MODEL,
+    maxTokens: 8192,
+    system,
+    cacheSystemPrompt: true,
+    ...(thinking ? { thinking: { type: "adaptive" as const } } : {}),
+    messages: [{ role: "user", content: buildContentFillUserMessage(input) }],
+    schema: SliderKoraBuildSchema,
+  });
+
+  return {
+    system,
+    output: built.data,
+    configUsed: {
+      model: model ?? DEFAULT_MODEL,
+      thinking,
+      maxTokens: 8192,
+      label: overrides?.label,
+      systemPromptOverride: overrides?.systemPromptOverride,
+    },
+  };
+}
 
 function buildSliderUserMessage(input: SliderBuildInput, brief: SliderDesignBrief): string {
   const lines = [
@@ -363,4 +461,27 @@ export async function generateSliderDeck(
       systemPromptOverride: overrides?.systemPromptOverride,
     },
   };
+}
+
+// Shared by both API routes (kora-build, kora-fill): converts a KORA build
+// output's slide array into Slider's own Slide[] shape with fresh ids, and
+// validates a theme id against the known theme catalog.
+export function buildSlidesWithIds(slides: KoraSlides): Slide[] {
+  return slides.map((s) => ({
+    id: randomUUID(),
+    layout: s.layout,
+    title: s.title,
+    subtitle: s.subtitle,
+    body: s.body,
+    bullets: s.bullets,
+    columns: s.columns ? ([s.columns[0], s.columns[1]] as [string, string]) : undefined,
+    image: null,
+    quoteText: s.quoteText,
+    quoteAttribution: s.quoteAttribution,
+    notes: s.notes,
+  }));
+}
+
+export function resolveThemeId(themeId: string): string {
+  return SLIDER_THEMES.some((t) => t.id === themeId) ? themeId : SLIDER_THEMES[0].id;
 }

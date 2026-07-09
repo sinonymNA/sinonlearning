@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import SliderHeader from "@/components/slider/SliderHeader";
-import KoraBuildWizard from "@/components/slider/KoraBuildWizard";
+import SliderBuildTabs from "@/components/slider/SliderBuildTabs";
 
 export default async function SliderBuildPage() {
   const user = await getCurrentUser();
@@ -17,10 +17,7 @@ export default async function SliderBuildPage() {
           ← All decks
         </Link>
         <h1 className="mt-3 mb-1 text-xl font-bold text-stone-900">Build with KORA</h1>
-        <p className="mb-6 text-sm text-stone-400">
-          Answer a few quick questions and KORA will draft a first version of your deck.
-        </p>
-        <KoraBuildWizard />
+        <SliderBuildTabs />
       </main>
     </div>
   );

@@ -7,7 +7,6 @@ import {
   Wrench,
   Star,
   Landmark,
-  PiggyBank,
   Scale,
   MonitorPlay,
   TimerIcon,
@@ -23,7 +22,6 @@ import SinonWordmark from "./SinonWordmark";
 
 const curriculumItems = [
   { label: "Economics", icon: Landmark },
-  { label: "Personal Finance", icon: PiggyBank },
   { label: "Government", icon: Scale },
 ];
 

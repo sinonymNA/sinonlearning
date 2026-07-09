@@ -88,8 +88,8 @@ export default function CurriculumPage() {
           <FadeIn>
             <SectionHeader
               eyebrow="Spotlight"
-              title="Building first: Economics and Personal Finance"
-              subtitle="These two subjects shape how students understand the world and manage their lives. The first Everyday Curriculum library will give teachers a complete, classroom-ready path through both."
+              title="Building first: Everyday Economics"
+              subtitle="Economics shapes how students understand the world and manage their own lives. The first Everyday Curriculum course gives teachers a complete, classroom-ready path through it — real stories, a real semester calendar, and full state-standards coverage."
             />
           </FadeIn>
 
