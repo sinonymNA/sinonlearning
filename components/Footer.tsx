@@ -90,6 +90,7 @@ export default function Footer() {
 
         <div className="mt-14 border-t border-navy-900/10 pt-8 text-sm text-navy-700/60">
           © 2026 Sinon Learning. Built for teachers, students, and better classrooms.
+          <span className="ml-2">Made with care for teaching and learning.</span>
         </div>
       </div>
     </footer>
