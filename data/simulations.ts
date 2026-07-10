@@ -49,6 +49,16 @@ export const simulations: SimulationCatalogEntry[] = [
     subject: "Investing",
     status: "Available",
   },
+  {
+    slug: "car-deal",
+    number: 5,
+    title: "DRIVELINE: Your First Car",
+    tagline: "Build the dream, compare real-world deals, and read the fine print before you sign.",
+    description:
+      "Start your first job, customize the car you want, then explore a changing local market of dealership offers. Compare total cost, financing, add-ons, and hidden fees to find a deal that protects your future.",
+    subject: "Personal Finance",
+    status: "Available",
+  },
 ];
 
 export function getSimulationBySlug(slug: string): SimulationCatalogEntry | undefined {
