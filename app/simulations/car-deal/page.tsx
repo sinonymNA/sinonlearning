@@ -845,6 +845,35 @@ export default function DrivelinePage() {
     setScreen("garage");
   };
 
+  const handleSign = () => {
+    if (selectedDealer && selectedVehicle) {
+      // Fire-and-forget: save transportation data to Life Budget portfolio (no-op if not logged in)
+      fetch("/api/life-budget/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          moduleSlug: "transportation",
+          data: {
+            vehicleName: `${brand} ${body} ${trim}`,
+            dealer: selectedDealer.name,
+            price: `$${selectedVehicle.basePrice.toLocaleString()}`,
+            monthlyPayment: `$${Math.round(monthly).toLocaleString()}/mo`,
+            apr: `${effectiveApr.toFixed(1)}%`,
+            term: `${selectedDealer.months} months`,
+            fees: `$${(selectedDealer.docFee + selectedDealer.packageFee).toLocaleString()}`,
+            totalCost: `$${Math.round(totalLoan).toLocaleString()}`,
+            drivelineScore: score,
+            preapprovedFinancing: preapproved ? "Yes" : "No",
+            independentInspection: inspection ? "Yes" : "No",
+            outTheDoorQuote: quoteRequested ? "Yes" : "No",
+          },
+          completed: true,
+        }),
+      }).catch(() => { /* silently ignore if not logged in */ });
+    }
+    setScreen("result");
+  };
+
   const BG = "#0d1117";
   const SURFACE = "#161b22";
   const BORDER = "#21262d";
@@ -1092,7 +1121,7 @@ export default function DrivelinePage() {
                 </div>
               </div>
             </div>
-            <button type="button" onClick={() => setScreen("result")}
+            <button type="button" onClick={handleSign}
               className="mt-7 rounded-full px-8 py-4 text-sm font-black transition hover:opacity-90"
               style={{ background: AMBER, color: "#000" }}>
               SIGN &amp; SEE THE REAL DEAL →

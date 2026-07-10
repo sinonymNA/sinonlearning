@@ -59,6 +59,16 @@ export const simulations: SimulationCatalogEntry[] = [
     subject: "Personal Finance",
     status: "Available",
   },
+  {
+    slug: "life-budget",
+    number: 6,
+    title: "Future Budget Simulation: Build Your Life",
+    tagline: "Research real numbers. Make real decisions. Build a real personal finance portfolio.",
+    description:
+      "Ten modules. Real websites. Your actual career, city, paycheck, and choices — not made-up averages. Every number you research becomes part of a downloadable portfolio you can actually use after this class. Start with Module 1 and build from there.",
+    subject: "Personal Finance",
+    status: "Available",
+  },
 ];
 
 export function getSimulationBySlug(slug: string): SimulationCatalogEntry | undefined {
