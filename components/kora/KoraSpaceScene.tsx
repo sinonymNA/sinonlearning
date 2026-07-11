@@ -46,13 +46,13 @@ const fragmentShader = /* glsl */ `
     float fissures = smoothstep(.49, .76, flow + detail * .34);
     vec3 deep = vec3(.055, .008, .16);
     vec3 violet = vec3(.33, .045, .82);
-    vec3 plasma = vec3(.72, .22, 1.0);
-    vec3 hot = vec3(1.0, .80, 1.0);
+    vec3 plasma = vec3(.56, .12, .92);
+    vec3 hot = vec3(.82, .42, 1.0);
     vec3 color = mix(deep, violet, flow);
     color = mix(color, plasma, detail * .72);
-    color = mix(color, hot, fissures);
+    color = mix(color, hot, fissures * .58);
     float fresnel = pow(1.0 - max(dot(vNormal, vec3(0,0,1)), 0.0), 2.2);
-    color += vec3(.48, .10, 1.0) * fresnel * 1.35;
+    color += vec3(.34, .06, .78) * fresnel * .82;
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -67,34 +67,37 @@ export default function KoraSpaceScene() {
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x03020a, .028);
     const camera = new THREE.PerspectiveCamera(44, 1, .1, 100);
-    camera.position.set(0, .15, 8.2);
+    camera.position.set(0, .25, 8.8);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = .72;
     mount.appendChild(renderer.domElement);
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 1.65, .8, .12);
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .72, .52, .42);
     composer.addPass(bloom);
 
     const starMaterial = new THREE.ShaderMaterial({ vertexShader, fragmentShader, uniforms: { uTime: { value: 0 } } });
-    const star = new THREE.Mesh(new THREE.IcosahedronGeometry(2.06, 64), starMaterial);
+    const star = new THREE.Mesh(new THREE.IcosahedronGeometry(1.78, 64), starMaterial);
+    star.position.y = -1.38;
     star.rotation.z = -.15;
     scene.add(star);
 
     const coronaMaterial = new THREE.ShaderMaterial({
       transparent: true, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false,
       vertexShader: `varying vec3 n; void main(){ n=normalize(normalMatrix*normal); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
-      fragmentShader: `varying vec3 n; void main(){ float i=pow(.68-dot(n,vec3(0.,0.,1.)),3.2); gl_FragColor=vec4(.48,.12,1.,i*.78); }`,
+      fragmentShader: `varying vec3 n; void main(){ float i=pow(.68-dot(n,vec3(0.,0.,1.)),3.2); gl_FragColor=vec4(.38,.08,.82,i*.42); }`,
     });
-    const corona = new THREE.Mesh(new THREE.SphereGeometry(2.28, 96, 96), coronaMaterial);
+    const corona = new THREE.Mesh(new THREE.SphereGeometry(1.96, 96, 96), coronaMaterial);
+    corona.position.y = -1.38;
     scene.add(corona);
 
-    const halo = new THREE.PointLight(0x9b4dff, 22, 18, 1.4);
+    const halo = new THREE.PointLight(0x9b4dff, 6, 14, 1.7);
+    halo.position.y = -1.38;
     scene.add(halo);
     scene.add(new THREE.AmbientLight(0x241448, 1.2));
 

@@ -39,8 +39,10 @@ export default function KoraModelPage() {
         .kora-title { font-family: Arial Black, Arial, sans-serif; font-stretch: expanded; }
       `}</style>
 
-      <section className="relative min-h-[100svh] border-b border-white/10">
+      <section className="relative min-h-[100svh] overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_76%,rgba(124,58,237,.25),transparent_38%),linear-gradient(180deg,#081020_0%,#05040b_66%)]" />
+        <div className="absolute inset-0 z-10"><KoraSpaceScene /></div>
+        <div className="pointer-events-none absolute inset-0 z-[15] bg-[linear-gradient(180deg,rgba(3,5,14,.88)_0%,rgba(3,5,14,.52)_34%,rgba(3,5,14,.08)_68%,rgba(3,5,14,.45)_100%)]" />
         <nav className="relative z-30 mx-auto flex max-w-7xl items-center justify-between border-b border-white/10 px-6 py-5 lg:px-8">
           <KoraLogo width={118} className="brightness-0 invert" />
           <div className="hidden items-center gap-8 text-[11px] font-semibold uppercase tracking-[.2em] text-white/55 md:flex">
@@ -51,7 +53,7 @@ export default function KoraModelPage() {
           <Link href="/notesheet" className="rounded-full border border-white/25 bg-white px-5 py-2 text-xs font-bold text-[#090713] shadow-[0_0_28px_rgba(255,255,255,.22)] transition hover:scale-105">Try KORA</Link>
         </nav>
 
-        <div className="relative z-20 mx-auto flex max-w-5xl flex-col items-center px-6 pt-16 text-center sm:pt-20">
+        <div className="relative z-20 mx-auto flex min-h-[calc(100svh-82px)] max-w-5xl flex-col items-center px-6 pt-14 text-center sm:pt-16">
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-semibold uppercase tracking-[.45em] text-violet-200">Teacher-centered intelligence</motion.p>
           <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, delay: .1 }} className="kora-title mt-6 bg-gradient-to-b from-white via-violet-100 to-violet-400 bg-clip-text text-6xl font-black tracking-[.18em] text-transparent drop-shadow-[0_0_35px_rgba(167,139,250,.35)] sm:text-8xl lg:text-[7rem]">KORA</motion.h1>
           <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, delay: .2 }} className="mt-5 max-w-2xl text-base leading-7 text-white/62 sm:text-lg">A teacher-centered AI system that turns instructional intent into classroom-ready drafts—powered by Claude, directed by educators, and governed by principles that keep judgment human.</motion.p>
@@ -61,9 +63,6 @@ export default function KoraModelPage() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 mx-auto -mt-6 h-[48vw] min-h-[390px] max-h-[670px] w-full max-w-[1400px] overflow-hidden">
-          <KoraSpaceScene />
-        </div>
         <div className="absolute bottom-6 left-6 z-20 text-[10px] uppercase tracking-[.28em] text-white/30">KORA / System 01</div>
         <div className="absolute bottom-6 right-6 z-20 text-[10px] uppercase tracking-[.28em] text-white/30">Powered by Claude</div>
       </section>
