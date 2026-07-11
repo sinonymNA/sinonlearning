@@ -121,8 +121,8 @@ const moreTools: Tool[] = [
     bgClass: "bg-gradient-to-br from-emerald-500 to-emerald-700",
     logo: <Coins size={44} strokeWidth={1.75} className="text-white" />,
     logoSub: "Personal Finance",
-    name: "Personal Finance Tools",
-    tagline: "Start with $10,000 in cash and build a portfolio using real, live stock prices.",
+    name: "Stock Market Academy",
+    tagline: "9 units of Harvard-caliber investing + a live trading simulator. Start with $100,000.",
   },
   {
     slug: "study-guides",

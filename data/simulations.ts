@@ -42,10 +42,10 @@ export const simulations: SimulationCatalogEntry[] = [
   {
     slug: "stock-market-basics",
     number: 4,
-    title: "Build a Portfolio: A Stock Market Simulator",
-    tagline: "Invest using real, live stock prices and learn what actually drives returns.",
+    title: "Stock Market Academy",
+    tagline: "9 units of Harvard-caliber investing — with a live trading simulator built in.",
     description:
-      "Start with $10,000 in cash and trade a watchlist of well-known companies, priced from the real market in near real-time. Track your net worth over time, learn the basics of risk and diversification, and save your progress with a passcode you choose—no account needed.",
+      "Start with $100,000 in virtual cash and trade real stocks with live prices from Finnhub. Nine self-paced units guide you from 'what is a stock?' through valuation, portfolio theory, market cycles, and behavioral finance — each ending with a mission to apply what you just learned. Track your returns against the S&P 500 and compete on a class leaderboard.",
     subject: "Investing",
     status: "Available",
   },
