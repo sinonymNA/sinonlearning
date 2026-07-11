@@ -15,6 +15,9 @@ interface PortfolioData {
   totalPl: number;
   totalPlPct: number;
   invested: number;
+  spyReturn: number | null;
+  spyBaseline: number | null;
+  spyPrice: number | null;
   positions: { ticker: string; shares: number; unrealizedPl: number; unrealizedPlPct: number; currentValue: number }[];
 }
 
@@ -28,17 +31,10 @@ interface HistoryItem {
   executed_at: string;
 }
 
-const UNIT_TITLES = [
-  "What Is a Stock?",
-  "How Markets Work",
-  "Reading a Company",
-  "Valuing a Business",
-  "Building a Portfolio",
-  "Market Cycles & Macro",
-  "Investment Strategies",
-  "Behavioral Finance",
-  "Advanced Mechanics",
-];
+interface UnitProgress {
+  unit_slug: string;
+  completed_at: string | null;
+}
 
 function fmt(n: number, decimals = 2) {
   return n.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
@@ -48,21 +44,33 @@ export default function StockMarketDashboard() {
   const router = useRouter();
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [courseProgress, setCourseProgress] = useState<UnitProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/stock-sim/portfolio"),
       fetch("/api/stock-sim/history"),
-    ]).then(async ([pRes, hRes]) => {
+      fetch("/api/stock-course/progress"),
+    ]).then(async ([pRes, hRes, cRes]) => {
       if (pRes.status === 401) {
         router.replace("/margins/login?next=/simulations/stock-market");
         return;
       }
       const pData = await pRes.json();
       const hData = await hRes.json();
+      const cData = cRes.ok ? await cRes.json() : { progress: [] };
       setPortfolio(pData);
       setHistory((hData.history ?? []).slice(0, 5));
+      setCourseProgress(cData.progress ?? []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [router]);
@@ -78,6 +86,9 @@ export default function StockMarketDashboard() {
   const pl = portfolio?.totalPl ?? 0;
   const plPct = portfolio?.totalPlPct ?? 0;
   const isUp = pl >= 0;
+  const spyReturn = portfolio?.spyReturn ?? null;
+  const doneCount = courseProgress.filter(p => p.completed_at).length;
+  const nextUnit = Math.min(doneCount + 1, 9);
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px" }}>
@@ -101,13 +112,27 @@ export default function StockMarketDashboard() {
             {isUp ? "+" : ""}{fmt(pl)} ({isUp ? "+" : ""}{plPct.toFixed(2)}%)
           </span>
         </div>
-        <p style={{ fontSize: 13, color: FAINT, marginTop: 6 }}>
-          vs. $100,000 starting capital
-        </p>
+        <div style={{ display: "flex", gap: 16, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <p style={{ fontSize: 13, color: FAINT }}>
+            vs. $100,000 starting capital
+          </p>
+          {spyReturn !== null && (
+            <span style={{
+              fontSize: 12, color: MUTED,
+              background: "#f8fafc", border: `1px solid ${BORDER}`,
+              borderRadius: 6, padding: "2px 10px",
+            }}>
+              S&amp;P 500 since you started:{" "}
+              <strong style={{ color: spyReturn >= 0 ? GAIN : LOSS }}>
+                {spyReturn >= 0 ? "+" : ""}{spyReturn.toFixed(2)}%
+              </strong>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
         {[
           { label: "Cash Available", value: `$${fmt(portfolio?.cash ?? 100000)}` },
           { label: "Invested", value: `$${fmt(portfolio?.invested ?? 0)}` },
@@ -120,7 +145,7 @@ export default function StockMarketDashboard() {
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: 20, alignItems: "start" }}>
         {/* Left: positions + history */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
@@ -209,7 +234,7 @@ export default function StockMarketDashboard() {
           )}
         </div>
 
-        {/* Right: quick actions + course preview */}
+        {/* Right: quick actions + course progress */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {/* Quick actions */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "20px" }}>
@@ -229,36 +254,67 @@ export default function StockMarketDashboard() {
               }}>
                 View Portfolio
               </Link>
+              <Link href="/simulations/stock-market/leaderboard" style={{
+                display: "block", padding: "11px 16px", background: "#f1f5f9",
+                color: INK, borderRadius: 9, fontSize: 13, fontWeight: 600,
+                textDecoration: "none", textAlign: "center",
+              }}>
+                Leaderboard
+              </Link>
             </div>
           </div>
 
-          {/* Course preview */}
+          {/* Course progress */}
           <div style={{ background: DARK, borderRadius: 14, padding: "20px" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: "#475569", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
               Stock Market Academy
             </p>
-            <p style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 14 }}>9 units. Harvard-level investing.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-              {UNIT_TITLES.slice(0, 5).map((title, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 20, height: 20, borderRadius: 4, background: "#1e293b",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 10, fontWeight: 700, color: "#475569", flexShrink: 0,
-                  }}>
-                    {i + 1}
+            <p style={{ fontSize: 15, fontWeight: 700, color: "#f1f5f9", marginBottom: 12 }}>
+              {doneCount === 0 ? "9 units. Harvard-level investing." : doneCount === 9 ? "Course complete!" : `Unit ${doneCount} of 9 complete`}
+            </p>
+
+            {/* Progress bar */}
+            <div style={{ height: 5, background: "#1e293b", borderRadius: 3, marginBottom: 14, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", background: GAIN, borderRadius: 3,
+                width: `${(doneCount / 9) * 100}%`,
+                transition: "width 0.5s ease",
+              }} />
+            </div>
+
+            {/* Unit list (first 5, with done state) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 16 }}>
+              {Array.from({ length: Math.min(5, 9) }, (_, i) => {
+                const unitNum = i + 1;
+                const slug = `unit-${unitNum}`;
+                const done = courseProgress.some(p => p.unit_slug === slug && p.completed_at);
+                return (
+                  <div key={unitNum} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: 4,
+                      background: done ? GAIN : "#1e293b",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 10, fontWeight: 700,
+                      color: done ? "#fff" : "#475569",
+                      flexShrink: 0,
+                    }}>
+                      {done ? "✓" : unitNum}
+                    </div>
+                    <span style={{ fontSize: 12, color: done ? "#64748b" : "#94a3b8" }}>
+                      {["What Is a Stock?", "How Markets Work", "Reading a Company", "Valuing a Business", "Building a Portfolio"][i]}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 12, color: "#94a3b8" }}>{title}</span>
-                </div>
-              ))}
+                );
+              })}
               <p style={{ fontSize: 11, color: "#475569", paddingLeft: 30 }}>+ 4 more units…</p>
             </div>
-            <Link href="/simulations/stock-market/learn" style={{
+
+            <Link href={doneCount === 0 ? "/simulations/stock-market/learn/unit-1" : `/simulations/stock-market/learn/unit-${nextUnit}`} style={{
               display: "block", padding: "10px 16px", background: GAIN,
               color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600,
               textDecoration: "none", textAlign: "center",
             }}>
-              Start Learning
+              {doneCount === 0 ? "Start Learning →" : doneCount === 9 ? "Review Course →" : `Continue Unit ${nextUnit} →`}
             </Link>
           </div>
         </div>

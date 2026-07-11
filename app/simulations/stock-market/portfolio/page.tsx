@@ -30,6 +30,9 @@ interface PortfolioData {
   totalPlPct: number;
   positions: Position[];
   createdAt: string;
+  spyReturn: number | null;
+  spyBaseline: number | null;
+  spyPrice: number | null;
 }
 
 interface Transaction {
@@ -68,6 +71,14 @@ export default function PortfolioPage() {
   const [history, setHistory] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"holdings" | "history">("holdings");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const load = useCallback(async () => {
     const [pRes, hRes] = await Promise.all([
@@ -113,9 +124,23 @@ export default function PortfolioPage() {
               </h1>
               {p && <PlBadge value={p.totalPl} pct={p.totalPlPct} size="lg" />}
             </div>
-            <p style={{ fontSize: 12, color: FAINT, marginTop: 5 }}>
-              Started with $100,000.00 · {p?.createdAt ? `Since ${new Date(p.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}
-            </p>
+            <div style={{ display: "flex", gap: 12, marginTop: 5, flexWrap: "wrap", alignItems: "center" }}>
+              <p style={{ fontSize: 12, color: FAINT }}>
+                Started with $100,000.00{p?.createdAt ? ` · Since ${new Date(p.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}
+              </p>
+              {p?.spyReturn !== null && p?.spyReturn !== undefined && (
+                <span style={{
+                  fontSize: 12, color: MUTED,
+                  background: BG, border: `1px solid ${BORDER}`,
+                  borderRadius: 6, padding: "2px 10px",
+                }}>
+                  S&amp;P 500 since you started:{" "}
+                  <strong style={{ color: p.spyReturn >= 0 ? GAIN : LOSS }}>
+                    {p.spyReturn >= 0 ? "+" : ""}{p.spyReturn.toFixed(2)}%
+                  </strong>
+                </span>
+              )}
+            </div>
           </div>
           <Link href="/simulations/stock-market/trade" style={{
             display: "inline-block", padding: "10px 20px",
@@ -128,7 +153,7 @@ export default function PortfolioPage() {
       </div>
 
       {/* Summary stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 12, marginBottom: 32 }}>
         {[
           { label: "Cash", value: `$${fmt(p?.cash ?? 100000)}`, color: INK },
           { label: "Invested", value: `$${fmt(p?.invested ?? 0)}`, color: INK },

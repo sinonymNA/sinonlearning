@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { href: "/simulations/stock-market/trade", label: "Trade" },
   { href: "/simulations/stock-market/portfolio", label: "Portfolio" },
   { href: "/simulations/stock-market/learn", label: "Learn" },
+  { href: "/simulations/stock-market/leaderboard", label: "Leaderboard" },
 ];
 
 export default function StockMarketLayout({ children }: { children: React.ReactNode }) {

@@ -68,6 +68,14 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
 export default function TradePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -346,7 +354,7 @@ export default function TradePage() {
 
       {/* Stock selected: info + trade form */}
       {ticker && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 280px", gap: 20, alignItems: "start" }}>
 
           {/* Left: stock info */}
           <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
@@ -435,7 +443,7 @@ export default function TradePage() {
           </div>
 
           {/* Right: trade form */}
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "24px", position: "sticky", top: 70 }}>
+          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "24px", position: isMobile ? "static" : "sticky", top: 70 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 14 }}>
               Place Order
             </p>

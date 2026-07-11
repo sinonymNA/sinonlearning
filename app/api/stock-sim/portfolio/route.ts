@@ -11,11 +11,20 @@ export async function GET() {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  const portfolio = await getOrCreatePortfolio(user.id);
+  const hasApiKey = !!process.env.FINNHUB_API_KEY;
+
+  // Fetch SPY price first (used for benchmark + new portfolio creation)
+  let spyPrice: number | undefined;
+  if (hasApiKey) {
+    try {
+      const spyQ = await getCachedQuote("SPY");
+      spyPrice = spyQ.price;
+    } catch { /* ignore */ }
+  }
+
+  const portfolio = await getOrCreatePortfolio(user.id, spyPrice);
   const positions = await getPositions(portfolio.id);
 
-  // Fetch current prices for all held tickers
-  const hasApiKey = !!process.env.FINNHUB_API_KEY;
   const enriched = await Promise.all(
     positions.map(async (pos) => {
       const shares = parseFloat(pos.shares);
@@ -28,9 +37,7 @@ export async function GET() {
           const q = await getCachedQuote(pos.ticker);
           currentPrice = q.price;
           changePct = q.changePct;
-        } catch {
-          // fall back to cost basis
-        }
+        } catch { /* fall back to cost basis */ }
       }
 
       const currentValue = shares * currentPrice;
@@ -59,6 +66,12 @@ export async function GET() {
   const totalPl = totalValue - 100000;
   const totalPlPct = (totalPl / 100000) * 100;
 
+  // S&P 500 benchmark comparison
+  const spyBaseline = portfolio.spy_baseline ? parseFloat(portfolio.spy_baseline) : null;
+  const spyReturn = spyBaseline && spyPrice
+    ? ((spyPrice - spyBaseline) / spyBaseline) * 100
+    : null;
+
   return NextResponse.json({
     portfolioId: portfolio.id,
     cash,
@@ -69,5 +82,8 @@ export async function GET() {
     totalPlPct,
     positions: enriched,
     createdAt: portfolio.created_at,
+    spyBaseline,
+    spyPrice: spyPrice ?? null,
+    spyReturn,
   });
 }
