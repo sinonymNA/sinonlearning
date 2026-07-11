@@ -56,13 +56,17 @@ const BEATS: StoryBeat[] = [
   },
   {
     narrative: (
-      <p>
-        Maya&apos;s coworker Dani also earned $54,500 — same role, same company, hired the same
-        month. But Dani had attended a private art school. Total cost: <Num>$147,000 in loans</Num>.
-        Maya&apos;s state school had cost <Num>$34,000</Num>. Identical salaries. But Dani sent{" "}
-        <Num>$1,150/month</Num> to a loan servicer. Maya sent <Num>$280/month</Num>. They earned
-        the same. They did not live the same.
-      </p>
+      <>
+        <p>
+          Maya&apos;s coworker Dani also earned $54,500 — same role, same company, hired the same
+          month. But Dani had attended a private art school. Total cost:{" "}
+          <Num>$147,000 in loans</Num>. Maya&apos;s state school had cost <Num>$34,000</Num>.
+        </p>
+        <p>
+          Identical salaries. But Dani sent <Num>$1,150/month</Num> to a loan servicer. Maya sent{" "}
+          <Num>$280/month</Num>. They earned the same. They did not live the same.
+        </p>
+      </>
     ),
     term: {
       name: "Education ROI",
@@ -74,14 +78,18 @@ const BEATS: StoryBeat[] = [
   },
   {
     narrative: (
-      <p>
-        Before her first day, Maya ran one more calculation. <Num>$54,000/year gross</Num>. Monthly:{" "}
-        <Num>$4,500</Num>. She opened a paycheck estimator and added up all the deductions: federal
-        tax, state tax, FICA, health insurance. What landed in her bank account each month:{" "}
-        <Num>$3,380</Num>. She said it out loud a few times.{" "}
-        <Em>Three thousand, three hundred and eighty dollars. That&apos;s my budget.</Em> Not
-        $54,000. Not $4,500. $3,380.
-      </p>
+      <>
+        <p>
+          Before her first day, Maya ran one more calculation. <Num>$54,000/year gross</Num>.
+          Monthly: <Num>$4,500</Num>. She opened a paycheck estimator and added up all the
+          deductions: federal tax, state tax, FICA, health insurance.
+        </p>
+        <p>
+          What landed in her bank account each month: <Num>$3,380</Num>. She said it out loud a
+          few times. <Em>&ldquo;Three thousand, three hundred and eighty dollars. That&apos;s my
+          budget.&rdquo;</Em> Not $54,000. Not $4,500. $3,380.
+        </p>
+      </>
     ),
     term: {
       name: "Gross vs. Net Income",

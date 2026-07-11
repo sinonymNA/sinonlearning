@@ -15,6 +15,7 @@ export interface StoryTermCallout {
 export interface StoryBeat {
   narrative: React.ReactNode;
   term?: StoryTermCallout;
+  visual?: React.ReactNode;
 }
 
 interface NarrativeLessonProps {
@@ -56,6 +57,7 @@ export default function NarrativeLesson({
           to   { opacity: 1; transform: translateY(0); }
         }
         .nb-beat { animation: nb-fadeup 0.45s ease; }
+        .nb-narrative p + p { margin-top: 20px; }
       `}</style>
 
       {/* Header */}
@@ -91,19 +93,35 @@ export default function NarrativeLesson({
       </div>
 
       {/* Story beats */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 36 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 44 }}>
         {beats.slice(0, revealed).map((beat, i) => (
           <div
             key={i}
             className={i === revealed - 1 ? "nb-beat" : ""}
           >
+            {/* Visual panel (e.g. pay stub) */}
+            {beat.visual && (
+              <div style={{
+                background: "#fff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 12,
+                overflow: "hidden",
+                marginBottom: 20,
+              }}>
+                {beat.visual}
+              </div>
+            )}
+
             {/* Narrative */}
-            <div style={{
-              fontSize: 16,
-              lineHeight: 1.8,
-              color: INK,
-              marginBottom: beat.term ? 20 : 0,
-            }}>
+            <div
+              className="nb-narrative"
+              style={{
+                fontSize: 16,
+                lineHeight: 1.7,
+                color: INK,
+                marginBottom: beat.term ? 28 : 0,
+              }}
+            >
               {beat.narrative}
             </div>
 
@@ -113,7 +131,7 @@ export default function NarrativeLesson({
                 borderLeft: `3px solid ${accent}`,
                 borderRadius: "0 10px 10px 0",
                 background: LIGHT,
-                padding: "16px 20px",
+                padding: "20px 24px",
                 marginLeft: 4,
               }}>
                 <p style={{
@@ -129,7 +147,7 @@ export default function NarrativeLesson({
                   display: "flex", gap: 8, alignItems: "flex-start",
                   background: "#fff", borderRadius: 8,
                   border: "1px solid #e2e8f0",
-                  padding: "10px 14px",
+                  padding: "12px 16px",
                 }}>
                   <span style={{ fontSize: 13, color: accent, flexShrink: 0, fontWeight: 700 }}>↳</span>
                   <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.55 }}>
