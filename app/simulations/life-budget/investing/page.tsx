@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import ModuleShell from "@/components/life-budget/ModuleShell";
+import SectionStep from "@/components/life-budget/SectionStep";
+import InvestingHook from "@/components/life-budget/hooks/InvestingHook";
 
 const BG = "#f8fafc", CARD = "#ffffff", BORDER = "#e2e8f0";
 const INK = "#0f172a", MUTED = "#64748b", FAINT = "#94a3b8";
@@ -17,12 +19,13 @@ interface FormData {
   projectedAt65: string;
   strategy: string;
   investingReflection: string;
+  rothVs401k: string;
   notes: string;
 }
 
 const EMPTY: FormData = {
   contribution401k: "", employerMatch: "", rothMonthly: "", totalInvesting: "",
-  projectedAt40: "", projectedAt65: "", strategy: "", investingReflection: "", notes: "",
+  projectedAt40: "", projectedAt65: "", strategy: "", investingReflection: "", rothVs401k: "", notes: "",
 };
 
 const REQUIRED: (keyof FormData)[] = ["contribution401k", "employerMatch", "rothMonthly", "investingReflection"];
@@ -43,7 +46,6 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>{children}</div>;
 }
 function Field({ children }: { children: React.ReactNode }) { return <div style={{ marginBottom: 20 }}>{children}</div>; }
-function Divider() { return <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: "28px 0" }} />; }
 
 function compound(monthly: number, years: number, rate = 0.07): number {
   if (monthly <= 0) return 0;
@@ -58,8 +60,8 @@ function InvestingPanel({ d, grossMonthly }: { d: FormData; grossMonthly: number
   const employerMonthly = grossMonthly > 0 ? (grossMonthly * Math.min(match, contrib401k) / 100) : 0;
   const totalMonthly = monthly401k + employerMonthly + roth;
 
-  const at40 = compound(totalMonthly, 18); // ~22 + 18 = 40
-  const at65 = compound(totalMonthly, 43); // ~22 + 43 = 65
+  const at40 = compound(totalMonthly, 18);
+  const at65 = compound(totalMonthly, 43);
 
   return (
     <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, overflow: "hidden" }}>
@@ -100,6 +102,7 @@ function InvestingPanel({ d, grossMonthly }: { d: FormData; grossMonthly: number
 export default function InvestingPage() {
   const router = useRouter();
   const [d, setD] = useState<FormData>(EMPTY);
+  const [phase, setPhase] = useState<"hook" | "work">("hook");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -113,14 +116,13 @@ export default function InvestingPage() {
       .then(json => {
         if (!json) return;
         const m = json.progress?.find((p: { module_slug: string }) => p.module_slug === "investing");
-        if (m?.data) { setD({ ...EMPTY, ...(m.data as Partial<FormData>) }); if (m.completed_at) setIsComplete(true); }
+        if (m?.data) { setD({ ...EMPTY, ...(m.data as Partial<FormData>) }); setPhase("work"); if (m.completed_at) setIsComplete(true); }
         const career = json.progress?.find((p: { module_slug: string }) => p.module_slug === "career");
         if (career?.data?.grossMonthly) setGrossMonthly(parseFloat(String(career.data.grossMonthly)) || 0);
       })
       .catch(() => {});
   }, [router]);
 
-  // Auto-compute total investing
   useEffect(() => {
     const contrib = parseFloat(d.contribution401k) || 0;
     const match = parseFloat(d.employerMatch) || 0;
@@ -170,121 +172,112 @@ export default function InvestingPage() {
   const contrib401k = parseFloat(d.contribution401k) || 0;
   const monthly401kAmt = grossMonthly > 0 ? (grossMonthly * contrib401k / 100) : 0;
 
+  const step2Unlocked = !!(d.contribution401k.trim() && d.employerMatch.trim());
+  const step3Unlocked = step2Unlocked && !!d.rothMonthly.trim();
+  const step4Unlocked = step3Unlocked;
+
+  const sidebar = (
+    <>
+      <InvestingPanel d={d} grossMonthly={grossMonthly} />
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "18px 20px" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Calculators</p>
+        {[
+          { href: "https://investor.gov/financial-tools-calculators/calculators/compound-interest-calculator", label: "Investor.gov Compound Calc", sub: "Official SEC tool — model any compound interest scenario" },
+          { href: "https://www.nerdwallet.com/investing/roth-ira-calculator", label: "NerdWallet Roth IRA Calc", sub: "Project your Roth IRA balance to retirement" },
+          { href: "https://www.vanguard.com/investor-resources-education/retirement/roth-vs-traditional-ira", label: "Roth vs. Traditional IRA", sub: "Vanguard explains the tax tradeoff clearly" },
+        ].map(r => (
+          <a key={r.label} href={r.href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${BORDER}`, textDecoration: "none" }}>
+            <div style={{ width: 26, height: 26, borderRadius: 6, background: `${ACCENT}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>↗</div>
+            <div><p style={{ fontSize: 12, fontWeight: 600, color: ACCENT, marginBottom: 1 }}>{r.label}</p><p style={{ fontSize: 10, color: MUTED }}>{r.sub}</p></div>
+          </a>
+        ))}
+      </div>
+    </>
+  );
+
   return (
-    <main style={{ minHeight: "100vh", background: BG, fontFamily: "system-ui, sans-serif", color: INK }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link href="/simulations/life-budget" style={{ fontSize: 12, fontWeight: 600, color: MUTED, textDecoration: "none" }}>← Life Budget</Link>
-        <span style={{ fontSize: 11, fontWeight: 700, color: INK, letterSpacing: "0.1em" }}>MODULE 09 · INVESTING</span>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          {saving && <span style={{ fontSize: 11, color: FAINT }}>Saving…</span>}
-          {saved && !saving && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Saved</span>}
-          {isComplete
-            ? <span style={{ fontSize: 11, fontWeight: 700, color: GREEN, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "4px 12px" }}>✓ Complete</span>
-            : <button onClick={markComplete} disabled={!allFilled || completing} style={{ fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "5px 16px", border: "none", cursor: allFilled ? "pointer" : "not-allowed", background: allFilled ? ACCENT : BORDER, color: allFilled ? "#fff" : MUTED }}>
-                {completing ? "Saving…" : `Complete (${filledRequired}/${REQUIRED.length})`}
-              </button>}
-        </div>
+    <ModuleShell
+      moduleLabel="MODULE 09 · INVESTING"
+      accent={ACCENT}
+      filledRequired={filledRequired}
+      totalRequired={REQUIRED.length}
+      isComplete={isComplete}
+      onMarkComplete={markComplete}
+      completing={completing}
+      saving={saving}
+      saved={saved}
+      phase={phase}
+      hookContent={<InvestingHook onReady={() => { window.scrollTo(0, 0); setPhase("work"); }} />}
+      sidebarContent={sidebar}
+      nextHref="/simulations/life-budget/net-worth"
+      nextLabel="Module 10: Net Worth"
+    >
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
+
+        <SectionStep number={1} total={4} title="Your 401(k)" subtitle="At minimum, contribute enough to get the full employer match. That's an instant 50–100% return." isUnlocked={true} accent={ACCENT}>
+          <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
+            A 401(k) lowers your taxable income now — the government is literally helping you save. Don&apos;t leave employer match money on the table.
+            {grossMonthly > 0 && ` Your gross monthly is $${grossMonthly.toLocaleString()}.`}
+          </p>
+          <Row>
+            <Field>
+              <Lbl req>Your 401(k) contribution rate</Lbl>
+              <input value={d.contribution401k} onChange={up("contribution401k")} placeholder="e.g. 5" type="number" style={inp(!!d.contribution401k)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>
+                {monthly401kAmt > 0 ? `= $${monthly401kAmt.toFixed(0)}/mo from your paycheck` : "% of gross salary per paycheck"}
+              </p>
+            </Field>
+            <Field>
+              <Lbl req>Employer match rate</Lbl>
+              <input value={d.employerMatch} onChange={up("employerMatch")} placeholder="e.g. 3 or 0" type="number" style={inp(!!d.employerMatch)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Common: match 50% of first 6%, or 100% of first 3%. Enter 0 if none.</p>
+            </Field>
+          </Row>
+        </SectionStep>
+
+        <SectionStep number={2} total={4} title="Roth IRA — your personal account" subtitle="Tax-free growth forever. Most young adults should prioritize this after getting the full 401k match." isUnlocked={step2Unlocked} accent={ACCENT}>
+          <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
+            A Roth IRA grows tax-free — you pay taxes now, but all the growth and withdrawals in retirement are 100% tax-free. The 2025 limit is $7,000/year ($583/month).
+          </p>
+          <Field>
+            <Lbl req>Monthly Roth IRA contribution</Lbl>
+            <input value={d.rothMonthly} onChange={up("rothMonthly")} placeholder="e.g. 200 or 0" type="number" style={inp(!!d.rothMonthly)} />
+            <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Even $100/month makes a significant long-run difference. Enter $0 if you can&apos;t start yet.</p>
+          </Field>
+        </SectionStep>
+
+        <SectionStep number={3} total={4} title="Your investment strategy" subtitle="Index funds beat actively managed funds over any 20-year window. Keep it simple." isUnlocked={step3Unlocked} accent={ACCENT}>
+          <Field>
+            <Lbl>What will you actually invest in?</Lbl>
+            <input value={d.strategy} onChange={up("strategy")} placeholder="e.g. Target date 2065 fund in my 401k, S&P 500 index (FXAIX) in my Roth IRA" style={inp(!!d.strategy)} />
+            <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Target-date funds are the simplest good option — pick the year you plan to retire</p>
+          </Field>
+          <div style={{ padding: "14px 16px", background: `${ACCENT}08`, border: `1px solid ${ACCENT}22`, borderRadius: 8 }}>
+            <p style={{ fontSize: 12, color: INK, lineHeight: 1.6, fontWeight: 600, marginBottom: 4 }}>The index fund rule</p>
+            <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.6 }}>Low-cost index funds (expense ratio &lt; 0.10%) outperform 85–90% of actively managed funds over 20 years. Boring wins.</p>
+          </div>
+        </SectionStep>
+
+        <SectionStep number={4} total={4} title="Reflect" subtitle="Compound interest doesn't care about your intentions. It only cares about what you actually do." isUnlocked={step4Unlocked} accent={ACCENT}>
+          <Field>
+            <Lbl req>What does the 10-year delay cost you in your projection?</Lbl>
+            <textarea value={d.investingReflection} onChange={up("investingReflection")}
+              placeholder="Look at the sidebar: what's the difference between starting at 22 vs 32? Does your career offer a good 401k match? What would it mean to delay investing for 10 years?"
+              style={{ ...ta(!!d.investingReflection), minHeight: 110 }} />
+          </Field>
+          <Field>
+            <Lbl>If you could only do one — get the full 401k match or max your Roth — which would you prioritize and why?</Lbl>
+            <textarea value={d.rothVs401k} onChange={up("rothVs401k")}
+              placeholder="Think about tax rates now vs. in retirement, employer match as 'free money,' and your timeline. What&apos;s your specific reasoning?"
+              style={ta(!!d.rothVs401k)} />
+          </Field>
+          <Field>
+            <Lbl>Notes</Lbl>
+            <textarea value={d.notes} onChange={up("notes")} placeholder="Other accounts, brokerage notes…" style={ta(!!d.notes)} />
+          </Field>
+        </SectionStep>
+
       </div>
-
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "36px 24px 80px", display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
-        <div>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: INK, marginBottom: 4 }}>Investing</h1>
-            <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.5 }}>Compound interest is patient. $200/month at 22 becomes over $800,000 by 65. $200/month starting at 32 becomes $400,000. The decade costs you half your retirement.</p>
-          </div>
-
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>401(k) — the employer account</p>
-            <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
-              At minimum, contribute enough to capture your full employer match — that&apos;s an instant 50–100% return on that money.
-              {grossMonthly > 0 && ` Your gross monthly is $${grossMonthly.toLocaleString()}.`}
-            </p>
-
-            <Row>
-              <Field>
-                <Lbl req>Your 401(k) Contribution %</Lbl>
-                <input value={d.contribution401k} onChange={up("contribution401k")} placeholder="e.g. 5" type="number" style={inp(!!d.contribution401k)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>
-                  {monthly401kAmt > 0 ? `= $${monthly401kAmt.toFixed(0)}/mo from your paycheck` : "% of gross salary per paycheck"}
-                </p>
-              </Field>
-              <Field>
-                <Lbl req>Employer Match %</Lbl>
-                <input value={d.employerMatch} onChange={up("employerMatch")} placeholder="e.g. 3 or 0" type="number" style={inp(!!d.employerMatch)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Common: match 50% of first 6%, or 100% of first 3%</p>
-              </Field>
-            </Row>
-
-            <Divider />
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>Roth IRA — your personal account</p>
-            <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
-              A Roth IRA grows tax-free — you pay taxes now on contributions, but all the growth and withdrawals in retirement are 100% tax-free.
-              2025 limit: $7,000/year ($583/month). Most young adults should max this before extra 401k.
-            </p>
-
-            <Field>
-              <Lbl req>Monthly Roth IRA Contribution</Lbl>
-              <input value={d.rothMonthly} onChange={up("rothMonthly")} placeholder="e.g. 200 or 0" type="number" style={inp(!!d.rothMonthly)} />
-              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Even $100/month makes a significant long-run difference. Enter $0 if not starting yet.</p>
-            </Field>
-
-            <Divider />
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>Strategy & notes</p>
-
-            <Field>
-              <Lbl>Investment strategy / fund choice</Lbl>
-              <input value={d.strategy} onChange={up("strategy")} placeholder="e.g. Index funds — S&P 500 via Fidelity FXAIX, target date 2065 fund" style={inp(!!d.strategy)} />
-              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Target-date funds are the simplest good option — pick the one matching your retirement year</p>
-            </Field>
-
-            <Field>
-              <Lbl req>Reflection</Lbl>
-              <textarea value={d.investingReflection} onChange={up("investingReflection")}
-                placeholder="What does the 10-year delay cost you in your projection? Does your career offer a good 401k match? What would you do differently with the money if you started at 30 instead of 22?"
-                style={{ ...ta(!!d.investingReflection), minHeight: 110 }} />
-            </Field>
-            <Field>
-              <Lbl>Notes</Lbl>
-              <textarea value={d.notes} onChange={up("notes")} placeholder="Other accounts, brokerage notes…" style={ta(!!d.notes)} />
-            </Field>
-          </div>
-
-          {!isComplete && (
-            <div style={{ marginTop: 24 }}>
-              <button onClick={markComplete} disabled={!allFilled || completing} style={{ width: "100%", fontSize: 14, fontWeight: 700, borderRadius: 10, padding: "13px 0", border: "none", cursor: allFilled ? "pointer" : "not-allowed", background: allFilled ? ACCENT : BORDER, color: allFilled ? "#fff" : MUTED }}>
-                {completing ? "Saving…" : allFilled ? "Mark Module 9 Complete →" : `Fill required fields (${filledRequired} / ${REQUIRED.length} done)`}
-              </button>
-            </div>
-          )}
-          {isComplete && (
-            <div style={{ marginTop: 24, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "20px 24px", textAlign: "center" }}>
-              <p style={{ fontSize: 15, fontWeight: 800, color: GREEN, marginBottom: 6 }}>✓ Module 9 Complete</p>
-              <p style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>Investing saved. Final module: Net Worth & Future Self.</p>
-              <Link href="/simulations/life-budget/net-worth" style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: "#fff", background: GREEN, borderRadius: 8, padding: "9px 22px", textDecoration: "none" }}>Module 10: Net Worth →</Link>
-            </div>
-          )}
-        </div>
-
-        <div style={{ position: "sticky", top: 64, display: "flex", flexDirection: "column", gap: 16 }}>
-          <InvestingPanel d={d} grossMonthly={grossMonthly} />
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "18px 20px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Calculators</p>
-            {[
-              { href: "https://investor.gov/financial-tools-calculators/calculators/compound-interest-calculator", label: "Investor.gov Compound Calculator", sub: "Official SEC compound interest tool — model any scenario" },
-              { href: "https://www.nerdwallet.com/investing/roth-ira-calculator", label: "NerdWallet Roth IRA Calc", sub: "Project your Roth IRA balance to retirement" },
-              { href: "https://www.vanguard.com/investor-resources-education/retirement/roth-vs-traditional-ira", label: "Roth vs. Traditional IRA", sub: "Vanguard explains the tax tradeoff clearly" },
-            ].map(r => (
-              <a key={r.label} href={r.href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                <div style={{ width: 26, height: 26, borderRadius: 6, background: `${ACCENT}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>↗</div>
-                <div><p style={{ fontSize: 12, fontWeight: 600, color: ACCENT, marginBottom: 1 }}>{r.label}</p><p style={{ fontSize: 10, color: MUTED }}>{r.sub}</p></div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-    </main>
+    </ModuleShell>
   );
 }

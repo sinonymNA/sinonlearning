@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import ModuleShell from "@/components/life-budget/ModuleShell";
+import SectionStep from "@/components/life-budget/SectionStep";
+import NetWorthHook from "@/components/life-budget/hooks/NetWorthHook";
 
 const BG = "#f8fafc", CARD = "#ffffff", BORDER = "#e2e8f0";
 const INK = "#0f172a", MUTED = "#64748b", FAINT = "#94a3b8";
@@ -23,15 +25,16 @@ interface FormData {
   netWorthY5: string;
   netWorthY10: string;
   biggestDecision: string;
-  doOver: string;
   reflection: string;
+  letterTo35: string;
+  doOver: string;
 }
 
 const EMPTY: FormData = {
   savingsY1: "", investmentsY1: "", vehicleValue: "", otherAssets: "", assetsY1: "",
   studentLoanBalance: "", carLoan: "", creditCardDebt: "", otherDebts: "", liabilitiesY1: "",
   netWorthY1: "", netWorthY5: "", netWorthY10: "",
-  biggestDecision: "", doOver: "", reflection: "",
+  biggestDecision: "", reflection: "", letterTo35: "", doOver: "",
 };
 
 const REQUIRED: (keyof FormData)[] = ["assetsY1", "liabilitiesY1", "netWorthY1", "biggestDecision", "reflection"];
@@ -52,7 +55,6 @@ function Row({ children }: { children: React.ReactNode }) {
   return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>{children}</div>;
 }
 function Field({ children }: { children: React.ReactNode }) { return <div style={{ marginBottom: 20 }}>{children}</div>; }
-function Divider() { return <hr style={{ border: "none", borderTop: `1px solid ${BORDER}`, margin: "28px 0" }} />; }
 
 function NetWorthPanel({ d }: { d: FormData }) {
   const assets = parseFloat(d.assetsY1) || 0;
@@ -111,6 +113,7 @@ function NetWorthPanel({ d }: { d: FormData }) {
 export default function NetWorthPage() {
   const router = useRouter();
   const [d, setD] = useState<FormData>(EMPTY);
+  const [phase, setPhase] = useState<"hook" | "work">("hook");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -123,8 +126,7 @@ export default function NetWorthPage() {
       .then(json => {
         if (!json) return;
         const m = json.progress?.find((p: { module_slug: string }) => p.module_slug === "net-worth");
-        if (m?.data) { setD({ ...EMPTY, ...(m.data as Partial<FormData>) }); if (m.completed_at) setIsComplete(true); return; }
-        // Pre-populate from other modules
+        if (m?.data) { setD({ ...EMPTY, ...(m.data as Partial<FormData>) }); setPhase("work"); if (m.completed_at) setIsComplete(true); return; }
         const updates: Partial<FormData> = {};
         const credit = json.progress?.find((p: { module_slug: string }) => p.module_slug === "credit");
         if (credit?.data?.studentLoanBalance) updates.studentLoanBalance = String(credit.data.studentLoanBalance);
@@ -135,18 +137,19 @@ export default function NetWorthPage() {
       .catch(() => {});
   }, [router]);
 
-  // Auto-calculate totals
   useEffect(() => {
-    const assets = ["savingsY1", "investmentsY1", "vehicleValue", "otherAssets"]
-      .reduce((s, k) => s + (parseFloat(d[k as keyof FormData]) || 0), 0);
-    const liabilities = ["studentLoanBalance", "carLoan", "creditCardDebt", "otherDebts"]
-      .reduce((s, k) => s + (parseFloat(d[k as keyof FormData]) || 0), 0);
+    const assetKeys: (keyof FormData)[] = ["savingsY1", "investmentsY1", "vehicleValue", "otherAssets"];
+    const liabKeys: (keyof FormData)[] = ["studentLoanBalance", "carLoan", "creditCardDebt", "otherDebts"];
+    const anyAsset = assetKeys.some(k => d[k] !== "");
+    const anyLiab = liabKeys.some(k => d[k] !== "");
+    const assets = assetKeys.reduce((s, k) => s + (parseFloat(d[k]) || 0), 0);
+    const liabilities = liabKeys.reduce((s, k) => s + (parseFloat(d[k]) || 0), 0);
     const nw = assets - liabilities;
     setD(prev => ({
       ...prev,
-      assetsY1: assets > 0 ? assets.toFixed(0) : prev.assetsY1,
-      liabilitiesY1: liabilities > 0 ? liabilities.toFixed(0) : prev.liabilitiesY1,
-      netWorthY1: (assets > 0 || liabilities > 0) ? nw.toFixed(0) : prev.netWorthY1,
+      assetsY1: anyAsset ? assets.toFixed(0) : prev.assetsY1,
+      liabilitiesY1: anyLiab ? liabilities.toFixed(0) : prev.liabilitiesY1,
+      netWorthY1: (anyAsset || anyLiab) ? nw.toFixed(0) : prev.netWorthY1,
     }));
   }, [d.savingsY1, d.investmentsY1, d.vehicleValue, d.otherAssets, d.studentLoanBalance, d.carLoan, d.creditCardDebt, d.otherDebts]); // eslint-disable-line
 
@@ -177,189 +180,168 @@ export default function NetWorthPage() {
     setCompleting(false);
   };
 
+  const hasAnyAsset = !!(d.savingsY1 || d.investmentsY1 || d.vehicleValue || d.otherAssets);
+  const hasAnyLiab = !!(d.studentLoanBalance || d.carLoan || d.creditCardDebt || d.otherDebts);
+  const step2Unlocked = hasAnyAsset;
+  const step3Unlocked = step2Unlocked && hasAnyLiab;
+  const step4Unlocked = step3Unlocked;
+
+  const sidebar = (
+    <>
+      <NetWorthPanel d={d} />
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "18px 20px" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Reference</p>
+        {[
+          { href: "https://www.consumerfinance.gov/", label: "CFPB Financial Tools", sub: "Official federal financial education resources" },
+          { href: "https://www.nerdwallet.com/article/finance/net-worth-calculator", label: "NerdWallet Net Worth Calc", sub: "Cross-check your calculation" },
+        ].map(r => (
+          <a key={r.label} href={r.href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${BORDER}`, textDecoration: "none" }}>
+            <div style={{ width: 26, height: 26, borderRadius: 6, background: `${ACCENT}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>↗</div>
+            <div><p style={{ fontSize: 12, fontWeight: 600, color: ACCENT, marginBottom: 1 }}>{r.label}</p><p style={{ fontSize: 10, color: MUTED }}>{r.sub}</p></div>
+          </a>
+        ))}
+      </div>
+    </>
+  );
+
   return (
-    <main style={{ minHeight: "100vh", background: BG, fontFamily: "system-ui, sans-serif", color: INK }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 50, background: CARD, borderBottom: `1px solid ${BORDER}`, padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link href="/simulations/life-budget" style={{ fontSize: 12, fontWeight: 600, color: MUTED, textDecoration: "none" }}>← Life Budget</Link>
-        <span style={{ fontSize: 11, fontWeight: 700, color: INK, letterSpacing: "0.1em" }}>MODULE 10 · NET WORTH</span>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          {saving && <span style={{ fontSize: 11, color: FAINT }}>Saving…</span>}
-          {saved && !saving && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Saved</span>}
-          {isComplete
-            ? <span style={{ fontSize: 11, fontWeight: 700, color: GREEN, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 20, padding: "4px 12px" }}>✓ Complete</span>
-            : <button onClick={markComplete} disabled={!allFilled || completing} style={{ fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "5px 16px", border: "none", cursor: allFilled ? "pointer" : "not-allowed", background: allFilled ? ACCENT : BORDER, color: allFilled ? "#fff" : MUTED }}>
-                {completing ? "Saving…" : `Complete (${filledRequired}/${REQUIRED.length})`}
-              </button>}
-        </div>
-      </div>
+    <ModuleShell
+      moduleLabel="MODULE 10 · NET WORTH"
+      accent={ACCENT}
+      filledRequired={filledRequired}
+      totalRequired={REQUIRED.length}
+      isComplete={isComplete}
+      onMarkComplete={markComplete}
+      completing={completing}
+      saving={saving}
+      saved={saved}
+      phase={phase}
+      hookContent={<NetWorthHook onReady={() => { window.scrollTo(0, 0); setPhase("work"); }} />}
+      sidebarContent={sidebar}
+      nextHref="/simulations/life-budget/portfolio"
+      nextLabel="View Your Portfolio"
+    >
+      <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "36px 24px 80px", display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
-        <div>
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 800, color: INK, marginBottom: 4 }}>Net Worth & Future Self</h1>
-            <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-              The final calculation. Everything you own minus everything you owe. At 22, most people are negative — that&apos;s normal.
-              What matters is the direction and the rate of change.
-            </p>
-          </div>
-
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>Assets (what you own)</p>
-
-            <Row>
-              <Field>
-                <Lbl>Emergency / Savings Fund</Lbl>
-                <input value={d.savingsY1} onChange={up("savingsY1")} placeholder="e.g. 3000" type="number" style={inp(!!d.savingsY1)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>What you&apos;ll have saved by end of Year 1</p>
-              </Field>
-              <Field>
-                <Lbl>Retirement Investments (401k + Roth)</Lbl>
-                <input value={d.investmentsY1} onChange={up("investmentsY1")} placeholder="e.g. 4200" type="number" style={inp(!!d.investmentsY1)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>12 months × your monthly investing total</p>
-              </Field>
-            </Row>
-
-            <Row>
-              <Field>
-                <Lbl>Vehicle Value (if you own one)</Lbl>
-                <input value={d.vehicleValue} onChange={up("vehicleValue")} placeholder="e.g. 18000 or 0" type="number" style={inp(!!d.vehicleValue)} />
-              </Field>
-              <Field>
-                <Lbl>Other Assets</Lbl>
-                <input value={d.otherAssets} onChange={up("otherAssets")} placeholder="e.g. 0" type="number" style={inp(!!d.otherAssets)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Electronics, valuables, etc. — be conservative</p>
-              </Field>
-            </Row>
-
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 16px", marginBottom: 20 }}>
+        <SectionStep number={1} total={4} title="What you own" subtitle="Be conservative. Count things at what you could realistically sell them for today." isUnlocked={true} accent={ACCENT}>
+          <Row>
+            <Field>
+              <Lbl>Emergency / savings fund</Lbl>
+              <input value={d.savingsY1} onChange={up("savingsY1")} placeholder="e.g. 3000" type="number" style={inp(!!d.savingsY1)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>What you&apos;ll have saved by end of Year 1</p>
+            </Field>
+            <Field>
+              <Lbl>Retirement investments (401k + Roth)</Lbl>
+              <input value={d.investmentsY1} onChange={up("investmentsY1")} placeholder="e.g. 4200" type="number" style={inp(!!d.investmentsY1)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>12 months × your monthly investing total</p>
+            </Field>
+          </Row>
+          <Row>
+            <Field>
+              <Lbl>Vehicle value (if you own one)</Lbl>
+              <input value={d.vehicleValue} onChange={up("vehicleValue")} placeholder="e.g. 18000 or 0" type="number" style={inp(!!d.vehicleValue)} />
+            </Field>
+            <Field>
+              <Lbl>Other assets</Lbl>
+              <input value={d.otherAssets} onChange={up("otherAssets")} placeholder="e.g. 0" type="number" style={inp(!!d.otherAssets)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Electronics, valuables — be conservative</p>
+            </Field>
+          </Row>
+          {d.assetsY1 && (
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "12px 16px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700 }}>
-                <span style={{ color: INK }}>Total Assets</span>
-                <span style={{ color: GREEN }}>${parseFloat(d.assetsY1) > 0 ? parseFloat(d.assetsY1).toLocaleString() : "0"}</span>
+                <span style={{ color: INK }}>Total assets</span>
+                <span style={{ color: GREEN }}>${(parseFloat(d.assetsY1) || 0).toLocaleString()}</span>
               </div>
-            </div>
-
-            <Divider />
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>Liabilities (what you owe)</p>
-
-            <Row>
-              <Field>
-                <Lbl>Student Loan Balance</Lbl>
-                <input value={d.studentLoanBalance} onChange={up("studentLoanBalance")} placeholder="e.g. 32000 or 0" type="number" style={inp(!!d.studentLoanBalance)} />
-                <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Pre-populated from Module 7</p>
-              </Field>
-              <Field>
-                <Lbl>Car Loan Remaining</Lbl>
-                <input value={d.carLoan} onChange={up("carLoan")} placeholder="e.g. 18000 or 0" type="number" style={inp(!!d.carLoan)} />
-              </Field>
-            </Row>
-
-            <Row>
-              <Field>
-                <Lbl>Credit Card Debt</Lbl>
-                <input value={d.creditCardDebt} onChange={up("creditCardDebt")} placeholder="e.g. 0" type="number" style={inp(!!d.creditCardDebt)} />
-              </Field>
-              <Field>
-                <Lbl>Other Debts</Lbl>
-                <input value={d.otherDebts} onChange={up("otherDebts")} placeholder="e.g. 0" type="number" style={inp(!!d.otherDebts)} />
-              </Field>
-            </Row>
-
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "12px 16px", marginBottom: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700 }}>
-                <span style={{ color: INK }}>Total Liabilities</span>
-                <span style={{ color: "#dc2626" }}>${parseFloat(d.liabilitiesY1) > 0 ? parseFloat(d.liabilitiesY1).toLocaleString() : "0"}</span>
-              </div>
-            </div>
-
-            <Divider />
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>Projections</p>
-
-            <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
-              Use the investing projection from Module 9 and your expected savings rate to estimate where you&apos;ll be in 5 and 10 years.
-            </p>
-
-            <Row>
-              <Field>
-                <Lbl>Net Worth at Year 5 (estimate)</Lbl>
-                <input value={d.netWorthY5} onChange={up("netWorthY5")} placeholder="e.g. 45000" type="number" style={inp(!!d.netWorthY5)} />
-              </Field>
-              <Field>
-                <Lbl>Net Worth at Year 10 (estimate)</Lbl>
-                <input value={d.netWorthY10} onChange={up("netWorthY10")} placeholder="e.g. 180000" type="number" style={inp(!!d.netWorthY10)} />
-              </Field>
-            </Row>
-
-            <Divider />
-
-            <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 20 }}>Final reflection</p>
-
-            <Field>
-              <Lbl req>Biggest financial decision in this portfolio</Lbl>
-              <textarea value={d.biggestDecision} onChange={up("biggestDecision")}
-                placeholder="Which single decision in this portfolio will have the biggest long-term financial impact — your career choice, housing decision, investing early, education debt? Why?"
-                style={{ ...ta(!!d.biggestDecision), minHeight: 90 }} />
-            </Field>
-
-            <Field>
-              <Lbl>What would you do differently?</Lbl>
-              <textarea value={d.doOver} onChange={up("doOver")}
-                placeholder="If you could change one decision in this portfolio, what would it be and why?"
-                style={ta(!!d.doOver)} />
-            </Field>
-
-            <Field>
-              <Lbl req>Generational wealth reflection</Lbl>
-              <textarea value={d.reflection} onChange={up("reflection")}
-                placeholder="What does financial independence mean to you? What financial habits do you want to build from day one? What would it mean — for your family, your future — to build real wealth over time?"
-                style={{ ...ta(!!d.reflection), minHeight: 120 }} />
-            </Field>
-          </div>
-
-          {!isComplete && (
-            <div style={{ marginTop: 24 }}>
-              <button onClick={markComplete} disabled={!allFilled || completing} style={{ width: "100%", fontSize: 14, fontWeight: 700, borderRadius: 10, padding: "13px 0", border: "none", cursor: allFilled ? "pointer" : "not-allowed", background: allFilled ? ACCENT : BORDER, color: allFilled ? "#fff" : MUTED }}>
-                {completing ? "Saving…" : allFilled ? "Complete Portfolio — Download →" : `Fill required fields (${filledRequired} / ${REQUIRED.length} done)`}
-              </button>
             </div>
           )}
+        </SectionStep>
 
-          {isComplete && (
-            <div style={{ marginTop: 24, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 14, padding: "28px 32px", textAlign: "center" }}>
-              <p style={{ fontSize: 22, fontWeight: 900, color: GREEN, marginBottom: 6 }}>Portfolio Complete</p>
-              <p style={{ fontSize: 14, color: MUTED, marginBottom: 24, lineHeight: 1.5 }}>
-                All 10 modules done. Your personal finance portfolio is ready to download.
+        <SectionStep number={2} total={4} title="What you owe" subtitle="Student loans are pre-filled from Module 7. List everything." isUnlocked={step2Unlocked} accent={ACCENT}>
+          <Row>
+            <Field>
+              <Lbl>Student loan balance</Lbl>
+              <input value={d.studentLoanBalance} onChange={up("studentLoanBalance")} placeholder="e.g. 32000 or 0" type="number" style={inp(!!d.studentLoanBalance)} />
+              <p style={{ fontSize: 10, color: FAINT, marginTop: 4 }}>Pre-filled from Module 7</p>
+            </Field>
+            <Field>
+              <Lbl>Car loan remaining</Lbl>
+              <input value={d.carLoan} onChange={up("carLoan")} placeholder="e.g. 18000 or 0" type="number" style={inp(!!d.carLoan)} />
+            </Field>
+          </Row>
+          <Row>
+            <Field>
+              <Lbl>Credit card debt</Lbl>
+              <input value={d.creditCardDebt} onChange={up("creditCardDebt")} placeholder="e.g. 0" type="number" style={inp(!!d.creditCardDebt)} />
+            </Field>
+            <Field>
+              <Lbl>Other debts</Lbl>
+              <input value={d.otherDebts} onChange={up("otherDebts")} placeholder="e.g. 0" type="number" style={inp(!!d.otherDebts)} />
+            </Field>
+          </Row>
+          {d.liabilitiesY1 && (
+            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "12px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: INK }}>Total liabilities</span>
+                <span style={{ color: "#dc2626" }}>${(parseFloat(d.liabilitiesY1) || 0).toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+        </SectionStep>
+
+        <SectionStep number={3} total={4} title="Your net worth + projections" subtitle="Assets minus liabilities. Negative at 22 is normal — direction matters more than starting point." isUnlocked={step3Unlocked} accent={ACCENT}>
+          {d.netWorthY1 && (
+            <div style={{ padding: "20px 24px", background: parseFloat(d.netWorthY1) >= 0 ? "#f0fdf4" : "#fef2f2", border: `1px solid ${parseFloat(d.netWorthY1) >= 0 ? "#bbf7d0" : "#fecaca"}`, borderRadius: 10, marginBottom: 20, textAlign: "center" }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6 }}>Your net worth today</p>
+              <p style={{ fontSize: 32, fontWeight: 900, color: parseFloat(d.netWorthY1) >= 0 ? GREEN : "#dc2626" }}>
+                {parseFloat(d.netWorthY1) < 0 ? "−" : ""}${Math.abs(parseFloat(d.netWorthY1) || 0).toLocaleString()}
               </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                <Link href="/simulations/life-budget/portfolio" style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: "#fff", background: GREEN, borderRadius: 8, padding: "11px 28px", textDecoration: "none" }}>
-                  Download Portfolio →
-                </Link>
-                <Link href="/simulations/life-budget" style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: MUTED, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "11px 28px", textDecoration: "none" }}>
-                  Back to Hub
-                </Link>
-              </div>
+              {parseFloat(d.netWorthY1) < 0 && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Average 22-year-old is at −$26,000. You&apos;re not behind.</p>}
             </div>
           )}
-        </div>
+          <p style={{ fontSize: 13, color: MUTED, marginBottom: 20, lineHeight: 1.5 }}>
+            Use your Module 9 investing projection and expected savings rate to estimate where you&apos;ll be in 5 and 10 years.
+          </p>
+          <Row>
+            <Field>
+              <Lbl>Net worth at Year 5 (estimate)</Lbl>
+              <input value={d.netWorthY5} onChange={up("netWorthY5")} placeholder="e.g. 45000" type="number" style={inp(!!d.netWorthY5)} />
+            </Field>
+            <Field>
+              <Lbl>Net worth at Year 10 (estimate)</Lbl>
+              <input value={d.netWorthY10} onChange={up("netWorthY10")} placeholder="e.g. 180000" type="number" style={inp(!!d.netWorthY10)} />
+            </Field>
+          </Row>
+        </SectionStep>
 
-        <div style={{ position: "sticky", top: 64, display: "flex", flexDirection: "column", gap: 16 }}>
-          <NetWorthPanel d={d} />
-          <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "18px 20px" }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>Reference</p>
-            {[
-              { href: "https://www.consumerfinance.gov/", label: "CFPB Financial Tools", sub: "Official federal financial education resources" },
-              { href: "https://www.nerdwallet.com/article/finance/net-worth-calculator", label: "NerdWallet Net Worth Calc", sub: "Cross-check your calculation" },
-            ].map(r => (
-              <a key={r.label} href={r.href} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: 10, padding: "8px 0", borderBottom: `1px solid ${BORDER}`, textDecoration: "none" }}>
-                <div style={{ width: 26, height: 26, borderRadius: 6, background: `${ACCENT}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>↗</div>
-                <div><p style={{ fontSize: 12, fontWeight: 600, color: ACCENT, marginBottom: 1 }}>{r.label}</p><p style={{ fontSize: 10, color: MUTED }}>{r.sub}</p></div>
-              </a>
-            ))}
-          </div>
-        </div>
+        <SectionStep number={4} total={4} title="Final reflection — your capstone" subtitle="Ten modules. Thousands of decisions. What did you actually learn?" isUnlocked={step4Unlocked} accent={ACCENT}>
+          <Field>
+            <Lbl req>Which single decision in this portfolio will have the biggest long-term financial impact — and why?</Lbl>
+            <textarea value={d.biggestDecision} onChange={up("biggestDecision")}
+              placeholder="Your career choice, housing decision, investing early, education debt, emergency fund? Think about compounding effects over 20 years."
+              style={{ ...ta(!!d.biggestDecision), minHeight: 100 }} />
+          </Field>
+          <Field>
+            <Lbl req>Write a short note to your 35-year-old self about money</Lbl>
+            <textarea value={d.reflection} onChange={up("reflection")}
+              placeholder="What do you want your 35-year-old self to know about the financial decisions you're making at 22? What habits are you building? What are you most worried about? What are you most hopeful about?"
+              style={{ ...ta(!!d.reflection), minHeight: 120 }} />
+          </Field>
+          <Field>
+            <Lbl>What would you do differently if you could redesign this portfolio?</Lbl>
+            <textarea value={d.doOver} onChange={up("doOver")}
+              placeholder="If you could change one decision — career, housing, education path, anything — what would it be and why?"
+              style={ta(!!d.doOver)} />
+          </Field>
+          <Field>
+            <Lbl>Anything else you want to record</Lbl>
+            <textarea value={d.letterTo35} onChange={up("letterTo35")}
+              placeholder="Additional goals, commitments, things you want to revisit in 5 years…"
+              style={ta(!!d.letterTo35)} />
+          </Field>
+        </SectionStep>
+
       </div>
-    </main>
+    </ModuleShell>
   );
 }

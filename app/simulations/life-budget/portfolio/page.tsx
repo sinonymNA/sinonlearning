@@ -90,12 +90,14 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("Job Title", "jobTitle"),
         el("Industry / Employer Type", "industry"),
         el("City / State", "city"),
-        el("Education Required", "education"),
-        el("Starting Salary (BLS)", "startingSalary"),
-        el("Median Salary at 10 Years", "medianSalary"),
-        el("Job Outlook (10-year growth)", "jobOutlook"),
-        el("BLS Median Annual", "blsMedianAnnual"),
+        el("BLS Median Annual Salary", "blsMedianAnnual"),
+        el("Job Outlook (10-year growth)", "blsOutlook"),
+        el("Education Path", "path1Name"),
+        el("Chosen Path & Reason", "chosenPath"),
+        el("Starting Salary", "startingSalary"),
+        el("Gross Monthly Pay", "grossMonthly"),
         el("Why This Career", "whyThisCareer"),
+        el("Biggest Career Risk", "careerRisk"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -109,21 +111,21 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("401(k) Contribution", "retirement401k"),
         el("Other Deductions", "otherDeductions"),
         el("Net Monthly Take-Home", "netMonthly"),
-        el("Paycheck Reflection", "paycheckReflection"),
+        el("What Surprised You About Take-Home", "paycheckReflection"),
+        el("First Thing You'd Cut at −$200/mo", "cutFirst"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
     case "housing":
       return [
         el("City", "city"),
-        el("Housing Decision", "housingType"),
+        el("Housing Type", "housingType"),
         el("Monthly Rent / Mortgage", "monthlyPayment"),
         el("Utilities (estimated)", "utilities"),
-        el("Renters / Homeowners Insurance", "rentersInsurance"),
-        el("Security Deposit", "securityDeposit"),
         el("Total Monthly Housing Cost", "totalHousing"),
         el("Listing URL", "listingUrl"),
-        el("Housing Reflection", "housingReflection"),
+        el("Was This Realistic?", "housingReflection"),
+        el("Tradeoff You Made", "housingTradeoff"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -152,29 +154,35 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("Clothing", "clothing"),
         el("Savings", "savings"),
         el("Monthly Surplus / Deficit", "surplus"),
-        el("50/30/20 Notes", "budgetNotes"),
+        el("Does 50/30/20 Work for Your Life?", "budgetReflection"),
+        el("Where You're Most Likely to Overspend", "overspendPlan"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
     case "banking":
       return [
         el("Checking Account Bank", "checkingBank"),
-        el("Savings Account Bank", "savingsBank"),
+        el("Savings Account Bank (HYSA)", "savingsBank"),
         el("HYSA APY", "savingsAPY"),
         el("Emergency Fund Target (3–6 mo.)", "emergencyFundGoal"),
         el("Monthly Emergency Savings", "monthlyEmergency"),
         el("Months to Fully Funded", "monthsToFund"),
+        el("Why Bank Choice Matters", "bankingReflection"),
+        el("Specific Emergency You're Preparing For", "emergencyScenario"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
     case "credit":
       return [
         el("Estimated Starting Credit Score", "estimatedScore"),
+        el("Score Goal (2 years)", "scoreGoal"),
+        el("Score Factors", "scoreFactors"),
         el("Student Loan Balance", "studentLoanBalance"),
         el("Repayment Plan", "repaymentPlan"),
         el("Monthly Student Loan Payment", "studentLoanPayment"),
-        el("Credit Card Goal (limit & bank)", "creditCardGoal"),
-        el("Target Credit Score at Year 2", "scoreGoal"),
+        el("Credit Card Goal", "creditCardGoal"),
+        el("Reaction to Min. Payment Calculator", "creditReflection"),
+        el("Credit Building Plan (Year 1)", "creditBuildPlan"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -182,23 +190,28 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
       return [
         el("Health Plan Tier", "healthPlan"),
         el("Monthly Premium", "monthlyPremium"),
-        el("Annual Deductible", "deductible"),
+        el("Annual Deductible", "annualDeductible"),
         el("Out-of-Pocket Maximum", "oopMax"),
-        el("Renters / Homeowners Insurance", "propertyInsurance"),
+        el("Why This Tier", "chosenTierReason"),
+        el("Renters Insurance (monthly)", "rentersInsurance"),
         el("Auto Insurance (monthly)", "autoInsurance"),
         el("Total Monthly Insurance Cost", "totalInsurance"),
+        el("What an Appendectomy Would Cost You", "insuranceReflection"),
+        el("Could You Afford Your OOP Max?", "oopAffordable"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
     case "investing":
       return [
         el("401(k) Contribution Rate", "contribution401k"),
-        el("Employer Match", "employerMatch"),
-        el("Roth IRA Monthly Contribution", "rothContribution"),
+        el("Employer Match Rate", "employerMatch"),
+        el("Roth IRA Monthly Contribution", "rothMonthly"),
         el("Monthly Investment Total", "totalInvesting"),
         el("Projected Balance at Age 40", "projectedAt40"),
         el("Projected Balance at Age 65", "projectedAt65"),
-        el("Investment Strategy / Notes", "strategy"),
+        el("Investment Strategy / Fund Choice", "strategy"),
+        el("10-Year Delay Cost Reflection", "investingReflection"),
+        el("401k Match vs. Roth — Which First?", "rothVs401k"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -210,8 +223,9 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("Projected Net Worth (Year 5)", "netWorthY5"),
         el("Projected Net Worth (Year 10)", "netWorthY10"),
         el("Biggest Financial Decision", "biggestDecision"),
-        el("What I'd Do Differently", "doOver"),
-        el("Generational Wealth Reflection", "reflection"),
+        el("Note to Your 35-Year-Old Self", "reflection"),
+        el("What You'd Do Differently", "doOver"),
+        el("Additional Notes & Commitments", "letterTo35"),
       ].filter(Boolean) as React.ReactElement[];
 
     default:
