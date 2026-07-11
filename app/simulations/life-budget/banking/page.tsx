@@ -188,6 +188,10 @@ export default function BankingPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/credit"
       nextLabel="Module 7: Credit"
+      completionHighlights={[
+        { label: "HYSA account", value: d.savingsBank || "", sub: d.savingsAPY ? `${d.savingsAPY}% APY` : "" },
+        { label: "Emergency savings", value: d.monthlyEmergency ? `$${Math.round(parseFloat(d.monthlyEmergency)).toLocaleString()}/mo` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

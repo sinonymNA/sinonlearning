@@ -194,6 +194,10 @@ export default function CreditPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/insurance"
       nextLabel="Module 8: Insurance"
+      completionHighlights={[
+        { label: "Credit score", value: d.estimatedScore || "" },
+        { label: "Student loan balance", value: d.studentLoanBalance ? `$${Math.round(parseFloat(d.studentLoanBalance)).toLocaleString()}` : "", sub: d.studentLoanPayment ? `$${d.studentLoanPayment}/mo payment` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

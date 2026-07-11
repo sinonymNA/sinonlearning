@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 
 const BG     = "#f8fafc";
@@ -10,6 +11,12 @@ const INK    = "#0f172a";
 const MUTED  = "#64748b";
 const FAINT  = "#94a3b8";
 const GREEN  = "#16a34a";
+
+export interface CompletionHighlight {
+  label: string;
+  value: string;
+  sub?: string;
+}
 
 interface ModuleShellProps {
   moduleLabel: string;
@@ -27,6 +34,7 @@ interface ModuleShellProps {
   nextHref: string;
   nextLabel: string;
   children: ReactNode;
+  completionHighlights?: CompletionHighlight[];
 }
 
 export default function ModuleShell({
@@ -45,8 +53,19 @@ export default function ModuleShell({
   nextHref,
   nextLabel,
   children,
+  completionHighlights,
 }: ModuleShellProps) {
   const allFilled = filledRequired === totalRequired;
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const visibleHighlights = completionHighlights?.filter((h) => h.value) ?? [];
 
   return (
     <main style={{ minHeight: "100vh", background: BG, fontFamily: "system-ui, -apple-system, sans-serif", color: INK }}>
@@ -55,16 +74,19 @@ export default function ModuleShell({
       <div style={{
         position: "sticky", top: 0, zIndex: 50,
         background: CARD, borderBottom: `1px solid ${BORDER}`,
-        padding: "10px 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: isMobile ? "10px 16px" : "10px 24px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <Link href="/simulations/life-budget" style={{ fontSize: 12, fontWeight: 600, color: MUTED, textDecoration: "none" }}>
           ← Life Budget
         </Link>
-        <span style={{ fontSize: 11, fontWeight: 700, color: INK, letterSpacing: "0.1em" }}>{moduleLabel}</span>
+        {!isMobile && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: INK, letterSpacing: "0.1em" }}>{moduleLabel}</span>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {saving && <span style={{ fontSize: 11, color: FAINT }}>Saving…</span>}
           {saved && !saving && <span style={{ fontSize: 11, color: GREEN, fontWeight: 600 }}>✓ Saved</span>}
-          {phase === "hook" && (
+          {phase === "hook" && !isMobile && (
             <span style={{ fontSize: 11, color: FAINT }}>Finish the intro to unlock the form</span>
           )}
           {phase === "work" && (
@@ -97,16 +119,19 @@ export default function ModuleShell({
 
       {/* Hook phase — full width */}
       {phase === "hook" && (
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "48px 24px 80px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: isMobile ? "32px 16px 60px" : "48px 24px 80px" }}>
           {hookContent}
         </div>
       )}
 
-      {/* Work phase — two-column */}
+      {/* Work phase — two-column on desktop, stacked on mobile */}
       {phase === "work" && (
         <div style={{
-          maxWidth: 960, margin: "0 auto", padding: "36px 24px 80px",
-          display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start",
+          maxWidth: 960, margin: "0 auto",
+          padding: isMobile ? "24px 16px 60px" : "36px 24px 80px",
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 300px",
+          gap: 24, alignItems: "start",
         }}>
 
           {/* Main form column */}
@@ -146,6 +171,32 @@ export default function ModuleShell({
                 <p style={{ fontSize: 15, fontWeight: 800, color: GREEN, marginBottom: 6 }}>
                   ✓ Complete!
                 </p>
+
+                {visibleHighlights.length > 0 && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: isMobile || visibleHighlights.length === 1 ? "1fr" : "1fr 1fr",
+                    gap: 8,
+                    margin: "12px 0 16px",
+                    textAlign: "left",
+                  }}>
+                    {visibleHighlights.map((h, i) => (
+                      <div key={i} style={{
+                        background: "#fff",
+                        border: "1px solid #bbf7d0",
+                        borderRadius: 8,
+                        padding: "10px 14px",
+                      }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 3 }}>
+                          {h.label}
+                        </p>
+                        <p style={{ fontSize: 14, fontWeight: 700, color: INK }}>{h.value}</p>
+                        {h.sub && <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{h.sub}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <p style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>
                   Your data is saved. Head to the next module when you&apos;re ready.
                 </p>
@@ -162,8 +213,12 @@ export default function ModuleShell({
             )}
           </div>
 
-          {/* Sticky sidebar */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 64 }}>
+          {/* Sidebar — sticky on desktop, stacked below on mobile */}
+          <div style={{
+            display: "flex", flexDirection: "column", gap: 16,
+            position: isMobile ? "relative" : "sticky",
+            top: isMobile ? undefined : 64,
+          }}>
             {sidebarContent}
           </div>
         </div>

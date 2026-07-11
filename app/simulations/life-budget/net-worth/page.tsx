@@ -220,6 +220,10 @@ export default function NetWorthPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/portfolio"
       nextLabel="View Your Portfolio"
+      completionHighlights={[
+        { label: "Total assets", value: d.assetsY1 ? `$${Math.round(parseFloat(d.assetsY1)).toLocaleString()}` : "" },
+        { label: "Net worth (Y1)", value: d.netWorthY1 ? `${parseFloat(d.netWorthY1) < 0 ? "−" : ""}$${Math.abs(Math.round(parseFloat(d.netWorthY1))).toLocaleString()}` : "", sub: d.liabilitiesY1 ? `$${Math.round(parseFloat(d.liabilitiesY1)).toLocaleString()} in liabilities` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

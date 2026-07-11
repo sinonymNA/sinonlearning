@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HousingNarrativeLesson from "../lessons/HousingNarrativeLesson";
 
 const INK    = "#0f172a";
@@ -22,6 +22,13 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [selected, setSelected] = useState<CityName | null>(null);
   const [explored, setExplored] = useState<Set<CityName>>(new Set());
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   if (step === "terms") return <HousingNarrativeLesson onReady={onReady} />;
 
@@ -36,6 +43,11 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
 
   return (
     <div>
+      <style>{`
+        .lb-cta { transition: opacity 0.15s ease, transform 0.15s ease; }
+        .lb-cta:hover { opacity: 0.87; transform: translateY(-1px); }
+        .lb-cta:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+      `}</style>
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
           Before you start
@@ -89,7 +101,7 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
               {city.emoji} {city.name} — what it really takes
             </p>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
               <div style={{ background: "#fff", borderRadius: 10, padding: "14px", border: `1px solid ${BORDER}` }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                   Median 1BR Rent
@@ -129,6 +141,7 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
               Now find an actual listing in YOUR city and lock in your real numbers.
             </p>
             <button
+              className="lb-cta"
               onClick={() => setStep("terms")}
               style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",

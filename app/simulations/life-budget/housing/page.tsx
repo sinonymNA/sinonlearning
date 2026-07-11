@@ -245,6 +245,10 @@ export default function HousingPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget"
       nextLabel="Back to Life Budget Hub"
+      completionHighlights={[
+        { label: "Monthly housing", value: d.totalHousing ? `$${Math.round(parseFloat(d.totalHousing)).toLocaleString()}/mo` : "", sub: d.city || "" },
+        { label: "Housing type", value: d.housingType || "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

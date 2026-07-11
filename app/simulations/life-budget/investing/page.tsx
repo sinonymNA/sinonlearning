@@ -211,6 +211,10 @@ export default function InvestingPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/net-worth"
       nextLabel="Module 10: Net Worth"
+      completionHighlights={[
+        { label: "401(k) contribution", value: d.contribution401k ? `${d.contribution401k}% of gross` : "", sub: d.employerMatch ? `${d.employerMatch}% employer match` : "" },
+        { label: "Roth IRA", value: d.rothMonthly ? `$${Math.round(parseFloat(d.rothMonthly)).toLocaleString()}/mo` : "", sub: d.projectedAt65 ? `~$${Math.round(parseFloat(d.projectedAt65) / 1000)}k projected at 65` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

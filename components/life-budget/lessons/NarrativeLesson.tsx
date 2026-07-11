@@ -58,6 +58,9 @@ export default function NarrativeLesson({
         }
         .nb-beat { animation: nb-fadeup 0.45s ease; }
         .nb-narrative p + p { margin-top: 20px; }
+        .nb-btn { transition: opacity 0.15s ease, transform 0.15s ease; }
+        .nb-btn:hover { opacity: 0.87; transform: translateY(-1px); }
+        .nb-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
       `}</style>
 
       {/* Header */}
@@ -169,6 +172,7 @@ export default function NarrativeLesson({
       <div ref={endRef} style={{ textAlign: "center", paddingBottom: 8 }}>
         {!allRevealed ? (
           <button
+            className="nb-btn"
             onClick={advance}
             style={{
               fontSize: 14, fontWeight: 700, color: accent,
@@ -185,6 +189,7 @@ export default function NarrativeLesson({
               {ctaSubtitle}
             </p>
             <button
+              className="nb-btn"
               onClick={onReady}
               style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",

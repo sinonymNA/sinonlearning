@@ -47,6 +47,11 @@ export default function CareerHook({ onReady }: { onReady: () => void }) {
 
   return (
     <div>
+      <style>{`
+        .lb-cta { transition: opacity 0.15s ease, transform 0.15s ease; }
+        .lb-cta:hover { opacity: 0.87; transform: translateY(-1px); }
+        .lb-cta:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+      `}</style>
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
           Before you start
@@ -132,6 +137,7 @@ export default function CareerHook({ onReady }: { onReady: () => void }) {
             Now you know what to look for. Let&apos;s research your actual career.
           </p>
           <button
+            className="lb-cta"
             onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",

@@ -210,6 +210,15 @@ export default function BudgetPage() {
   const step4Unlocked = step3Unlocked && !!d.entertainment.trim();
   const step5Unlocked = step4Unlocked;
 
+  const budgetSurplus = (() => {
+    const net = parseFloat(d.netIncome) || 0;
+    if (!net) return "";
+    const spent = [d.housing, d.transportation, d.food, d.utilities, d.health, d.studentLoan, d.entertainment, d.clothing, d.diningOut, d.personalCare, d.emergencySavings, d.retirementExtra, d.otherSavings]
+      .reduce((s, v) => s + (parseFloat(v) || 0), 0);
+    const diff = net - spent;
+    return `${diff >= 0 ? "+" : "−"}$${Math.abs(diff).toFixed(0)}/mo`;
+  })();
+
   const sidebar = (
     <>
       <BudgetStatement d={d} />
@@ -244,6 +253,10 @@ export default function BudgetPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/banking"
       nextLabel="Module 6: Banking"
+      completionHighlights={[
+        { label: "Monthly income", value: d.netIncome ? `$${Math.round(parseFloat(d.netIncome)).toLocaleString()}/mo` : "" },
+        { label: "Budget balance", value: budgetSurplus },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

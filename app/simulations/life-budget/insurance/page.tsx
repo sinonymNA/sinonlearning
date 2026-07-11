@@ -199,6 +199,10 @@ export default function InsurancePage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/investing"
       nextLabel="Module 9: Investing"
+      completionHighlights={[
+        { label: "Health plan", value: d.healthPlan || "", sub: d.monthlyPremium ? `$${d.monthlyPremium}/mo premium` : "" },
+        { label: "Annual deductible", value: d.annualDeductible ? `$${Math.round(parseFloat(d.annualDeductible)).toLocaleString()}` : "", sub: d.oopMax ? `$${Math.round(parseFloat(d.oopMax)).toLocaleString()} OOP max` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

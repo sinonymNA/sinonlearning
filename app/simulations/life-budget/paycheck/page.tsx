@@ -278,6 +278,10 @@ export default function PaycheckPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/housing"
       nextLabel="Module 3: Housing"
+      completionHighlights={[
+        { label: "Gross pay", value: d.grossMonthly ? `$${Math.round(parseFloat(d.grossMonthly)).toLocaleString()}/mo` : "" },
+        { label: "Net take-home", value: d.netMonthly ? `$${Math.round(parseFloat(d.netMonthly)).toLocaleString()}/mo` : "", sub: d.gapAmount ? `$${Math.round(parseFloat(d.gapAmount)).toLocaleString()}/mo in deductions` : "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 

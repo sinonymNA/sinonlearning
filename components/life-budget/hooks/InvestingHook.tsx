@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InvestingNarrativeLesson from "../lessons/InvestingNarrativeLesson";
 
 const INK    = "#0f172a";
@@ -25,6 +25,13 @@ function compound(monthly: number, years: number, rate = RATE) {
 export default function InvestingHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [monthly, setMonthly] = useState(200);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   if (step === "terms") return <InvestingNarrativeLesson onReady={onReady} />;
 
@@ -63,6 +70,11 @@ export default function InvestingHook({ onReady }: { onReady: () => void }) {
 
   return (
     <div>
+      <style>{`
+        .lb-cta { transition: opacity 0.15s ease, transform 0.15s ease; }
+        .lb-cta:hover { opacity: 0.87; transform: translateY(-1px); }
+        .lb-cta:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+      `}</style>
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
           Before you start
@@ -130,7 +142,7 @@ export default function InvestingHook({ onReady }: { onReady: () => void }) {
         </div>
 
         {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
           <div style={{ background: GREEN + "0f", border: `1px solid ${GREEN}44`, borderRadius: 10, padding: "14px", textAlign: "center" }}>
             <p style={{ fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Alex at 65</p>
             <p style={{ fontSize: 18, fontWeight: 800, color: GREEN }}>{fmtK(alexTotal)}</p>
@@ -154,6 +166,7 @@ export default function InvestingHook({ onReady }: { onReady: () => void }) {
             Now set up YOUR investing plan — starting today.
           </p>
           <button
+            className="lb-cta"
             onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",

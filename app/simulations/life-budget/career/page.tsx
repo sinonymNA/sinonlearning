@@ -213,6 +213,10 @@ export default function CareerPage() {
       sidebarContent={sidebar}
       nextHref="/simulations/life-budget/paycheck"
       nextLabel="Module 2: First Paycheck"
+      completionHighlights={[
+        { label: "Starting salary", value: d.startingSalary ? `$${Math.round(parseFloat(d.startingSalary)).toLocaleString()}/yr` : "" },
+        { label: "Gross monthly", value: d.grossMonthly ? `$${Math.round(parseFloat(d.grossMonthly)).toLocaleString()}/mo` : "", sub: d.blsOutlook || "" },
+      ]}
     >
       <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: "32px 36px" }}>
 
