@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NarrativeLesson from "@/components/life-budget/lessons/NarrativeLesson";
+import { getStockUnit } from "@/data/stockCourse";
 import type { StockUnit } from "@/data/stockCourse";
 
 const INK = "#0f172a";
@@ -268,12 +269,13 @@ function MissionPhase({
 // ── Main viewer ────────────────────────────────────────────────────────────────
 
 interface StockLessonViewerProps {
-  unit: StockUnit;
+  slug: string;
   initiallyDone: boolean;
 }
 
-export default function StockLessonViewer({ unit, initiallyDone }: StockLessonViewerProps) {
+export default function StockLessonViewer({ slug, initiallyDone }: StockLessonViewerProps) {
   const router = useRouter();
+  const unit = getStockUnit(slug) as StockUnit;
   const [phase, setPhase] = useState<Phase>("hook");
   const [done, setDone] = useState(initiallyDone);
 
