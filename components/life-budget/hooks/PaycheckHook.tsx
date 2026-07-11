@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import PaycheckLesson from "../lessons/PaycheckLesson";
+import PaycheckLesson from "../lessons/PaycheckNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
