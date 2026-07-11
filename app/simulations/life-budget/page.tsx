@@ -160,7 +160,7 @@ export default async function LifeBudgetHubPage() {
         </div>
 
         {/* How it works */}
-        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ marginTop: 48, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
           {[
             { label: "Real research", body: "Every module sends you to actual government databases and financial sites — not made-up numbers." },
             { label: "Your numbers", body: "Your career, your city, your paycheck. No generic averages." },

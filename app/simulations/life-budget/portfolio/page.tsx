@@ -471,6 +471,16 @@ const PRINT_STYLES = `
     text-transform: uppercase;
   }
 
+  /* Mobile overrides */
+  @media (max-width: 767px) {
+    .screen-bar { padding: 10px 16px; }
+    .screen-bar-title { display: none; }
+    .portfolio-wrap { margin: 16px auto; padding: 28px 20px 48px; }
+    .cover-name { font-size: 28px; }
+    .field-grid { grid-template-columns: 1fr; }
+    .module-header { flex-wrap: wrap; }
+  }
+
   /* Print overrides */
   @media print {
     body { background: #fff !important; }
