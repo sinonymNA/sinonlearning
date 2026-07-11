@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowRight, BrainCircuit, Check, FileText, Orbit, ShieldCheck, Sparkles, UserRoundCheck, WandSparkles, Workflow } from "lucide-react";
 import KoraLogo from "@/components/KoraLogo";
+import KoraSpaceScene from "./KoraSpaceScene";
 
 const capabilities = [
   { icon: FileText, index: "01", title: "Understands the lesson", copy: "KORA reads the objective, source material, structure, and cognitive demand—not just the words on a slide." },
@@ -33,21 +33,14 @@ function Reveal({ children, delay = 0, className = "" }: { children: React.React
 }
 
 export default function KoraModelPage() {
-  const reduced = useReducedMotion();
-
   return (
     <main className="kora-space min-h-screen overflow-hidden bg-[#05040b] text-[#f7f4ff] selection:bg-violet-400/35">
       <style jsx global>{`
-        @keyframes kora-spin { to { transform: rotate(360deg) scale(1.02); } }
-        @keyframes kora-pulse { 50% { opacity: .6; transform: scale(1.06); } }
-        .kora-star { animation: kora-spin 80s linear infinite; }
-        .kora-glow { animation: kora-pulse 5s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .kora-star, .kora-glow { animation: none; } }
+        .kora-title { font-family: Arial Black, Arial, sans-serif; font-stretch: expanded; }
       `}</style>
 
       <section className="relative min-h-[100svh] border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_76%,rgba(124,58,237,.25),transparent_38%),linear-gradient(180deg,#081020_0%,#05040b_66%)]" />
-        <div className="absolute inset-0 opacity-50" style={{ backgroundImage: "radial-gradient(circle,rgba(255,255,255,.7) 0 1px,transparent 1.5px)", backgroundSize: "97px 97px" }} />
         <nav className="relative z-30 mx-auto flex max-w-7xl items-center justify-between border-b border-white/10 px-6 py-5 lg:px-8">
           <KoraLogo width={118} className="brightness-0 invert" />
           <div className="hidden items-center gap-8 text-[11px] font-semibold uppercase tracking-[.2em] text-white/55 md:flex">
@@ -60,7 +53,7 @@ export default function KoraModelPage() {
 
         <div className="relative z-20 mx-auto flex max-w-5xl flex-col items-center px-6 pt-16 text-center sm:pt-20">
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-semibold uppercase tracking-[.45em] text-violet-200">Teacher-centered intelligence</motion.p>
-          <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, delay: .1 }} className="mt-6 font-display text-6xl font-medium tracking-[-.04em] text-white sm:text-8xl lg:text-[7.5rem]">KORA</motion.h1>
+          <motion.h1 initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .8, delay: .1 }} className="kora-title mt-6 bg-gradient-to-b from-white via-violet-100 to-violet-400 bg-clip-text text-6xl font-black tracking-[.18em] text-transparent drop-shadow-[0_0_35px_rgba(167,139,250,.35)] sm:text-8xl lg:text-[7rem]">KORA</motion.h1>
           <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .7, delay: .2 }} className="mt-5 max-w-2xl text-base leading-7 text-white/62 sm:text-lg">A teacher-centered AI system that turns instructional intent into classroom-ready drafts—powered by Claude, directed by educators, and governed by principles that keep judgment human.</motion.p>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .35 }} className="mt-8 flex flex-wrap justify-center gap-3">
             <a href="#system" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-xs font-black uppercase tracking-[.12em] text-[#080611]">Explore the system <ArrowDown size={14} /></a>
@@ -68,11 +61,8 @@ export default function KoraModelPage() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 mx-auto -mt-2 h-[44vw] min-h-[330px] max-h-[620px] max-w-[1180px] overflow-hidden">
-          <div className="kora-glow absolute left-1/2 top-1/2 h-[62%] w-[62%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/30 blur-[90px]" />
-          <motion.div animate={reduced ? undefined : { y: [0, -8, 0] }} transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }} className="absolute inset-0">
-            <Image src="/kora-purple-star.png" alt="A luminous violet star burning in deep space" fill priority className="kora-star object-contain object-center" sizes="100vw" />
-          </motion.div>
+        <div className="relative z-10 mx-auto -mt-6 h-[48vw] min-h-[390px] max-h-[670px] w-full max-w-[1400px] overflow-hidden">
+          <KoraSpaceScene />
         </div>
         <div className="absolute bottom-6 left-6 z-20 text-[10px] uppercase tracking-[.28em] text-white/30">KORA / System 01</div>
         <div className="absolute bottom-6 right-6 z-20 text-[10px] uppercase tracking-[.28em] text-white/30">Powered by Claude</div>
