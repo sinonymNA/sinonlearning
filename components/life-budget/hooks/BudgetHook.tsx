@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import BudgetLesson from "../lessons/BudgetLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -37,8 +38,11 @@ const ROWS: { key: keyof Alloc; label: string; target: number; color: string }[]
 ];
 
 export default function BudgetHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [alloc, setAlloc] = useState<Alloc>({ needs: 50, wants: 30, savings: 20 });
   const [tried, setTried] = useState(false);
+
+  if (step === "terms") return <BudgetLesson onReady={onReady} />;
 
   const handleChange = (key: keyof Alloc, val: number) => {
     setTried(true);
@@ -154,14 +158,14 @@ export default function BudgetHook({ onReady }: { onReady: () => void }) {
             Now apply this framework to YOUR actual income and expenses.
           </p>
           <button
-            onClick={onReady}
+            onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",
               background: ACCENT, border: "none",
               borderRadius: 10, padding: "14px 36px", cursor: "pointer",
             }}
           >
-            Build My Real Budget →
+            Next: Learn the Terms →
           </button>
         </div>
       </div>

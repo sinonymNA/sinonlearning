@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import CreditLesson from "../lessons/CreditLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -45,7 +46,10 @@ function calcFixedPmt(balance: number, apr: number, pmt: number) {
 }
 
 export default function CreditHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [balance, setBalance] = useState(3000);
+
+  if (step === "terms") return <CreditLesson onReady={onReady} />;
 
   const minResult = calcMinPmt(balance, APR, MIN_PCT);
   const fixedResult = calcFixedPmt(balance, APR, FIXED_PMT);
@@ -175,14 +179,14 @@ export default function CreditHook({ onReady }: { onReady: () => void }) {
             Now let&apos;s document your actual credit picture so it never sneaks up on you.
           </p>
           <button
-            onClick={onReady}
+            onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",
               background: ACCENT, border: "none",
               borderRadius: 10, padding: "14px 36px", cursor: "pointer",
             }}
           >
-            Document My Credit →
+            Next: Learn the Terms →
           </button>
         </div>
       </div>

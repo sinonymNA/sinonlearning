@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PaycheckLesson from "../lessons/PaycheckLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -24,7 +25,10 @@ const TOTAL_DEDUCTIONS = DEDUCTIONS.reduce((s, d) => s + d.amount, 0);
 const TAKE_HOME = GROSS - TOTAL_DEDUCTIONS;
 
 export default function PaycheckHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [revealed, setRevealed] = useState<Set<DeductionId>>(new Set());
+
+  if (step === "terms") return <PaycheckLesson onReady={onReady} />;
 
   const reveal = (id: DeductionId) => {
     setRevealed((prev) => new Set([...prev, id]));
@@ -170,14 +174,14 @@ export default function PaycheckHook({ onReady }: { onReady: () => void }) {
               Now let&apos;s calculate what actually happens with YOUR paycheck.
             </p>
             <button
-              onClick={onReady}
+              onClick={() => setStep("terms")}
               style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",
                 background: ACCENT, border: "none",
                 borderRadius: 10, padding: "14px 36px", cursor: "pointer",
               }}
             >
-              Calculate My Paycheck →
+              Next: Learn the Terms →
             </button>
           </div>
         )}

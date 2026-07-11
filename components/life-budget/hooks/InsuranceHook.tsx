@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import InsuranceLesson from "../lessons/InsuranceLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -71,7 +72,10 @@ const PLANS: Plan[] = [
 ];
 
 export default function InsuranceHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  if (step === "terms") return <InsuranceLesson onReady={onReady} />;
 
   const scenario = SCENARIOS.find((s) => s.id === selectedId);
 
@@ -174,14 +178,14 @@ export default function InsuranceHook({ onReady }: { onReady: () => void }) {
           </p>
           {selectedId && (
             <button
-              onClick={onReady}
+              onClick={() => setStep("terms")}
               style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",
                 background: ACCENT, border: "none",
                 borderRadius: 10, padding: "14px 36px", cursor: "pointer",
               }}
             >
-              Choose My Insurance →
+              Next: Learn the Terms →
             </button>
           )}
         </div>

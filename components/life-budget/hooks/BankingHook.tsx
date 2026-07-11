@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import BankingLesson from "../lessons/BankingLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -21,7 +22,10 @@ function futureValue(monthly: number, rate: number, years: number) {
 }
 
 export default function BankingHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [monthly, setMonthly] = useState(200);
+
+  if (step === "terms") return <BankingLesson onReady={onReady} />;
 
   const regularFV = futureValue(monthly, REGULAR_RATE, YEARS);
   const hysaFV = futureValue(monthly, HYSA_RATE, YEARS);
@@ -136,14 +140,14 @@ export default function BankingHook({ onReady }: { onReady: () => void }) {
             Now let&apos;s pick your actual checking and savings accounts.
           </p>
           <button
-            onClick={onReady}
+            onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",
               background: ACCENT, border: "none",
               borderRadius: 10, padding: "14px 36px", cursor: "pointer",
             }}
           >
-            Set Up My Banking →
+            Next: Learn the Terms →
           </button>
         </div>
       </div>

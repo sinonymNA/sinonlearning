@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import InvestingLesson from "../lessons/InvestingLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -22,7 +23,10 @@ function compound(monthly: number, years: number, rate = RATE) {
 }
 
 export default function InvestingHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [monthly, setMonthly] = useState(200);
+
+  if (step === "terms") return <InvestingLesson onReady={onReady} />;
 
   const alexYears  = END_AGE - START_YOUNG;
   const jordanYears = END_AGE - START_OLD;
@@ -150,14 +154,14 @@ export default function InvestingHook({ onReady }: { onReady: () => void }) {
             Now set up YOUR investing plan — starting today.
           </p>
           <button
-            onClick={onReady}
+            onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",
               background: ACCENT, border: "none",
               borderRadius: 10, padding: "14px 36px", cursor: "pointer",
             }}
           >
-            Start My Investment Plan →
+            Next: Learn the Terms →
           </button>
         </div>
       </div>

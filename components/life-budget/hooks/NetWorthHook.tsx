@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NetWorthLesson from "../lessons/NetWorthLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -37,7 +38,10 @@ const CARDS = [
 ] as const;
 
 export default function NetWorthHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [revealedCount, setRevealedCount] = useState(0);
+
+  if (step === "terms") return <NetWorthLesson onReady={onReady} />;
 
   const reveal = () => {
     if (revealedCount < CARDS.length) setRevealedCount((n) => n + 1);
@@ -124,14 +128,14 @@ export default function NetWorthHook({ onReady }: { onReady: () => void }) {
                 Ready to calculate where you actually stand?
               </p>
               <button
-                onClick={onReady}
+                onClick={() => setStep("terms")}
                 style={{
                   fontSize: 15, fontWeight: 700, color: "#fff",
                   background: ACCENT, border: "none",
                   borderRadius: 10, padding: "14px 36px", cursor: "pointer",
                 }}
               >
-                Calculate My Net Worth →
+                Next: Learn the Terms →
               </button>
             </div>
           </>

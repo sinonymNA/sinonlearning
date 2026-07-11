@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import HousingLesson from "../lessons/HousingLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -18,8 +19,11 @@ const CITIES = [
 type CityName = (typeof CITIES)[number]["name"];
 
 export default function HousingHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [selected, setSelected] = useState<CityName | null>(null);
   const [explored, setExplored] = useState<Set<CityName>>(new Set());
+
+  if (step === "terms") return <HousingLesson onReady={onReady} />;
 
   const click = (name: CityName) => {
     setSelected(name);
@@ -125,14 +129,14 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
               Now find an actual listing in YOUR city and lock in your real numbers.
             </p>
             <button
-              onClick={onReady}
+              onClick={() => setStep("terms")}
               style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",
                 background: ACCENT, border: "none",
                 borderRadius: 10, padding: "14px 36px", cursor: "pointer",
               }}
             >
-              Find My Place →
+              Next: Learn the Terms →
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import CareerLesson from "../lessons/CareerLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -30,8 +31,11 @@ const CARDS: Card[] = [
 ];
 
 export default function CareerHook({ onReady }: { onReady: () => void }) {
+  const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [answers, setAnswers] = useState<Record<number, "myth" | "fact" | null>>({ 0: null, 1: null, 2: null });
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
+
+  if (step === "terms") return <CareerLesson onReady={onReady} />;
 
   const answer = (index: number, choice: "myth" | "fact") => {
     if (revealed.has(index)) return;
@@ -128,14 +132,14 @@ export default function CareerHook({ onReady }: { onReady: () => void }) {
             Now you know what to look for. Let&apos;s research your actual career.
           </p>
           <button
-            onClick={onReady}
+            onClick={() => setStep("terms")}
             style={{
               fontSize: 15, fontWeight: 700, color: "#fff",
               background: ACCENT, border: "none",
               borderRadius: 10, padding: "14px 36px", cursor: "pointer",
             }}
           >
-            Research My Career →
+            Next: Learn the Terms →
           </button>
         </div>
       )}
