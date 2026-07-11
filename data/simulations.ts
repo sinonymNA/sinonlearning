@@ -69,6 +69,16 @@ export const simulations: SimulationCatalogEntry[] = [
     subject: "Personal Finance",
     status: "Available",
   },
+  {
+    slug: "take-a-star",
+    number: 7,
+    title: "TAKE A STAR: Navigate the Indian Ocean",
+    tagline: "Walk the deck, sight the noon sun, and use an astrolabe to hold your course toward Calicut.",
+    description:
+      "Step aboard a Portuguese vessel in 1500 and become its apprentice navigator. Take three readings on a moving deck, calculate latitude, and discover how knowledge moving between Greek, Islamic, and European worlds helped reshape maritime power in an Indian Ocean already connected by trade.",
+    subject: "AP World History",
+    status: "Available",
+  },
 ];
 
 export function getSimulationBySlug(slug: string): SimulationCatalogEntry | undefined {
