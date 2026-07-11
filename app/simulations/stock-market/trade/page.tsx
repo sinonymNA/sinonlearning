@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const INK = "#0f172a", MUTED = "#64748b", FAINT = "#94a3b8";
@@ -65,7 +65,7 @@ function StatBox({ label, value, sub }: { label: string; value: string; sub?: st
   );
 }
 
-export default function TradePage() {
+function TradePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isMobile, setIsMobile] = useState(false);
@@ -544,5 +544,13 @@ export default function TradePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TradePage() {
+  return (
+    <Suspense fallback={<div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}><p style={{ color: "#94a3b8", fontSize: 14 }}>Loading…</p></div>}>
+      <TradePageInner />
+    </Suspense>
   );
 }
