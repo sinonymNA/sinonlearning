@@ -53,9 +53,9 @@ function ModuleSection({
         <div
           className="module-status"
           style={{
-            background: completed ? "#052e16" : started ? "rgba(245,158,11,0.1)" : "#1e293b",
-            color: completed ? "#4ade80" : started ? "#f59e0b" : "#475569",
-            border: `1px solid ${completed ? "#166534" : started ? "rgba(245,158,11,0.3)" : "#334155"}`,
+            background: completed ? "#f0fdf4" : started ? "#fffbeb" : "#f5f5f5",
+            color: completed ? "#15803d" : started ? "#b45309" : "#78716c",
+            border: `1px solid ${completed ? "#bbf7d0" : started ? "#fde68a" : "#ddd5c8"}`,
           }}
         >
           {completed ? "✓ Complete" : started ? "In Progress" : "Not started"}
@@ -94,6 +94,7 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("Starting Salary (BLS)", "startingSalary"),
         el("Median Salary at 10 Years", "medianSalary"),
         el("Job Outlook (10-year growth)", "jobOutlook"),
+        el("BLS Median Annual", "blsMedianAnnual"),
         el("Why This Career", "whyThisCareer"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
@@ -108,6 +109,7 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("401(k) Contribution", "retirement401k"),
         el("Other Deductions", "otherDeductions"),
         el("Net Monthly Take-Home", "netMonthly"),
+        el("Paycheck Reflection", "paycheckReflection"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -117,9 +119,11 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
         el("Housing Decision", "housingType"),
         el("Monthly Rent / Mortgage", "monthlyPayment"),
         el("Utilities (estimated)", "utilities"),
-        el("Renters Insurance", "rentersInsurance"),
+        el("Renters / Homeowners Insurance", "rentersInsurance"),
         el("Security Deposit", "securityDeposit"),
         el("Total Monthly Housing Cost", "totalHousing"),
+        el("Listing URL", "listingUrl"),
+        el("Housing Reflection", "housingReflection"),
         el("Notes", "notes"),
       ].filter(Boolean) as React.ReactElement[];
 
@@ -215,25 +219,15 @@ function renderModuleFields(slug: string, d: Record<string, unknown>): React.Rea
   }
 }
 
-// ── print styles ──────────────────────────────────────────────────────────────
+// ── styles (screen = paper look; print = clean white document) ────────────────
 
 const PRINT_STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --navy: #0d1117;
-    --surface: #161b22;
-    --border: #21262d;
-    --muted: #64748b;
-    --text: #e2e8f0;
-  }
-
   body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: #0d1117;
-    color: #e2e8f0;
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #ccc0aa;
+    color: #1c1917;
     min-height: 100vh;
   }
 
@@ -241,91 +235,130 @@ const PRINT_STYLES = `
     position: sticky;
     top: 0;
     z-index: 100;
-    background: #0d1117;
-    border-bottom: 1px solid #21262d;
-    padding: 14px 32px;
+    background: #faf8f3;
+    border-bottom: 1px solid #ddd5c8;
+    padding: 12px 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
 
-  .screen-bar-left { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; color: #64748b; }
-  .screen-bar-title { font-size: 13px; font-weight: 900; letter-spacing: 0.15em; color: #e2e8f0; }
+  .screen-bar-left {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #78716c;
+    text-decoration: none;
+    font-family: system-ui, sans-serif;
+  }
+  .screen-bar-left:hover { color: #1c1917; }
+
+  .screen-bar-title {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.22em;
+    color: #1c1917;
+    font-family: system-ui, sans-serif;
+  }
 
   .print-btn {
-    background: #10b981;
+    background: #15803d;
     color: #fff;
     border: none;
     border-radius: 9999px;
     padding: 8px 20px;
     font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     cursor: pointer;
+    font-family: system-ui, sans-serif;
     transition: opacity 0.15s;
   }
   .print-btn:hover { opacity: 0.85; }
 
+  /* The portfolio document — looks like paper on screen */
   .portfolio-wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 48px 32px 80px;
+    max-width: 820px;
+    margin: 32px auto;
+    background: #faf8f3;
+    border: 1px solid #ddd5c8;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
+    padding: 56px 64px 80px;
   }
 
   /* Cover */
   .cover {
-    border-bottom: 1px solid #21262d;
+    border-bottom: 2px solid #1c1917;
     padding-bottom: 40px;
     margin-bottom: 48px;
   }
   .cover-eyebrow {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.3em;
-    color: #10b981;
-    margin-bottom: 12px;
+    letter-spacing: 0.32em;
+    color: #15803d;
+    margin-bottom: 16px;
+    font-family: system-ui, sans-serif;
+    text-transform: uppercase;
   }
   .cover-name {
-    font-size: 48px;
+    font-size: 42px;
     font-weight: 900;
-    letter-spacing: -1px;
+    letter-spacing: -0.5px;
     line-height: 1;
-    color: #e2e8f0;
-    margin-bottom: 8px;
+    color: #1c1917;
+    margin-bottom: 6px;
+    font-family: system-ui, sans-serif;
   }
   .cover-meta {
-    font-size: 14px;
-    color: #64748b;
-    margin-bottom: 24px;
+    font-size: 12px;
+    color: #78716c;
+    margin-bottom: 28px;
+    font-family: system-ui, sans-serif;
   }
   .cover-stats {
     display: flex;
-    gap: 32px;
+    gap: 40px;
     flex-wrap: wrap;
-    margin-top: 24px;
+    margin-top: 20px;
   }
-  .cover-stat { }
-  .cover-stat-num { font-size: 32px; font-weight: 900; color: #10b981; }
-  .cover-stat-label { font-size: 10px; font-weight: 600; color: #64748b; letter-spacing: 0.15em; margin-top: 2px; }
+  .cover-stat-num {
+    font-size: 32px;
+    font-weight: 900;
+    color: #15803d;
+    font-family: system-ui, sans-serif;
+    line-height: 1;
+  }
+  .cover-stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #78716c;
+    letter-spacing: 0.16em;
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-family: system-ui, sans-serif;
+  }
 
   .cover-bar {
-    margin-top: 24px;
-    height: 4px;
-    background: #21262d;
-    border-radius: 9999px;
+    margin-top: 28px;
+    height: 3px;
+    background: #ddd5c8;
+    border-radius: 0;
     overflow: hidden;
   }
   .cover-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #10b981, #3b82f6);
-    border-radius: 9999px;
+    background: #15803d;
+    border-radius: 0;
   }
 
   /* Module sections */
   .module-section {
-    border-left: 3px solid #21262d;
+    border-left: 3px solid #ddd5c8;
     padding-left: 20px;
-    margin-bottom: 40px;
+    margin-bottom: 44px;
+    page-break-inside: avoid;
   }
 
   .module-header {
@@ -336,97 +369,128 @@ const PRINT_STYLES = `
   }
 
   .module-number {
-    min-width: 32px;
-    height: 32px;
+    min-width: 30px;
+    height: 30px;
     border-radius: 9999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 900;
-    color: #000;
+    color: #fff;
     flex-shrink: 0;
     margin-top: 2px;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.05em;
   }
 
   .module-title-block { flex: 1; }
-  .module-title { font-size: 18px; font-weight: 900; margin-bottom: 2px; }
-  .module-subtitle { font-size: 12px; color: #64748b; }
+  .module-title {
+    font-size: 17px;
+    font-weight: 900;
+    margin-bottom: 2px;
+    font-family: system-ui, sans-serif;
+  }
+  .module-subtitle {
+    font-size: 11px;
+    color: #78716c;
+    font-family: system-ui, sans-serif;
+    font-style: italic;
+  }
 
   .module-status {
     font-size: 9px;
-    font-weight: 600;
+    font-weight: 700;
     border-radius: 9999px;
     padding: 3px 10px;
     white-space: nowrap;
     flex-shrink: 0;
     margin-top: 4px;
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.08em;
   }
 
   .field-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 24px;
+    gap: 6px 32px;
   }
 
   .field-row {
-    border-bottom: 1px solid #1e293b;
-    padding-bottom: 7px;
+    border-bottom: 1px solid #ddd5c8;
+    padding: 6px 0;
   }
 
   .field-label {
     display: block;
-    font-size: 9px;
+    font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    color: #475569;
+    letter-spacing: 0.16em;
+    color: #78716c;
     text-transform: uppercase;
     margin-bottom: 2px;
+    font-family: system-ui, sans-serif;
   }
 
   .field-value {
     display: block;
     font-size: 13px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: #1c1917;
+    font-family: system-ui, sans-serif;
   }
 
   .module-empty {
     font-size: 12px;
-    color: #334155;
+    color: #a8a29e;
     font-style: italic;
+    font-family: system-ui, sans-serif;
   }
 
   .module-date {
-    margin-top: 12px;
-    font-size: 10px;
-    color: #4ade80;
+    margin-top: 10px;
+    font-size: 9px;
+    color: #15803d;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    font-family: system-ui, sans-serif;
+    text-transform: uppercase;
   }
 
   /* Print overrides */
   @media print {
-    body { background: #fff !important; color: #111 !important; }
+    body { background: #fff !important; }
+
     .screen-bar { display: none !important; }
-    .portfolio-wrap { padding: 0; }
-    .cover-eyebrow { color: #059669 !important; }
-    .cover-name { color: #111 !important; }
-    .cover-meta { color: #6b7280 !important; }
-    .cover-stat-num { color: #059669 !important; }
-    .cover-stat-label { color: #6b7280 !important; }
-    .cover-bar { background: #e5e7eb !important; }
-    .module-section { border-left-width: 3px; page-break-inside: avoid; }
-    .module-title { }
-    .module-subtitle { color: #6b7280 !important; }
+
+    .portfolio-wrap {
+      margin: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+    }
+
+    .cover { border-bottom-color: #1c1917 !important; }
+    .cover-eyebrow { color: #15803d !important; }
+    .cover-name { color: #1c1917 !important; }
+    .cover-meta { color: #78716c !important; }
+    .cover-stat-num { color: #15803d !important; }
+    .cover-bar { background: #ddd5c8 !important; }
+    .cover-bar-fill { background: #15803d !important; }
+
+    .module-section { border-left-width: 3px; }
     .module-number { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .field-row { border-color: #e5e7eb !important; }
-    .field-label { color: #9ca3af !important; }
-    .field-value { color: #111 !important; }
-    .module-empty { color: #9ca3af !important; }
+    .module-subtitle { color: #78716c !important; }
+    .field-row { border-color: #ddd5c8 !important; }
+    .field-label { color: #78716c !important; }
+    .field-value { color: #1c1917 !important; }
+    .module-empty { color: #a8a29e !important; }
     .module-status { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .module-date { color: #059669 !important; }
+    .module-date { color: #15803d !important; }
 
     @page {
-      margin: 0.75in 0.75in 0.75in 0.75in;
+      margin: 0.75in;
       size: letter portrait;
     }
   }
@@ -457,8 +521,8 @@ export default function PortfolioPage() {
 
   if (loading) {
     return (
-      <div style={{ background: "#0d1117", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: "#64748b", fontSize: 13, letterSpacing: "0.1em" }}>Loading portfolio…</div>
+      <div style={{ background: "#ccc0aa", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "#78716c", fontSize: 13, letterSpacing: "0.1em", fontFamily: "system-ui, sans-serif" }}>Loading portfolio…</div>
       </div>
     );
   }
@@ -486,14 +550,14 @@ export default function PortfolioPage() {
         </button>
       </div>
 
-      {/* Portfolio document */}
+      {/* Portfolio document — looks like paper on screen */}
       <div className="portfolio-wrap">
 
         {/* Cover */}
         <div className="cover">
-          <p className="cover-eyebrow">PERSONAL FINANCE PORTFOLIO · EVERYDAY ECONOMICS</p>
+          <p className="cover-eyebrow">Personal Finance Portfolio · Everyday Economics</p>
           <h1 className="cover-name">{name}</h1>
-          <p className="cover-meta">Prepared {today} · Sinonlearning</p>
+          <p className="cover-meta">Prepared {today}</p>
 
           <div className="cover-stats">
             <div className="cover-stat">
