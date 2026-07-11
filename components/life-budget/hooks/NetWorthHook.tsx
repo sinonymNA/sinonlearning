@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import NetWorthLesson from "../lessons/NetWorthLesson";
+import NetWorthNarrativeLesson from "../lessons/NetWorthNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -41,7 +41,7 @@ export default function NetWorthHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [revealedCount, setRevealedCount] = useState(0);
 
-  if (step === "terms") return <NetWorthLesson onReady={onReady} />;
+  if (step === "terms") return <NetWorthNarrativeLesson onReady={onReady} />;
 
   const reveal = () => {
     if (revealedCount < CARDS.length) setRevealedCount((n) => n + 1);

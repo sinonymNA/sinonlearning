@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import CreditLesson from "../lessons/CreditLesson";
+import CreditNarrativeLesson from "../lessons/CreditNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -49,7 +49,7 @@ export default function CreditHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [balance, setBalance] = useState(3000);
 
-  if (step === "terms") return <CreditLesson onReady={onReady} />;
+  if (step === "terms") return <CreditNarrativeLesson onReady={onReady} />;
 
   const minResult = calcMinPmt(balance, APR, MIN_PCT);
   const fixedResult = calcFixedPmt(balance, APR, FIXED_PMT);

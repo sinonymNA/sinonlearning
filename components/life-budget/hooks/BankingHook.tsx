@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import BankingLesson from "../lessons/BankingLesson";
+import BankingNarrativeLesson from "../lessons/BankingNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -25,7 +25,7 @@ export default function BankingHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [monthly, setMonthly] = useState(200);
 
-  if (step === "terms") return <BankingLesson onReady={onReady} />;
+  if (step === "terms") return <BankingNarrativeLesson onReady={onReady} />;
 
   const regularFV = futureValue(monthly, REGULAR_RATE, YEARS);
   const hysaFV = futureValue(monthly, HYSA_RATE, YEARS);

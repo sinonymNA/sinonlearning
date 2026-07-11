@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import BudgetLesson from "../lessons/BudgetLesson";
+import BudgetNarrativeLesson from "../lessons/BudgetNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -42,7 +42,7 @@ export default function BudgetHook({ onReady }: { onReady: () => void }) {
   const [alloc, setAlloc] = useState<Alloc>({ needs: 50, wants: 30, savings: 20 });
   const [tried, setTried] = useState(false);
 
-  if (step === "terms") return <BudgetLesson onReady={onReady} />;
+  if (step === "terms") return <BudgetNarrativeLesson onReady={onReady} />;
 
   const handleChange = (key: keyof Alloc, val: number) => {
     setTried(true);

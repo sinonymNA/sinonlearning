@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import InvestingLesson from "../lessons/InvestingLesson";
+import InvestingNarrativeLesson from "../lessons/InvestingNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -26,7 +26,7 @@ export default function InvestingHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [monthly, setMonthly] = useState(200);
 
-  if (step === "terms") return <InvestingLesson onReady={onReady} />;
+  if (step === "terms") return <InvestingNarrativeLesson onReady={onReady} />;
 
   const alexYears  = END_AGE - START_YOUNG;
   const jordanYears = END_AGE - START_OLD;

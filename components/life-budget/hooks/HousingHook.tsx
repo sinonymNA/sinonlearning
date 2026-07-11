@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import HousingLesson from "../lessons/HousingLesson";
+import HousingNarrativeLesson from "../lessons/HousingNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -23,7 +23,7 @@ export default function HousingHook({ onReady }: { onReady: () => void }) {
   const [selected, setSelected] = useState<CityName | null>(null);
   const [explored, setExplored] = useState<Set<CityName>>(new Set());
 
-  if (step === "terms") return <HousingLesson onReady={onReady} />;
+  if (step === "terms") return <HousingNarrativeLesson onReady={onReady} />;
 
   const click = (name: CityName) => {
     setSelected(name);

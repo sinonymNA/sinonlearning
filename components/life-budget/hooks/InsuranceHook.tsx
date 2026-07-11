@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import InsuranceLesson from "../lessons/InsuranceLesson";
+import InsuranceNarrativeLesson from "../lessons/InsuranceNarrativeLesson";
 
 const INK    = "#0f172a";
 const MUTED  = "#64748b";
@@ -75,7 +75,7 @@ export default function InsuranceHook({ onReady }: { onReady: () => void }) {
   const [step, setStep] = useState<"interactive" | "terms">("interactive");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  if (step === "terms") return <InsuranceLesson onReady={onReady} />;
+  if (step === "terms") return <InsuranceNarrativeLesson onReady={onReady} />;
 
   const scenario = SCENARIOS.find((s) => s.id === selectedId);
 
