@@ -116,7 +116,7 @@ const moreTools: Tool[] = [
   },
   {
     slug: "personal-finance-tools",
-    href: "/simulations/stock-market-basics",
+    href: "/simulations/stock-market",
     status: "live",
     bgClass: "bg-gradient-to-br from-emerald-500 to-emerald-700",
     logo: <Coins size={44} strokeWidth={1.75} className="text-white" />,
