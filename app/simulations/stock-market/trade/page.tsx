@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import StockChart from "@/components/stock-market/StockChart";
 
 const INK = "#0f172a", MUTED = "#64748b", FAINT = "#94a3b8";
 const CARD = "#ffffff", BORDER = "#e2e8f0", BG = "#f8fafc";
@@ -409,6 +410,9 @@ function TradePageInner() {
                 </div>
               )}
             </div>
+
+            {/* Chart */}
+            {quote && <StockChart ticker={ticker} />}
 
             {/* Stats */}
             {(fundamentals || profile?.marketCapitalization) && (
