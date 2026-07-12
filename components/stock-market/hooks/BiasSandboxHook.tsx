@@ -101,12 +101,12 @@ export default function BiasSandboxHook({ accent }: Props) {
     return (
       <div style={{
         background: BG, border: `1px solid ${BORDER}`,
-        borderRadius: 14, padding: "24px", textAlign: "center",
+        borderRadius: 14, padding: "clamp(14px, 4vw, 24px)", textAlign: "center",
       }}>
         <p style={{ fontSize: 11, fontWeight: 700, color: accent, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 12 }}>
           Bias Sandbox — Results
         </p>
-        <p style={{ fontSize: 42, fontWeight: 900, color, lineHeight: 1, marginBottom: 6 }}>
+        <p style={{ fontSize: "clamp(32px, 9vw, 42px)", fontWeight: 900, color, lineHeight: 1, marginBottom: 6 }}>
           {avoided} / 3
         </p>
         <p style={{ fontSize: 14, fontWeight: 700, color, marginBottom: 16 }}>
@@ -120,7 +120,7 @@ export default function BiasSandboxHook({ accent }: Props) {
   return (
     <div style={{
       background: BG, border: `1px solid ${BORDER}`,
-      borderRadius: 14, padding: "24px",
+      borderRadius: 14, padding: "clamp(14px, 4vw, 24px)",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <p style={{

@@ -3519,7 +3519,8 @@ const U10_BEATS: StoryBeat[] = [
     visual: (
       <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10, padding: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#0369a1", marginBottom: 12 }}>Rule of 72 — Years to Double Your Money</div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 260 }}>
           <thead>
             <tr style={{ background: "#0369a1", color: "#fff" }}>
               <th style={{ padding: "6px 10px", textAlign: "left" }}>Annual Return</th>
@@ -3537,6 +3538,7 @@ const U10_BEATS: StoryBeat[] = [
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     ),
     check: {
@@ -4252,8 +4254,8 @@ const U11_BEATS: StoryBeat[] = [
     visual: (
       <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: 10, padding: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#475569", marginBottom: 10 }}>How TIPS Protect Against Inflation</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 12 }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 140px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: 12 }}>
             <div style={{ fontWeight: 700, fontSize: 12, color: "#dc2626", marginBottom: 6 }}>Regular Treasury Bond</div>
             <div style={{ fontSize: 11, color: "#64748b" }}>
               <div>Principal: <b>$1,000</b> (fixed forever)</div>
@@ -4261,7 +4263,7 @@ const U11_BEATS: StoryBeat[] = [
               <div>Buying power: <b style={{ color: "#dc2626" }}>$744</b></div>
             </div>
           </div>
-          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: 12 }}>
+          <div style={{ flex: "1 1 140px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: 12 }}>
             <div style={{ fontWeight: 700, fontSize: 12, color: "#16a34a", marginBottom: 6 }}>TIPS Bond</div>
             <div style={{ fontSize: 11, color: "#64748b" }}>
               <div>Principal: <b>$1,000</b> (adjusts with CPI)</div>

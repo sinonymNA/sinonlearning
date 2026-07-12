@@ -129,7 +129,8 @@ export default function NarrativeLesson({
                 background: "#fff",
                 border: "1px solid #e2e8f0",
                 borderRadius: 12,
-                overflow: "hidden",
+                overflowX: "auto",
+                overflowY: "hidden",
                 marginBottom: 20,
               }}>
                 {beat.visual}

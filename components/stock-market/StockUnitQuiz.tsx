@@ -46,10 +46,10 @@ export default function StockUnitQuiz({ unitNum, accent, quiz, onComplete }: Pro
     const color = pct >= 0.8 ? "#16a34a" : pct >= 0.6 ? "#d97706" : "#dc2626";
     const label = pct >= 0.8 ? "Excellent!" : pct >= 0.6 ? "Good effort!" : "Keep reviewing!";
     return (
-      <div style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", paddingBottom: 40 }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", textAlign: "center", paddingBottom: 40, paddingLeft: 16, paddingRight: 16, boxSizing: "border-box" }}>
         <div style={{
           background: "#fff", border: "1px solid #e2e8f0",
-          borderRadius: 16, padding: "40px 32px", marginBottom: 24,
+          borderRadius: 16, padding: "clamp(20px, 5vw, 40px) clamp(16px, 5vw, 32px)", marginBottom: 24,
         }}>
           <p style={{
             fontSize: 11, fontWeight: 700, color: accent,
@@ -57,7 +57,7 @@ export default function StockUnitQuiz({ unitNum, accent, quiz, onComplete }: Pro
           }}>
             Unit {unitNum} Quiz Complete
           </p>
-          <p style={{ fontSize: 52, fontWeight: 900, color, lineHeight: 1, marginBottom: 6 }}>
+          <p style={{ fontSize: "clamp(36px, 10vw, 52px)", fontWeight: 900, color, lineHeight: 1, marginBottom: 6 }}>
             {score} / {quiz.length}
           </p>
           <p style={{ fontSize: 16, fontWeight: 700, color, marginBottom: 28 }}>{label}</p>
@@ -90,7 +90,7 @@ export default function StockUnitQuiz({ unitNum, accent, quiz, onComplete }: Pro
   const isAnswered = selected !== null;
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ maxWidth: 560, margin: "0 auto", paddingBottom: 40, paddingLeft: 16, paddingRight: 16, boxSizing: "border-box" }}>
       <style>{`
         .sq-choice:not(:disabled):hover { filter: brightness(0.96); }
       `}</style>

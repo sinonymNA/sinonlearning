@@ -34,7 +34,7 @@ export default function InflationEroderHook({ accent }: Props) {
   return (
     <div style={{
       background: BG, border: `1px solid ${BORDER}`,
-      borderRadius: 14, padding: "24px",
+      borderRadius: 14, padding: "clamp(14px, 4vw, 24px)",
     }}>
       <p style={{
         fontSize: 11, fontWeight: 700, color: accent,

@@ -27,11 +27,12 @@ function HookPhase({ unit, onNext }: { unit: StockUnit; onNext: () => void }) {
   const { hook, accent } = unit;
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 40, paddingLeft: 16, paddingRight: 16, boxSizing: "border-box" }}>
       <style>{`
         .sm-btn { transition: opacity 0.15s ease, transform 0.15s ease; }
         .sm-btn:hover { opacity: 0.87; transform: translateY(-1px); }
         .sm-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+        @media (min-width: 480px) { .sm-hook-outer { padding-left: 24px !important; padding-right: 24px !important; } }
       `}</style>
 
       <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -41,14 +42,14 @@ function HookPhase({ unit, onNext }: { unit: StockUnit; onNext: () => void }) {
         }}>
           Unit {unit.num} · Before you start
         </p>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: INK, marginBottom: 20, lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: "clamp(20px, 5vw, 28px)", fontWeight: 800, color: INK, marginBottom: 20, lineHeight: 1.2 }}>
           {hook.title}
         </h1>
       </div>
 
       {/* Story setup */}
       <div style={{
-        fontSize: 16, lineHeight: 1.75, color: INK,
+        fontSize: "clamp(14px, 4vw, 16px)", lineHeight: 1.75, color: INK,
         marginBottom: 28,
       }}>
         {hook.setup}
@@ -94,7 +95,7 @@ function HookPhase({ unit, onNext }: { unit: StockUnit; onNext: () => void }) {
             }
           `}</style>
           <p style={{
-            fontSize: 38, fontWeight: 900, color: accent,
+            fontSize: "clamp(24px, 8vw, 38px)", fontWeight: 900, color: accent,
             letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 4,
           }}>
             {hook.reveal.stat}
@@ -152,7 +153,7 @@ function MissionPhase({
   const { mission, accent, num } = unit;
 
   return (
-    <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ maxWidth: 640, margin: "0 auto", paddingBottom: 40, paddingLeft: 16, paddingRight: 16, boxSizing: "border-box" }}>
       <style>{`
         .sm-btn { transition: opacity 0.15s ease, transform 0.15s ease; }
         .sm-btn:hover { opacity: 0.87; transform: translateY(-1px); }
@@ -166,10 +167,10 @@ function MissionPhase({
         }}>
           Unit {num} · Apply It
         </p>
-        <h2 style={{ fontSize: 24, fontWeight: 800, color: INK, marginBottom: 12, lineHeight: 1.25 }}>
+        <h2 style={{ fontSize: "clamp(20px, 5vw, 24px)", fontWeight: 800, color: INK, marginBottom: 12, lineHeight: 1.25 }}>
           {mission.title}
         </h2>
-        <p style={{ fontSize: 15, color: MUTED, maxWidth: 500, margin: "0 auto", lineHeight: 1.65 }}>
+        <p style={{ fontSize: "clamp(13px, 3.5vw, 15px)", color: MUTED, maxWidth: 500, margin: "0 auto", lineHeight: 1.65 }}>
           {mission.description}
         </p>
       </div>

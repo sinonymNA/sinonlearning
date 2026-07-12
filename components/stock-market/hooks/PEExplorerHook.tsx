@@ -26,7 +26,7 @@ export default function PEExplorerHook({ accent }: Props) {
   return (
     <div style={{
       background: BG, border: `1px solid ${BORDER}`,
-      borderRadius: 14, padding: "24px",
+      borderRadius: 14, padding: "clamp(14px, 4vw, 24px)",
     }}>
       <p style={{
         fontSize: 11, fontWeight: 700, color: accent,
@@ -41,7 +41,7 @@ export default function PEExplorerHook({ accent }: Props) {
       {/* Live price display */}
       <div style={{ textAlign: "center", marginBottom: 24 }}>
         <p style={{ fontSize: 11, color: MUTED, fontWeight: 600, marginBottom: 4 }}>Stock Price</p>
-        <p style={{ fontSize: 52, fontWeight: 900, color: accent, lineHeight: 1, letterSpacing: "-0.03em" }}>
+        <p style={{ fontSize: "clamp(36px, 10vw, 52px)", fontWeight: 900, color: accent, lineHeight: 1, letterSpacing: "-0.03em" }}>
           ${price.toFixed(2)}
         </p>
         <p style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
