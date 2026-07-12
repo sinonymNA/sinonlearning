@@ -90,10 +90,12 @@ const apps: MarqueeApp[] = [
     mark: <CitrusIcon size={30} strokeWidth={1.6} className="text-amber-500" />,
   },
   {
-    href: "/simulations/stock-market-basics",
+    href: "/simulations/stock-market",
     label: "Stock Market",
-    sub: "Portfolio game",
-    mark: <TrendingUp size={30} strokeWidth={1.6} className="text-emerald-600" />,
+    sub: "Investing simulator",
+    mark: (
+      <Image src="/stock-market-logo.png" alt="Stock Market Simulation" width={60} height={60} style={{ width: 60, height: 60, objectFit: "contain" }} />
+    ),
   },
   {
     href: "/textbooks",

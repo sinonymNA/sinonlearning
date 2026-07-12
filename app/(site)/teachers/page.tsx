@@ -9,6 +9,18 @@ import SliderLogo from "@/components/SliderLogo";
 import ReelLogo from "@/components/ReelLogo";
 import { SITE_URL } from "@/lib/seo";
 
+function StockMarketMark() {
+  return (
+    <Image
+      src="/stock-market-logo.png"
+      alt="Stock Market Simulation"
+      width={140}
+      height={140}
+      style={{ width: 140, height: 140, objectFit: "contain" }}
+    />
+  );
+}
+
 export const metadata: Metadata = {
   title: "Teachers — Sinon Learning",
   description:
@@ -67,6 +79,17 @@ const tools = [
     logoSub: "Classroom Display",
     name: "Dash",
     tagline: "Live agenda, timer, student randomizer, polls, and exit tickets — the front-of-room display for your classroom.",
+  },
+  {
+    slug: "stock-market",
+    href: "/simulations/stock-market",
+    status: "live" as const,
+    bgClass: "bg-white",
+    logo: <StockMarketMark />,
+    logoSubClass: "text-[#2d5a1b]",
+    logoSub: "Investing Simulator",
+    name: "Stock Market Simulation",
+    tagline: "Start with $100,000 in virtual cash, trade real stocks with live prices, and complete 11 units of investing coursework — from 'what is a stock?' to bonds and compounding.",
   },
   {
     slug: "slider",

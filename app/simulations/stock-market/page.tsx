@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 const INK = "#0f172a", MUTED = "#64748b", FAINT = "#94a3b8";
 const CARD = "#ffffff", BORDER = "#e2e8f0", DARK = "#0f172a";
@@ -95,9 +96,23 @@ export default function StockMarketDashboard() {
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
-          Portfolio Overview
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
+          <Image
+            src="/stock-market-logo.png"
+            alt="Stock Market Simulation"
+            width={48}
+            height={48}
+            style={{ width: 48, height: 48, objectFit: "contain" }}
+          />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#16a34a", letterSpacing: "0.04em", marginBottom: 1 }}>
+              Stock Market Simulation
+            </p>
+            <p style={{ fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              — — — Portfolio Overview — — —
+            </p>
+          </div>
+        </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
           <h1 style={{ fontSize: 40, fontWeight: 800, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
             ${fmt(portfolio?.totalValue ?? 100000)}
