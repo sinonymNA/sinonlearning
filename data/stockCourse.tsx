@@ -192,6 +192,89 @@ const U1_BEATS: StoryBeat[] = [
         "Amazon's four splits (2:1 in 1998, 3:1 in 1999, 2:1 in 1999, 20:1 in 2022) mean 100 shares bought at IPO became 2,400 shares. At $211/share, that's $506,400 from a $1,800 investment. Understanding splits prevents you from thinking a high share price means you can't afford a stock — you can often buy fractional shares anyway.",
     },
   },
+  {
+    narrative: (
+      <>
+        <p>
+          In August 2018, Apple became the first company in history to reach a{" "}
+          <B>$1 trillion</B> market capitalization. Four years later, it hit{" "}
+          <B>$3 trillion</B> — more than the entire GDP of France. Yet Apple&apos;s stock
+          price alone tells you nothing about its size. At $230/share, Apple looks{" "}
+          &ldquo;cheaper&rdquo; per share than many small regional companies trading at
+          $500 or $600.
+        </p>
+        <p>
+          Market capitalization — price × shares outstanding — is the real measure of a
+          company&apos;s size. A stock priced at $5 with 5 billion shares has a $25 billion
+          market cap, larger than a stock priced at $500 with 1 million shares ($500 million
+          cap). Comparing stock prices is meaningless. Comparing market caps tells you what
+          the world thinks each company is actually worth.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Market Capitalization",
+      definition:
+        "Market Cap = Stock Price × Shares Outstanding. It measures the total market value of a company's equity. Companies are classified by size: mega-cap (>$200B), large-cap ($10B–$200B), mid-cap ($2B–$10B), small-cap ($300M–$2B), micro-cap (<$300M). Market cap changes every second as the stock price moves. It reflects what buyers and sellers collectively agree the entire company is worth right now — not what the company earns, owns, or is theoretically worth.",
+      impact:
+        "Apple's market cap of $3.3 trillion means owning every Apple share would cost $3.3 trillion. Amazon ($2.2T), Microsoft ($3.1T), and Nvidia ($3.0T) are in the same tier. Meanwhile, Macy's — a recognizable American brand — has a market cap of about $3 billion, a thousand times smaller than Apple. A single stock's price is meaningless without context. Two companies both priced at $50/share can have vastly different market caps: one with 100 million shares ($5B company), another with 10 billion shares ($500B company).",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 2012, Apple had accumulated <B>$97 billion</B> in cash — more than most
+          countries&apos; government budgets. Investors complained: a pile of idle cash is
+          dead money. Apple&apos;s board responded by initiating one of the most aggressive
+          share buyback programs in corporate history. By 2024, Apple had repurchased over{" "}
+          <B>$770 billion</B> of its own stock — more than any company in history.
+        </p>
+        <p>
+          The math is elegant: Apple had roughly <B>26 billion shares</B> outstanding in 2012.
+          Through buybacks, that number shrank to under <B>15 billion</B> today. Each remaining
+          share now represents a larger slice of the same company. Even if Apple&apos;s total
+          profits stayed flat, earnings <I>per share</I> would rise — because the earnings are
+          divided among fewer shares. Buybacks are one of the most powerful tools for silently
+          increasing shareholder value.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Stock Buybacks",
+      definition:
+        "A buyback (or share repurchase) occurs when a company uses cash to buy its own shares on the open market, then retires them. This reduces shares outstanding, increasing each remaining share's ownership percentage and earnings per share (EPS). If net income stays flat but shares outstanding fall 5%, EPS rises 5%. Companies use buybacks as an alternative to dividends — they're more tax-efficient for investors and more flexible for the company (dividends create an expectation; buybacks don't). Companies can pause buybacks in bad years.",
+      impact:
+        "Apple's buyback program from 2012–2024 ($770 billion) is the largest in corporate history. In 2023 alone, Apple bought back $85 billion in shares — more than the market cap of most S&P 500 companies. Warren Buffett, Apple's largest external shareholder, has called Apple's buybacks 'enormously beneficial' to Berkshire — as Apple buys back shares, Berkshire's percentage ownership increases without spending a dollar. When Apple shrinks its share count from 26B to 15B, every remaining shareholder automatically owns a larger percentage of the same business.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          When Lehman Brothers collapsed in September 2008, Goldman Sachs was under siege.
+          Institutional clients were pulling money. Goldman&apos;s stock had fallen <B>40%</B>.
+          The firm needed a signal — something to tell the market it wasn&apos;t Lehman.
+          They called Warren Buffett.
+        </p>
+        <p>
+          Buffett agreed to invest <B>$5 billion</B> — but not in common stock. He demanded{" "}
+          <I>preferred shares</I>: a guaranteed <B>10% annual dividend</B> ($500 million/year),
+          the right to be repaid his $5B before any common shareholder in a liquidation, and
+          warrants to buy $5B in common stock later at a fixed price. He took almost no risk
+          while common shareholders took enormous risk. Same company. Completely different deal.
+          This is the difference between common and preferred stock.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Common vs. Preferred Stock",
+      definition:
+        "Common stock is the standard ownership share: voting rights on corporate matters, dividends if declared by the board, and residual claim on assets after all debts and preferred shareholders are paid. It benefits most from company growth. Preferred stock is a hybrid between stock and bond: it pays a fixed dividend that must be paid before common dividends, it has priority over common stock in bankruptcy liquidation, but typically has no voting rights and limited upside if the company soars. Preferred stock is issued to institutional investors, venture capitalists, or in special negotiated deals.",
+      impact:
+        "Buffett's preferred shares earned Goldman Sachs the stamp of approval they needed — if Buffett was willing to put in $5B, Goldman must be okay. The stock stabilized and recovered. Buffett collected $500M/year in dividends while waiting, then converted his warrants into Goldman common stock at a profit of over $3 billion. Common shareholders nearly got wiped out in 2008; preferred shareholders like Buffett were protected throughout. Most publicly traded 'stock' is common stock. When you see Berkshire Class A ($650,000/share) and Class B ($430/share), those are different share classes with different voting rights — another way companies structure equity ownership.",
+    },
+  },
 ];
 
 const U1: StockUnit = {
@@ -350,6 +433,89 @@ const U2_BEATS: StoryBeat[] = [
         "An index is a calculated number that tracks the combined performance of a group of stocks. The S&P 500 is market-cap weighted — Apple (the largest company) has more influence on the index than a smaller company. The Dow Jones is price-weighted — a $500 stock affects it more than a $50 stock, regardless of company size. Indices themselves can't be traded directly, but index funds and ETFs track them, letting investors own the whole basket.",
       impact:
         "From 1957 to 2024, the S&P 500 has returned an average of about 10.5% per year — including crashes, wars, recessions, and pandemics. $10,000 invested in 1957 would be worth roughly $5 million today. The index has never permanently failed to recover from any crash in its history. This is why so many investors simply buy the index and hold.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          There are two main stock exchanges in the United States: the <B>NYSE</B> (New York
+          Stock Exchange) and the <B>NASDAQ</B>. The NYSE, founded in 1792 under a buttonwood
+          tree on Wall Street, is the oldest and most prestigious. For most of its history,
+          stocks were traded by human specialists on a physical floor. NASDAQ, founded in 1971,
+          was the world&apos;s first fully electronic stock market — no floor, no specialists,
+          just computers matching buyers and sellers.
+        </p>
+        <p>
+          The distinction matters. Most of America&apos;s oldest industrial companies —
+          JPMorgan, Walmart, Disney — list on the NYSE. Most technology companies — Apple,
+          Microsoft, Amazon, Nvidia, Meta — list on NASDAQ. When the media says &ldquo;the
+          stock market&rdquo; is up or down, they usually mean both. But knowing which exchange
+          a company lists on tells you something about what kind of company it is.
+        </p>
+      </>
+    ),
+    term: {
+      name: "NYSE vs. NASDAQ",
+      definition:
+        "NYSE (New York Stock Exchange): the world's largest stock exchange by market cap (~$25 trillion), known for its physical trading floor and blue-chip listings. Uses Designated Market Makers (DMMs) to ensure orderly trading. NASDAQ: the world's second-largest exchange, created in 1971 as the first electronic market. Known for technology company listings. Both exchanges use automated systems today — the NYSE floor is largely ceremonial. Stocks are listed on one primary exchange but trade across many electronic venues simultaneously.",
+      impact:
+        "When Apple moved from OTC markets to the NASDAQ in 1980, it was a statement: NASDAQ was where technology companies grew up. Today, the five largest companies by market cap (Apple, Microsoft, Nvidia, Amazon, Meta) all trade on NASDAQ. The NYSE is home to JPMorgan, Goldman Sachs, Walmart, Berkshire Hathaway, and ExxonMobil. This is why the 'tech-heavy NASDAQ' and the 'blue-chip Dow Jones' can diverge dramatically: NASDAQ swings harder in tech cycles; the NYSE is more tied to the traditional economy.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          After Black Monday in 1987 — the cascade you read about at the start of this unit —
+          regulators asked a simple question: how do we prevent a machine-driven waterfall from
+          ever happening again? Their solution was the <I>circuit breaker</I>. If the S&P 500
+          falls <B>7%</B> in a single day, trading halts for 15 minutes. If it falls{" "}
+          <B>13%</B>, another 15-minute halt. If it falls <B>20%</B>, trading stops for the
+          rest of the day entirely.
+        </p>
+        <p>
+          The circuit breakers were tested for real in March 2020, when COVID-19 triggered the
+          fastest bear market in history. The S&P 500 hit the 7% circuit breaker and halted{" "}
+          <B>four times</B> in one week. The pauses gave algorithms and humans alike a moment
+          to breathe, preventing the automated death spiral of 1987. Markets still fell 34%
+          over several weeks — but gradually, not all at once.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Circuit Breakers",
+      definition:
+        "Circuit breakers are automatic trading halts triggered when markets fall too fast. Market-wide levels: Level 1 (−7%): 15-minute halt; Level 2 (−13%): 15-minute halt; Level 3 (−20%): market closes for the day. Individual stocks also have circuit breakers, typically halting trading if a single stock moves more than 5–10% in a 5-minute window (called Limit Up-Limit Down, or LULD). Circuit breakers were introduced in 1988 following the Black Monday crash, specifically designed to interrupt automated cascades and give humans time to assess the situation.",
+      impact:
+        "On March 16, 2020, the S&P 500 fell 12% — one of the largest single-day declines in modern history. Circuit breakers triggered twice. Trading continued after halts. Contrast with March 1987 when no circuit breakers existed and markets simply kept falling until the close. Researchers estimate circuit breakers prevent 3–5 additional percentage points of decline in extreme events by interrupting the self-reinforcing automated selling cascade. The price: brief liquidity freezes during the halts, which can be jarring but are far preferable to unchecked freefall.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          On October 3, 2022, Apple&apos;s stock rose <B>2.1%</B> on average volume —
+          barely worth noting. Then on November 3, 2023, Apple fell <B>2.1%</B> on volume{" "}
+          <B>3× higher than normal</B> — over 180 million shares traded versus the typical
+          60 million. That same 2.1% decline on 3× volume was significant: it signaled
+          institutional conviction, not random noise.
+        </p>
+        <p>
+          Volume is the market&apos;s truth detector. A price move on high volume is confirmed —
+          many participants agreed on the new price. A price move on low volume is suspect —
+          a handful of large trades briefly pushed the price, but the rest of the market
+          isn&apos;t convinced yet. Watching price <I>and</I> volume together tells you whether
+          a move is real or a temporary blip.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Trading Volume",
+      definition:
+        "Volume is the number of shares traded in a given period. Average daily volume (ADV) is the typical number traded per day, usually measured over 30 or 90 days. Relative volume = today's volume ÷ average volume. A relative volume of 1× is normal; 2×+ is elevated; 5×+ is extreme and signals a major event (earnings surprise, news, acquisition rumor). Rising prices on rising volume confirms a trend. Rising prices on falling volume may be a false move. Volume is the market's way of 'voting' on whether a price change is meaningful.",
+      impact:
+        "GameStop's short squeeze in January 2021 was visible in the volume data before it became news. On January 22, GME traded 197 million shares — 87× its average daily volume of 2.3 million shares. The extreme volume combined with the price rise was the signal that something extraordinary was happening. Institutional investors who monitor volume patterns spotted the move days before it became a mainstream media story. Volume is often the first warning that a stock is about to make a major move — in either direction.",
     },
   },
 ];
@@ -513,6 +679,89 @@ const U3_BEATS: StoryBeat[] = [
         "If Apple earns $6.40/share and trades at $213, its P/E is 33. If earnings grow 10% to $7.04/share and the P/E stays constant, the stock should trade at $232. This is the core mechanism: earnings growth → EPS growth → stock price growth (everything else equal). The entire investing game is predicting future EPS.",
     },
   },
+  {
+    narrative: (
+      <>
+        <p>
+          Tesla in 2019 was burning through cash. Long delivery lines. Factory shutdowns.
+          The income statement showed a net loss. But the balance sheet told a more complex
+          story: Tesla had raised <B>$19 billion</B> in debt and equity since 2010, transforming
+          that capital into Gigafactories, patents, and production capacity. The company was
+          unprofitable on paper but building the physical infrastructure for eventual profitability.
+        </p>
+        <p>
+          The balance sheet is the snapshot of what a company <I>owns</I> (assets) and what it{" "}
+          <I>owes</I> (liabilities). The difference is <I>shareholder equity</I>. A company
+          with $10 billion in assets and $4 billion in liabilities has $6 billion in equity —
+          what belongs to shareholders after all debts are paid. Tesla&apos;s balance sheet in
+          2019 showed negative equity. By 2023, it had $40 billion in shareholder equity and
+          $23 billion in cash.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Balance Sheet",
+      definition:
+        "The balance sheet captures a company's financial position at a single point in time. The equation: Assets = Liabilities + Shareholder Equity. Assets include: cash, accounts receivable, inventory, property/equipment, and intangibles (patents, goodwill). Liabilities include: accounts payable, short-term debt, long-term debt. Shareholder equity (book value) = Assets − Liabilities. Key ratios: current ratio (current assets ÷ current liabilities, measures short-term solvency) and debt-to-equity (total debt ÷ shareholder equity, measures financial leverage).",
+      impact:
+        "The current ratio is a quick health check: above 1.5 means the company can comfortably pay short-term obligations; below 1.0 means it might struggle. In 2023, Bed Bath & Beyond had a current ratio of 0.3 — owing three times more short-term obligations than it had assets to cover. It filed for bankruptcy shortly after. The balance sheet telegraphed the failure months before the headlines arrived. WeWork's balance sheet showed $17 billion in lease liabilities against $1.3 billion in cash — a structural insolvency visible in the numbers long before the company officially collapsed.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Amazon reported a net income of <B>$21 billion</B> in 2021. Then in 2022, it posted
+          a net loss of <B>$2.7 billion</B>. Did the business collapse? No — Amazon generated{" "}
+          <B>$46 billion</B> in operating cash flow that same year. The entire loss was a{" "}
+          $12 billion write-down on its investment in Rivian. The actual cash the business
+          generated never slowed down.
+        </p>
+        <p>
+          Net income can be manipulated by accounting decisions — depreciation schedules, write-downs,
+          one-time charges. <I>Free cash flow</I> is harder to fake. It is the actual cash that
+          flowed into the company after capital expenditures. Warren Buffett calls it
+          &ldquo;owner earnings&rdquo; — what a rational owner of the whole business would
+          actually collect from it in a year. When net income and free cash flow diverge dramatically,
+          trust the cash flow.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Free Cash Flow",
+      definition:
+        "Free Cash Flow (FCF) = Operating Cash Flow − Capital Expenditures. Operating cash flow is cash generated by the core business after working capital changes. Capital expenditures are investments in property, equipment, and infrastructure. FCF is what remains after maintaining and growing the business — the cash available for dividends, buybacks, debt repayment, or acquisitions. FCF is considered by many analysts to be a more reliable indicator of business health than net income, because it's harder to manipulate with accounting adjustments.",
+      impact:
+        "Apple generated $99 billion in free cash flow in fiscal 2023 — roughly $271 million per day. That cash funds the $85B annual buyback program, the $15B annual dividend, and Apple's entire R&D budget. Apple's FCF margin (FCF ÷ Revenue) is about 28% — for every $100 in iPhone, Mac, and Services revenue, $28 lands as actual cash the company can do anything with. Compare this to a retailer like Target with a 3% FCF margin. Understanding FCF tells you how much real cash a business generates versus how much it earns on paper — two very different numbers.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          A company earning $10 per share with a P/E of 20 trades at $200. But should you
+          care more about today&apos;s $10 earnings, or whether those earnings will be $15
+          next year and $25 in three years? The P/E ratio is a snapshot. The growth rate
+          is the movie.
+        </p>
+        <p>
+          Nvidia earned <B>$1.74 per share</B> in fiscal 2023. One year later, it earned{" "}
+          <B>$11.93 per share</B> — a <B>585% increase</B> in a single year, driven by
+          AI chip demand. A P/E of 40 in early 2023 looked expensive; a P/E of 40 applied
+          to $11.93/share made the stock look almost cheap. Revenue growth rate transforms
+          how you interpret every other valuation metric. The faster a company grows, the
+          more future earnings are worth today.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Revenue Growth Rate",
+      definition:
+        "Revenue growth rate = (Current Revenue − Prior Year Revenue) ÷ Prior Year Revenue × 100%. High-growth companies: >20%/year. Mature companies: 3–10%/year. Declining companies: negative. The PEG ratio (P/E ÷ Earnings Growth Rate) adjusts valuation for growth: a P/E of 40 with 40% earnings growth (PEG = 1.0) is considered fairly valued; a P/E of 40 with 10% growth (PEG = 4.0) is expensive. For early-stage companies losing money, revenue growth is often the primary valuation driver — investors pay for the trajectory.",
+      impact:
+        "Nvidia's revenue grew from $27 billion to $61 billion in a single fiscal year (125% growth). The market responded by pushing the stock up 230% in 2023 — pricing in the expectation that explosive growth would continue. Contrast with Coca-Cola, which grows revenue 3–5%/year with a P/E of 24 — priced for stability, not growth. Matching your valuation expectations to the company's actual growth trajectory is one of the most important analytical skills: you're not just evaluating where the company is today, you're evaluating where it's going and whether the price already reflects that journey.",
+    },
+  },
 ];
 
 const U3: StockUnit = {
@@ -671,6 +920,89 @@ const U4_BEATS: StoryBeat[] = [
         "Buffett blended both. He started as a pure value investor (buying cheap, ugly businesses), then evolved under Charlie Munger's influence to pay 'fair prices for wonderful businesses.' His best investments — Apple, Coca-Cola, American Express — were 'growth at a reasonable price': great businesses bought when the market temporarily mispriced them.",
     },
   },
+  {
+    narrative: (
+      <>
+        <p>
+          In March 2009, Bank of America stock was trading at <B>$3.17/share</B>. Its book
+          value — the accounting value of all assets minus all liabilities divided by shares
+          outstanding — was approximately <B>$21/share</B>. Investors were buying a $21 book
+          for $3. Either the book value was a lie (the assets were worth less than stated), or
+          the stock was dramatically undervalued. Both possibilities existed simultaneously.
+        </p>
+        <p>
+          For financial companies — banks, insurance firms, investment managers — book value is
+          one of the most meaningful valuation metrics because their assets (loans, securities,
+          cash) are relatively liquid and precisely measured. Price-to-Book below 1 means the
+          market thinks the company is worth less than its accounting asset value. Buffett bought
+          bank stocks at P/B of 0.15 in the 2009 crisis. By 2021, Bank of America was at $48 —
+          a <B>15× return</B>.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Price-to-Book (P/B) Ratio",
+      definition:
+        "P/B = Stock Price ÷ Book Value Per Share. Book value = total assets − total liabilities (shareholder equity). P/B < 1 means the market values the company below its accounting net worth — rare and potentially a buying opportunity (or a signal the assets are impaired). P/B > 1 means it's trading at a premium, meaning the market assigns value to earnings power or brand beyond just the balance sheet assets. Technology companies have very high P/B (Apple: ~50×) because their most valuable assets — brand, software, talent — don't appear on the balance sheet. Banks and financial companies are best valued using P/B.",
+      impact:
+        "Warren Buffett used P/B as his primary filter for decades, only buying when price was a significant discount to book — his 'margin of safety' made concrete. Bank of America at $3/share with $21 book value (P/B = 0.14) in 2009 was his definition of a gift. By 2021, BofA traded at $48 — a 15× return in 12 years. He still holds it today as one of Berkshire's largest positions. P/B fails for software companies where the most valuable things are algorithms and reputation — but it's the right lens for asset-heavy businesses whose balance sheets reflect real economic value.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Spotify has never consistently made a profit, yet investors valued it at nearly{" "}
+          <B>$80 billion</B> in 2021. How do you value a company that doesn&apos;t earn money?
+          You look at what the business would be worth once it achieves normal profitability.
+          The most common shortcut: Price-to-Sales (P/S) — what multiple of annual revenue
+          are investors willing to pay?
+        </p>
+        <p>
+          In 2021, Spotify traded at <B>9× revenue</B>. When interest rates rose in 2022
+          and investors became less willing to pay for future profits, that multiple compressed
+          to <B>2×</B>. Revenue barely changed. The business barely changed. But the willingness
+          to pay a premium for future profits collapsed — and the stock fell <B>75%</B>. This
+          is the hidden risk of high P/S stocks: the multiple, not the business, can destroy you.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Price-to-Sales (P/S) Ratio",
+      definition:
+        "P/S = Market Cap ÷ Annual Revenue (or Stock Price ÷ Revenue Per Share). Used to value companies without profits, or to compare companies within the same industry. P/S varies enormously by sector: software companies (high margins, recurring revenue) might trade at 10–30× sales. Grocery chains (thin margins, commodity product) trade at 0.3–0.5× sales. A high P/S is only justified if the company is expected to achieve high profit margins eventually. P/S can persist at high levels for years if growth justifies it — then collapse suddenly when growth slows or rates rise.",
+      impact:
+        "At the 2021 peak, Palantir traded at 40× revenue. Snowflake traded at 100× revenue. These multiples assumed near-perfect execution and accelerating growth indefinitely. When growth slowed slightly in 2022 and rates rose, both stocks fell 70–80% while their revenues actually kept growing. P/S compressed from 40× to 8×. The businesses were still alive and growing — the willingness to pay for future profits simply reset. High P/S stocks require you to hold through multiple compression risk: even if the business succeeds, the stock can fall if investors stop paying premium multiples.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          When Microsoft paid <B>$26 billion</B> to acquire LinkedIn in 2016, LinkedIn&apos;s
+          market cap before the deal was $11 billion. Why did Microsoft pay more than twice
+          the market cap? Because market cap misses the full picture. LinkedIn had{" "}
+          <B>$1.2 billion in debt</B> and <B>$3.7 billion in cash</B>. Adjusting for those:
+          the enterprise value was $11B market cap + $1.2B debt − $3.7B cash = <B>$8.5B</B>.
+          Microsoft paid a 206% premium over enterprise value, not just over market cap.
+        </p>
+        <p>
+          <I>Enterprise value</I> (EV) is the complete version of &ldquo;what would it actually
+          cost to buy this entire company?&rdquo; Market cap only counts the equity. EV adds debt
+          and subtracts cash — because an acquirer inherits both. When analysts say a company is
+          &ldquo;trading at 12× EBITDA,&rdquo; they mean EV divided by EBITDA — the professional
+          standard for M&amp;A valuations.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Enterprise Value (EV)",
+      definition:
+        "EV = Market Cap + Total Debt − Cash & Equivalents. It represents the theoretical total cost to acquire a business — you pay market cap for the equity, assume the debt, and pocket the cash. EV/EBITDA (Enterprise Value ÷ Earnings Before Interest, Taxes, Depreciation, and Amortization) is the preferred valuation multiple for mergers and acquisitions because it allows comparison across companies with different capital structures and tax situations. Low EV/EBITDA (<10×) suggests potential value; high (>25×) suggests premium pricing. EV prevents the mistake of comparing market caps when debt loads differ dramatically.",
+      impact:
+        "When Elon Musk acquired Twitter for $44 billion in 2022, Twitter's market cap before the deal was about $36 billion. The extra $8 billion went to pay off Twitter's existing debt — which Musk assumed as part of the acquisition. Enterprise value gave the cleaner picture of the total cost. Understanding EV vs. market cap prevents the common investing error of thinking you're buying a company 'cheaply' based on share price or market cap when the debt load tells a completely different story about the total obligation you're taking on.",
+    },
+  },
 ];
 
 const U4: StockUnit = {
@@ -822,6 +1154,87 @@ const U5_BEATS: StoryBeat[] = [
         "The S&P 500 is divided into 11 sectors: Information Technology, Healthcare, Financials, Consumer Discretionary, Communication Services, Industrials, Consumer Staples, Energy, Real Estate, Materials, and Utilities. Each sector tends to perform differently across economic cycles. Technology stocks often lead in growth phases. Utilities and staples hold up in recessions. Energy rises with commodity prices. A diversified portfolio includes exposure to multiple sectors.",
       impact:
         "In 2022, the energy sector gained 59% while the technology sector fell 28% — a 87 percentage point spread. Investors holding only tech lost nearly 30% while the overall S&P 500 fell about 19%. Energy exposure was the difference. In 2023, the reverse happened — tech soared while energy was flat. Sector rotation is unpredictable; owning several sectors smooths the volatility.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 1997, a technology analyst recommended investors put <B>5%</B> of their portfolio
+          into a fast-growing new company called Amazon — not 30%, not everything, but 5%.
+          Even if you&apos;re completely right about a company&apos;s future, the amount you
+          allocate determines whether that conviction makes you rich or just modestly comfortable.
+        </p>
+        <p>
+          Professional portfolio managers call this <I>position sizing</I>: the deliberate
+          decision of how much capital to allocate to each holding. A common rule for individual
+          investors: no single stock should exceed <B>5–10%</B> of your portfolio. Too small a
+          position and even a 10-bagger barely moves the needle. Too large, and one bad call
+          can erase years of progress. The right size connects your conviction level to the
+          amount of risk you&apos;re willing to accept on that thesis.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Position Sizing",
+      definition:
+        "Position sizing is the process of deciding how much capital to allocate to each investment. Common approaches: equal-weight (same dollar amount in every holding), conviction-weighted (larger positions in highest-conviction ideas), or risk-weighted (smaller positions in more volatile or uncertain names). The Kelly Criterion is a mathematical formula for optimal position size: invest a fraction of your bankroll proportional to your edge over the odds. In practice, most professionals use half-Kelly or less — real-world uncertainty always exceeds model assumptions. A 25-position portfolio means no single disaster can destroy more than 4% of your total capital.",
+      impact:
+        "Stan Druckenmiller — one of the best hedge fund managers in history — made his career through concentrated positions (sometimes 30–40% in one trade), but backed those positions with extraordinary research and strict risk management. For most investors without that infrastructure, concentration is risk without the analytical edge to justify it. A 2015 study found retail investors with fewer than 5 stocks earned significantly lower risk-adjusted returns than those with 15–25 stocks — not because diversification produces better picks, but because it prevents any single mistake from being catastrophic.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 1986, two researchers published a landmark study analyzing 91 large pension funds
+          over a decade. Their finding was striking: <B>93.6%</B> of the variation in fund
+          returns was explained by just one variable — not stock picking, not market timing,
+          not manager skill, but <I>asset allocation</I>: the strategic split between stocks,
+          bonds, and cash. The single most important investment decision most people ever make
+          is also the one they rarely think consciously about.
+        </p>
+        <p>
+          A classic rule of thumb: subtract your age from 110 — that&apos;s your percentage in
+          stocks, the rest in bonds. A 25-year-old: 85% stocks, 15% bonds. A 65-year-old:
+          45% stocks, 55% bonds. The logic: younger investors can afford to wait out crashes;
+          retirees drawing income from their portfolio cannot absorb a 50% decline.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Asset Allocation",
+      definition:
+        "Asset allocation is the strategic decision of how to divide a portfolio among broad asset classes: stocks (high growth, high volatility), bonds (lower returns, lower volatility, income), cash (no growth, no volatility, full liquidity), and alternatives (real estate, commodities, private equity). Each class behaves differently across economic cycles. Stocks grow wealth over long periods but crash in recessions. Bonds provide stability and income. The right mix depends on time horizon (how long until you need the money), income needs (are you drawing from the portfolio or adding to it?), and risk tolerance.",
+      impact:
+        "During the 2008 financial crisis, a portfolio of 100% stocks fell 51% peak-to-trough. A 60/40 portfolio (60% stocks, 40% bonds) fell only 33%, then recovered faster. A 40/60 portfolio fell just 21%. The asset allocation difference meant the difference between panic-selling at the bottom (the 100% stock investor) and staying calm (the conservative investor). The Brinson, Hood, and Beebower paper's conclusion has held for 40 years: the single most important portfolio decision isn't which stocks you pick — it's what percentage is in stocks at all.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In January 2021, imagine a 60/40 portfolio that hadn&apos;t been touched in two
+          years. Tech stocks had soared. The equity side had silently grown from 60% to 72%
+          of the portfolio. Every instinct says: &ldquo;why sell what&apos;s winning?&rdquo;
+          But discipline says: sell enough tech to restore the 60/40 target.
+        </p>
+        <p>
+          The investors who rebalanced in early 2021 — mechanically trimming tech and buying
+          bonds — were significantly less exposed when tech fell <B>30–70%</B> in 2022.
+          They had still participated in the 2021 rally (they still owned tech, just less).
+          Rebalancing isn&apos;t about predicting which way the market will move. It&apos;s
+          about systematically selling high and buying low — automatically, without needing to
+          know the future.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Rebalancing",
+      definition:
+        "Rebalancing is restoring a portfolio to its target asset allocation by selling overweighted assets and buying underweighted ones. If your target is 60% stocks / 40% bonds, and a bull market pushes you to 75% stocks, rebalancing means selling stocks and buying bonds to return to 60/40. Rebalancing frequency options: calendar-based (quarterly or annually) or threshold-based (whenever any asset class drifts more than 5%). Tax implications: rebalancing in a taxable account triggers capital gains; rebalancing inside a 401(k) or IRA is tax-free — a major reason to maximize tax-advantaged accounts.",
+      impact:
+        "Vanguard's research shows disciplined annual rebalancing adds about 0.4% per year in returns versus letting the portfolio drift — not through timing, but through systematic buy-low/sell-high behavior. In the 2017–2021 tech run, investors who didn't rebalance watched tech grow to 40–50% of their portfolios. In 2022, those unbalanced portfolios fell 25–30%. Rebalancers who had trimmed tech entered 2022 at normal weights and fell only 15–20%. The 0.4% annual advantage from rebalancing compounds to a 13% total advantage over 30 years — from nothing but discipline.",
     },
   },
 ];
@@ -982,6 +1395,87 @@ const U6_BEATS: StoryBeat[] = [
         "At 2% inflation, prices double every 36 years. At 7% inflation (as seen in 2022), prices double every 10 years. A retiree holding only cash savings in 2022 saw their purchasing power fall 7% in a single year. This is the 'silent tax' of inflation — and the primary reason every long-term financial plan includes stocks. The S&P 500 has averaged about 7% annual real returns over the last century.",
     },
   },
+  {
+    narrative: (
+      <>
+        <p>
+          Since 1955, the U.S. has experienced 9 recessions. Every single one was preceded by
+          an <I>inverted yield curve</I>. The yield curve inverted in March 2022. Economists
+          debated through all of 2023 whether the predicted recession had been postponed or
+          was still coming. The bond market, through the yield curve, had predicted a slowdown
+          with 100% historical accuracy — but timing was uncertain.
+        </p>
+        <p>
+          Normally, long-term interest rates are <I>higher</I> than short-term rates — investors
+          demand more compensation for tying up money for 10 years versus 3 months. When this
+          relationship flips — when the 2-year Treasury yields <I>more</I> than the 10-year —
+          the yield curve is &ldquo;inverted.&rdquo; It signals that bond investors expect the
+          Fed to cut rates in the future, because they anticipate economic weakness ahead.
+        </p>
+      </>
+    ),
+    term: {
+      name: "The Yield Curve",
+      definition:
+        "The yield curve plots interest rates (yields) on U.S. Treasury bonds across different maturities — from 3 months to 30 years. Normally, the curve slopes upward: longer maturities yield more. An inverted yield curve occurs when shorter maturities yield more than longer ones — typically when the 2-year Treasury yield exceeds the 10-year Treasury yield. The 2-year/10-year inversion is the most closely watched recession signal in economics. It has preceded every U.S. recession since 1955 with zero false positives — though the lag between inversion and recession ranges from 6 to 24 months.",
+      impact:
+        "The yield curve inverted in March 2022 for the first time since 2019. The 2019 inversion preceded the 2020 COVID recession. From March 2022, the 2/10 inversion deepened to its most extreme level since 1981. GDP growth slowed, the housing market froze, startup funding collapsed, and regional banks failed in 2023 — not a textbook recession, but the economic weakness the yield curve predicted. Investors who reduced equity exposure after the March 2022 inversion and moved to shorter-duration bonds protected themselves during the worst of 2022's equity decline.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Every month, the U.S. government releases economic data. The most watched: on the
+          first Friday of every month at <B>8:30 AM Eastern</B>, the Bureau of Labor Statistics
+          releases the jobs report. In the 60 seconds after release, stock markets can move{" "}
+          <B>1–2%</B> in either direction. A &ldquo;strong&rdquo; jobs number might mean the
+          Fed will raise rates (bad for stocks). A &ldquo;weak&rdquo; jobs number might mean
+          the Fed will cut rates (good for stocks). Context determines everything.
+        </p>
+        <p>
+          The subtlety: most major economic reports are <I>lagging</I> indicators — they measure
+          what already happened. The stock market itself is a <I>leading</I> indicator — it
+          tends to price in recessions 6–9 months before they officially begin. By the time GDP
+          prints negative in the news, sophisticated investors have already repositioned.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Economic Indicators",
+      definition:
+        "Leading indicators predict future economic activity: building permits, manufacturing orders, consumer confidence, yield curve, stock prices. Lagging indicators confirm trends after they've started: GDP, unemployment rate, corporate profits — they reflect what happened, not what's coming. Key reports: Non-Farm Payrolls (jobs added monthly, first Friday of month), CPI (Consumer Price Index, measures inflation, monthly), GDP (quarterly measure of total economic output). The official NBER recession definition is two quarters of negative GDP, which is often declared 6–18 months after the recession actually began.",
+      impact:
+        "The stock market typically falls 6–12 months before a recession begins and bottoms 3–6 months before it ends. In 2022, the S&P 500 peaked in January, fell 25% by October, then began recovering in November 2022 — months before any economic data confirmed the bottom. Investors who waited for 'confirmation' of recovery before buying back in missed much of the 2023 rally. The market is the leading indicator. Waiting for lagging economic data before acting is, by definition, acting too late.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Not all sectors move together. In 2022, energy stocks gained <B>59%</B> while tech
+          stocks fell <B>28%</B>. The following year, the reverse: tech soared <B>57%</B>
+          while energy gained just <B>2%</B>. This rotation follows a predictable pattern,
+          driven by where the economy is in the business cycle.
+        </p>
+        <p>
+          In early expansions (low rates, rising growth), cyclicals lead: consumer discretionary,
+          industrials, financials. At economic peaks, energy and materials often lead as
+          inflation rises and commodity demand peaks. In slowdowns, defensives hold up best:
+          healthcare, utilities, consumer staples — companies whose products people buy
+          regardless of the economy. Learning to recognize where you are in the cycle is the
+          core skill of macro investing.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Sector Rotation",
+      definition:
+        "Sector rotation is the practice of shifting portfolio exposure between economic sectors based on the phase of the business cycle. Early expansion: financials, consumer discretionary, technology tend to lead. Mid-expansion: industrials, materials, energy. Late expansion: energy, materials, consumer staples. Recession: utilities, healthcare, consumer staples hold best. It's not a precise clock — phases overlap, and timing is uncertain. But the historical data shows consistent patterns: defensive sectors meaningfully outperform during recessions; cyclicals dramatically outperform early in recoveries.",
+      impact:
+        "A pure sector-rotation strategy (using SPDR sector ETFs) rotating quarterly based on economic cycle signals would have returned about 11.8% annually from 1999–2023 vs. the S&P 500's 10.3% — modest outperformance. The real value is risk management: rotating toward defensives before a recession significantly reduces drawdown. In 2022, an investor shifted to energy (+59%) and utilities (+1%) handily beat the S&P 500's −18%. Sector rotation isn't market timing — it's adjusting your risk positioning based on macroeconomic evidence rather than guessing tomorrow's market move.",
+    },
+  },
 ];
 
 const U6: StockUnit = {
@@ -1136,6 +1630,90 @@ const U7_BEATS: StoryBeat[] = [
         "DCA means investing a fixed dollar amount at fixed intervals, regardless of market price. If you invest $100/month and the stock is at $50, you buy 2 shares. If the price drops to $25, you buy 4 shares. Your average cost per share is lower than the time-weighted average price — you naturally buy more when shares are cheaper. DCA eliminates timing risk and removes emotional decision-making. It is the most widely recommended approach for long-term investors.",
       impact:
         "An investor who dollar-cost averaged $1,000/month into the S&P 500 from 2007 to 2024 — including through the 2008–09 crash and the 2022 bear market — would have accumulated roughly $620,000 from $204,000 invested. DCA through the 2009 crash meant buying at the lowest prices, which supercharged returns in the recovery. Lump-sum investing slightly outperforms DCA in bull markets; DCA dramatically outperforms in volatile, choppy markets.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 1956, a graduate student began tracking something his professors largely ignored:
+          the long-term returns of dividend-paying stocks. What he found became the core thesis
+          of his 1994 book <I>Stocks for the Long Run</I>: between 1871 and the late 1980s,
+          dividend reinvestment accounted for the vast majority of the stock market&apos;s
+          total return. A dollar invested in 1871 grew to about $1,300 by the 1990s — but
+          only to <B>$5</B> without dividends reinvested.
+        </p>
+        <p>
+          The secret is compounding. Each dividend payment buys more shares. Those shares pay
+          more dividends. Those dividends buy even more shares. Coca-Cola has increased its
+          dividend every single year for over <B>61 consecutive years</B> — through recessions,
+          inflation, and market crashes. Companies that consistently grow dividends tend to be
+          exactly the kinds of stable, profitable businesses that make excellent long-term holds.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Dividend Investing",
+      definition:
+        "Dividend investing focuses on stocks with consistent, growing dividend payments to generate income and reinvest for compound growth. Key metrics: dividend yield (annual dividend ÷ stock price), payout ratio (dividends paid ÷ net income — sustainable below 70%), and dividend growth rate (how fast the dividend increases annually). 'Dividend aristocrats' are S&P 500 companies that have grown their dividend for 25+ consecutive years. Companies with decades of uninterrupted dividend growth (Coca-Cola, Procter & Gamble, Johnson & Johnson) tend to be financially strong and shareholder-aligned.",
+      impact:
+        "$10,000 invested in Coca-Cola in 1994 with dividends reinvested would be worth approximately $125,000 today — a 12.5× return. Without dividend reinvestment, that same $10,000 is worth about $50,000 (5× return). The 2.5× difference is pure compounding — dividends buying more shares, those shares paying more dividends, repeating for 30 years. Dividend reinvestment plans (DRIPs) automate this process, purchasing fractional shares with every payment. The longer the time horizon, the more dramatic the reinvestment advantage becomes.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 1993, two researchers published a study that confounded efficient market theorists:
+          stocks that had <I>risen</I> the most in the prior year tended to keep rising for
+          the next 3–12 months, and stocks that had fallen the most tended to keep falling.
+          Price trends persisted. The momentum anomaly was real, documented, and statistically
+          significant across 67 years of data.
+        </p>
+        <p>
+          This is <I>momentum investing</I> — buying recent top-performers and avoiding recent
+          losers, based purely on price behavior, with no fundamental analysis. It requires
+          discipline and regular rebalancing. A Nobel Prize was awarded partly for identifying
+          this anomaly: markets are not perfectly efficient. Prices trend. The trend is your
+          friend — until it reverses, suddenly and severely, often losing in weeks what took
+          months to accumulate.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Momentum Investing",
+      definition:
+        "Momentum investing buys recent top-performers and sells or avoids recent underperformers, based on the empirical finding that price trends persist for 3–12 months. Unlike value or growth investing, momentum requires no fundamental analysis — it's purely price-based. The momentum premium was documented by Jegadeesh & Titman (1993): stocks that rose most in the past 12 months tend to outperform over the next 3–12 months, while recent losers tend to underperform. The risk: 'momentum crashes' — sudden, severe reversals that typically occur at major market turning points.",
+      impact:
+        "From 2017–2021, momentum strategies massively outperformed — high-growth tech stocks kept rising, attracting more buyers, rising further. Cathie Wood's ARK Innovation ETF (proxy for momentum in growth tech) rose 358% from 2019 to its 2021 peak. The 2022 reversal was brutal: ARK fell 75%, and the prior years' biggest winners became the biggest losers. Momentum works until it doesn't — and when it fails, it fails catastrophically. Successful momentum investors use strict stop-losses and systematic rebalancing to limit how long they hold a reversing trend.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In 1992, Eugene Fama and Kenneth French published a paper that challenged the core
+          premise of finance: that market risk (beta) alone explained stock returns. They found
+          two additional factors drove returns systematically — company <I>size</I> (small-cap
+          stocks outperform large-cap historically) and <I>value</I> (cheap stocks outperform
+          expensive ones). Subsequent researchers identified more: quality, momentum,
+          low-volatility.
+        </p>
+        <p>
+          Today, <B>$3.5 trillion</B> in assets are managed using factor investing —
+          systematic strategies that tilt portfolios toward stocks with mathematically
+          documented return premiums. It sits between active stock-picking and passive indexing:
+          instead of picking individual stocks, you pick characteristics that have historically
+          predicted outperformance, and own every stock that exhibits them.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Factor Investing",
+      definition:
+        "Factor investing (also called 'smart beta') systematically tilts portfolios toward stocks exhibiting characteristics ('factors') that have historically delivered excess returns. The five major factors: Value (low P/E or P/B, historically outperforms), Size (small-cap outperforms large-cap over long periods), Momentum (recent winners tend to keep winning short-term), Quality (high-profitability, low-debt companies), Low Volatility (less volatile stocks generate better risk-adjusted returns). Factor ETFs like QUAL (quality), MTUM (momentum), and VLUE (value) make factor exposure accessible to retail investors.",
+      impact:
+        "The 'quality factor' — buying companies with high profitability, strong balance sheets, and stable earnings — has outperformed the S&P 500 by 1.5–2% annually over long periods with lower volatility. The iShares MSCI USA Quality Factor ETF (QUAL) has outperformed the broader market since its 2013 inception. Meanwhile, the value factor underperformed massively from 2007–2020 before roaring back in 2022 when rate hikes favored cheap, profitable businesses over speculative growth. No single factor works in every environment — the key is understanding the economic logic behind each factor and holding through its inevitable periods of underperformance.",
     },
   },
 ];
@@ -1298,6 +1876,89 @@ const U8_BEATS: StoryBeat[] = [
         "In one study, the stocks investors sold for gains went on to earn 3.4% more over the next year than the stocks they sold for losses — meaning investors reliably sold the wrong things. If you find yourself holding a loss-making stock for months hoping it 'comes back,' ask yourself: would I buy this stock today, right now, at this price? If the honest answer is no — that's the disposition effect keeping you in a bad position.",
     },
   },
+  {
+    narrative: (
+      <>
+        <p>
+          In early 2021, imagine a technology investor convinced that Peloton was the future
+          of fitness. Every article they read confirmed this. Every analyst they followed was
+          bullish. Every podcast featured Peloton executives discussing explosive growth. The
+          stock was at <B>$145</B>. They bought more. Within 12 months, Peloton was at{" "}
+          <B>$23</B> — a 84% loss.
+        </p>
+        <p>
+          The investor hadn&apos;t been lazy. They had been consuming enormous amounts of
+          information. But all of it confirmed what they already believed. They never seriously
+          engaged with a single bear case. This is <I>confirmation bias</I> — perhaps the
+          most dangerous cognitive trap in investing, because it feels like thorough research
+          while systematically filtering out the information most likely to prevent a mistake.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Confirmation Bias",
+      definition:
+        "Confirmation bias is the tendency to search for, interpret, favor, and recall information that confirms what you already believe — while filtering out contradicting evidence. In investing: reading only bullish articles about stocks you own, dismissing negative news as 'overblown,' seeking out analysts who agree with your thesis, and interpreting ambiguous data in the most favorable light. The antidote: actively seek out the strongest possible bear case for any investment you hold. Write down the three most compelling arguments that your thesis is wrong. If you can't articulate them, you haven't done the research — you've done the confirmation.",
+      impact:
+        "A University of California study found that investors who consumed more financial news about their holdings experienced 1.9% lower returns annually than investors who consumed less news — because they selectively absorbed information that confirmed their existing positions. The extra information consumption wasn't neutral; it reinforced existing biases rather than updating beliefs. Peloton bulls in 2021 dismissed mounting evidence of post-COVID demand normalization, supply chain problems, and competitive pressure. The bear thesis was there in plain sight in every quarterly report — but confirmation bias filtered it out.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Between 2012 and 2021, millions of retail investors experienced a decade of almost
+          uninterrupted bull market gains. Many had never seen a significant bear market. Many
+          had made real money on their first trades. Research shows consistently that after a
+          series of early wins, investors dramatically overestimate their ability to select
+          stocks — leading to concentrated positions, reduced diversification, and excessive
+          trading.
+        </p>
+        <p>
+          Then 2022 arrived. The strategies that had worked in a bull market — concentrated
+          bets in high-growth stocks — imploded. The confident, experienced-feeling investors
+          of 2021 turned out to have been riding a rising tide. When the tide went out, as
+          Buffett put it, they discovered they had been swimming naked. Their &ldquo;skill&rdquo;
+          was largely market beta.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Overconfidence Bias",
+      definition:
+        "Overconfidence bias is the tendency to overestimate the accuracy of one's own predictions and the extent of one's own knowledge. Research shows investors rate themselves as above-average stock pickers at rates statistically impossible to satisfy. Key manifestations: overtrading (buying and selling too frequently, generating costs that erode returns), under-diversification (concentrating in a few names you're 'sure about'), and excessive risk-taking. A landmark Barber and Odean study (2000) found that active traders earned 2.65% less annually than the market — almost entirely explained by overconfidence driving excessive trading.",
+      impact:
+        "After the 2012–2021 bull market, retail investors who had been right about 'stocks always go up' began applying that confidence to individual stock picks. Average retail investor losses in 2022 concentrated positions were 30–50%, versus the market's −18%. The S&P SPIVA data shows investor confidence tracks bull market duration — the longer the bull market, the more overconfident investors become, and the more severely they underperform when conditions change. The antidote: track your actual investment decisions and outcomes over 3–5 years before concluding you have genuine stock-picking ability.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          Imagine you bought a stock at <B>$100</B>. It falls to $65. Every week, you check
+          it and think: &ldquo;it just needs to get back to $100.&rdquo; You hold. It falls
+          to $40. You hold harder. It falls to $20. You hold longest. The $100 purchase price
+          has become an invisible anchor — a psychological reference point that has nothing to
+          do with the stock&apos;s future value but determines every decision you make.
+        </p>
+        <p>
+          The rational investor asks: &ldquo;given what I know today, would I buy this stock
+          at $40?&rdquo; The anchored investor asks: &ldquo;how do I get back to breakeven?&rdquo;
+          One question is relevant to the future. The other is an emotional trap about the past.
+          The $100 you paid is <I>sunk cost</I> — gone regardless of your future decisions.
+          Anchoring converts sunk cost into a decision-making input that systematically holds
+          investors in their worst positions longest.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Anchoring Bias",
+      definition:
+        "Anchoring is the cognitive tendency to rely too heavily on the first piece of information encountered when making decisions. In investing, common anchors include: your purchase price (causing you to hold losers waiting for breakeven), a stock's all-time high (causing you to avoid a recovery because 'it used to be higher'), or an analyst's price target (causing you to believe a round number like '$200' is especially meaningful). These reference points have no bearing on a stock's future value but powerfully shape how investors evaluate every subsequent piece of information.",
+      impact:
+        "A CFA Institute study found the 52-week high is the single most powerful external anchor in retail investing — investors consistently set price targets relative to it, even when it's completely arbitrary from a fundamental perspective. Intel's stock peaked at $68 in 2000, anchoring many investors to a recovery thesis for over two decades as the business deteriorated against AMD and ARM competition. Intel fell from $68 in 2000 to $18 in 2024 — 24 years of investors anchored to a peak that reflected semiconductor market conditions that no longer existed. Your purchase price tells you your cost basis for taxes. It tells you nothing about what the stock is worth today.",
+    },
+  },
 ];
 
 const U8: StockUnit = {
@@ -1457,6 +2118,91 @@ const U9_BEATS: StoryBeat[] = [
         "Leverage means using borrowed capital to increase investment exposure. If you have $10,000 and borrow another $10,000 to buy $20,000 of stocks, you're at 2× leverage. Gains and losses are both doubled relative to your actual capital. Leverage amplifies every outcome — in bull markets, leveraged investors look like geniuses; in bear markets, they can be wiped out entirely. Margin calls force the sale of positions at the worst possible times when prices fall and equity drops below required minimums.",
       impact:
         "LTCM's collapse in 1998 with 25× leverage showed that even the most sophisticated mathematical models fail under extreme conditions. When correlation assumptions broke down — assets that were supposed to be uncorrelated started moving together — the fund lost $4.4 billion in months. The Fed had to intervene to prevent a cascade of bank failures. Leverage transforms a 20% market decline into a 500% loss of capital at 25× leverage.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In the summer of 2020, Robinhood had a problem. Its margin accounts allowed users
+          to borrow money to amplify trades. A 19-year-old in Nebraska opened one and, through
+          a series of options trades, saw a displayed balance of negative <B>$730,000</B>.
+          Believing he owed $730,000, he died by suicide before understanding the balance
+          would resolve to zero. The displayed number was a glitch — but the danger of margin
+          accounts is very real.
+        </p>
+        <p>
+          A margin account lets you borrow from your broker — typically up to 50% of your
+          portfolio value — to buy more stocks than cash allows. If your portfolio is $10,000,
+          you can control $20,000 in assets. When stocks rise, returns are amplified. When
+          stocks fall past a threshold, your broker issues a <I>margin call</I>: add cash
+          immediately, or they sell your positions — at the worst possible time, with zero
+          input from you.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Margin Accounts",
+      definition:
+        "A margin account allows an investor to borrow from their broker to increase investment exposure. Regulation T (the SEC rule) sets initial margin at 50% for stocks — you can borrow up to 50% of a stock purchase. Maintenance margin (typically 25%) is the minimum equity required to keep positions open. If your equity falls below maintenance margin, a margin call requires immediate cash deposit or forced position liquidation. Margin borrowing costs interest (5–12%+ annually depending on broker and account size). Margin amplifies both gains and losses proportionally to the leverage ratio used.",
+      impact:
+        "During the 2020 COVID crash, thousands of retail margin account holders received margin calls as stocks fell 34% in 3 weeks. Their brokers automatically sold positions at the bottom — locking in maximum losses and permanently converting temporary paper losses into real capital destruction. The same investors using cash accounts could have simply waited for the recovery (the market fully recovered within 5 months). Margin calls force selling at exactly the wrong time. It's a tool that experienced traders use carefully and sparingly — and that most retail investors should understand before ever enabling.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          In December 2021, an investor had a problem: massive gains in Apple (+35%) and
+          Microsoft (+52%), but also held Zoom Video, which had fallen <B>62%</B> from its
+          pandemic peak. The tax bill on the Apple and Microsoft gains would be substantial.
+          An accountant pointed out a legal strategy: sell Zoom before year-end, use that
+          realized loss to offset the Apple/Microsoft gains, and reduce the tax bill by
+          thousands of dollars. Then, 31 days later, buy Zoom back.
+        </p>
+        <p>
+          This is <I>tax-loss harvesting</I> — deliberately realizing investment losses to
+          offset taxable gains. It doesn&apos;t change your total investment position. It
+          doesn&apos;t eliminate losses. It converts unrealized losses into tax savings. Done
+          systematically, it can add <B>0.5–1.5%</B> per year in after-tax returns — a
+          meaningful, legal, and reliable edge.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Tax-Loss Harvesting",
+      definition:
+        "Tax-loss harvesting is selling investments at a loss to offset capital gains taxes on profitable investments. Short-term capital gains (assets held < 1 year) are taxed at ordinary income rates (up to 37%). Long-term capital gains (> 1 year) are taxed at 0%, 15%, or 20%. Harvested losses offset same-type gains first, then cross-offset. Excess losses offset up to $3,000 of ordinary income annually, with remaining losses carried forward indefinitely. The IRS wash-sale rule prohibits buying a 'substantially identical' security within 30 days before or after the sale — but a similar ETF or competitor stock can substitute, maintaining market exposure.",
+      impact:
+        "Betterment (robo-advisor) reported its automated tax-loss harvesting added an average of 0.77% annually in after-tax return for clients in higher tax brackets. For an investor in the 37% bracket, avoiding a $10,000 short-term gain by harvesting an equivalent loss saves $3,700 in taxes — money that remains invested and compounds. Done manually each December, tax-loss harvesting is one of the few genuine 'free lunches' in investing: a legal, reliable way to improve after-tax returns without changing your risk profile or investment thesis.",
+    },
+  },
+  {
+    narrative: (
+      <>
+        <p>
+          On a typical day, the NYSE processes over <B>1 billion</B> shares traded.
+          Approximately <B>60–70%</B> are executed by algorithms — automated systems that
+          detect patterns and execute trades in microseconds. The most advanced, known as
+          high-frequency traders (HFT firms), co-locate servers inside exchange data centers
+          to shave nanoseconds off response times. The competitive advantage is measured in
+          millionths of a second.
+        </p>
+        <p>
+          Michael Lewis&apos;s book <I>Flash Boys</I> exposed how HFT firms could detect a
+          buy order arriving at one exchange and trade on other exchanges in the microseconds
+          before the order arrived — effectively front-running retail orders at speeds humans
+          cannot compete with. For a long-term investor, this is irrelevant noise. For day
+          traders, it&apos;s an invisible opponent they can never beat on speed alone.
+        </p>
+      </>
+    ),
+    term: {
+      name: "Algorithmic & High-Frequency Trading",
+      definition:
+        "Algorithmic trading uses computer programs to execute trades based on predefined rules — no human intervention required. High-frequency trading (HFT) is algorithmic trading at extreme speeds, executing thousands of transactions per second, profiting from tiny price discrepancies. HFT firms profit from: market making (providing liquidity for the bid-ask spread), statistical arbitrage (exploiting price discrepancies between correlated securities), and latency arbitrage (trading faster than competitors). HFT accounts for 50–70% of U.S. equity volume by trade count, though a smaller fraction by dollar value.",
+      impact:
+        "For a buy-and-hold investor, HFT is largely irrelevant — you trade rarely, and HFT firms make fractions of a cent per share. In aggregate, HFT market makers have tightened bid-ask spreads significantly, reducing transaction costs for all investors. But for active day traders, HFT is an arms race already lost. Renaissance Technologies — the most successful hedge fund in history — runs the most sophisticated quantitative trading operation ever built and has returned 66% annually before fees since 1988. The lesson: competing on speed is impossible for retail investors. Competing on patience and information quality is where retail investors have genuine structural advantages.",
     },
   },
 ];
