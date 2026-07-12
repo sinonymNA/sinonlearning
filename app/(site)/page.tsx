@@ -17,7 +17,7 @@ import RoadmapCard from "@/components/RoadmapCard";
 import KoraLogo from "@/components/KoraLogo";
 import AnimatedHeroBlobs from "@/components/AnimatedHeroBlobs";
 import AppMarquee from "@/components/AppMarquee";
-import ParticleConstellationScene from "@/components/ParticleConstellationScene";
+import HeroShipsScene from "@/components/HeroShipsScene";
 import GravityWellScene from "@/components/GravityWellScene";
 import { homeRoadmap } from "@/data/courses";
 
@@ -93,7 +93,7 @@ export default function Home() {
       {/* Hero */}
       <section className="bg-grain relative overflow-hidden bg-cream-50">
         <AnimatedHeroBlobs />
-        <ParticleConstellationScene />
+        <HeroShipsScene />
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:px-8 lg:pt-24">
           <HeroIntro />
 
