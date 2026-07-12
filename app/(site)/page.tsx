@@ -17,6 +17,8 @@ import RoadmapCard from "@/components/RoadmapCard";
 import KoraLogo from "@/components/KoraLogo";
 import AnimatedHeroBlobs from "@/components/AnimatedHeroBlobs";
 import AppMarquee from "@/components/AppMarquee";
+import ParticleConstellationScene from "@/components/ParticleConstellationScene";
+import GravityWellScene from "@/components/GravityWellScene";
 import { homeRoadmap } from "@/data/courses";
 
 const startHere = [
@@ -91,6 +93,7 @@ export default function Home() {
       {/* Hero */}
       <section className="bg-grain relative overflow-hidden bg-cream-50">
         <AnimatedHeroBlobs />
+        <ParticleConstellationScene />
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-20 lg:px-8 lg:pt-24">
           <HeroIntro />
 
@@ -219,8 +222,9 @@ export default function Home() {
       </section>
 
       {/* Email signup */}
-      <section className="bg-cream-100 px-6 py-20 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
+      <section className="relative overflow-hidden bg-cream-100 px-6 py-20 lg:px-8">
+        <GravityWellScene />
+        <div className="relative z-10 mx-auto max-w-2xl text-center">
           <FadeIn>
             <h2 className="font-display text-3xl font-medium text-navy-900 sm:text-4xl">
               Follow the build.
