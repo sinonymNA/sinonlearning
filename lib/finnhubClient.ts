@@ -90,39 +90,6 @@ export async function getCachedQuote(symbol: string): Promise<CachedQuote> {
   return result;
 }
 
-// ── Candle cache (5-minute TTL per symbol+resolution) ────────────────────────
-
-interface CandleResult {
-  timestamps: number[];
-  closes: number[];
-  cached: number;
-}
-
-const candleCache = new Map<string, CandleResult>();
-const CANDLE_TTL = 5 * 60_000;
-
-export async function getCandles(
-  symbol: string,
-  resolution: string,
-  from: number,
-  to: number,
-): Promise<{ timestamps: number[]; closes: number[] }> {
-  const key = `${symbol}:${resolution}:${from}`;
-  const hit = candleCache.get(key);
-  if (hit && Date.now() - hit.cached < CANDLE_TTL) {
-    return { timestamps: hit.timestamps, closes: hit.closes };
-  }
-  const data = await fhFetch<{ t: number[]; c: number[]; s: string }>("/stock/candle", {
-    symbol, resolution,
-    from: String(from),
-    to: String(to),
-  });
-  if (data.s !== "ok" || !data.t?.length) return { timestamps: [], closes: [] };
-  const result: CandleResult = { timestamps: data.t, closes: data.c, cached: Date.now() };
-  candleCache.set(key, result);
-  return { timestamps: result.timestamps, closes: result.closes };
-}
-
 // ── API calls ─────────────────────────────────────────────────────────────────
 
 export async function searchSymbols(q: string): Promise<SearchResult[]> {
