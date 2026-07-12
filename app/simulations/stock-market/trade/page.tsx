@@ -44,7 +44,18 @@ interface PortfolioData {
   positions: { ticker: string; shares: number; avgCost: number }[];
 }
 
-const POPULAR = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "DIS", "NKE", "KO"];
+const STOCK_GROUPS = [
+  { label: "Big Tech",        color: "#2563eb", tickers: ["AAPL", "MSFT", "GOOGL", "META", "AMZN"] },
+  { label: "AI & Chips",      color: "#7c3aed", tickers: ["NVDA", "AMD", "AVGO", "QCOM", "INTC"] },
+  { label: "EV & Transport",  color: "#16a34a", tickers: ["TSLA", "RIVN", "UBER", "F", "GM"] },
+  { label: "Finance",         color: "#0891b2", tickers: ["JPM", "V", "MA", "GS", "BAC"] },
+  { label: "Consumer Brands", color: "#ea580c", tickers: ["SBUX", "NKE", "MCD", "TGT", "WMT"] },
+  { label: "Entertainment",   color: "#dc2626", tickers: ["DIS", "NFLX", "SPOT", "RBLX", "EA"] },
+  { label: "Healthcare",      color: "#0d9488", tickers: ["UNH", "LLY", "JNJ", "PFE", "ABBV"] },
+  { label: "Energy",          color: "#b45309", tickers: ["XOM", "CVX", "NEE", "SLB", "BP"] },
+];
+
+interface Mover { symbol: string; name: string; group: string; price: number; changePct: number; }
 
 function fmt(n: number, d = 2) {
   return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -94,9 +105,15 @@ function TradePageInner() {
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
   const [noApiKey, setNoApiKey] = useState(false);
+  const [movers, setMovers] = useState<Mover[]>([]);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const priceRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Movers load
+  useEffect(() => {
+    fetch("/api/stocks/movers").then(r => r.json()).then(d => setMovers(d.movers ?? [])).catch(() => {});
+  }, []);
 
   // Auth + portfolio load
   useEffect(() => {
@@ -305,31 +322,111 @@ function TradePageInner() {
         )}
       </div>
 
-      {/* Popular tickers (when nothing selected) */}
+      {/* Discovery panel (when nothing selected) */}
       {!ticker && (
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
-            Popular Stocks
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {POPULAR.map(sym => (
-              <button
-                key={sym}
-                onClick={() => selectTicker(sym)}
-                style={{
-                  padding: "7px 14px", background: CARD, border: `1px solid ${BORDER}`,
-                  borderRadius: 8, fontSize: 13, fontWeight: 700, color: INK,
-                  cursor: "pointer", transition: "all 0.1s",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.background = BG; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.background = CARD; }}
-              >
-                {sym}
-              </button>
-            ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+
+          {/* Market Movers */}
+          {movers.length > 0 && (
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+                Market Movers
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(3, 1fr)", gap: 8 }}>
+                {/* Top 3 gainers */}
+                {movers.slice(0, 3).map(m => (
+                  <button
+                    key={m.symbol}
+                    onClick={() => selectTicker(m.symbol)}
+                    style={{
+                      background: CARD, border: `1px solid ${GAIN_BORDER}`,
+                      borderRadius: 10, padding: "12px 14px", textAlign: "left",
+                      cursor: "pointer", transition: "all 0.12s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = GAIN_BG; e.currentTarget.style.borderColor = "#86efac"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = CARD; e.currentTarget.style.borderColor = GAIN_BORDER; }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: INK }}>{m.symbol}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: GAIN }}>+{m.changePct.toFixed(2)}%</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 11, color: FAINT, fontWeight: 500 }}>{m.name}</span>
+                      <span style={{ fontSize: 11, color: MUTED, fontWeight: 600 }}>${m.price.toFixed(2)}</span>
+                    </div>
+                  </button>
+                ))}
+                {/* Top 3 losers */}
+                {[...movers].reverse().slice(0, 3).map(m => (
+                  <button
+                    key={m.symbol}
+                    onClick={() => selectTicker(m.symbol)}
+                    style={{
+                      background: CARD, border: `1px solid ${LOSS_BORDER}`,
+                      borderRadius: 10, padding: "12px 14px", textAlign: "left",
+                      cursor: "pointer", transition: "all 0.12s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = LOSS_BG; e.currentTarget.style.borderColor = "#fca5a5"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = CARD; e.currentTarget.style.borderColor = LOSS_BORDER; }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: INK }}>{m.symbol}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: LOSS }}>{m.changePct.toFixed(2)}%</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 11, color: FAINT, fontWeight: 500 }}>{m.name}</span>
+                      <span style={{ fontSize: 11, color: MUTED, fontWeight: 600 }}>${m.price.toFixed(2)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stock categories */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>
+              Browse by Sector
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
+              {STOCK_GROUPS.map(group => (
+                <div
+                  key={group.label}
+                  style={{
+                    background: CARD, border: `1px solid ${BORDER}`,
+                    borderRadius: 12, padding: "14px",
+                    borderTop: `3px solid ${group.color}`,
+                  }}
+                >
+                  <p style={{ fontSize: 11, fontWeight: 800, color: group.color, letterSpacing: "0.04em", marginBottom: 10 }}>
+                    {group.label}
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {group.tickers.map(sym => (
+                      <button
+                        key={sym}
+                        onClick={() => selectTicker(sym)}
+                        style={{
+                          padding: "4px 9px", fontSize: 11, fontWeight: 700,
+                          color: group.color, background: group.color + "0f",
+                          border: `1px solid ${group.color}33`,
+                          borderRadius: 5, cursor: "pointer", transition: "all 0.1s",
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = group.color + "20"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = group.color + "0f"; }}
+                      >
+                        {sym}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Holdings */}
           {portfolio && portfolio.positions.length > 0 && (
-            <div style={{ marginTop: 24 }}>
+            <div>
               <p style={{ fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
                 Your Holdings
               </p>
@@ -340,8 +437,7 @@ function TradePageInner() {
                     onClick={() => selectTicker(pos.ticker)}
                     style={{
                       padding: "7px 14px", background: GAIN_BG, border: `1px solid ${GAIN_BORDER}`,
-                      borderRadius: 8, fontSize: 13, fontWeight: 700, color: GAIN,
-                      cursor: "pointer",
+                      borderRadius: 8, fontSize: 13, fontWeight: 700, color: GAIN, cursor: "pointer",
                     }}
                   >
                     {pos.ticker} · {pos.shares} shares
@@ -350,6 +446,7 @@ function TradePageInner() {
               </div>
             </div>
           )}
+
         </div>
       )}
 
