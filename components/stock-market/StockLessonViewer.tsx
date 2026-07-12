@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import NarrativeLesson from "@/components/life-budget/lessons/NarrativeLesson";
+import StockUnitQuiz from "@/components/stock-market/StockUnitQuiz";
 import { getStockUnit } from "@/data/stockCourse";
 import type { StockUnit } from "@/data/stockCourse";
 
@@ -17,7 +18,7 @@ const GAIN = "#16a34a";
 const GAIN_BG = "#f0fdf4";
 const GAIN_BORDER = "#bbf7d0";
 
-type Phase = "hook" | "lesson" | "mission" | "done";
+type Phase = "hook" | "lesson" | "quiz" | "mission" | "done";
 
 // ── Hook phase ─────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,13 @@ function HookPhase({ unit, onNext }: { unit: StockUnit; onNext: () => void }) {
           <p style={{ fontSize: 14, color: INK, lineHeight: 1.7 }}>
             {hook.reveal.explanation}
           </p>
+        </div>
+      )}
+
+      {/* Optional interactive sandbox */}
+      {revealed && hook.sandbox && (
+        <div style={{ marginBottom: 28 }}>
+          {hook.sandbox}
         </div>
       )}
 
@@ -249,7 +257,7 @@ function MissionPhase({
           borderRadius: 12, padding: "16px 20px", textAlign: "center",
         }}>
           <p style={{ fontSize: 15, fontWeight: 700, color: GAIN }}>✓ Unit {num} Complete</p>
-          {num < 9 && (
+          {num < 11 && (
             <Link
               href={`/simulations/stock-market/learn/unit-${num + 1}`}
               style={{
@@ -288,16 +296,27 @@ export default function StockLessonViewer({ slug, initiallyDone }: StockLessonVi
     setDone(true);
   }, [unit.slug]);
 
+  const handleQuizComplete = useCallback(async (score: number) => {
+    await fetch("/api/stock-course/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ unitSlug: unit.slug, quizScore: score }),
+    });
+    setPhase("mission");
+  }, [unit.slug]);
+
   const accent = unit.accent;
 
-  // Phase nav pill labels
+  // 4-segment progress bar: Hook / Lesson / Quiz / Mission
   const phases: { key: Phase; label: string }[] = [
     { key: "hook", label: "Hook" },
     { key: "lesson", label: "Lesson" },
+    { key: "quiz", label: "Quiz" },
     { key: "mission", label: "Mission" },
   ];
-  const phaseOrder: Phase[] = ["hook", "lesson", "mission"];
-  const currentIdx = phaseOrder.indexOf(phase === "done" ? "mission" : phase);
+  const phaseOrder: Phase[] = ["hook", "lesson", "quiz", "mission"];
+  const resolvedPhase: Phase = phase === "done" ? "mission" : phase;
+  const currentIdx = phaseOrder.indexOf(resolvedPhase);
 
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "32px 24px 80px" }}>
@@ -312,8 +331,8 @@ export default function StockLessonViewer({ slug, initiallyDone }: StockLessonVi
 
       {/* Phase progress bar */}
       <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 36 }}>
-        {phases.map((p, i) => {
-          const isActive = p.key === phase || (phase === "done" && p.key === "mission");
+        {phases.map((p) => {
+          const isActive = p.key === resolvedPhase;
           const isPast = phaseOrder.indexOf(p.key) < currentIdx;
           return (
             <div key={p.key} style={{ display: "flex", alignItems: "center", gap: 4, flex: 1 }}>
@@ -349,7 +368,16 @@ export default function StockLessonViewer({ slug, initiallyDone }: StockLessonVi
           accent={accent}
           ctaLabel={unit.lesson.ctaLabel}
           ctaSubtitle={unit.lesson.ctaSubtitle}
-          onReady={() => setPhase("mission")}
+          onReady={() => setPhase("quiz")}
+        />
+      )}
+
+      {phase === "quiz" && (
+        <StockUnitQuiz
+          unitNum={unit.num}
+          accent={accent}
+          quiz={unit.unitQuiz}
+          onComplete={handleQuizComplete}
         />
       )}
 

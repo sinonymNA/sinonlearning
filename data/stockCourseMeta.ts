@@ -1,7 +1,7 @@
 // Pure server-safe metadata — no JSX, no "use client"
 export const STOCK_UNIT_SLUGS = [
   "unit-1", "unit-2", "unit-3", "unit-4", "unit-5",
-  "unit-6", "unit-7", "unit-8", "unit-9",
+  "unit-6", "unit-7", "unit-8", "unit-9", "unit-10", "unit-11",
 ] as const;
 
 export function isValidStockSlug(slug: string): boolean {

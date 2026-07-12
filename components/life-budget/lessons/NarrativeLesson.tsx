@@ -12,10 +12,18 @@ export interface StoryTermCallout {
   impact: string;
 }
 
+export interface QuickCheck {
+  q: string;
+  choices: string[];   // exactly 4
+  correct: number;     // 0-indexed
+  explain: string;
+}
+
 export interface StoryBeat {
   narrative: React.ReactNode;
   term?: StoryTermCallout;
   visual?: React.ReactNode;
+  check?: QuickCheck;
 }
 
 interface NarrativeLessonProps {
@@ -38,7 +46,14 @@ export default function NarrativeLesson({
   ctaSubtitle = "Now apply these concepts to your own numbers.",
 }: NarrativeLessonProps) {
   const [revealed, setRevealed] = useState(1);
+  const [selections, setSelections] = useState<Record<number, number>>({});
   const endRef = useRef<HTMLDivElement>(null);
+
+  const selectAnswer = (beatIdx: number, choiceIdx: number) => {
+    setSelections(s => beatIdx in s ? s : { ...s, [beatIdx]: choiceIdx });
+  };
+
+  const LETTER = ["A", "B", "C", "D"];
 
   const advance = () => {
     setRevealed((r) => Math.min(r + 1, beats.length));
@@ -56,11 +71,17 @@ export default function NarrativeLesson({
           from { opacity: 0; transform: translateY(14px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes nb-explain {
+          from { opacity: 0; transform: translateY(6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         .nb-beat { animation: nb-fadeup 0.45s ease; }
         .nb-narrative p + p { margin-top: 20px; }
         .nb-btn { transition: opacity 0.15s ease, transform 0.15s ease; }
         .nb-btn:hover { opacity: 0.87; transform: translateY(-1px); }
         .nb-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+        .nb-choice:not(:disabled):hover { filter: brightness(0.96); }
+        .nb-explain { animation: nb-explain 0.3s ease; }
       `}</style>
 
       {/* Header */}
@@ -159,6 +180,84 @@ export default function NarrativeLesson({
                 </div>
               </div>
             )}
+
+            {/* Quick Check */}
+            {beat.check && (() => {
+              const sel = selections[i];
+              const answered = sel !== undefined;
+              const isCorrect = sel === beat.check.correct;
+              return (
+                <div style={{
+                  marginTop: 20,
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: "18px 20px",
+                  background: "#fafafa",
+                }}>
+                  <p style={{
+                    fontSize: 10, fontWeight: 800, color: accent,
+                    letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10,
+                  }}>
+                    Quick Check
+                  </p>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: INK, lineHeight: 1.6, marginBottom: 14 }}>
+                    {beat.check.q}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {beat.check.choices.map((choice, j) => {
+                      const isRight = j === beat.check!.correct;
+                      const isWrong = answered && j === sel && !isCorrect;
+                      let border = "1px solid #e2e8f0";
+                      let bg = "#fff";
+                      let color = INK;
+                      if (answered && isRight) { border = "2px solid #16a34a"; bg = "#f0fdf4"; color = "#166534"; }
+                      else if (isWrong)          { border = "2px solid #dc2626"; bg = "#fef2f2"; color = "#991b1b"; }
+                      return (
+                        <button
+                          key={j}
+                          className="nb-choice"
+                          disabled={answered}
+                          onClick={() => selectAnswer(i, j)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "10px 14px",
+                            border, borderRadius: 8,
+                            background: bg, color,
+                            cursor: answered ? "default" : "pointer",
+                            textAlign: "left", fontSize: 13, lineHeight: 1.5,
+                            fontFamily: "inherit", width: "100%",
+                          }}
+                        >
+                          <span style={{
+                            flexShrink: 0, width: 22, height: 22, borderRadius: "50%",
+                            border: `1px solid ${answered && isRight ? "#16a34a" : isWrong ? "#dc2626" : "#cbd5e1"}`,
+                            background: answered && isRight ? "#dcfce7" : isWrong ? "#fee2e2" : "#f8fafc",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 10, fontWeight: 800,
+                            color: answered && isRight ? "#166534" : isWrong ? "#991b1b" : MUTED,
+                          }}>
+                            {LETTER[j]}
+                          </span>
+                          {choice}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {answered && (
+                    <div className="nb-explain" style={{
+                      marginTop: 12, padding: "12px 14px",
+                      background: "#fff", border: "1px solid #e2e8f0",
+                      borderRadius: 8, fontSize: 13, color: MUTED, lineHeight: 1.65,
+                    }}>
+                      <strong style={{ color: isCorrect ? "#16a34a" : "#dc2626" }}>
+                        {isCorrect ? "Correct! " : "Not quite — "}
+                      </strong>
+                      {beat.check.explain}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>
