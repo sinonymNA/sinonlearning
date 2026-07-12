@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Apps built for you, not just your classroom — Margins writing practice, digital textbooks, simulations, and AI literacy.",
   alternates: { canonical: `${SITE_URL}/students` },
 };
-import { ArrowUpRight, BookOpen, Sparkles, Coins, NotebookPen, ListChecks, Lightbulb, HardHat } from "lucide-react";
+import { ArrowUpRight, BookOpen, Sparkles, NotebookPen, ListChecks, Lightbulb, HardHat } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
 import DashLogo from "@/components/DashLogo";
@@ -74,6 +74,25 @@ const featuredTools: Tool[] = [
     name: "Personal Finance Portfolio",
     tagline: "Work through 9 real-world modules — paycheck, budget, banking, credit, investing, and more.",
   },
+  {
+    slug: "stock-market",
+    href: "/simulations/stock-market",
+    status: "live",
+    bgClass: "bg-white",
+    logo: (
+      <Image
+        src="/stock-market-logo.png"
+        alt="Stock Market Simulation"
+        width={140}
+        height={140}
+        style={{ width: 140, height: 140, objectFit: "contain" }}
+      />
+    ),
+    logoSub: "Investing Simulator",
+    logoSubClass: "text-[#2d5a1b]",
+    name: "Stock Market Simulation",
+    tagline: "Start with $100,000 in virtual cash, trade real stocks with live prices, and complete 11 units from 'what is a stock?' to bonds and compounding.",
+  },
 ];
 
 const moreTools: Tool[] = [
@@ -113,16 +132,6 @@ const moreTools: Tool[] = [
     logoSub: "AI Literacy",
     name: "AI Literacy for Students",
     tagline: "Understand the AI you already use every day — where it helps, and where it fails.",
-  },
-  {
-    slug: "personal-finance-tools",
-    href: "/simulations/stock-market",
-    status: "live",
-    bgClass: "bg-gradient-to-br from-emerald-500 to-emerald-700",
-    logo: <Coins size={44} strokeWidth={1.75} className="text-white" />,
-    logoSub: "Personal Finance",
-    name: "Stock Market Academy",
-    tagline: "9 units of Harvard-caliber investing + a live trading simulator. Start with $100,000.",
   },
   {
     slug: "study-guides",
