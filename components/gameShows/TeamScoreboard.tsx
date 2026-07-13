@@ -8,6 +8,14 @@ export interface ScoreboardTeam {
   score: number;
 }
 
+const TEAM_COLORS = [
+  { bg: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8" },
+  { bg: "#f5f3ff", border: "#ddd6fe", text: "#6d28d9" },
+  { bg: "#fffbeb", border: "#fde68a", text: "#b45309" },
+  { bg: "#fff1f2", border: "#fecdd3", text: "#be123c" },
+  { bg: "#fdf4ff", border: "#f5d0fe", text: "#a21caf" },
+];
+
 export default function TeamScoreboard({
   teams,
   onChange,
@@ -34,40 +42,48 @@ export default function TeamScoreboard({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-stretch justify-center gap-2 border-t border-white/10 bg-navy-950/85 px-3 py-3 backdrop-blur-md sm:gap-3 sm:px-6">
+    <div className="fixed inset-x-0 bottom-0 z-40 flex flex-wrap items-stretch justify-center gap-2 border-t border-slate-200 bg-white/95 px-3 py-3 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] backdrop-blur-md sm:gap-3 sm:px-6">
       {teams.map((team, i) => {
-        const accent = ACCENT_STYLES[TEAM_ACCENT_CYCLE[i % TEAM_ACCENT_CYCLE.length]];
+        const color = TEAM_COLORS[i % TEAM_COLORS.length];
         return (
           <div
             key={i}
-            className={`flex items-center gap-2 rounded-2xl border ${accent.border} ${accent.bg} px-3 py-2`}
+            className="flex items-center gap-2 rounded-2xl px-3 py-2"
+            style={{
+              background: color.bg,
+              border: `1px solid ${color.border}`,
+            }}
           >
             <button
               onClick={() => removeTeam(i)}
               aria-label="Remove team"
-              className="text-white/30 transition-colors hover:text-white/70"
+              className="text-slate-300 transition-colors hover:text-slate-600"
             >
               <X size={12} />
             </button>
             <input
               value={team.name}
               onChange={(e) => renameTeam(i, e.target.value)}
-              className="w-20 bg-transparent text-sm font-semibold text-white focus:outline-none sm:w-28"
+              className="w-20 bg-transparent text-sm font-semibold focus:outline-none sm:w-28"
+              style={{ color: color.text }}
             />
-            <span className={`font-display text-xl font-medium tabular-nums ${accent.text}`}>
+            <span
+              className="font-display text-xl font-black tabular-nums"
+              style={{ color: color.text }}
+            >
               {team.score}
             </span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => updateScore(i, -1)}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/60 transition-colors hover:bg-white/15 hover:text-white"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-colors hover:text-slate-700"
                 aria-label="Subtract a point"
               >
                 <Minus size={12} />
               </button>
               <button
                 onClick={() => updateScore(i, 1)}
-                className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-white/60 transition-colors hover:bg-white/15 hover:text-white"
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-colors hover:text-slate-700"
                 aria-label="Add a point"
               >
                 <Plus size={12} />
@@ -79,7 +95,7 @@ export default function TeamScoreboard({
 
       <button
         onClick={addTeam}
-        className="flex items-center gap-1.5 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700"
       >
         <UserPlus size={14} />
         Add team

@@ -159,8 +159,8 @@ export default function WheelPlay({ gameId, data }: { gameId: string; data: Whee
       </div>
 
       {round.hint && (
-        <p className="text-sm text-white/40">
-          Hint: <span className="text-white/70">{round.hint}</span>
+        <p className="text-sm text-slate-400">
+          Hint: <span className="text-slate-600">{round.hint}</span>
         </p>
       )}
 
@@ -239,9 +239,9 @@ export default function WheelPlay({ gameId, data }: { gameId: string; data: Whee
           className="flex items-center gap-2 rounded-full px-7 py-3.5 font-display text-sm font-black transition-all"
           style={{
             background: spinning
-              ? "rgba(255,255,255,0.08)"
+              ? "#f1f5f9"
               : "linear-gradient(135deg, #c4b5fd 0%, #7c3aed 100%)",
-            color: spinning ? "rgba(255,255,255,0.4)" : "#1a0040",
+            color: spinning ? "#94a3b8" : "#1a0040",
             boxShadow: spinning ? "none" : "0 0 24px rgba(139,92,246,0.5)",
           }}
         >
@@ -292,20 +292,20 @@ export default function WheelPlay({ gameId, data }: { gameId: string; data: Whee
               style={
                 correctlyGuessed
                   ? {
-                      background: "rgba(167,139,250,0.2)",
-                      border: "1px solid rgba(167,139,250,0.5)",
-                      color: "#c4b5fd",
+                      background: "#ede9fe",
+                      border: "1px solid #a78bfa",
+                      color: "#6d28d9",
                     }
                   : used
                     ? {
-                        background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.04)",
-                        color: "rgba(255,255,255,0.1)",
+                        background: "#f1f5f9",
+                        border: "1px solid #e2e8f0",
+                        color: "#cbd5e1",
                       }
                     : {
-                        background: "rgba(255,255,255,0.07)",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        color: "rgba(255,255,255,0.85)",
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        color: "#334155",
                       }
               }
             >
@@ -324,9 +324,9 @@ export default function WheelPlay({ gameId, data }: { gameId: string; data: Whee
             whileTap={{ scale: 0.95 }}
             className="rounded-full px-5 py-2.5 text-sm font-medium transition-all"
             style={{
-              border: "1px solid rgba(167,139,250,0.4)",
-              background: "rgba(167,139,250,0.1)",
-              color: "#c4b5fd",
+              border: "1px solid #a78bfa",
+              background: "#ede9fe",
+              color: "#6d28d9",
             }}
           >
             Reveal full phrase
@@ -337,8 +337,8 @@ export default function WheelPlay({ gameId, data }: { gameId: string; data: Whee
             onClick={nextRound}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="rounded-full px-5 py-2.5 text-sm font-medium text-white/70 transition-all"
-            style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.05)" }}
+            className="rounded-full px-5 py-2.5 text-sm font-medium text-slate-600 transition-all"
+            style={{ border: "1px solid #e2e8f0", background: "#f8fafc" }}
           >
             Next round →
           </motion.button>

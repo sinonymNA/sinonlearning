@@ -38,7 +38,7 @@ function MoneyLadder({ current, total }: { current: number; total: number }) {
                 ? { background: "rgba(251,191,36,0.15)", color: "#fde047", border: "1px solid rgba(251,191,36,0.25)" }
                 : active
                   ? { background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }
-                  : { background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.25)", border: "1px solid transparent" }
+                  : { background: "#f8fafc", color: "#94a3b8", border: "1px solid #e2e8f0" }
             }
           >
             {current >= m && <Check size={10} />}
@@ -133,10 +133,10 @@ export default function RacePlay({ gameId, data }: { gameId: string; data: RaceP
         <div className="flex-1">
           {/* Progress bar */}
           <div className="mb-2 flex items-center gap-3">
-            <span className="font-display text-xs font-semibold text-white/40">
+            <span className="font-display text-xs font-semibold text-slate-500">
               Question {questionIndex + 1} of {data.questions.length}
             </span>
-            <div className="h-1 flex-1 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.07)" }}>
+            <div className="h-1 flex-1 overflow-hidden rounded-full" style={{ background: "#e2e8f0" }}>
               <motion.div
                 className="h-full rounded-full"
                 style={{ background: "linear-gradient(90deg, #f43f5e 0%, #fbbf24 100%)" }}
@@ -159,7 +159,7 @@ export default function RacePlay({ gameId, data }: { gameId: string; data: RaceP
                       ? "rgba(251,191,36,0.6)"
                       : i === questionIndex
                         ? "#fbbf24"
-                        : "rgba(255,255,255,0.12)",
+                        : "#e2e8f0",
                 }}
               />
             ))}
@@ -282,7 +282,7 @@ export default function RacePlay({ gameId, data }: { gameId: string; data: RaceP
 
           {/* Lifelines row */}
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-white/30 uppercase tracking-wider mr-1">Lifelines:</span>
+            <span className="text-xs font-medium text-slate-400 uppercase tracking-wider mr-1">Lifelines:</span>
             {LIFELINES.map((ll) => {
               const used = usedLifelines.has(ll);
               return (
@@ -295,7 +295,7 @@ export default function RacePlay({ gameId, data }: { gameId: string; data: RaceP
                   className="rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all"
                   style={
                     used
-                      ? { background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.05)", textDecoration: "line-through" }
+                      ? { background: "#f8fafc", color: "#cbd5e1", border: "1px solid #e2e8f0", textDecoration: "line-through" }
                       : { background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.25)" }
                   }
                 >
@@ -330,7 +330,7 @@ export default function RacePlay({ gameId, data }: { gameId: string; data: RaceP
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="font-display text-lg font-semibold text-white/50"
+                  className="font-display text-lg font-semibold text-slate-400"
                 >
                   Final question complete — check the leaderboard!
                 </motion.p>

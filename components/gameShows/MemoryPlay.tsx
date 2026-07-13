@@ -91,10 +91,10 @@ export default function MemoryPlay({ gameId, data }: { gameId: string; data: Mem
     <div className="mx-auto max-w-5xl">
       {/* Match counter */}
       <div className="mb-6 flex items-center justify-center gap-2">
-        <span className="font-display text-sm font-medium text-white/40">
+        <span className="font-display text-sm font-medium text-slate-400">
           {matched.size} / {data.pairs.length} matched
         </span>
-        <div className="h-1.5 w-32 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div className="h-1.5 w-32 overflow-hidden rounded-full" style={{ background: "#e2e8f0" }}>
           <motion.div
             className="h-full rounded-full"
             style={{ background: "linear-gradient(90deg, #a78bfa 0%, #d946ef 100%)" }}

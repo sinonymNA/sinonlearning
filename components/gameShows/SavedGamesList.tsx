@@ -19,7 +19,7 @@ export default function SavedGamesList() {
 
   useEffect(() => {
     if (myIds.length === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- no fetch needed, nothing to await
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- no fetch needed
       setLoaded(true);
       return;
     }
@@ -33,7 +33,7 @@ export default function SavedGamesList() {
 
   if (games.length === 0) {
     return (
-      <p className="text-center text-sm text-white/40">
+      <p className="text-center text-sm text-slate-400">
         Games you create on this device will show up here.
       </p>
     );
@@ -46,24 +46,24 @@ export default function SavedGamesList() {
         return (
           <div
             key={game.id}
-            className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-5 py-4"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
           >
             <div>
-              <p className="text-sm font-semibold text-white">{game.title}</p>
-              <p className="mt-0.5 text-xs text-white/40">{info?.label ?? game.type}</p>
+              <p className="text-sm font-semibold text-[#0d1e4a]">{game.title}</p>
+              <p className="mt-0.5 text-xs text-slate-400">{info?.label ?? game.type}</p>
             </div>
             <div className="flex items-center gap-2">
               <Link
                 href={`/game-shows/${game.id}/edit`}
                 aria-label="Edit game"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
               >
                 <Pencil size={13} />
               </Link>
               <Link
                 href={`/play/game-shows/${game.id}`}
                 aria-label="Play game"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-300 text-navy-950 transition-colors hover:bg-teal-200"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1a52f5] text-white transition-opacity hover:opacity-85"
               >
                 <Play size={13} />
               </Link>

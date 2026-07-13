@@ -95,8 +95,7 @@ export default function FeudPlay({ gameId, data }: { gameId: string; data: FeudP
         key={roundIndex}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center font-display text-2xl font-semibold leading-tight text-white sm:text-4xl"
-        style={{ textShadow: "0 0 40px rgba(251,191,36,0.2)" }}
+        className="text-center font-display text-2xl font-semibold leading-tight text-[#0d1e4a] sm:text-4xl"
       >
         {round.prompt}
       </motion.p>
@@ -219,10 +218,10 @@ export default function FeudPlay({ gameId, data }: { gameId: string; data: FeudP
             onClick={addStrike}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="ml-2 rounded-full px-4 py-2 text-xs font-semibold text-white/70 transition-colors"
+            className="ml-2 rounded-full px-4 py-2 text-xs font-semibold text-rose-600 transition-colors"
             style={{
               border: "1px solid rgba(239,68,68,0.3)",
-              background: "rgba(239,68,68,0.08)",
+              background: "rgba(239,68,68,0.06)",
             }}
           >
             + Strike
@@ -233,7 +232,7 @@ export default function FeudPlay({ gameId, data }: { gameId: string; data: FeudP
           className="flex items-center gap-3 rounded-xl px-5 py-2.5"
           style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}
         >
-          <span className="font-display text-sm font-medium text-white/50">Round total</span>
+          <span className="font-display text-sm font-medium text-slate-500">Round total</span>
           <motion.span
             key={total}
             initial={{ scale: 1.3, color: "#fde047" }}
@@ -253,10 +252,10 @@ export default function FeudPlay({ gameId, data }: { gameId: string; data: FeudP
             onClick={nextRound}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.96 }}
-            className="rounded-full px-6 py-3 text-sm font-semibold text-white transition-colors"
+            className="rounded-full px-6 py-3 text-sm font-semibold text-slate-600 transition-colors"
             style={{
-              border: "1px solid rgba(255,255,255,0.15)",
-              background: "rgba(255,255,255,0.05)",
+              border: "1px solid #e2e8f0",
+              background: "#f8fafc",
             }}
           >
             Next Round →

@@ -3,6 +3,10 @@
 import { Plus, Trash2 } from "lucide-react";
 import type { MemoryPayload } from "@/lib/gameShowTypes";
 
+const INPUT = "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50";
+const TRASH = "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500";
+const ADD_ROW = "flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm transition-colors hover:border-blue-300 hover:text-blue-600";
+
 export default function MemoryEditor({
   data,
   onChange,
@@ -32,28 +36,21 @@ export default function MemoryEditor({
             value={pair.term}
             onChange={(e) => updatePair(pi, "term", e.target.value)}
             placeholder="Term"
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-fuchsia-300/50 focus:outline-none"
+            className={INPUT}
           />
           <input
             value={pair.definition}
             onChange={(e) => updatePair(pi, "definition", e.target.value)}
             placeholder="Definition"
-            className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-fuchsia-300/50 focus:outline-none"
+            className={INPUT}
           />
-          <button
-            onClick={() => removePair(pi)}
-            aria-label="Remove pair"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-rose-300"
-          >
+          <button onClick={() => removePair(pi)} aria-label="Remove pair" className={TRASH}>
             <Trash2 size={14} />
           </button>
         </div>
       ))}
 
-      <button
-        onClick={addPair}
-        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-      >
+      <button onClick={addPair} className={ADD_ROW}>
         <Plus size={14} />
         Add pair
       </button>

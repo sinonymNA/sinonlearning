@@ -3,6 +3,10 @@
 import { Plus, Trash2 } from "lucide-react";
 import type { RacePayload } from "@/lib/gameShowTypes";
 
+const INPUT = "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-300 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-50";
+const TRASH = "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition-colors hover:bg-rose-50 hover:text-rose-500";
+const ADD_ROW = "flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-500 shadow-sm transition-colors hover:border-blue-300 hover:text-blue-600";
+
 export default function RaceEditor({
   data,
   onChange,
@@ -52,25 +56,21 @@ export default function RaceEditor({
   return (
     <div className="space-y-4">
       {data.questions.map((q, qi) => (
-        <div key={qi} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div key={qi} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <div className="flex items-center gap-2">
             <input
               value={q.question}
               onChange={(e) => updateQuestion(qi, e.target.value)}
               placeholder={`Question ${qi + 1}`}
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-white placeholder:text-white/30 focus:border-rose-300/50 focus:outline-none"
+              className={`flex-1 font-semibold ${INPUT}`}
             />
             <input
               type="number"
               value={q.points ?? 100}
               onChange={(e) => updatePoints(qi, e.target.value)}
-              className="w-20 rounded-lg border border-white/10 bg-white/5 px-2 py-2 text-sm text-white focus:border-rose-300/50 focus:outline-none"
+              className={`w-20 ${INPUT}`}
             />
-            <button
-              onClick={() => removeQuestion(qi)}
-              aria-label="Remove question"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-rose-300"
-            >
+            <button onClick={() => removeQuestion(qi)} aria-label="Remove question" className={TRASH}>
               <Trash2 size={14} />
             </button>
           </div>
@@ -81,10 +81,10 @@ export default function RaceEditor({
                 <button
                   onClick={() => setCorrect(qi, ci)}
                   aria-label="Mark as correct answer"
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black transition-colors ${
                     q.correctIndex === ci
-                      ? "border-rose-300/60 bg-rose-400/20 text-rose-200"
-                      : "border-white/10 bg-white/5 text-white/40 hover:text-white/70"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-white text-slate-400 hover:text-slate-600"
                   }`}
                 >
                   {String.fromCharCode(65 + ci)}
@@ -93,19 +93,16 @@ export default function RaceEditor({
                   value={choice}
                   onChange={(e) => updateChoice(qi, ci, e.target.value)}
                   placeholder={`Choice ${String.fromCharCode(65 + ci)}`}
-                  className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:border-rose-300/50 focus:outline-none"
+                  className={`flex-1 ${INPUT}`}
                 />
               </div>
             ))}
           </div>
-          <p className="mt-2 text-xs text-white/40">Click the letter to mark the correct choice.</p>
+          <p className="mt-2 text-xs text-slate-400">Click the letter to mark the correct choice.</p>
         </div>
       ))}
 
-      <button
-        onClick={addQuestion}
-        className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-      >
+      <button onClick={addQuestion} className={ADD_ROW}>
         <Plus size={14} />
         Add question
       </button>

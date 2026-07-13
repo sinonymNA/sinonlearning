@@ -52,36 +52,38 @@ export default function PresentationShell({
   };
 
   return (
-    <div className="bg-circuit relative min-h-screen overflow-hidden bg-navy-950">
-      <div className="pointer-events-none absolute left-1/3 top-0 -z-10 h-[28rem] w-[28rem] -translate-y-1/3 rounded-full bg-teal-400/20 blur-[130px]" />
-      <div className="pointer-events-none absolute -right-20 top-40 -z-10 h-80 w-80 rounded-full bg-purple-500/20 blur-[120px]" />
-      <div className="pointer-events-none absolute -left-24 bottom-0 -z-10 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-[110px]" />
-
+    <div className="relative min-h-screen bg-white">
+      {/* Top chrome bar */}
       <div
-        className={`fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 px-5 py-3 transition-opacity duration-500 ${
+        className={`fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-5 py-3 backdrop-blur-md shadow-sm transition-opacity duration-500 ${
           chromeVisible ? "opacity-100" : "opacity-0"
         }`}
       >
         <Link
           href={exitHref}
-          className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+          className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm transition-colors hover:border-slate-300 hover:text-slate-800"
         >
           <ArrowLeft size={13} />
           Exit
         </Link>
 
-        <span className="font-display text-sm font-medium text-white/80">{title}</span>
+        {/* Wordmark */}
+        <span className="font-display text-sm font-black">
+          <span className="text-[#0d1e4a]">GAME</span>{" "}
+          <span className="text-[#1a52f5]">SHOWS</span>
+          <span className="ml-2 font-sans text-xs font-medium text-slate-400">— {title}</span>
+        </span>
 
         <div className="flex items-center gap-2">
           {now && (
-            <span className="hidden text-xs tabular-nums text-white/40 md:inline">
+            <span className="hidden text-xs tabular-nums text-slate-400 md:inline">
               {now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
             </span>
           )}
           <button
             onClick={toggleFullscreen}
             aria-label="Toggle fullscreen"
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-sm transition-colors hover:text-slate-700"
           >
             {fullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
           </button>
