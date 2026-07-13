@@ -79,6 +79,16 @@ export const simulations: SimulationCatalogEntry[] = [
     subject: "AP World History",
     status: "Available",
   },
+  {
+    slug: "cloth-that-conquered-world",
+    number: 8,
+    title: "The Cloth That Conquered the World",
+    tagline: "One Indian textile. Three centuries of desire, industry, coercion, and empire.",
+    description:
+      "Enter a museum-style investigation of an eighteenth-century Indian chintz. Inspect the object, follow its trade constellation, trace the knowledge embedded in its dyes, and build an AP World History causation argument about how cotton reshaped the global economy from 1450 to 1900.",
+    subject: "AP World History",
+    status: "Available",
+  },
 ];
 
 export function getSimulationBySlug(slug: string): SimulationCatalogEntry | undefined {
