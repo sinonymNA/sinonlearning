@@ -20,6 +20,13 @@ export type VaultArtifact = {
   glyph: string;
 };
 
+export type VaultCustomSet = {
+  title: string;
+  questions: VaultQuestion[];
+};
+
+export const VAULT_CUSTOM_SET_KEY = "sinon-vault-custom-set-v1";
+
 export const VAULT_QUESTIONS: VaultQuestion[] = [
   {
     id: "history-1", subject: "World History", concept: "Indian Ocean trade",

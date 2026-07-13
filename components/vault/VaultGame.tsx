@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, DoorOpen, Flame, Gem, Heart, RotateCcw, Shield, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { VAULT_ARTIFACTS, VAULT_QUESTIONS, type VaultArtifact } from "@/lib/vaultGame";
+import { VAULT_ARTIFACTS, VAULT_CUSTOM_SET_KEY, VAULT_QUESTIONS, type VaultArtifact, type VaultCustomSet } from "@/lib/vaultGame";
 
 type Phase = "home" | "question" | "glitch" | "choice" | "reward" | "shrine" | "lost" | "extracted";
 type RunModifier = "echo" | "fortune" | "lantern" | null;
@@ -25,6 +25,7 @@ export default function VaultGame() {
   const [save, setSave] = useState<Save>(EMPTY_SAVE);
   const [loaded, setLoaded] = useState(false);
   const [deck, setDeck] = useState("Mixed Descent");
+  const [customSet, setCustomSet] = useState<VaultCustomSet | null>(null);
   const [depth, setDepth] = useState(1);
   const [torch, setTorch] = useState(3);
   const [shards, setShards] = useState(0);
@@ -45,14 +46,23 @@ export default function VaultGame() {
       // Hydrate browser-only progress after mount.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setSave(JSON.parse(raw) as Save);
+      const customRaw = localStorage.getItem(VAULT_CUSTOM_SET_KEY);
+      if (customRaw) {
+        const parsed = JSON.parse(customRaw) as VaultCustomSet;
+        if (parsed.questions?.length >= 3) {
+          setCustomSet(parsed);
+          if (new URLSearchParams(window.location.search).get("set") === "custom") setDeck(parsed.title);
+        }
+      }
     } catch { /* local-only progress is optional */ }
     setLoaded(true);
   }, []);
 
   const pool = useMemo(() => {
+    if (customSet && deck === customSet.title) return customSet.questions;
     if (deck === "Mixed Descent") return VAULT_QUESTIONS;
     return VAULT_QUESTIONS.filter((q) => q.subject === deck);
-  }, [deck]);
+  }, [customSet, deck]);
   const question = pool[(depth - 1) % pool.length];
   const order = useMemo(() => {
     const shift = (depth * 3 + question.id.length) % 4;
@@ -156,8 +166,9 @@ export default function VaultGame() {
               <h1 className="max-w-3xl font-display text-6xl font-black leading-[.88] tracking-[-.05em] text-[#f4ead0] sm:text-7xl lg:text-8xl">Nobody has reached the bottom.</h1>
               <p className="mt-7 max-w-xl text-base leading-7 text-[#b9b09b]">Answer what you know. Repair what you don’t. Take the treasure and leave—or risk everything to see what waits below.</p>
               <div className="mt-8 flex flex-wrap items-end gap-3">
-                <label className="text-[10px] font-bold uppercase tracking-[.18em] text-[#938b78]">Question set<select value={deck} onChange={(e)=>setDeck(e.target.value)} className="mt-2 block min-w-52 rounded-xl border border-[#ddc98b]/20 bg-[#0d1d1b] px-4 py-3 text-sm normal-case tracking-normal text-[#f4eedc] outline-none focus:border-cyan-300"><option>Mixed Descent</option><option>World History</option><option>Biology</option><option>Algebra</option></select></label>
+                <label className="text-[10px] font-bold uppercase tracking-[.18em] text-[#938b78]">Question set<select value={deck} onChange={(e)=>setDeck(e.target.value)} className="mt-2 block min-w-52 rounded-xl border border-[#ddc98b]/20 bg-[#0d1d1b] px-4 py-3 text-sm normal-case tracking-normal text-[#f4eedc] outline-none focus:border-cyan-300"><option>Mixed Descent</option><option>World History</option><option>Biology</option><option>Algebra</option>{customSet&&<option>{customSet.title}</option>}</select></label>
                 <button onClick={startRun} className="group flex items-center gap-3 rounded-xl bg-[#e6d398] px-6 py-3 text-sm font-black uppercase tracking-[.14em] text-[#10211f] shadow-[0_0_40px_rgba(230,211,152,.12)] transition hover:bg-white">Begin descent <ChevronDown size={17} className="transition group-hover:translate-y-1"/></button>
+                <Link href="/vault/build" className="flex items-center gap-2 px-2 py-3 text-xs font-bold text-cyan-200/65 hover:text-cyan-100">Forge a question set <ArrowRight size={13}/></Link>
               </div>
             </div>
             <VaultShelf save={save}/>
