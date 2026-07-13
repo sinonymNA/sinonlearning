@@ -54,6 +54,19 @@ export default function VaultGame() {
           if (new URLSearchParams(window.location.search).get("set") === "custom") setDeck(parsed.title);
         }
       }
+      const sharedId = new URLSearchParams(window.location.search).get("set");
+      if (sharedId && sharedId !== "custom") {
+        fetch(`/api/vault/sets/${encodeURIComponent(sharedId)}`)
+          .then((response) => response.ok ? response.json() : Promise.reject())
+          .then((data: { vaultSet: { title: string; questions: VaultCustomSet["questions"] } }) => {
+            if (data.vaultSet.questions.length >= 3) {
+              const shared = { title: data.vaultSet.title, questions: data.vaultSet.questions };
+              setCustomSet(shared);
+              setDeck(shared.title);
+            }
+          })
+          .catch(() => { /* The home screen stays playable if a link is unavailable. */ });
+      }
     } catch { /* local-only progress is optional */ }
     setLoaded(true);
   }, []);
@@ -161,9 +174,11 @@ export default function VaultGame() {
       <AnimatePresence mode="wait">
         {phase === "home" ? (
           <motion.section key="home" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="relative z-10 mx-auto grid min-h-[calc(100vh-64px)] max-w-7xl items-center gap-12 px-5 py-12 lg:grid-cols-[1.15fr_.85fr] lg:px-10">
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[url('/images/vault/vault-gate-hero.png')] bg-cover bg-center opacity-70" />
+            <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(90deg,#07100f_0%,rgba(7,16,15,.91)_31%,rgba(7,16,15,.18)_72%,#07100f_100%)]" />
             <div>
-              <p className="mb-5 text-xs font-bold uppercase tracking-[.28em] text-cyan-300">The gates have opened</p>
-              <h1 className="max-w-3xl font-display text-6xl font-black leading-[.88] tracking-[-.05em] text-[#f4ead0] sm:text-7xl lg:text-8xl">Nobody has reached the bottom.</h1>
+              <p className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[.3em] text-cyan-200"><span className="h-px w-10 bg-cyan-300"/> Site 09 · Curator access granted</p>
+              <h1 className="max-w-3xl font-display text-6xl font-black leading-[.84] tracking-[-.055em] text-[#f4ead0] sm:text-7xl lg:text-8xl">THE VAULT<br/><span className="text-[#d8b86a]">IS HUNGRY.</span></h1>
               <p className="mt-7 max-w-xl text-base leading-7 text-[#b9b09b]">Answer what you know. Repair what you don’t. Take the treasure and leave—or risk everything to see what waits below.</p>
               <div className="mt-8 flex flex-wrap items-end gap-3">
                 <label className="text-[10px] font-bold uppercase tracking-[.18em] text-[#938b78]">Question set<select value={deck} onChange={(e)=>setDeck(e.target.value)} className="mt-2 block min-w-52 rounded-xl border border-[#ddc98b]/20 bg-[#0d1d1b] px-4 py-3 text-sm normal-case tracking-normal text-[#f4eedc] outline-none focus:border-cyan-300"><option>Mixed Descent</option><option>World History</option><option>Biology</option><option>Algebra</option>{customSet&&<option>{customSet.title}</option>}</select></label>
