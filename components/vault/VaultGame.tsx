@@ -1,77 +1,908 @@
 "use client";
-/* eslint-disable react-hooks/set-state-in-effect */
 
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronDown, DoorOpen, Flame, Gem, Heart, RotateCcw, ShieldAlert, Sparkles, Zap } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { VAULT_ARTIFACTS, VAULT_CUSTOM_SET_KEY, VAULT_QUESTIONS, type VaultArtifact, type VaultCustomSet, type VaultQuestion } from "@/lib/vaultGame";
+import {
+  ArrowLeft, Check, ChevronDown, Flame, Gem, Heart,
+  RotateCcw, ShieldAlert, Sparkles, X, Zap,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  VAULT_ARTIFACTS, VAULT_CUSTOM_SET_KEY, VAULT_QUESTIONS,
+  type VaultArtifact, type VaultCustomSet, type VaultQuestion,
+} from "@/lib/vaultGame";
 
-type Phase = "home" | "room" | "repair" | "camp" | "relic" | "shrine" | "lost" | "extracted";
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Phase = "home" | "room" | "repair" | "shrine" | "relic" | "camp" | "lost" | "extracted";
 type Modifier = "echo" | "fortune" | "lantern" | null;
-type Save = { shards: number; bestDepth: number; artifacts: string[]; mastered: string[]; conceptWins?: Record<string, number> };
-const EMPTY: Save = { shards: 0, bestDepth: 0, artifacts: [], mastered: [] };
+type Save = {
+  shards: number;
+  bestDepth: number;
+  artifacts: string[];
+  mastered: string[];
+  conceptWins?: Record<string, number>;
+};
+
+const EMPTY_SAVE: Save = { shards: 0, bestDepth: 0, artifacts: [], mastered: [] };
+const MAX_TIMER = 12;
+
+// A/B/C/D colors — bold, distinct, readable
+const ANSWER_COLORS = ["#2563eb", "#16a34a", "#d97706", "#9333ea"] as const;
+const ANSWER_LABELS = ["A", "B", "C", "D"] as const;
+
+// ─── Sound ────────────────────────────────────────────────────────────────────
+
+function playTone(type: "correct" | "wrong" | "tick" | "fanfare") {
+  try {
+    const ctx = new AudioContext();
+    const schedule = (
+      freq: number, startAt: number, dur: number,
+      wave: OscillatorType = "sine", vol = 0.2,
+    ) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = wave;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + startAt);
+      gain.gain.setValueAtTime(vol, ctx.currentTime + startAt);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + dur);
+      osc.start(ctx.currentTime + startAt);
+      osc.stop(ctx.currentTime + startAt + dur);
+    };
+
+    if (type === "correct") {
+      schedule(440, 0, 0.12, "sine", 0.22);
+      schedule(660, 0.1, 0.25, "sine", 0.2);
+    } else if (type === "wrong") {
+      schedule(200, 0, 0.15, "sawtooth", 0.18);
+      schedule(130, 0.15, 0.35, "sawtooth", 0.15);
+    } else if (type === "tick") {
+      schedule(900, 0, 0.05, "square", 0.07);
+    } else if (type === "fanfare") {
+      [330, 415, 523, 660].forEach((f, i) =>
+        schedule(f, i * 0.1, 0.2, "sine", 0.15),
+      );
+    }
+  } catch { /* Audio unavailable in some contexts */ }
+}
+
+// ─── Root component ────────────────────────────────────────────────────────────
 
 export default function VaultGame() {
-  const reduceMotion = useReducedMotion();
-  const [phase, setPhase] = useState<Phase>("home"), [save, setSave] = useState<Save>(EMPTY), [ready, setReady] = useState(false);
-  const [deck, setDeck] = useState("Mixed Descent"), [customSet, setCustomSet] = useState<VaultCustomSet | null>(null);
-  const [depth, setDepth] = useState(1), [light, setLight] = useState(3), [shards, setShards] = useState(0), [combo, setCombo] = useState(0);
-  const [picked, setPicked] = useState<number | null>(null), [repairPicked, setRepairPicked] = useState<number | null>(null), [relic, setRelic] = useState<VaultArtifact | null>(null);
-  const [carried, setCarried] = useState<string[]>([]), [modifier, setModifier] = useState<Modifier>(null), [eliminated, setEliminated] = useState<number | null>(null), [runWins, setRunWins] = useState<Record<string, number>>({});
+  const noMotion = useReducedMotion();
+
+  // Persistence
+  const [ready, setReady] = useState(false);
+  const [save, setSave] = useState<Save>(EMPTY_SAVE);
+
+  // Navigation / deck
+  const [phase, setPhase] = useState<Phase>("home");
+  const [deck, setDeck] = useState("Mixed Descent");
+  const [customSet, setCustomSet] = useState<VaultCustomSet | null>(null);
+
+  // Run state
+  const [depth, setDepth] = useState(1);
+  const [light, setLight] = useState(3);
+  const [shards, setShards] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [timer, setTimer] = useState(MAX_TIMER);
+  const [timedOut, setTimedOut] = useState(false);
+
+  // Question state
+  const [picked, setPicked] = useState<number | null>(null);
+  const [eliminated, setEliminated] = useState<number | null>(null);
+  const [relic, setRelic] = useState<VaultArtifact | null>(null);
+  const [carried, setCarried] = useState<string[]>([]);
+  const [modifier, setModifier] = useState<Modifier>(null);
+  const [runWins, setRunWins] = useState<Record<string, number>>({});
+  const [repairPicked, setRepairPicked] = useState<number | null>(null);
+
+  // Keep modifier accessible in the timer closure without re-triggering the effect
+  const modRef = useRef<Modifier>(null);
+  useEffect(() => { modRef.current = modifier; }, [modifier]);
+
+  // ── Load save + URL params ──────────────────────────────────────────────────
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("sinon-vault-save-v1"); if (stored) setSave(JSON.parse(stored) as Save);
-      const local = localStorage.getItem(VAULT_CUSTOM_SET_KEY); if (local) { const parsed = JSON.parse(local) as VaultCustomSet; if (parsed.questions?.length >= 3) setCustomSet(parsed); }
+      const stored = localStorage.getItem("sinon-vault-save-v1");
+      if (stored) setSave(JSON.parse(stored) as Save);
+
+      const local = localStorage.getItem(VAULT_CUSTOM_SET_KEY);
+      if (local) {
+        const parsed = JSON.parse(local) as VaultCustomSet;
+        if (parsed.questions?.length >= 3) setCustomSet(parsed);
+      }
+
       const id = new URLSearchParams(window.location.search).get("set");
       if (id === "custom" && local) setDeck((JSON.parse(local) as VaultCustomSet).title);
-      if (id && id !== "custom") fetch(`/api/vault/sets/${encodeURIComponent(id)}`).then(r => r.ok ? r.json() : Promise.reject()).then((data: { vaultSet: VaultCustomSet }) => { if (data.vaultSet.questions.length >= 3) { setCustomSet(data.vaultSet); setDeck(data.vaultSet.title); } }).catch(() => undefined);
-    } catch { /* Progress is optional. */ }
+      if (id && id !== "custom") {
+        fetch(`/api/vault/sets/${encodeURIComponent(id)}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then((data: { vaultSet: VaultCustomSet }) => {
+            if (data.vaultSet.questions.length >= 3) {
+              setCustomSet(data.vaultSet);
+              setDeck(data.vaultSet.title);
+            }
+          })
+          .catch(() => undefined);
+      }
+    } catch { /* Save is optional */ }
     setReady(true);
   }, []);
 
-  const pool = useMemo(() => customSet && deck === customSet.title ? customSet.questions : deck === "Mixed Descent" ? VAULT_QUESTIONS : VAULT_QUESTIONS.filter(q => q.subject === deck), [customSet, deck]);
-  const question = pool[(depth - 1) % pool.length];
-  const order = useMemo(() => [0, 1, 2, 3].map(i => (i + depth * 3 + question.id.length) % 4), [depth, question.id]);
-  const persist = (next: Save) => { setSave(next); try { localStorage.setItem("sinon-vault-save-v1", JSON.stringify(next)); } catch { /* Optional. */ } };
-  const start = () => { setDepth(1); setLight(3); setShards(0); setCombo(0); setPicked(null); setRepairPicked(null); setRelic(null); setCarried([]); setModifier(null); setEliminated(null); setRunWins({}); setPhase("room"); };
-  const answer = (index: number) => {
-    if (picked !== null || index === eliminated) return;
-    setPicked(index);
-    if (index !== question.answer) { setCombo(0); setLight(v => Math.max(0, v - (modifier === "fortune" ? 2 : 1))); window.setTimeout(() => setPhase("repair"), 550); return; }
-    const nextCombo = combo + 1; setCombo(nextCombo); setShards(v => v + Math.round((20 + depth * 5 + combo * 3) * (modifier === "fortune" ? 1.5 : 1))); setRunWins(v => ({ ...v, [question.concept]: (v[question.concept] ?? 0) + 1 }));
-    window.setTimeout(() => { if (depth % 2 === 0) { const options = VAULT_ARTIFACTS.filter(a => !carried.includes(a.id)); const found = options[(depth + combo) % options.length] ?? VAULT_ARTIFACTS[0]; setRelic(found); setCarried(v => [...v, found.id]); setPhase("relic"); } else setPhase("camp"); }, 600);
+  // ── Question pool + shuffled order ─────────────────────────────────────────
+
+  const pool = useMemo(() =>
+    customSet && deck === customSet.title
+      ? customSet.questions
+      : deck === "Mixed Descent"
+        ? VAULT_QUESTIONS
+        : VAULT_QUESTIONS.filter(q => q.subject === deck),
+    [customSet, deck],
+  );
+
+  const question: VaultQuestion = pool[(depth - 1) % pool.length];
+
+  // Deterministically shuffle choices per floor so replay feels different
+  const order = useMemo(
+    () => [0, 1, 2, 3].map(i => (i + depth * 3 + question.id.length) % 4),
+    [depth, question.id],
+  );
+
+  // ── Countdown timer ─────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (phase !== "room" || picked !== null || timedOut) return;
+    setTimer(MAX_TIMER);
+
+    const id = setInterval(() => {
+      setTimer(t => {
+        if (t <= 1) {
+          clearInterval(id);
+          setTimedOut(true);
+          setCombo(0);
+          setLight(v => Math.max(0, v - (modRef.current === "fortune" ? 2 : 1)));
+          playTone("wrong");
+          setTimeout(() => setPhase("repair"), 500);
+          return 0;
+        }
+        if (t <= 4) playTone("tick");
+        return t - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, depth]); // re-runs on new room, not on every state change
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  const persist = (next: Save) => {
+    setSave(next);
+    try { localStorage.setItem("sinon-vault-save-v1", JSON.stringify(next)); } catch { /* Optional */ }
   };
-  const repair = (index: number) => { if (repairPicked !== null) return; setRepairPicked(index); if (index === question.repairAnswer) setShards(v => v + 10); window.setTimeout(() => { setRepairPicked(null); setPhase(light <= 0 ? "lost" : "camp"); }, 550); };
-  const descend = () => { if (depth >= 8) return extract(); setDepth(v => v + 1); setPicked(null); setEliminated(null); setPhase((depth === 3 || depth === 6) ? "shrine" : "room"); };
-  const extract = () => { const wins = Object.entries(runWins).reduce((all, [concept, value]) => ({ ...all, [concept]: (all[concept] ?? 0) + value }), { ...(save.conceptWins ?? {}) }); persist({ shards: save.shards + shards, bestDepth: Math.max(save.bestDepth, depth), artifacts: [...new Set([...save.artifacts, ...carried])], mastered: [...new Set([...save.mastered, ...Object.keys(runWins)])], conceptWins: wins }); setPhase("extracted"); };
-  if (!ready) return <main className="min-h-screen bg-[#07100f]" />;
-  const activeQuestion = phase === "room" && question;
-  return <main className="min-h-screen overflow-hidden bg-[#050b0b] text-[#f5edda] selection:bg-cyan-300 selection:text-black">
-    <VaultAtmosphere depth={phase === "home" ? 0 : depth}/>
-    <header className="relative z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#050b0b]/80 px-5 backdrop-blur-xl"><Link href="/game-shows" className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[.2em] text-[#d5bd7d]"><ArrowLeft size={14}/> Exit vault</Link><p className="font-display text-xl font-black tracking-[.12em]">THE VAULT</p><span className="flex items-center gap-1.5 text-xs font-black text-cyan-200"><Gem size={13}/>{save.shards}</span></header>
-    <AnimatePresence mode="wait">
-      {phase === "home" ? <Home key="home" deck={deck} customSet={customSet} save={save} onDeck={setDeck} onStart={start}/> : <motion.section key={phase + depth} initial={{ opacity: 0, scale: reduceMotion ? 1 : .985 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="relative z-10 mx-auto min-h-[calc(100vh-64px)] max-w-[1500px] px-4 py-4 md:px-8">
-        <Hud depth={depth} light={light} shards={shards} combo={combo} carried={carried}/>
-        {activeQuestion && <Room question={question} order={order} picked={picked} eliminated={eliminated} modifier={modifier} onEcho={() => { const bad = order.find(i => i !== question.answer); if (bad !== undefined) setEliminated(bad); }} onAnswer={answer}/>} 
-        {phase === "repair" && <Repair question={question} picked={repairPicked} onPick={repair}/>} 
-        {phase === "camp" && <Camp depth={depth} light={light} shards={shards} onDescend={descend} onExtract={extract}/>} 
-        {phase === "relic" && relic && <Relic artifact={relic} onContinue={() => setPhase("camp")}/>} 
-        {phase === "shrine" && <Shrine active={modifier} onChoose={(next) => { setModifier(next); if (next === "lantern") setLight(v => Math.min(4, v + 1)); setPhase("room"); }}/>} 
-        {phase === "lost" && <End lost shards={Math.floor(shards / 2)} onAgain={start} onHome={() => setPhase("home")}/>} 
-        {phase === "extracted" && <End shards={shards} onAgain={start} onHome={() => setPhase("home")}/>} 
-      </motion.section>}
-    </AnimatePresence>
-  </main>;
+
+  const resetRoom = () => {
+    setPicked(null);
+    setEliminated(null);
+    setTimedOut(false);
+    setTimer(MAX_TIMER);
+  };
+
+  /** Move to the next floor. Shows shrine at depths 3 and 6. */
+  const advance = (fromDepth: number) => {
+    setDepth(fromDepth + 1);
+    resetRoom();
+    setPhase(fromDepth === 3 || fromDepth === 6 ? "shrine" : "room");
+  };
+
+  const extract = () => {
+    const wins = Object.entries(runWins).reduce(
+      (all, [concept, val]) => ({ ...all, [concept]: (all[concept] ?? 0) + val }),
+      { ...(save.conceptWins ?? {}) },
+    );
+    persist({
+      shards: save.shards + shards,
+      bestDepth: Math.max(save.bestDepth, depth),
+      artifacts: [...new Set([...save.artifacts, ...carried])],
+      mastered: [...new Set([...save.mastered, ...Object.keys(runWins)])],
+      conceptWins: wins,
+    });
+    setPhase("extracted");
+  };
+
+  const start = () => {
+    setDepth(1); setLight(3); setShards(0); setCombo(0);
+    setRelic(null); setCarried([]); setModifier(null);
+    setRunWins({}); setRepairPicked(null);
+    resetRoom();
+    setPhase("room");
+  };
+
+  // ── Answer handler ──────────────────────────────────────────────────────────
+
+  const answer = (choiceIndex: number) => {
+    if (picked !== null || timedOut || choiceIndex === eliminated) return;
+    setPicked(choiceIndex);
+
+    const isCorrect = choiceIndex === question.answer;
+
+    if (!isCorrect) {
+      playTone("wrong");
+      setCombo(0);
+      setLight(v => Math.max(0, v - (modifier === "fortune" ? 2 : 1)));
+      setTimeout(() => setPhase("repair"), 600);
+      return;
+    }
+
+    playTone("correct");
+    const nextCombo = combo + 1;
+    setCombo(nextCombo);
+    const earned = Math.round(
+      (20 + depth * 5 + combo * 3) * (modifier === "fortune" ? 1.5 : 1),
+    );
+    setShards(v => v + earned);
+    setRunWins(v => ({ ...v, [question.concept]: (v[question.concept] ?? 0) + 1 }));
+
+    // Confetti every 3 correct in a row
+    if (nextCombo > 0 && nextCombo % 3 === 0) {
+      import("canvas-confetti").then(mod => {
+        mod.default({
+          particleCount: 50, spread: 70, origin: { y: 0.55 },
+          colors: ["#fbbf24", "#34d399", "#60a5fa", "#f472b6"],
+        });
+      });
+    }
+
+    // Show relic on even floors, then decide next step
+    if (depth % 2 === 0) {
+      playTone("fanfare");
+      const options = VAULT_ARTIFACTS.filter(a => !carried.includes(a.id));
+      const found = options[(depth + nextCombo) % options.length] ?? VAULT_ARTIFACTS[0];
+      setRelic(found);
+      setCarried(v => [...v, found.id]);
+      setTimeout(() => setPhase("relic"), 650);
+    } else if (depth >= 8) {
+      setTimeout(() => extract(), 700);
+    } else {
+      setTimeout(() => advance(depth), 700);
+    }
+  };
+
+  /** Called when the user dismisses a relic card. */
+  const afterRelic = () => {
+    if (depth >= 8) { extract(); return; }
+    advance(depth);
+  };
+
+  /** Repair question after a wrong answer. */
+  const repair = (index: number) => {
+    if (repairPicked !== null) return;
+    setRepairPicked(index);
+    if (index === question.repairAnswer) setShards(v => v + 10);
+    setTimeout(() => {
+      setRepairPicked(null);
+      if (light <= 0) { setPhase("lost"); return; }
+      if (depth >= 8) { extract(); return; }
+      advance(depth);
+    }, 700);
+  };
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  if (!ready) return <div className="min-h-screen bg-[#0a0a0f]" />;
+
+  const timerPct = (timer / MAX_TIMER) * 100;
+  const timerColor = timer > 6 ? "#06b6d4" : timer > 3 ? "#f59e0b" : "#ef4444";
+
+  return (
+    <main className="min-h-screen bg-[#0a0a0f] text-white">
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-white/8 bg-[#0a0a0f]/90 px-4 backdrop-blur-xl sm:px-6">
+        <Link
+          href="/game-shows"
+          className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 transition-colors hover:text-white"
+        >
+          <ArrowLeft size={14} /> Exit
+        </Link>
+        <span
+          className="text-2xl tracking-[0.12em] text-white"
+          style={{ fontFamily: "var(--font-bebas)" }}
+        >
+          THE VAULT
+        </span>
+        <span className="flex items-center gap-1.5 text-xs font-bold text-yellow-300">
+          <Gem size={13} /> {save.shards}
+        </span>
+      </header>
+
+      <AnimatePresence mode="wait">
+        {phase === "home" && (
+          <HomeScreen
+            key="home"
+            deck={deck}
+            customSet={customSet}
+            save={save}
+            onDeck={setDeck}
+            onStart={start}
+          />
+        )}
+
+        {phase !== "home" && (
+          <motion.div
+            key={phase === "room" ? `room-${depth}` : phase}
+            initial={{ opacity: 0, y: noMotion ? 0 : 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16 }}
+            className="mx-auto max-w-2xl px-4 py-8 sm:px-6"
+          >
+            {(phase === "room" || phase === "repair") && (
+              <Hud depth={depth} light={light} shards={shards} combo={combo} />
+            )}
+
+            {phase === "room" && (
+              <RoomScreen
+                question={question}
+                order={order}
+                picked={picked}
+                timedOut={timedOut}
+                eliminated={eliminated}
+                modifier={modifier}
+                timerPct={timerPct}
+                timerColor={timerColor}
+                timer={timer}
+                onEcho={() => {
+                  const bad = order.find(i => i !== question.answer);
+                  if (bad !== undefined) setEliminated(bad);
+                }}
+                onAnswer={answer}
+              />
+            )}
+
+            {phase === "repair" && (
+              <RepairScreen
+                question={question}
+                picked={repairPicked}
+                onPick={repair}
+              />
+            )}
+
+            {phase === "shrine" && (
+              <ShrineScreen
+                depth={depth}
+                shards={shards}
+                active={modifier}
+                onChoose={(next, extractNow) => {
+                  setModifier(next);
+                  if (next === "lantern") setLight(v => Math.min(4, v + 1));
+                  if (extractNow) { extract(); return; }
+                  resetRoom();
+                  setPhase("room");
+                }}
+              />
+            )}
+
+            {phase === "relic" && relic && (
+              <RelicScreen artifact={relic} onContinue={afterRelic} />
+            )}
+
+            {phase === "lost" && (
+              <EndScreen
+                lost
+                shards={Math.floor(shards / 2)}
+                depth={depth}
+                onAgain={start}
+                onHome={() => setPhase("home")}
+              />
+            )}
+
+            {phase === "extracted" && (
+              <EndScreen
+                shards={shards}
+                depth={depth}
+                onAgain={start}
+                onHome={() => setPhase("home")}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
+  );
 }
 
-function VaultAtmosphere({ depth }: { depth: number }) { return <div className="pointer-events-none fixed inset-0 bg-[#050b0b]"><div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(34,157,153,.22),transparent_52%),radial-gradient(ellipse_at_95%_90%,rgba(224,145,57,.13),transparent_35%)]"/><div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(197,223,202,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(197,223,202,.025)_1px,transparent_1px)] [background-size:48px_48px]"/><div className="absolute inset-x-0 bottom-0 h-1/2 bg-[linear-gradient(0deg,rgba(0,0,0,.7),transparent)]"/><p className="absolute bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-bold uppercase tracking-[.5em] text-white/15">Sublevel {String(depth).padStart(2, "0")}</p></div>; }
-function Home({ deck, customSet, save, onDeck, onStart }: { deck: string; customSet: VaultCustomSet | null; save: Save; onDeck: (v: string) => void; onStart: () => void }) { return <section className="relative z-10 min-h-[calc(100vh-64px)] bg-[linear-gradient(90deg,rgba(5,11,11,.98)_0%,rgba(5,11,11,.82)_35%,rgba(5,11,11,.18)_75%,rgba(5,11,11,.75)_100%),url('/images/vault/vault-gate-hero.png')] bg-cover bg-[center_right] bg-no-repeat px-6 py-14 md:px-14"><div className="max-w-2xl"><p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[.35em] text-cyan-200"><span className="h-px w-12 bg-cyan-200"/> Curator signal acquired</p><h1 className="mt-7 font-display text-7xl font-black leading-[.76] tracking-[-.06em] md:text-9xl">THE VAULT<br/><span className="text-[#d5ac5f]">IS HUNGRY.</span></h1><p className="mt-9 max-w-md text-base leading-7 text-[#d6cdb8]">A rapid-fire relic run built for any subject. Pick a gate, protect your lantern, build a combo, and get out richer than you entered.</p><div className="mt-9 flex flex-wrap items-end gap-3"><label className="text-[9px] font-black uppercase tracking-[.18em] text-[#b4aa91]">Loadout<select value={deck} onChange={e => onDeck(e.target.value)} className="mt-2 block min-w-56 border border-[#d5bd7d]/35 bg-[#0b1716] px-4 py-3 text-sm font-bold normal-case tracking-normal text-white outline-none"><option>Mixed Descent</option><option>World History</option><option>Biology</option><option>Algebra</option>{customSet && <option>{customSet.title}</option>}</select></label><button onClick={onStart} className="group flex items-center gap-3 bg-[#e0bd70] px-7 py-3.5 text-xs font-black uppercase tracking-[.2em] text-[#081311] shadow-[0_0_45px_rgba(224,189,112,.3)] transition hover:scale-[1.03]">Enter the breach <ChevronDown size={16} className="transition group-hover:translate-y-1"/></button></div><div className="mt-12 flex gap-7 text-[10px] font-black uppercase tracking-[.16em] text-white/45"><span><b className="mr-2 text-cyan-200">{save.bestDepth || 0}</b> deepest run</span><span><b className="mr-2 text-[#d5ac5f]">{save.artifacts.length}</b> relics held</span><Link href="/vault/build" className="text-cyan-100 underline decoration-cyan-400/40 underline-offset-4">Forge a set</Link></div></div></section>; }
-function Hud({ depth, light, shards, combo, carried }: { depth: number; light: number; shards: number; combo: number; carried: string[] }) { return <div className="mx-auto flex max-w-6xl items-center justify-between border-b border-white/10 pb-3 text-[10px] font-black uppercase tracking-[.16em]"><span className="text-cyan-200">Run // {String(depth).padStart(2, "0")}</span><div className="flex gap-5 text-[#d9cba9]"><span className="flex items-center gap-1"><Heart size={13} className={light === 1 ? "text-red-300" : "text-amber-200"}/>{light} light</span><span className="flex items-center gap-1 text-cyan-200"><Gem size={13}/>{shards}</span><span className="flex items-center gap-1 text-orange-200"><Flame size={13}/>{combo} combo</span><span className="hidden sm:inline">{carried.length} relics</span></div></div>; }
-function Room({ question, order, picked, eliminated, modifier, onEcho, onAnswer }: { question: VaultQuestion; order: number[]; picked: number | null; eliminated: number | null; modifier: Modifier; onEcho: () => void; onAnswer: (v: number) => void }) { const positions = ["left-[5%] top-[38%]", "right-[5%] top-[38%]", "left-[16%] bottom-[4%]", "right-[16%] bottom-[4%]"]; return <div className="relative mx-auto mt-4 h-[calc(100vh-150px)] min-h-[560px] max-w-6xl overflow-hidden border border-cyan-100/10 bg-[radial-gradient(ellipse_at_50%_58%,rgba(29,105,100,.26),transparent_34%),linear-gradient(125deg,#071211,#0a1715_48%,#081110)]"><div className="absolute left-1/2 top-[30%] h-48 w-48 -translate-x-1/2 rounded-full border border-cyan-200/30 bg-cyan-300/10 shadow-[0_0_100px_rgba(71,222,211,.18)]"/><div className="absolute left-1/2 top-[35%] -translate-x-1/2 text-center"><Zap className="mx-auto text-cyan-200"/><p className="mt-3 text-[9px] font-black uppercase tracking-[.3em] text-cyan-200">Objective // {question.subject}</p><h2 className="mt-3 max-w-xl font-display text-2xl font-black leading-tight text-[#f5ecd8] md:text-3xl">{question.prompt}</h2>{modifier === "echo" && eliminated === null && <button onClick={onEcho} className="mt-3 border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-100">Pulse scan · erase false gate</button>}</div><div className="absolute left-[8%] top-0 h-full w-px bg-gradient-to-b from-transparent via-cyan-300/20 to-transparent"/><div className="absolute right-[8%] top-0 h-full w-px bg-gradient-to-b from-transparent via-amber-300/20 to-transparent"/>{order.map((choice, i) => { const isRight = choice === question.answer, isPicked = picked === choice, dead = eliminated === choice; return <button key={choice} disabled={picked !== null || dead} onClick={() => onAnswer(choice)} className={`absolute ${positions[i]} w-[40%] max-w-[360px] border p-4 text-left transition md:w-[30%] ${dead ? "border-white/5 bg-black/30 opacity-15" : isPicked && isRight ? "border-emerald-300 bg-emerald-300/20 shadow-[0_0_40px_rgba(110,231,183,.3)]" : isPicked ? "border-red-300 bg-red-300/15" : "border-[#c9b37a]/30 bg-[#0a1513]/85 hover:-translate-y-1 hover:border-cyan-200 hover:bg-[#102421]"}`}><span className="flex items-center justify-between text-[9px] font-black uppercase tracking-[.18em] text-[#d3b875]"><span>Gate {String.fromCharCode(65 + i)}</span><DoorOpen size={16}/></span><span className="mt-3 block text-sm font-semibold leading-5 text-[#f4eddf]">{dead ? "Rejected signal" : question.choices[choice]}</span>{isPicked && <span className={`mt-3 block text-[9px] font-black uppercase tracking-[.15em] ${isRight ? "text-emerald-200" : "text-red-200"}`}>{isRight ? "Gate opens" : "System fracture"}</span>}</button>; })}</div>; }
-function Repair({ question, picked, onPick }: { question: VaultQuestion; picked: number | null; onPick: (v: number) => void }) { return <div className="mx-auto mt-4 flex min-h-[calc(100vh-170px)] max-w-5xl items-center justify-center border border-fuchsia-300/15 bg-[repeating-linear-gradient(0deg,transparent,transparent_5px,rgba(236,72,153,.05)_6px)] px-5"><div className="max-w-2xl text-center"><ShieldAlert className="mx-auto h-12 w-12 text-fuchsia-200"/><p className="mt-4 text-[10px] font-black uppercase tracking-[.3em] text-fuchsia-200">Glitch encounter · stabilize the run</p><h2 className="mt-4 font-display text-3xl font-black">{question.repairPrompt}</h2><p className="mx-auto mt-4 max-w-lg text-sm leading-6 text-fuchsia-100/65">{question.misconception}</p><div className="mt-8 grid gap-4 sm:grid-cols-2">{question.repairChoices.map((choice, i) => <button key={choice} disabled={picked !== null} onClick={() => onPick(i)} className={`border px-6 py-7 text-lg font-bold transition ${picked === i ? i === question.repairAnswer ? "border-emerald-300 bg-emerald-300/15" : "border-red-300 bg-red-300/10" : "border-fuchsia-300/30 bg-[#160e1a] hover:-translate-y-1 hover:border-fuchsia-200"}`}>{choice}</button>)}</div></div></div>; }
-function Camp({ depth, light, shards, onDescend, onExtract }: { depth: number; light: number; shards: number; onDescend: () => void; onExtract: () => void }) { return <div className="mx-auto mt-4 flex min-h-[calc(100vh-170px)] max-w-5xl items-center justify-center border-x border-white/10 text-center"><div><p className="text-[10px] font-black uppercase tracking-[.35em] text-cyan-200">Checkpoint // floor {depth}</p><h2 className="mt-4 font-display text-6xl font-black">Keep the run alive?</h2><p className="mx-auto mt-4 max-w-md text-sm leading-6 text-white/50">You have {light} lantern light and {shards} unbanked shards. Your next gate pays more, but darkness takes its cut.</p><div className="mt-9 grid gap-4 sm:grid-cols-2"><button onClick={onExtract} className="border border-[#d6b96f]/35 bg-[#d6b96f]/10 p-6 text-left hover:bg-[#d6b96f]/20"><DoorOpen className="text-[#e7cc83]"/><b className="mt-5 block text-xl">Extract</b><span className="mt-1 block text-xs text-white/50">Bank everything now.</span></button><button onClick={onDescend} className="border border-cyan-300/35 bg-cyan-300/10 p-6 text-left hover:bg-cyan-300/20"><ChevronDown className="text-cyan-200"/><b className="mt-5 block text-xl">{depth >= 8 ? "Open final seal" : "Dive deeper"}</b><span className="mt-1 block text-xs text-white/50">Push the combo. Find more relics.</span></button></div></div></div>; }
-function Relic({ artifact, onContinue }: { artifact: VaultArtifact; onContinue: () => void }) { return <div className="mx-auto mt-4 flex min-h-[calc(100vh-170px)] max-w-5xl items-center justify-center border border-[#d6b96f]/20 text-center"><div><p className="text-[10px] font-black uppercase tracking-[.3em] text-[#e1c475]">Relic acquired</p><motion.div initial={{ scale: .4, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} className="mx-auto mt-7 flex h-52 w-52 items-center justify-center border border-[#e8cd87]/45 bg-[#d6b96f]/10 font-display text-8xl text-[#f6df9d] shadow-[0_0_100px_rgba(224,189,112,.22)]">{artifact.glyph}</motion.div><h2 className="mt-6 font-display text-5xl font-black">{artifact.name}</h2><p className="mx-auto mt-3 max-w-md text-sm italic text-white/55">“{artifact.lore}”</p><button onClick={onContinue} className="mt-8 bg-[#e0bd70] px-6 py-3 text-xs font-black uppercase tracking-[.18em] text-[#07100f]">Stow relic</button></div></div>; }
-function Shrine({ active, onChoose }: { active: Modifier; onChoose: (v: Exclude<Modifier, null>) => void }) { const options = [["echo", "Echo Lens", "Erase one false gate in every chamber."], ["fortune", "Fortune Oath", "Earn 50% more. Mistakes cost two light."], ["lantern", "Deep Lantern", "Gain a fourth lantern light."]] as const; return <div className="mx-auto mt-4 flex min-h-[calc(100vh-170px)] max-w-6xl items-center justify-center text-center"><div><p className="text-[10px] font-black uppercase tracking-[.35em] text-violet-200">Between-world shrine</p><h2 className="mt-4 font-display text-5xl font-black">Choose your curse.</h2><div className="mt-8 grid gap-4 md:grid-cols-3">{options.map(([id, name, text]) => <button key={id} onClick={() => onChoose(id)} className={`w-64 border p-6 text-left transition hover:-translate-y-2 ${active === id ? "border-violet-200 bg-violet-300/15" : "border-white/15 bg-[#0a1514] hover:border-violet-200"}`}><Sparkles className="text-violet-200"/><b className="mt-7 block text-xl">{name}</b><span className="mt-2 block text-xs leading-5 text-white/55">{text}</span></button>)}</div></div></div>; }
-function End({ lost, shards, onAgain, onHome }: { lost?: boolean; shards: number; onAgain: () => void; onHome: () => void }) { return <div className="mx-auto mt-4 flex min-h-[calc(100vh-170px)] max-w-5xl items-center justify-center text-center"><div><div className={`mx-auto flex h-24 w-24 items-center justify-center rounded-full border ${lost ? "border-red-300/30 bg-red-300/10" : "border-cyan-300/30 bg-cyan-300/10"}`}>{lost ? <Flame size={38} className="text-red-200"/> : <Gem size={38} className="text-cyan-200"/>}</div><p className="mt-7 text-[10px] font-black uppercase tracking-[.3em] text-[#d5bd7d]">{lost ? "Lantern extinguished" : "Relics secured"}</p><h2 className="mt-3 font-display text-6xl font-black">{lost ? "The Vault takes its due." : "You got out."}</h2><p className="mt-4 text-sm text-white/55">{shards} shards recovered.</p><div className="mt-8 flex justify-center gap-3"><button onClick={onHome} className="border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-wider">Home</button><button onClick={onAgain} className="flex items-center gap-2 bg-[#e0bd70] px-5 py-3 text-xs font-black uppercase tracking-wider text-[#07100f]"><RotateCcw size={14}/> Run again</button></div></div></div>; }
+// ─── HUD ──────────────────────────────────────────────────────────────────────
+
+function Hud({ depth, light, shards, combo }: {
+  depth: number; light: number; shards: number; combo: number;
+}) {
+  return (
+    <div className="mb-6 flex items-center justify-between border-b border-white/8 pb-4">
+      {/* Lives */}
+      <div className="flex items-center gap-1">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Heart
+            key={i}
+            size={16}
+            className={i < light ? "fill-red-400 text-red-400" : "text-white/15"}
+          />
+        ))}
+      </div>
+
+      {/* Floor */}
+      <div className="text-center">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Floor</div>
+        <div className="text-lg font-black text-white" style={{ fontFamily: "var(--font-bebas)" }}>
+          {depth} / 8
+        </div>
+      </div>
+
+      {/* Shards + combo */}
+      <div className="flex items-center gap-3">
+        {combo >= 2 && (
+          <motion.span
+            key={combo}
+            initial={{ scale: 1.4 }}
+            animate={{ scale: 1 }}
+            className="flex items-center gap-1 text-xs font-black text-orange-300"
+          >
+            <Flame size={13} /> {combo}×
+          </motion.span>
+        )}
+        <span className="flex items-center gap-1.5 text-xs font-bold text-yellow-300">
+          <Gem size={13} /> {shards}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Room (question + answers) ────────────────────────────────────────────────
+
+function RoomScreen({ question, order, picked, timedOut, eliminated, modifier, timerPct, timerColor, timer, onEcho, onAnswer }: {
+  question: VaultQuestion;
+  order: number[];
+  picked: number | null;
+  timedOut: boolean;
+  eliminated: number | null;
+  modifier: Modifier;
+  timerPct: number;
+  timerColor: string;
+  timer: number;
+  onEcho: () => void;
+  onAnswer: (i: number) => void;
+}) {
+  const isAnswered = picked !== null || timedOut;
+
+  return (
+    <div>
+      {/* Timer bar */}
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/8">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: timerColor }}
+          animate={{ width: `${timerPct}%` }}
+          transition={{ duration: 0.85, ease: "linear" }}
+        />
+      </div>
+
+      {/* Subject + timer number */}
+      <div className="mt-3 mb-5 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+          {question.subject}
+        </span>
+        <motion.span
+          className="text-sm font-black tabular-nums"
+          style={{ color: timerColor }}
+          animate={timer <= 3 && !isAnswered ? { scale: [1, 1.2, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 0.6 }}
+        >
+          {timer}s
+        </motion.span>
+      </div>
+
+      {/* Question text */}
+      <h2 className="mb-7 text-xl font-bold leading-snug text-white sm:text-2xl">
+        {question.prompt}
+      </h2>
+
+      {/* Echo lifeline */}
+      {modifier === "echo" && eliminated === null && !isAnswered && (
+        <button
+          onClick={onEcho}
+          className="mb-5 flex items-center gap-2 text-xs font-bold text-cyan-400 transition-colors hover:text-cyan-200"
+        >
+          <Zap size={13} /> Echo Lens — erase one wrong answer
+        </button>
+      )}
+
+      {/* 2×2 answer grid */}
+      <div className="grid grid-cols-2 gap-3">
+        {order.map((choiceIndex, pos) => {
+          const isCorrect = choiceIndex === question.answer;
+          const isPicked = picked === choiceIndex;
+          const isDead = eliminated === choiceIndex;
+
+          let bg = ANSWER_COLORS[pos] as string;
+          let borderColor = "transparent";
+          let opacity = isDead ? 0.18 : 1;
+
+          if (isAnswered && !isDead) {
+            if (isCorrect) { bg = "#15803d"; borderColor = "#4ade80"; }
+            else if (isPicked) { bg = "#991b1b"; borderColor = "#f87171"; }
+            else { opacity = 0.35; }
+          }
+
+          return (
+            <motion.button
+              key={choiceIndex}
+              onClick={() => onAnswer(choiceIndex)}
+              disabled={isAnswered || isDead}
+              style={{ background: bg, borderColor, opacity }}
+              whileHover={!isAnswered && !isDead ? { scale: 1.02, y: -2 } : {}}
+              whileTap={!isAnswered && !isDead ? { scale: 0.97 } : {}}
+              animate={isAnswered && isPicked && !isCorrect
+                ? { x: [0, -8, 8, -5, 5, 0], transition: { duration: 0.38 } }
+                : {}
+              }
+              className="relative flex min-h-[90px] flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left text-white transition-opacity sm:min-h-[100px]"
+            >
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-70">
+                {ANSWER_LABELS[pos]}
+              </span>
+              <span className="text-sm font-semibold leading-snug sm:text-base">
+                {isDead
+                  ? <span className="opacity-25 line-through">{question.choices[choiceIndex]}</span>
+                  : question.choices[choiceIndex]
+                }
+              </span>
+              {isAnswered && isCorrect && (
+                <Check size={16} className="absolute right-3 top-3" />
+              )}
+              {isAnswered && isPicked && !isCorrect && (
+                <X size={16} className="absolute right-3 top-3 text-red-300" />
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Time-up message */}
+      <AnimatePresence>
+        {timedOut && (
+          <motion.p
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-4 text-sm font-bold text-red-400"
+          >
+            Time&apos;s up — correct answer was{" "}
+            <span className="text-white">{question.choices[question.answer]}</span>
+          </motion.p>
+        )}
+      </AnimatePresence>
+
+      {/* Explanation after answer */}
+      <AnimatePresence>
+        {picked !== null && (
+          <motion.p
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-5 border-l-2 border-cyan-500/40 pl-4 text-sm leading-relaxed text-slate-400"
+          >
+            {question.explanation}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Repair (misconception fix) ───────────────────────────────────────────────
+
+function RepairScreen({ question, picked, onPick }: {
+  question: VaultQuestion;
+  picked: number | null;
+  onPick: (i: number) => void;
+}) {
+  return (
+    <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl border border-fuchsia-400/30 bg-fuchsia-500/15">
+        <ShieldAlert size={28} className="text-fuchsia-300" />
+      </div>
+      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-fuchsia-400">
+        Glitch Detected
+      </p>
+      <h2 className="mb-3 max-w-md text-xl font-bold text-white">{question.repairPrompt}</h2>
+      <p className="mb-8 max-w-sm text-sm leading-relaxed text-slate-500">{question.misconception}</p>
+
+      <div className="grid w-full max-w-xs gap-3 sm:grid-cols-2">
+        {question.repairChoices.map((choice, i) => (
+          <motion.button
+            key={choice}
+            disabled={picked !== null}
+            onClick={() => onPick(i)}
+            whileHover={picked === null ? { scale: 1.02 } : {}}
+            whileTap={picked === null ? { scale: 0.97 } : {}}
+            className={`rounded-xl border-2 p-4 text-sm font-semibold text-white transition-colors ${
+              picked === i
+                ? i === question.repairAnswer
+                  ? "border-emerald-400 bg-emerald-500/20"
+                  : "border-red-400 bg-red-500/10"
+                : "border-white/10 bg-white/5 hover:border-white/25"
+            }`}
+          >
+            {choice}
+          </motion.button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Shrine (modifier choice + extract option) ─────────────────────────────────
+
+function ShrineScreen({ depth, shards, active, onChoose }: {
+  depth: number;
+  shards: number;
+  active: Modifier;
+  onChoose: (mod: Exclude<Modifier, null>, extractNow: boolean) => void;
+}) {
+  const [picked, setPicked] = useState<Exclude<Modifier, null> | null>(null);
+
+  const options: Array<{ id: Exclude<Modifier, null>; name: string; icon: string; desc: string }> = [
+    { id: "echo", name: "Echo Lens", icon: "◉", desc: "Eliminate one wrong answer each floor." },
+    { id: "fortune", name: "Fortune Oath", icon: "⚡", desc: "+50% shards earned. Mistakes cost 2 lives." },
+    { id: "lantern", name: "Deep Lantern", icon: "🔦", desc: "Restore one lost life." },
+  ];
+
+  if (picked) {
+    return (
+      <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+        <Sparkles className="mb-4 text-violet-300" size={32} />
+        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-violet-400">Boon acquired</p>
+        <h2 className="mb-2 text-4xl text-white" style={{ fontFamily: "var(--font-bebas)" }}>
+          {options.find(o => o.id === picked)?.name}
+        </h2>
+        <p className="mb-10 text-sm text-slate-500">
+          {options.find(o => o.id === picked)?.desc}
+        </p>
+        <div className="flex w-full max-w-xs flex-col gap-3">
+          <button
+            onClick={() => onChoose(picked, false)}
+            className="rounded-xl bg-cyan-500 px-6 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-cyan-400 transition-colors"
+          >
+            Continue to Floor {depth + 1}
+          </button>
+          <button
+            onClick={() => onChoose(picked, true)}
+            className="rounded-xl border border-yellow-400/30 bg-yellow-400/10 px-6 py-3.5 text-sm font-bold text-yellow-200 hover:bg-yellow-400/20 transition-colors"
+          >
+            Extract with {shards} shards
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+      <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-violet-400">Shrine</p>
+      <h2 className="mb-8 text-5xl text-white" style={{ fontFamily: "var(--font-bebas)" }}>
+        CHOOSE A BOON
+      </h2>
+      <div className="flex w-full max-w-sm flex-col gap-3">
+        {options.map(opt => (
+          <button
+            key={opt.id}
+            onClick={() => setPicked(opt.id)}
+            className={`flex items-center gap-4 rounded-2xl border px-5 py-4 text-left transition-colors ${
+              active === opt.id
+                ? "border-violet-400/60 bg-violet-400/15"
+                : "border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-violet-400/10"
+            }`}
+          >
+            <span className="text-2xl">{opt.icon}</span>
+            <div>
+              <div className="font-bold text-white">{opt.name}</div>
+              <div className="mt-0.5 text-xs text-slate-500">{opt.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Relic ────────────────────────────────────────────────────────────────────
+
+function RelicScreen({ artifact, onContinue }: { artifact: VaultArtifact; onContinue: () => void }) {
+  return (
+    <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+      <p className="mb-6 text-[10px] font-black uppercase tracking-widest text-yellow-400">Relic Found</p>
+      <motion.div
+        initial={{ scale: 0.3, opacity: 0, rotate: -12 }}
+        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+        transition={{ type: "spring", stiffness: 280, damping: 18 }}
+        className="mb-6 flex h-36 w-36 items-center justify-center rounded-3xl border-2 border-yellow-300/25 bg-yellow-300/10 text-7xl shadow-[0_0_80px_rgba(234,179,8,0.18)]"
+      >
+        {artifact.glyph}
+      </motion.div>
+      <h2
+        className="mb-2 text-4xl text-white"
+        style={{ fontFamily: "var(--font-bebas)" }}
+      >
+        {artifact.name}
+      </h2>
+      <p className="mb-8 max-w-xs text-sm italic text-slate-500">
+        &ldquo;{artifact.lore}&rdquo;
+      </p>
+      <button
+        onClick={onContinue}
+        className="rounded-xl bg-yellow-300 px-7 py-3.5 text-xs font-black uppercase tracking-widest text-black hover:bg-yellow-200 transition-colors"
+      >
+        Continue Descent
+      </button>
+    </div>
+  );
+}
+
+// ─── End screen ───────────────────────────────────────────────────────────────
+
+function EndScreen({ lost, shards, depth, onAgain, onHome }: {
+  lost?: boolean;
+  shards: number;
+  depth: number;
+  onAgain: () => void;
+  onHome: () => void;
+}) {
+  return (
+    <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
+      <motion.div
+        initial={{ scale: 0 }} animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        className={`mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border ${
+          lost
+            ? "border-red-400/30 bg-red-500/15"
+            : "border-cyan-400/30 bg-cyan-400/15"
+        }`}
+      >
+        {lost
+          ? <Flame size={36} className="text-red-300" />
+          : <Gem size={36} className="text-cyan-300" />
+        }
+      </motion.div>
+
+      <p className="mb-3 text-[10px] font-black uppercase tracking-widest text-slate-500">
+        {lost ? "Lantern Out · Floor " + depth : "Extracted · Floor " + depth}
+      </p>
+      <h2
+        className="mb-4 text-6xl text-white"
+        style={{ fontFamily: "var(--font-bebas)" }}
+      >
+        {lost ? "VAULT WINS." : "YOU MADE IT."}
+      </h2>
+      <p className="mb-8 text-slate-400">
+        <span className="text-xl font-black text-yellow-300">{shards}</span>{" "}
+        shards recovered.
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={onHome}
+          className="rounded-xl border border-white/15 px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-300 transition-colors hover:bg-white/5"
+        >
+          Home
+        </button>
+        <button
+          onClick={onAgain}
+          className="flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-xs font-black uppercase tracking-wider text-black transition-colors hover:bg-white/90"
+        >
+          <RotateCcw size={13} /> Run Again
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Home screen ──────────────────────────────────────────────────────────────
+
+function HomeScreen({ deck, customSet, save, onDeck, onStart }: {
+  deck: string;
+  customSet: VaultCustomSet | null;
+  save: Save;
+  onDeck: (v: string) => void;
+  onStart: () => void;
+}) {
+  return (
+    <section className="relative flex min-h-[calc(100vh-56px)] flex-col items-center justify-center px-6 py-16 text-center">
+      {/* Subtle glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(6,182,212,0.07),transparent_55%)]" />
+
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="relative"
+      >
+        <p className="mb-5 text-[10px] font-black uppercase tracking-[0.35em] text-cyan-400">
+          Knowledge Descent
+        </p>
+        <h1
+          className="text-[clamp(5rem,20vw,11rem)] leading-none text-white"
+          style={{ fontFamily: "var(--font-bebas)" }}
+        >
+          THE
+          <br />
+          <span className="text-yellow-300">VAULT</span>
+        </h1>
+        <p className="mx-auto mt-6 max-w-xs text-sm leading-relaxed text-slate-400">
+          8 floors. 3 lives. 12 seconds per question.
+          <br />
+          Answer fast, build a combo, get out richer.
+        </p>
+      </motion.div>
+
+      {/* Controls */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.35 }}
+        className="relative mt-10 flex w-full max-w-xs flex-col items-center gap-3"
+      >
+        <select
+          value={deck}
+          onChange={e => onDeck(e.target.value)}
+          className="w-full rounded-xl border border-white/12 bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400"
+        >
+          <option>Mixed Descent</option>
+          <option>World History</option>
+          <option>Biology</option>
+          <option>Algebra</option>
+          {customSet && <option>{customSet.title}</option>}
+        </select>
+
+        <button
+          onClick={onStart}
+          className="w-full rounded-xl bg-yellow-300 py-4 text-sm font-black uppercase tracking-widest text-black transition-colors hover:bg-yellow-200 active:scale-[.98]"
+        >
+          Enter the Vault
+        </button>
+
+        <Link
+          href="/vault/build"
+          className="text-xs text-slate-600 transition-colors hover:text-slate-300"
+        >
+          Build a custom question set →
+        </Link>
+      </motion.div>
+
+      {/* Stats row */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="relative mt-12 flex gap-10"
+      >
+        {[
+          { label: "Deepest floor", value: save.bestDepth || 0, color: "text-cyan-300" },
+          { label: "Total shards", value: save.shards, color: "text-yellow-300" },
+          { label: "Relics held", value: save.artifacts.length, color: "text-violet-300" },
+        ].map(({ label, value, color }) => (
+          <div key={label} className="text-center">
+            <div className={`text-2xl font-black ${color}`}>{value}</div>
+            <div className="mt-1 text-[10px] font-medium uppercase tracking-wider text-slate-600">
+              {label}
+            </div>
+          </div>
+        ))}
+      </motion.div>
+
+      {/* Depth indicator decoration */}
+      <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2">
+        <ChevronDown size={18} className="animate-bounce text-slate-700" />
+      </div>
+    </section>
+  );
+}
