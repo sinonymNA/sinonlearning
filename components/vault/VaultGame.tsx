@@ -166,11 +166,15 @@ export default function VaultGame() {
           <motion.section key={phase} initial={{opacity:0,y:reduceMotion?0:14}} animate={{opacity:1,y:0}} exit={{opacity:0,y:reduceMotion?0:-10}} className="relative z-10 mx-auto grid min-h-[calc(100vh-64px)] max-w-7xl gap-5 px-4 py-5 lg:grid-cols-[170px_minmax(0,1fr)_210px] lg:px-8">
             <RunMap depth={depth}/>
             <div className="flex min-h-[620px] items-center justify-center">
-              {phase === "question" && <QuestionChamber question={question} order={order} selected={selected} eliminated={eliminated} memory={(save.conceptWins?.[question.concept] ?? 0) > 0} boss={depth===8} canEcho={modifier==="echo"&&eliminated===null} onEcho={useEchoLens} onAnswer={answer}/>} 
+              {phase === "question" && (
+                <QuestionChamber question={question} order={order} selected={selected} eliminated={eliminated} memory={(save.conceptWins?.[question.concept] ?? 0) > 0} boss={depth===8} canEcho={modifier==="echo"&&eliminated===null} onEcho={useEchoLens} onAnswer={answer}/>
+              )}
               {phase === "glitch" && <GlitchChamber question={question} selected={repairSelected} onRepair={repair}/>} 
               {phase === "choice" && <ChoiceChamber depth={depth} torch={torch} shards={shards} onDescend={descend} onExtract={extract}/>} 
               {phase === "reward" && reward && <RewardChamber artifact={reward} onContinue={()=>setPhase("choice")}/>} 
-              {phase === "shrine" && <ShrineChamber active={modifier} onChoose={chooseBlessing}/>} 
+              {phase === "shrine" && (
+                <ShrineChamber active={modifier} onChoose={chooseBlessing}/>
+              )}
               {phase === "lost" && <EndChamber lost shards={Math.floor(shards/2)} onHome={()=>setPhase("home")} onAgain={startRun}/>} 
               {phase === "extracted" && <EndChamber shards={shards} artifacts={tempArtifacts.length} onHome={()=>setPhase("home")} onAgain={startRun}/>} 
             </div>
