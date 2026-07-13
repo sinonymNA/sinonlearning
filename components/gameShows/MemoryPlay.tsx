@@ -78,10 +78,10 @@ export default function MemoryPlay({ gameId, data }: { gameId: string; data: Mem
   useEffect(() => {
     if (!allMatched) return;
     import("canvas-confetti").then((mod) => {
-      const confetti = mod.default;
-      confetti({ particleCount: 80, spread: 70, origin: { y: 0.4 }, colors: ["#d946ef", "#a78bfa", "#38bdf8", "#ffffff"] });
-      setTimeout(() => confetti({ particleCount: 60, spread: 90, origin: { x: 0.2, y: 0.5 } }), 300);
-      setTimeout(() => confetti({ particleCount: 60, spread: 90, origin: { x: 0.8, y: 0.5 } }), 500);
+      const fire = mod.default;
+      fire({ particleCount: 80, spread: 70, origin: { y: 0.4 }, colors: ["#d946ef", "#a78bfa", "#38bdf8", "#ffffff"] });
+      setTimeout(() => fire({ particleCount: 60, spread: 90, origin: { x: 0.2, y: 0.5 } }), 300);
+      setTimeout(() => fire({ particleCount: 60, spread: 90, origin: { x: 0.8, y: 0.5 } }), 500);
     });
   }, [allMatched]);
 

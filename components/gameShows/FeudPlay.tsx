@@ -50,10 +50,8 @@ export default function FeudPlay({ gameId, data }: { gameId: string; data: FeudP
 
   useEffect(() => {
     if (!allRevealed) return;
-    let confetti: typeof import("canvas-confetti").default | null = null;
     import("canvas-confetti").then((mod) => {
-      confetti = mod.default;
-      confetti({
+      mod.default({
         particleCount: 120,
         spread: 80,
         origin: { y: 0.5 },
