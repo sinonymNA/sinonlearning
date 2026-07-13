@@ -141,6 +141,13 @@ export default function NotesheetConfirm({ slideCount, rawText, onGenerate, onBa
         </div>
       </div>
 
+      {/* Truncation notice */}
+      {rawText.length > 9000 && (
+        <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-3 text-[13px] text-amber-700 leading-relaxed">
+          Your slideshow is large ({Math.round(rawText.length / 1000)}k characters). KORA will read the first ~9,000 characters — make sure your key content appears early in the deck.
+        </div>
+      )}
+
       {/* Error */}
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-[13px] text-red-600">

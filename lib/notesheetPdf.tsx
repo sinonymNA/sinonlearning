@@ -1,23 +1,53 @@
 import React from "react";
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { Document, Font, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
+import path from "path";
 import type { NotesheetPlan, NotesheetSection } from "@/lib/notesheetTypes";
+
+// ─── Font registration ─────────────────────────────────────────────────────────
+
+const FD = path.join(process.cwd(), "node_modules/@fontsource/nunito/files");
+
+Font.register({
+  family: "Nunito",
+  fonts: [
+    { src: `${FD}/nunito-latin-400-normal.woff`, fontWeight: 400 },
+    { src: `${FD}/nunito-latin-400-italic.woff`, fontStyle: "italic", fontWeight: 400 },
+    { src: `${FD}/nunito-latin-600-normal.woff`, fontWeight: 600 },
+    { src: `${FD}/nunito-latin-600-italic.woff`, fontStyle: "italic", fontWeight: 600 },
+    { src: `${FD}/nunito-latin-700-normal.woff`, fontWeight: 700 },
+    { src: `${FD}/nunito-latin-700-italic.woff`, fontStyle: "italic", fontWeight: 700 },
+  ],
+});
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 
-const BK = "#000000";
-const DK = "#1a1a1a";
-const MD = "#666666";
-const LT = "#cccccc";
+const NAVY   = "#1e3a5f";
+const BODY   = "#334155";
+const MUTED  = "#64748b";
+const BORDER = "#c8d4e0";
+const BG_TINT = "#f8fafc";
+
+// Per-section-type top accent color
+const TYPE_ACCENT: Record<string, string> = {
+  warmup_box:        "#7c3aed",
+  fill_blank:        "#2563eb",
+  numbered_response: "#059669",
+  content_box:       "#d97706",
+  two_column_box:    "#db2777",
+  drawing_box:       "#ea580c",
+  three_column_box:  "#0284c7",
+};
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Nunito",
+    fontWeight: 400,
     fontSize: 10,
-    color: DK,
-    paddingTop: 38,
-    paddingBottom: 38,
+    color: BODY,
+    paddingTop: 40,
+    paddingBottom: 40,
     paddingLeft: 46,
     paddingRight: 46,
     backgroundColor: "#ffffff",
@@ -28,12 +58,13 @@ const S = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginBottom: 7,
+    marginBottom: 8,
   },
   metaCourse: {
     fontSize: 8,
-    letterSpacing: 0.5,
-    color: MD,
+    letterSpacing: 0.4,
+    color: MUTED,
+    fontWeight: 400,
   },
   metaNameRow: {
     flexDirection: "row",
@@ -41,88 +72,127 @@ const S = StyleSheet.create({
     gap: 4,
   },
   metaNameLabel: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 9,
+    fontWeight: 600,
+    fontSize: 8.5,
+    color: NAVY,
     paddingBottom: 2,
   },
   metaNameLine: {
     width: 110,
     borderBottomWidth: 0.75,
-    borderBottomColor: BK,
+    borderBottomColor: BORDER,
     borderBottomStyle: "solid",
     height: 13,
   },
 
   // ── Title ────────────────────────────────────────────────────────────────────
   titleBlock: {
-    borderBottomWidth: 2,
-    borderBottomColor: BK,
+    borderBottomWidth: 1.5,
+    borderBottomColor: NAVY,
     borderBottomStyle: "solid",
-    paddingBottom: 5,
-    marginBottom: 9,
+    paddingBottom: 6,
+    marginBottom: 10,
     alignItems: "center",
   },
   titleText: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 13,
-    letterSpacing: 1.5,
+    fontWeight: 700,
+    fontSize: 14,
+    letterSpacing: 0.3,
+    color: NAVY,
     textAlign: "center",
   },
 
   // ── Essential question ───────────────────────────────────────────────────────
   eqBox: {
-    borderWidth: 1,
-    borderColor: BK,
+    borderWidth: 0.75,
+    borderColor: BORDER,
     borderStyle: "solid",
-    paddingTop: 6,
-    paddingBottom: 6,
-    paddingLeft: 9,
-    paddingRight: 9,
-    marginBottom: 7,
+    paddingTop: 7,
+    paddingBottom: 7,
+    paddingLeft: 10,
+    paddingRight: 10,
+    marginBottom: 5,
+    backgroundColor: BG_TINT,
   },
   eqLabel: {
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 600,
     fontSize: 7.5,
     letterSpacing: 0.8,
+    color: NAVY,
     marginBottom: 3,
   },
   eqText: {
-    fontFamily: "Helvetica-Oblique",
+    fontWeight: 400,
+    fontStyle: "italic",
     fontSize: 9.5,
+    color: BODY,
+    lineHeight: 1.45,
+  },
+
+  // ── Learning objective ───────────────────────────────────────────────────────
+  loRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 5,
+    marginBottom: 9,
+    paddingLeft: 2,
+  },
+  loLabel: {
+    fontWeight: 600,
+    fontSize: 7.5,
+    color: MUTED,
+    letterSpacing: 0.5,
+    paddingTop: 0.5,
+  },
+  loText: {
+    fontWeight: 400,
+    fontSize: 8.5,
+    color: MUTED,
     lineHeight: 1.4,
+    flex: 1,
   },
 
   // ── Section box ──────────────────────────────────────────────────────────────
   section: {
-    borderWidth: 1,
-    borderColor: BK,
+    borderWidth: 0.75,
+    borderColor: BORDER,
     borderStyle: "solid",
-    padding: 9,
-    marginBottom: 7,
+    marginBottom: 8,
+    overflow: "hidden",
   },
   sectionPaired: {
-    borderWidth: 1,
-    borderColor: BK,
+    borderWidth: 0.75,
+    borderColor: BORDER,
     borderStyle: "solid",
-    padding: 9,
     flex: 1,
+    overflow: "hidden",
+  },
+  accentBar: {
+    height: 3,
+    marginBottom: 0,
+  },
+  sectionInner: {
+    padding: 10,
   },
   sectionLabel: {
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 600,
     fontSize: 8.5,
-    letterSpacing: 0.5,
+    color: NAVY,
+    letterSpacing: 0.2,
     marginBottom: 5,
   },
   bodyText: {
+    fontWeight: 400,
     fontSize: 9.5,
-    lineHeight: 1.4,
-    marginBottom: 5,
+    color: BODY,
+    lineHeight: 1.45,
+    marginBottom: 6,
   },
 
   // ── Writing lines ─────────────────────────────────────────────────────────────
   blankLine: {
     borderBottomWidth: 0.75,
-    borderBottomColor: BK,
+    borderBottomColor: BORDER,
     borderBottomStyle: "solid",
     height: 24,
     marginBottom: 3,
@@ -133,30 +203,33 @@ const S = StyleSheet.create({
     marginBottom: 5,
   },
   numberLabel: {
+    fontWeight: 400,
     fontSize: 9.5,
+    color: MUTED,
     width: 18,
     paddingBottom: 2,
   },
   numberLine: {
     flex: 1,
     borderBottomWidth: 0.75,
-    borderBottomColor: BK,
+    borderBottomColor: BORDER,
     borderBottomStyle: "solid",
     height: 24,
   },
 
   // ── Table ─────────────────────────────────────────────────────────────────────
   tableWrap: {
-    borderWidth: 1,
-    borderColor: BK,
+    borderWidth: 0.75,
+    borderColor: BORDER,
     borderStyle: "solid",
     marginTop: 5,
   },
   tableHeadRow: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: BK,
+    borderBottomWidth: 0.75,
+    borderBottomColor: BORDER,
     borderBottomStyle: "solid",
+    backgroundColor: BG_TINT,
   },
   tableBodyRow: {
     flexDirection: "row",
@@ -165,25 +238,26 @@ const S = StyleSheet.create({
 
   // ── Drawing area ──────────────────────────────────────────────────────────────
   drawArea: {
-    borderWidth: 1,
-    borderColor: LT,
+    borderWidth: 0.75,
+    borderColor: BORDER,
     borderStyle: "dashed",
-    height: 90,
+    height: 110,
     marginTop: 5,
     alignItems: "center",
     justifyContent: "center",
   },
   drawHint: {
-    fontFamily: "Helvetica-Oblique",
+    fontWeight: 400,
+    fontStyle: "italic",
     fontSize: 8,
-    color: LT,
+    color: BORDER,
   },
 
   // ── Answer key ────────────────────────────────────────────────────────────────
   answerKey: {
-    backgroundColor: "#f8f8f6",
+    backgroundColor: "#f1f5f9",
     borderLeftWidth: 2,
-    borderLeftColor: MD,
+    borderLeftColor: MUTED,
     borderLeftStyle: "solid",
     paddingLeft: 7,
     paddingRight: 7,
@@ -192,20 +266,22 @@ const S = StyleSheet.create({
     marginTop: 7,
   },
   answerKeyLabel: {
-    fontFamily: "Helvetica-Bold",
+    fontWeight: 700,
     fontSize: 7.5,
-    color: MD,
+    color: MUTED,
   },
   answerKeyText: {
+    fontWeight: 400,
     fontSize: 9,
+    color: BODY,
     lineHeight: 1.35,
   },
 
   // ── Pair row ──────────────────────────────────────────────────────────────────
   pairRow: {
     flexDirection: "row",
-    gap: 6,
-    marginBottom: 7,
+    gap: 7,
+    marginBottom: 8,
   },
 });
 
@@ -263,7 +339,6 @@ function AnswerKey({ notes }: { notes: string }) {
   );
 }
 
-// Renders a single column header or body cell with right-border on non-last cells
 function TCell({
   widthPct,
   isLast,
@@ -279,12 +354,12 @@ function TCell({
     <View
       style={{
         width: `${widthPct}%`,
-        paddingTop: isHeader ? 4 : 0,
-        paddingBottom: isHeader ? 4 : 0,
-        paddingLeft: 6,
-        paddingRight: 6,
-        borderRightWidth: isLast ? 0 : 1,
-        borderRightColor: isHeader ? BK : LT,
+        paddingTop: isHeader ? 5 : 0,
+        paddingBottom: isHeader ? 5 : 0,
+        paddingLeft: 7,
+        paddingRight: 7,
+        borderRightWidth: isLast ? 0 : 0.75,
+        borderRightColor: BORDER,
         borderRightStyle: "solid",
       }}
     >
@@ -358,24 +433,22 @@ function SectionBody({
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
           <View style={S.tableWrap}>
-            {/* Header row */}
             <View style={S.tableHeadRow}>
               {cols.map((col, i) => (
                 <TCell key={i} widthPct={col.width_pct} isLast={i === cols.length - 1} isHeader>
-                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8, letterSpacing: 0.3 }}>
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: NAVY, letterSpacing: 0.3 }}>
                     {col.header.toUpperCase()}
                   </Text>
                 </TCell>
               ))}
             </View>
-            {/* Body rows */}
             {Array.from({ length: ROWS }).map((_, row) => (
               <View
                 key={row}
                 style={[
                   S.tableBodyRow,
                   row < ROWS - 1
-                    ? { borderBottomWidth: 0.5, borderBottomColor: LT, borderBottomStyle: "solid" }
+                    ? { borderBottomWidth: 0.5, borderBottomColor: BORDER, borderBottomStyle: "solid" }
                     : {},
                 ]}
               >
@@ -418,7 +491,7 @@ function SectionBody({
             <View style={S.tableHeadRow}>
               {cols.map((col, i) => (
                 <TCell key={i} widthPct={col.width_pct} isLast={i === cols.length - 1} isHeader>
-                  <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 8, letterSpacing: 0.3 }}>
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: NAVY, letterSpacing: 0.3 }}>
                     {col.header.toUpperCase()}
                   </Text>
                 </TCell>
@@ -430,7 +503,7 @@ function SectionBody({
                 style={[
                   S.tableBodyRow,
                   row < ROWS - 1
-                    ? { borderBottomWidth: 0.5, borderBottomColor: LT, borderBottomStyle: "solid" }
+                    ? { borderBottomWidth: 0.5, borderBottomColor: BORDER, borderBottomStyle: "solid" }
                     : {},
                 ]}
               >
@@ -461,12 +534,16 @@ function SectionCard({
   isTeacher: boolean;
   paired?: boolean;
 }) {
+  const accent = TYPE_ACCENT[section.type] ?? NAVY;
   return (
     <View style={paired ? S.sectionPaired : S.section} wrap={false}>
-      {section.heading && (
-        <Text style={S.sectionLabel}>{section.heading.toUpperCase()}</Text>
-      )}
-      <SectionBody section={section} isTeacher={isTeacher} paired={paired} />
+      <View style={[S.accentBar, { backgroundColor: accent }]} />
+      <View style={S.sectionInner}>
+        {section.heading && (
+          <Text style={S.sectionLabel}>{section.heading}</Text>
+        )}
+        <SectionBody section={section} isTeacher={isTeacher} paired={paired} />
+      </View>
     </View>
   );
 }
@@ -490,25 +567,33 @@ export default function NotesheetDocument({
         {/* Course info | NAME: ___ */}
         <View style={S.metaRow}>
           <Text style={S.metaCourse}>
-            {plan.subject.toUpperCase()} · {plan.grade_band.toUpperCase()}
-            {isTeacher ? " · TEACHER KEY" : ""}
+            {plan.subject} · {plan.grade_band}
+            {isTeacher ? " · Teacher Key" : ""}
           </Text>
           <View style={S.metaNameRow}>
-            <Text style={S.metaNameLabel}>NAME:</Text>
+            <Text style={S.metaNameLabel}>Name:</Text>
             <View style={S.metaNameLine} />
           </View>
         </View>
 
         {/* Title */}
         <View style={S.titleBlock}>
-          <Text style={S.titleText}>{plan.title.toUpperCase()}</Text>
+          <Text style={S.titleText}>{plan.title}</Text>
         </View>
 
         {/* Essential Question */}
         <View style={S.eqBox}>
-          <Text style={S.eqLabel}>ESSENTIAL QUESTION</Text>
+          <Text style={S.eqLabel}>Essential Question</Text>
           <Text style={S.eqText}>{plan.essential_question}</Text>
         </View>
+
+        {/* Learning Objective */}
+        {plan.learning_objective ? (
+          <View style={S.loRow}>
+            <Text style={S.loLabel}>Objective:</Text>
+            <Text style={S.loText}>{plan.learning_objective}</Text>
+          </View>
+        ) : null}
 
         {/* Sections */}
         {layout.map((row, idx) => {
