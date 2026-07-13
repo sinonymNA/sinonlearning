@@ -388,13 +388,16 @@ function SectionBody({
         </View>
       );
 
-    case "fill_blank":
+    case "fill_blank": {
+      // Expand each ___ to a wide visual blank so students have room to write
+      const expandedPrompt = section.student_prompt.replace(/___/g, "________________");
       return (
         <View>
-          <Text style={S.bodyText}>{section.student_prompt}</Text>
-          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : <BlankLines n={paired ? 3 : 5} />}
+          <Text style={S.bodyText}>{expandedPrompt}</Text>
+          {isTeacher ? <AnswerKey notes={section.answer_key_notes} /> : null}
         </View>
       );
+    }
 
     case "numbered_response": {
       const n = Math.max(1, section.num_lines ?? 5);
@@ -428,7 +431,7 @@ function SectionBody({
         { header: "Term", width_pct: 40, prefilled: true },
         { header: "Definition", width_pct: 60, prefilled: false },
       ];
-      const ROWS = 5;
+      const ROWS = Math.max(2, section.num_lines ?? 5);
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
@@ -483,7 +486,7 @@ function SectionBody({
         { header: "Example", width_pct: 34, prefilled: false },
         { header: "Why It Works", width_pct: 33, prefilled: false },
       ];
-      const ROWS = 4;
+      const ROWS = Math.max(2, section.num_lines ?? 4);
       return (
         <View>
           <Text style={S.bodyText}>{section.student_prompt}</Text>
