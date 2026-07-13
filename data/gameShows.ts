@@ -14,46 +14,46 @@ export interface GameShowTypeInfo {
 export const gameShowCatalog: GameShowTypeInfo[] = [
   {
     type: "grid",
-    label: "Trivia Grid",
-    tagline: "Categories, point values, and a big reveal—the classic trivia board.",
+    label: "Jeopardy!",
+    tagline: "Categories, dollar values, and a big reveal — the classic trivia board.",
     description:
-      "Five categories of clues worth increasing points. Teams pick a category and value, you reveal the question, then the answer.",
+      "Five categories of clues worth increasing dollar amounts. Teams pick a category and value, you reveal the clue, then the answer.",
     accent: "teal",
     icon: Grid3x3,
   },
   {
     type: "wheel",
-    label: "Mystery Wheel",
+    label: "Wheel of Fortune",
     tagline: "Spin for points, then guess the hidden phrase letter by letter.",
     description:
-      "A spinning wheel sets the stakes, then the class calls out letters to reveal a hidden word or phrase.",
+      "A spinning prize wheel sets the stakes, then students call out letters to reveal a hidden word or phrase.",
     accent: "purple",
     icon: CircleDot,
   },
   {
     type: "feud",
-    label: "Top Answers Showdown",
-    tagline: "Guess the most popular answers before you run out of strikes.",
+    label: "Family Feud",
+    tagline: "Name the most popular answers before you rack up three strikes.",
     description:
-      "Reveal ranked answers to a prompt one at a time, tracking wrong guesses with strikes—just like the classic answers board.",
+      "Reveal ranked survey answers one at a time, tracking wrong guesses with strikes — just like the classic show.",
     accent: "amber",
     icon: MessageSquareQuote,
   },
   {
     type: "race",
-    label: "Lightning Trivia Race",
-    tagline: "Fast multiple-choice questions with a live team leaderboard.",
+    label: "Who Wants to Be a Millionaire?",
+    tagline: "Four choices, one correct answer — who has what it takes?",
     description:
-      "Quick-fire multiple-choice questions, one at a time, with a running leaderboard to keep the energy up.",
+      "Multiple-choice questions presented one at a time, Millionaire-style, with a running team leaderboard.",
     accent: "rose",
     icon: Zap,
   },
   {
     type: "memory",
-    label: "Memory Match",
+    label: "Concentration",
     tagline: "Flip cards to match terms with their definitions.",
     description:
-      "A classic concentration game built from term/definition pairs—great for vocabulary review.",
+      "A classic concentration game built from term/definition pairs — great for vocabulary review.",
     accent: "fuchsia",
     icon: Layers,
   },
