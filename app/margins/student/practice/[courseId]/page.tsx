@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/marginsAuth";
-import { getOrCreatePracticeProgress } from "@/lib/marginsDb";
+import { getOrCreatePracticeProgress, getWritingMechanicsForStudent } from "@/lib/marginsDb";
 import { getPracticeCourse } from "@/lib/marginsPracticeCourses";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import PracticeCourseView from "@/components/margins/PracticeCourseView";
@@ -18,7 +18,10 @@ export default async function PracticeCoursePage({
   const course = getPracticeCourse(courseId);
   if (!course) notFound();
 
-  const progress = await getOrCreatePracticeProgress(user.id, courseId);
+  const [progress, mechanics] = await Promise.all([
+    getOrCreatePracticeProgress(user.id, courseId),
+    getWritingMechanicsForStudent(user.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -33,6 +36,7 @@ export default async function PracticeCoursePage({
           course={course}
           initialCurrentModule={progress.current_module}
           initialCurrentPage={progress.current_page}
+          initialMechanics={mechanics.map(({ skill, level }) => ({ skill, level }))}
         />
       </main>
     </div>

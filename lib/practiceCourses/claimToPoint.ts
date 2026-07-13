@@ -665,6 +665,7 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "First: an identify/describe part",
         intro: "Just accurate, specific information — no reasoning chain required. Name the right thing correctly.",
         skill: { dimension: "ap", id: "use_of_evidence" },
+        alsoTracks: { dimension: "mechanics", id: "identify_vs_explain" },
         selfDiagnosis: true,
         prompts: [
           {
@@ -683,6 +684,7 @@ export const CLAIM_TO_POINT_MODULES: PracticeModule[] = [
         title: "Now: an explain part",
         intro: "This one wants the full reasoning chain — the actual how or why, not just a fact.",
         skill: { dimension: "ap", id: "comparison" },
+        alsoTracks: { dimension: "mechanics", id: "identify_vs_explain" },
         selfDiagnosis: true,
         prompts: [
           {

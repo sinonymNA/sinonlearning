@@ -24,7 +24,12 @@ const SCOUT_GRADING_RULES =
   "3. \"feedback\" is 1-2 sentences in Scout's voice — if they passed, name specifically what they got right " +
   "before anything else; if they didn't, be encouraging and say what's missing WITHOUT supplying the correct " +
   "answer for this prompt — describe what KIND of detail or reasoning is missing, not the answer itself.\n" +
-  "4. \"hint\" (only include if they didn't pass) is a slightly more concrete nudge than feedback — point at " +
+  "4. If they did not pass, assign exactly one diagnosis code: claim_missing, claim_vague, prompt_misread, " +
+  "evidence_missing, evidence_generic, evidence_inaccurate, reasoning_missing, reasoning_restatement, " +
+  "connection_weak, or historical_accuracy. Pick the single issue that would produce the biggest improvement.\n" +
+  "5. If they did not pass, include a short repair_prompt telling the student what to change in their own " +
+  "sentence. Keep it conversational and actionable, but never write the answer for them.\n" +
+  "6. \"hint\" (only include if they didn't pass) is a slightly more concrete nudge than feedback — point at " +
   "what to think about, but still never hand them a finished sentence or specific fact they could just copy in.";
 
 const SCOUT_VOICE_BY_REGISTER: Record<ScoutRegister, string> = {
@@ -71,6 +76,12 @@ export const PracticeCheckOutputSchema = z.object({
   score_label: z.enum(["not_yet_shown", "emerging", "solid", "strong"]),
   feedback: z.string().min(1),
   hint: z.string().optional(),
+  diagnosis: z.enum([
+    "claim_missing", "claim_vague", "prompt_misread", "evidence_missing", "evidence_generic",
+    "evidence_inaccurate", "reasoning_missing", "reasoning_restatement", "connection_weak",
+    "historical_accuracy",
+  ]).optional(),
+  repair_prompt: z.string().optional(),
 });
 export type PracticeCheckOutput = z.infer<typeof PracticeCheckOutputSchema>;
 

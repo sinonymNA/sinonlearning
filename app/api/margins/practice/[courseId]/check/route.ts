@@ -194,7 +194,20 @@ export async function POST(
       skill: checkPage.skill.id,
       scoreLabel: output.score_label,
     });
-    const newMastery = await recomputeAndUpsertSkillMastery(user.id, checkPage.skill.id);
+    const newMastery = [await recomputeAndUpsertSkillMastery(user.id, checkPage.skill.id)];
+    if (checkPage.alsoTracks) {
+      await recordPracticeAttempt({
+        progressId: progress.id,
+        moduleId,
+        promptId,
+        responseText,
+        passed: output.passed,
+        feedback: output,
+        skill: checkPage.alsoTracks.id,
+        scoreLabel: output.score_label,
+      });
+      newMastery.push(await recomputeAndUpsertSkillMastery(user.id, checkPage.alsoTracks.id));
+    }
 
     const updatedProgress =
       output.passed || module_.optional
@@ -209,7 +222,7 @@ export async function POST(
     return NextResponse.json({
       result: output,
       passed: output.passed,
-      newMastery: [newMastery],
+      newMastery,
       advanced: output.passed || Boolean(module_.optional),
       progress: updatedProgress,
       attemptId: attempt.id,

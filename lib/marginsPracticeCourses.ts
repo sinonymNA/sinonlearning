@@ -230,6 +230,8 @@ export interface PracticeCheckPage {
   title: string;
   intro: string;
   skill: PracticeCheckSkillTag;
+  // A rep may teach an AP skill and a writing-mechanics habit together.
+  alsoTracks?: PracticeCheckSkillTag;
   prompts: PracticePrompt[];
   // Before revealing feedback, prompt the student to self-diagnose the
   // weakest part of their own answer first.
@@ -306,9 +308,9 @@ export function getLastRequiredModule(course: PracticeCourse): PracticeModule {
 export const PRACTICE_COURSES: PracticeCourse[] = [
   {
     id: CLAIM_TO_POINT_COURSE_ID,
-    title: "Claim to Point",
+    title: "SAQ: From One Sentence to 3/3",
     description:
-      "A mystery you investigate one sentence at a time — claim, evidence, reasoning — until you're ready for a real, full-rubric AP World SAQ.",
+      "Solve a mystery, learn three easy writing moves, and build from one natural sentence to a full-credit AP World SAQ.",
     modules: CLAIM_TO_POINT_MODULES,
   },
 ];

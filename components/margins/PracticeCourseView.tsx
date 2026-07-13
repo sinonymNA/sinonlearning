@@ -8,6 +8,7 @@ import { revealStagger } from "@/lib/marginsMotion";
 import {
   getLastRequiredModule,
   skillTagLabel,
+  WRITING_MECHANICS_SKILL_IDS,
   type PracticeCourse,
   type PracticeModule,
   type PracticeContentBlock,
@@ -25,6 +26,8 @@ import AddToEvidenceButton from "./blocks/AddToEvidenceButton";
 import EvidenceExhibitCard from "./blocks/EvidenceExhibitCard";
 import ComparisonChart from "./blocks/ComparisonChart";
 import AnatomyDiagram from "./blocks/AnatomyDiagram";
+import SaqEngine from "./SaqEngine";
+import SaqSkillRail, { type LiveMechanicsEntry } from "./SaqSkillRail";
 
 const EVIDENCE_COACHMARK_KEY = "margins-evidence-coachmark-seen";
 
@@ -51,6 +54,7 @@ interface Props {
   course: PracticeCourse;
   initialCurrentModule: number;
   initialCurrentPage: number;
+  initialMechanics: LiveMechanicsEntry[];
 }
 
 interface CheckMastery {
@@ -63,6 +67,8 @@ interface PracticeCheckResult {
   score_label: MasteryLevel;
   feedback: string;
   hint?: string;
+  diagnosis?: string;
+  repair_prompt?: string;
 }
 
 interface FullSaqResult {
@@ -116,7 +122,7 @@ function nextPageAfter(course: PracticeCourse, moduleOrder: number, pageIdx: num
   return isLastPageInModule ? { moduleOrder: moduleOrder + 1, pageIdx: 0 } : { moduleOrder, pageIdx: pageIdx + 1 };
 }
 
-export default function PracticeCourseView({ courseId, course, initialCurrentModule, initialCurrentPage }: Props) {
+export default function PracticeCourseView({ courseId, course, initialCurrentModule, initialCurrentPage, initialMechanics }: Props) {
   const [moduleIndex, setModuleIndex] = useState(Math.min(initialCurrentModule, course.modules.length));
   const [pageIndex, setPageIndex] = useState(() => {
     const mod = course.modules[Math.min(initialCurrentModule, course.modules.length - 1)];
@@ -125,6 +131,10 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const [promptIndex, setPromptIndex] = useState(0);
   const [responseText, setResponseText] = useState("");
   const [partResponses, setPartResponses] = useState(["", "", ""]);
+  const [lockedParts, setLockedParts] = useState<number[]>([]);
+  const [repairFocus, setRepairFocus] = useState<{ diagnosis?: string; prompt: string } | null>(null);
+  const [liveMechanics, setLiveMechanics] = useState(initialMechanics);
+  const [pulseSkill, setPulseSkill] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkResult, setCheckResult] = useState<CheckResponse | null>(null);
@@ -148,7 +158,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
   const wrapperRef = useRef<HTMLDivElement>(null);
   const pageCardRef = useRef<HTMLDivElement>(null);
   const blocksRef = useRef<HTMLDivElement>(null);
-  const masteryRef = useRef<Record<string, MasteryLevel>>({});
+  const masteryRef = useRef<Record<string, MasteryLevel>>(Object.fromEntries(initialMechanics.map((m) => [m.skill, m.level])));
 
   const isDone = moduleIndex >= course.modules.length;
   const module_: PracticeModule | null = !isDone ? course.modules[moduleIndex] : null;
@@ -161,6 +171,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   useLayoutEffect(() => {
     try {
+      // Hydrate a browser-only preference after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (localStorage.getItem(EVIDENCE_COACHMARK_KEY) === "1") setHasSeenEvidenceCoachMark(true);
     } catch {
       // localStorage unavailable (privacy mode, etc.) — coach mark just shows every visit
@@ -171,7 +183,6 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     if (wrapperRef.current) {
       revealStagger(wrapperRef.current, ".course-panel", { stagger: 90, translateY: 16, duration: 420 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDone, atCapstoneChoice]);
 
   useEffect(() => {
@@ -185,6 +196,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   useEffect(() => {
     if (!isReviewing || !module_ || !page || (page.kind !== "check" && page.kind !== "full_saq_check")) {
+      // Review state belongs only to completed check pages.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReviewAttempt(null);
       return;
     }
@@ -226,6 +239,19 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   function revealFeedback(data: CheckResponse) {
     setCheckResult(data);
+    if (data.passed) setRepairFocus(null);
+    const mechanicsUpdates = data.newMastery.filter((entry) =>
+      (WRITING_MECHANICS_SKILL_IDS as readonly string[]).includes(entry.skill)
+    );
+    if (mechanicsUpdates.length) {
+      setLiveMechanics((current) => {
+        const next = new Map(current.map((entry) => [entry.skill, entry]));
+        mechanicsUpdates.forEach((entry) => next.set(entry.skill, entry));
+        return [...next.values()];
+      });
+      setPulseSkill(mechanicsUpdates[0].skill);
+      window.setTimeout(() => setPulseSkill(null), 1800);
+    }
     if (data.passed) fireConfetti(data.newMastery);
     else data.newMastery.forEach((m) => { masteryRef.current[m.skill] = m.level; });
   }
@@ -298,6 +324,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     setPendingCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
+    setLockedParts([]);
+    setRepairFocus(null);
     setPromptIndex(0);
     setError(null);
   }
@@ -381,6 +409,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
     setPendingCheckResult(null);
     setResponseText("");
     setPartResponses(["", "", ""]);
+    setLockedParts([]);
+    setRepairFocus(null);
     setPromptIndex(0);
 
     if (wasReplay || !serverProgress) {
@@ -406,10 +436,19 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
 
   function handleRetry() {
     if (!page || (page.kind !== "check" && page.kind !== "full_saq_check")) return;
+    if (checkResult && isFullSaqResult(checkResult.result)) {
+      setLockedParts(
+        checkResult.result.rubric_breakdown
+          .map((part, index) => (part.points_earned >= part.points_possible ? index : -1))
+          .filter((index) => index >= 0)
+      );
+    } else if (checkResult && !isFullSaqResult(checkResult.result)) {
+      setRepairFocus({
+        diagnosis: checkResult.result.diagnosis,
+        prompt: checkResult.result.repair_prompt ?? checkResult.result.hint ?? "Make one focused improvement, then check the same answer again.",
+      });
+    }
     setCheckResult(null);
-    setResponseText("");
-    setPartResponses(["", "", ""]);
-    setPromptIndex((i) => (i + 1) % page.prompts.length);
   }
 
   function finishWithoutCapstone() {
@@ -547,6 +586,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
           );
         })}
       </div>
+      <SaqEngine stage={Math.min(2, moduleIndex)} />
       <div className="course-panel flex items-center justify-between" style={{ opacity: 0 }}>
         <p className="text-xs text-stone-400 flex items-center gap-2">
           {module_!.optional ? "Bonus" : `Module ${moduleIndex + 1} of ${course.modules.length}`} · Page {pageIndex + 1} of{" "}
@@ -635,6 +675,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
                   passed={reviewAttempt.feedback.passed}
                   feedback={reviewAttempt.feedback.feedback}
                   hint={reviewAttempt.feedback.hint}
+                  diagnosis={reviewAttempt.feedback.diagnosis}
+                  repairPrompt={reviewAttempt.feedback.repair_prompt}
                   scoreLabel={reviewAttempt.feedback.score_label}
                   skillLabel={isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : skillTagLabel(page!.skill)}
                 />
@@ -684,24 +726,29 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               );
             })()}
             <div className="flex flex-col gap-3">
-              {page!.prompts[promptIndex % page!.prompts.length].parts.map((part, i) => (
-                <div key={part.label}>
-                  <p className="text-[13px] font-semibold text-stone-800 mb-1.5">
-                    Part {part.label}: {part.prompt}
-                  </p>
-                  <textarea
-                    value={partResponses[i]}
-                    onChange={(e) => {
-                      const next = [...partResponses];
-                      next[i] = e.target.value;
-                      setPartResponses(next);
-                    }}
-                    rows={3}
-                    placeholder="Your answer…"
-                    className="w-full rounded-xl border border-stone-200 bg-white p-3 text-[14px] leading-relaxed text-stone-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 resize-none"
-                  />
-                </div>
-              ))}
+              {page!.prompts[promptIndex % page!.prompts.length].parts.map((part, i) => {
+                const secured = lockedParts.includes(i);
+                return (
+                  <div key={part.label} className={secured ? "rounded-xl border border-teal-200 bg-teal-50/70 p-3" : ""}>
+                    <div className="mb-1.5 flex items-center justify-between gap-3">
+                      <p className="text-[13px] font-semibold text-stone-800">Part {part.label}: {part.prompt}</p>
+                      {secured && <span className="shrink-0 rounded-full bg-teal-600 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-white">Point secured</span>}
+                    </div>
+                    <textarea
+                      value={partResponses[i]}
+                      disabled={secured}
+                      onChange={(e) => {
+                        const next = [...partResponses];
+                        next[i] = e.target.value;
+                        setPartResponses(next);
+                      }}
+                      rows={3}
+                      placeholder="Say it clearly. Specific beats fancy."
+                      className="w-full resize-none rounded-xl border border-stone-200 bg-white p-3 text-[14px] leading-relaxed text-stone-800 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 disabled:border-teal-100 disabled:bg-white/60 disabled:text-stone-500"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </>
         )}
@@ -763,6 +810,15 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
                 </p>
               )
             )}
+            {repairFocus && (
+              <div className="mb-3 overflow-hidden rounded-xl border border-amber-200 bg-amber-50">
+                <div className="flex items-center justify-between bg-amber-100/70 px-3.5 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-800">Repair mode · same answer, one fix</p>
+                  <span className="text-[10px] font-semibold text-amber-700">Your draft is saved</span>
+                </div>
+                <p className="px-3.5 py-3 text-[13px] leading-relaxed text-stone-700">{repairFocus.prompt}</p>
+              </div>
+            )}
             <textarea
               value={responseText}
               onChange={(e) => setResponseText(e.target.value)}
@@ -819,6 +875,8 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               passed={checkResult.result.passed}
               feedback={checkResult.result.feedback}
               hint={checkResult.result.hint}
+              diagnosis={checkResult.result.diagnosis}
+              repairPrompt={checkResult.result.repair_prompt}
               scoreLabel={checkResult.result.score_label}
               skillLabel={isFullSaqCheck || page!.kind !== "check" ? "Full SAQ" : skillTagLabel(page!.skill)}
             />
@@ -876,7 +934,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
             onClick={handleRetry}
             className="inline-flex items-center gap-2 rounded-xl bg-white border border-teal-200 px-6 py-2.5 text-sm font-semibold text-teal-700 hover:bg-teal-50 transition-all"
           >
-            Try a new one
+            {isFullSaqResult(checkResult.result) ? "Fix the missed point" : "Fix this answer"}
           </button>
         )}
       </div>
@@ -909,10 +967,13 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
         />
       )}
     </div>
-    <EvidenceFolderPanel
-      entries={evidenceEntries}
-      onRemove={(id) => setEvidenceEntries((prev) => prev.filter((e) => e.id !== id))}
-    />
+    <div className="flex flex-col gap-4">
+      <SaqSkillRail mastery={liveMechanics} pulseSkill={pulseSkill} />
+      <EvidenceFolderPanel
+        entries={evidenceEntries}
+        onRemove={(id) => setEvidenceEntries((prev) => prev.filter((e) => e.id !== id))}
+      />
+    </div>
     </div>
   );
 }

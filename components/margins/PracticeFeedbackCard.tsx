@@ -10,7 +10,22 @@ interface Props {
   hint?: string;
   scoreLabel: MasteryLevel;
   skillLabel: string;
+  diagnosis?: string;
+  repairPrompt?: string;
 }
+
+const DIAGNOSIS_LABELS: Record<string, string> = {
+  claim_missing: "No clear answer yet",
+  claim_vague: "Make the answer specific",
+  prompt_misread: "Decode the task word",
+  evidence_missing: "Bring the receipt",
+  evidence_generic: "Name a specific fact",
+  evidence_inaccurate: "Check the history",
+  reasoning_missing: "Finish the thought",
+  reasoning_restatement: "Explain—don't repeat",
+  connection_weak: "Tighten the connection",
+  historical_accuracy: "Repair the history",
+};
 
 const SCORE_LABEL_TEXT: Record<MasteryLevel, string> = {
   not_yet_shown: "Not yet shown",
@@ -19,7 +34,7 @@ const SCORE_LABEL_TEXT: Record<MasteryLevel, string> = {
   strong: "Strong",
 };
 
-export default function PracticeFeedbackCard({ passed, feedback, hint, scoreLabel, skillLabel }: Props) {
+export default function PracticeFeedbackCard({ passed, feedback, hint, scoreLabel, skillLabel, diagnosis, repairPrompt }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   useMountReveal(containerRef, ".feedback-block", { stagger: 100, translateY: 14, duration: 380 });
 
@@ -46,6 +61,14 @@ export default function PracticeFeedbackCard({ passed, feedback, hint, scoreLabe
           <span className="font-semibold">Hint: </span>
           {hint}
         </p>
+      )}
+      {!passed && repairPrompt && (
+        <div className="feedback-block mt-4 rounded-xl border border-amber-200 bg-white/75 p-3.5" style={{ opacity: 0 }}>
+          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-amber-700">
+            One fix · {DIAGNOSIS_LABELS[diagnosis ?? ""] ?? "Strengthen this move"}
+          </p>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-stone-700">{repairPrompt}</p>
+        </div>
       )}
     </div>
   );
