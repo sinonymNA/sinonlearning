@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Sparkles } from "lucide-react";
 import GameTypeCard from "@/components/gameShows/GameTypeCard";
 import SavedGamesList from "@/components/gameShows/SavedGamesList";
 import { gameShowCatalog } from "@/data/gameShows";
@@ -44,6 +45,18 @@ export default function GameShowsPage() {
           Pick a format, paste in your content, and project it on the whiteboard. Use AI to turn
           your notes into a ready-to-play game — or build it by hand.
         </p>
+      </section>
+
+      <section className="relative overflow-hidden border-b border-cyan-300/10 bg-[#07100f] px-6 py-14 text-[#f4eedc]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_40%,rgba(34,211,238,.15),transparent_30%),radial-gradient(circle_at_10%_90%,rgba(217,179,92,.12),transparent_35%)]" />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-8 md:grid-cols-[1fr_auto]">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.25em] text-cyan-300">Playable prototype · new</p>
+            <h2 className="mt-3 font-display text-4xl font-black sm:text-5xl">Enter The Vault.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55">A question game where every correct answer opens a door—and every mistake becomes a Glitch you can repair. Descend, find artifacts, and escape before your lantern goes dark.</p>
+          </div>
+          <Link href="/vault" className="group inline-flex items-center justify-center gap-3 rounded-xl bg-[#e5d398] px-6 py-4 text-xs font-black uppercase tracking-[.15em] text-[#10201d] transition hover:bg-white">Begin first descent <ArrowRight size={16} className="transition group-hover:translate-x-1"/></Link>
+        </div>
       </section>
 
       {/* Game type cards */}
