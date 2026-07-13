@@ -6,7 +6,13 @@ import FadeIn from "@/components/FadeIn";
 import MaterialCard from "@/components/MaterialCard";
 import type { Material } from "@/lib/material";
 
-export default function CourseMaterialsSection({ courseSlug }: { courseSlug: string }) {
+export default function CourseMaterialsSection({
+  courseSlug,
+  emptyMessage = "No materials posted for this course yet—check back soon.",
+}: {
+  courseSlug: string;
+  emptyMessage?: string;
+}) {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -22,14 +28,14 @@ export default function CourseMaterialsSection({ courseSlug }: { courseSlug: str
 
   useEffect(() => {
     fetch("/api/admin/session")
-      .then((res) => res.json())
+      .then((res) => res.json().catch(() => ({ isAdmin: false })))
       .then((data) => setIsAdmin(!!data.isAdmin))
       .finally(() => setChecking(false));
   }, []);
 
   useEffect(() => {
     fetch(`/api/materials?course=${encodeURIComponent(courseSlug)}`)
-      .then((res) => res.json())
+      .then((res) => res.json().catch(() => ({ materials: [] })))
       .then((data) => setMaterials(data.materials ?? []))
       .finally(() => setLoadingMaterials(false));
   }, [courseSlug]);
@@ -187,7 +193,7 @@ export default function CourseMaterialsSection({ courseSlug }: { courseSlug: str
       <div className="mt-8">
         {loadingMaterials ? null : materials.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-navy-900/15 px-6 py-10 text-center text-sm text-navy-700/50">
-            No materials posted for this course yet—check back soon.
+            {emptyMessage}
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

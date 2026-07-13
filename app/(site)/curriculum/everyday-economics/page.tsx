@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import type { Metadata } from "next";
 import FadeIn from "@/components/FadeIn";
 import Button from "@/components/Button";
 import CourseMaterialsSection from "@/components/materials/CourseMaterialsSection";
@@ -14,6 +15,11 @@ import EconStandards from "@/components/curriculum/EconStandards";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Everyday Economics | Sinon Learning",
+  description: "A story-first, inquiry-driven economics and personal finance course mapped across a complete semester.",
+};
+
 export default function EverydayEconomicsPage() {
   return (
     <>
@@ -27,7 +33,7 @@ export default function EverydayEconomicsPage() {
       <EconSupplyDemandLab />
       <EconStandards />
 
-      <section className="px-6 py-16 lg:px-8">
+      <section id="course-materials" className="scroll-mt-24 px-6 py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <FadeIn>
             <CourseMaterialsSection courseSlug="everyday-economics" />
