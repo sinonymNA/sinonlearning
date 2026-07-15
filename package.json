@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sprites": "node scripts/split-capsule-sprites.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
