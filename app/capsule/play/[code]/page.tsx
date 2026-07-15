@@ -122,7 +122,7 @@ export default function PlayerScreen() {
     );
   }
 
-  if (!game) return <div className="min-h-screen bg-[#0c0600]" />;
+  if (!game) return <div className="min-h-screen bg-[#06163E]" />;
 
   const myPlayer = game.players.find(p => p.id === playerId);
   const leaderboard = [...game.players].sort((a, b) => b.gold - a.gold);
@@ -159,14 +159,22 @@ export default function PlayerScreen() {
         <h2 className="mb-1 text-6xl text-white" style={{ fontFamily: "var(--font-bebas)", letterSpacing: "0.06em" }}>
           GAME OVER
         </h2>
-        <p className="mb-8 text-xl font-black text-yellow-300">🪙 {myPlayer?.gold ?? 0} gold</p>
+        <p className="mb-8 flex items-center gap-2 text-xl font-black text-yellow-300">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          {myPlayer?.gold ?? 0} gold
+        </p>
         <div className="w-full max-w-xs space-y-2">
           {leaderboard.slice(0, 5).map((p, i) => (
             <div key={p.id} className={`flex items-center gap-3 rounded-xl px-4 py-2.5 ${p.id === playerId ? "border border-orange-400/30 bg-orange-400/10" : "border border-white/8 bg-white/4"}`}>
               <span className="w-5 text-xs font-black text-white/25">#{i + 1}</span>
               <CapIcon capId={p.capId} size={28} />
               <span className="flex-1 text-sm font-bold text-white">{p.displayName}</span>
-              <span className="text-sm font-black text-yellow-300">🪙{p.gold}</span>
+              <span className="flex items-center gap-1 text-sm font-black text-yellow-300">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 14, height: 14, objectFit: "contain" }} />
+                {p.gold}
+              </span>
             </div>
           ))}
         </div>
@@ -192,8 +200,10 @@ export default function PlayerScreen() {
           <CapIcon capId={capId} size={28} />
           <span className="text-xs font-bold text-white/70">{displayName}</span>
         </div>
-        <div className="flex items-center gap-1 text-sm font-black text-yellow-300">
-          🪙 {myPlayer?.gold ?? 0}
+        <div className="flex items-center gap-1.5 text-sm font-black text-yellow-300">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 18, height: 18, objectFit: "contain" }} />
+          {myPlayer?.gold ?? 0}
         </div>
         <span className="text-[10px] text-white/25">Q{game.currentQuestion + 1}/{game.totalQuestions}</span>
       </div>
@@ -246,17 +256,22 @@ export default function PlayerScreen() {
                         onClick={() => setChestOpen(true)}
                         className="flex flex-col items-center gap-3 rounded-3xl border border-yellow-400/30 bg-yellow-400/10 px-10 py-8 transition-transform hover:scale-105 active:scale-95"
                       >
-                        <span className="text-6xl">🎁</span>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 96, height: 96, objectFit: "contain" }} />
                         <span className="text-xs font-black uppercase tracking-widest text-yellow-300">Tap to open!</span>
                       </button>
                     ) : (
                       <div className="flex flex-col items-center gap-3 rounded-3xl border border-orange-400/30 bg-orange-400/10 px-10 py-8">
-                        <span className="text-5xl">
-                          {game.myAnswer.chestResult?.type === "gold" ? "🪙" :
-                           game.myAnswer.chestResult?.type === "steal" ? "🗡️" :
-                           game.myAnswer.chestResult?.type === "lose" ? "💀" :
-                           game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
-                        </span>
+                        {game.myAnswer.chestResult?.type === "gold" ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src="/assets/capsule/chest-open.png" alt="chest open" style={{ width: 96, height: 96, objectFit: "contain" }} />
+                        ) : (
+                          <span className="text-5xl">
+                            {game.myAnswer.chestResult?.type === "steal" ? "🗡️" :
+                             game.myAnswer.chestResult?.type === "lose" ? "💀" :
+                             game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
+                          </span>
+                        )}
                         <p className="text-lg font-black text-white">
                           {game.myAnswer.chestResult?.label ?? "Reward!"}
                         </p>
@@ -284,7 +299,11 @@ export default function PlayerScreen() {
           {leaderboard.slice(0, 8).map((p, i) => (
             <div key={p.id} className={`flex flex-col items-center gap-1 ${p.id === playerId ? "opacity-100" : "opacity-50"}`}>
               <CapIcon capId={p.capId} size={28} />
-              <span className="text-[9px] text-white/50 whitespace-nowrap">🪙{p.gold}</span>
+              <span className="flex items-center gap-0.5 text-[9px] text-white/50 whitespace-nowrap">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 10, height: 10, objectFit: "contain" }} />
+                {p.gold}
+              </span>
             </div>
           ))}
         </div>

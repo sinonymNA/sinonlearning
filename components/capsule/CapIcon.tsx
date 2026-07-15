@@ -1,5 +1,10 @@
 import { CAP_MAP, type Cap } from "@/lib/capsuleData";
 
+// Maps cap IDs to their generated portrait PNGs under /assets/capsule/caps/
+const CAP_PORTRAITS: Record<string, string> = {
+  "cap-fox": "/assets/capsule/caps/cap-fox.png",
+};
+
 // Ring width scales with icon size, min 2px
 function ringWidth(size: number): number {
   return Math.max(2, Math.round(size * 0.055));
@@ -29,6 +34,7 @@ interface CapIconProps {
 
 export default function CapIcon({ capId, size = 48, showName = false, portraitSrc }: CapIconProps) {
   const cap: Cap = CAP_MAP[capId] ?? CAP_MAP["cap-fox"];
+  const portrait = portraitSrc ?? CAP_PORTRAITS[capId];
   const fontSize = Math.round(size * 0.46);
   const rw = ringWidth(size);
 
@@ -53,10 +59,10 @@ export default function CapIcon({ capId, size = 48, showName = false, portraitSr
         }}
         title={cap.name}
       >
-        {portraitSrc ? (
+        {portrait ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={portraitSrc}
+            src={portrait}
             alt={cap.name}
             style={{ width: "92%", height: "92%", objectFit: "contain", display: "block" }}
           />

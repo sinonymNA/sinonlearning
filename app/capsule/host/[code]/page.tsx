@@ -189,7 +189,11 @@ export default function HostPanel() {
                     <span className="w-6 text-center text-sm font-black text-white/30">#{i + 1}</span>
                     <CapIcon capId={p.capId} size={32} />
                     <span className="flex-1 text-sm font-bold text-white">{p.displayName}</span>
-                    <span className="font-black text-yellow-300">🪙 {p.gold}</span>
+                    <span className="flex items-center gap-1.5 font-black text-yellow-300">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 18, height: 18, objectFit: "contain" }} />
+                      {p.gold}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -209,7 +213,11 @@ export default function HostPanel() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <span className="truncate text-xs font-bold text-white">{p.displayName}</span>
-                      <span className="ml-2 text-xs font-black text-yellow-300">🪙{p.gold}</span>
+                      <span className="ml-2 flex items-center gap-0.5 text-xs font-black text-yellow-300">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 12, height: 12, objectFit: "contain" }} />
+                        {p.gold}
+                      </span>
                     </div>
                     {p.hasAnswered && game.status === "active" && (
                       <div className="mt-0.5 h-0.5 w-full rounded-full bg-green-500/40" />
