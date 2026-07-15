@@ -1,28 +1,36 @@
 import { CAP_MAP, type Cap } from "@/lib/capsuleData";
 
-const RARITY_RING: Record<string, string> = {
-  common: "2px solid rgba(255,255,255,0.15)",
-  rare: "2px solid rgba(255,255,255,0.4)",
-  epic: "3px solid rgba(196,181,253,0.7)",
-  mythic: "3px solid rgba(253,224,71,0.9)",
+// Ring width scales with icon size, min 2px
+function ringWidth(size: number): number {
+  return Math.max(2, Math.round(size * 0.055));
+}
+
+const RARITY_RING_COLOR: Record<string, string> = {
+  common:  "rgba(255,255,255,0.18)",
+  rare:    "rgba(255,255,255,0.45)",
+  epic:    "rgba(167,139,250,0.75)",
+  mythic:  "rgba(253,224,71,0.95)",
 };
 
 const RARITY_SHADOW: Record<string, string> = {
   common: "none",
-  rare: "0 0 10px rgba(255,255,255,0.1)",
-  epic: "0 0 18px rgba(167,139,250,0.45)",
-  mythic: "0 0 28px rgba(253,224,71,0.5)",
+  rare:   "0 0 10px rgba(255,255,255,0.12)",
+  epic:   "0 0 18px rgba(167,139,250,0.5)",
+  mythic: "0 0 28px rgba(253,224,71,0.55)",
 };
 
 interface CapIconProps {
   capId: string;
   size?: number;
   showName?: boolean;
+  /** Pass the path to a portrait PNG once assets land, e.g. "/assets/capsule/caps/cap-fox.png" */
+  portraitSrc?: string;
 }
 
-export default function CapIcon({ capId, size = 48, showName = false }: CapIconProps) {
+export default function CapIcon({ capId, size = 48, showName = false, portraitSrc }: CapIconProps) {
   const cap: Cap = CAP_MAP[capId] ?? CAP_MAP["cap-fox"];
   const fontSize = Math.round(size * 0.46);
+  const rw = ringWidth(size);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -32,7 +40,7 @@ export default function CapIcon({ capId, size = 48, showName = false }: CapIconP
           height: size,
           borderRadius: "50%",
           background: cap.bg,
-          border: RARITY_RING[cap.rarity],
+          border: `${rw}px solid ${RARITY_RING_COLOR[cap.rarity]}`,
           boxShadow: RARITY_SHADOW[cap.rarity],
           display: "flex",
           alignItems: "center",
@@ -40,10 +48,21 @@ export default function CapIcon({ capId, size = 48, showName = false }: CapIconP
           fontSize,
           flexShrink: 0,
           userSelect: "none",
+          overflow: "hidden",
+          position: "relative",
         }}
         title={cap.name}
       >
-        {cap.emoji}
+        {portraitSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={portraitSrc}
+            alt={cap.name}
+            style={{ width: "92%", height: "92%", objectFit: "contain", display: "block" }}
+          />
+        ) : (
+          cap.emoji
+        )}
       </div>
       {showName && (
         <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", textAlign: "center", lineHeight: 1.2 }}>

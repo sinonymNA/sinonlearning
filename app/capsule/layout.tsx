@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function CapsuleLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0c0600] text-white" style={{ fontFamily: "var(--font-inter)" }}>
+    <div className="min-h-screen text-white" style={{ background: "#06163E", fontFamily: "var(--font-inter)" }}>
       {children}
     </div>
   );
