@@ -12,6 +12,7 @@ export interface Cap {
 }
 
 export const CAPS: Cap[] = [
+  // ── Classic set ───────────────────────────────────────────────────────────
   // Common
   { id: "cap-fox",      name: "Fox",        emoji: "🦊", rarity: "common",  bg: "linear-gradient(135deg,#f97316,#ea580c)", ring: "#fed7aa" },
   { id: "cap-cat",      name: "Cat",        emoji: "🐱", rarity: "common",  bg: "linear-gradient(135deg,#ec4899,#db2777)", ring: "#fbcfe8" },
@@ -42,6 +43,20 @@ export const CAPS: Cap[] = [
   { id: "cap-crown",    name: "Crown",      emoji: "👑", rarity: "mythic",  bg: "linear-gradient(135deg,#854d0e,#ca8a04,#fbbf24,#ca8a04)", ring: "#fde047" },
   { id: "cap-galaxy",   name: "Galaxy",     emoji: "🌌", rarity: "mythic",  bg: "linear-gradient(135deg,#0f0c29,#302b63,#24243e)", ring: "#a78bfa" },
   { id: "cap-ghost",    name: "Ghost",      emoji: "👻", rarity: "mythic",  bg: "linear-gradient(135deg,#e2e8f0,#cbd5e1,#94a3b8)", ring: "#ffffff" },
+
+  // ── Space set ─────────────────────────────────────────────────────────────
+  // Common
+  { id: "cap-astropup",   name: "Astro Pup",    emoji: "🐶", rarity: "common", bg: "linear-gradient(135deg,#1e3a8a,#1d4ed8)", ring: "#93c5fd" },
+  { id: "cap-moonbunny",  name: "Moon Bunny",   emoji: "🐰", rarity: "common", bg: "linear-gradient(135deg,#312e81,#4338ca)", ring: "#c7d2fe" },
+  // Rare
+  { id: "cap-robowl",     name: "Robo Owl",     emoji: "🦉", rarity: "rare",   bg: "linear-gradient(135deg,#1e293b,#334155)", ring: "#7dd3fc" },
+  { id: "cap-zorp",       name: "Zorp",         emoji: "👾", rarity: "rare",   bg: "linear-gradient(135deg,#064e3b,#065f46)", ring: "#6ee7b7" },
+  { id: "cap-cometfox",   name: "Comet Fox",    emoji: "🦊", rarity: "rare",   bg: "linear-gradient(135deg,#7c2d12,#c2410c)", ring: "#fb923c" },
+  // Epic
+  { id: "cap-nebulacat",  name: "Nebula Cat",   emoji: "🐱", rarity: "epic",   bg: "linear-gradient(135deg,#1e1b4b,#4c1d95,#7e22ce)", ring: "#d8b4fe" },
+  { id: "cap-orbitdrake", name: "Orbit Drake",  emoji: "🐉", rarity: "epic",   bg: "linear-gradient(135deg,#0c4a6e,#0369a1,#0ea5e9)", ring: "#38bdf8" },
+  // Mythic
+  { id: "cap-voidknight", name: "Void Knight",  emoji: "⚔️", rarity: "mythic", bg: "linear-gradient(135deg,#0f0c29,#1e1b4b,#4c1d95)", ring: "#a855f7" },
 ];
 
 export const CAP_MAP = Object.fromEntries(CAPS.map(c => [c.id, c]));

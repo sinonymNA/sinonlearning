@@ -2,16 +2,26 @@ import { CAP_MAP, type Cap } from "@/lib/capsuleData";
 
 // Maps cap IDs to their portrait PNGs — pre-cropped circles, no background needed
 const CAP_PORTRAITS: Record<string, string> = {
-  "cap-fox":     "/assets/capsule/caps/cap-fox.png",
-  "cap-cat":     "/assets/capsule/caps/cap-cat.png",
-  "cap-dog":     "/assets/capsule/caps/cap-dog.png",
-  "cap-frog":    "/assets/capsule/caps/cap-frog.png",
-  "cap-fish":    "/assets/capsule/caps/cap-fish.png",
-  "cap-duck":    "/assets/capsule/caps/cap-duck.png",
-  "cap-owl":     "/assets/capsule/caps/cap-owl.png",
-  "cap-bunny":   "/assets/capsule/caps/cap-bunny.png",
-  "cap-bear":    "/assets/capsule/caps/cap-bear.png",
-  "cap-hamster": "/assets/capsule/caps/cap-hamster.png",
+  // Classic set
+  "cap-fox":        "/assets/capsule/caps/cap-fox.png",
+  "cap-cat":        "/assets/capsule/caps/cap-cat.png",
+  "cap-dog":        "/assets/capsule/caps/cap-dog.png",
+  "cap-frog":       "/assets/capsule/caps/cap-frog.png",
+  "cap-fish":       "/assets/capsule/caps/cap-fish.png",
+  "cap-duck":       "/assets/capsule/caps/cap-duck.png",
+  "cap-owl":        "/assets/capsule/caps/cap-owl.png",
+  "cap-bunny":      "/assets/capsule/caps/cap-bunny.png",
+  "cap-bear":       "/assets/capsule/caps/cap-bear.png",
+  "cap-hamster":    "/assets/capsule/caps/cap-hamster.png",
+  // Space set
+  "cap-astropup":   "/assets/capsule/caps/cap-astropup.png",
+  "cap-moonbunny":  "/assets/capsule/caps/cap-moonbunny.png",
+  "cap-robowl":     "/assets/capsule/caps/cap-robowl.png",
+  "cap-zorp":       "/assets/capsule/caps/cap-zorp.png",
+  "cap-cometfox":   "/assets/capsule/caps/cap-cometfox.png",
+  "cap-nebulacat":  "/assets/capsule/caps/cap-nebulacat.png",
+  "cap-orbitdrake": "/assets/capsule/caps/cap-orbitdrake.png",
+  "cap-voidknight": "/assets/capsule/caps/cap-voidknight.png",
 };
 
 // Rarity glow applied as box-shadow on the circular portrait wrapper

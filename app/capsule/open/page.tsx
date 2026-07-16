@@ -106,41 +106,41 @@ export default function OpenPage() {
           />
         )}
 
-        {/* Pod closed */}
+        {/* Ball closed */}
         {(phase === "idle" || phase === "shaking") && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="/assets/capsule/pod-closed.png"
+            src="/assets/capsule/space-ball-closed.png"
             alt="capsule"
             style={{
-              width: 180,
+              width: 200,
               objectFit: "contain",
               animation: phase === "shaking" ? "shake 0.15s ease-in-out infinite" : undefined,
-              filter: phase === "shaking" ? "drop-shadow(0 0 20px rgba(25,205,210,0.6))" : undefined,
+              filter: phase === "shaking" ? "drop-shadow(0 0 28px rgba(168,85,247,0.7))" : undefined,
             }}
           />
         )}
 
-        {/* Pod splitting */}
+        {/* Ball splitting */}
         {phase === "splitting" && (
-          <div style={{ position: "relative", width: 180, height: 200 }}>
+          <div style={{ position: "relative", width: 200, height: 220 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/capsule/pod-top.png"
+              src="/assets/capsule/space-ball-top.png"
               alt=""
               style={{
                 position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-                width: 140, objectFit: "contain",
+                width: 160, objectFit: "contain",
                 animation: "flyUp 0.5s ease-out forwards",
               }}
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/capsule/pod-bottom.png"
+              src="/assets/capsule/space-ball-bottom.png"
               alt=""
               style={{
                 position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
-                width: 140, objectFit: "contain",
+                width: 160, objectFit: "contain",
                 animation: "flyDown 0.5s ease-out forwards",
               }}
             />
