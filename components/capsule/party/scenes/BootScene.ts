@@ -17,6 +17,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    // Board background
+    this.load.image("board-bg", "/assets/capsule/game/board-bg.png");
+    // Coin Vacuum arena background (reuse board-bg until separate art arrives)
+    this.load.image("arena-bg", "/assets/capsule/game/board-bg.png");
     // Load portrait images for the caps we know about
     for (const id of KNOWN_CAP_IDS) {
       this.load.image(`cap-${id}`, `/assets/capsule/caps/cap-${id}.png`);

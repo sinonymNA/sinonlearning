@@ -50,7 +50,11 @@ export class BoardScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
+    if (this.textures.exists("board-bg")) {
+      this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H).setDepth(0);
+    } else {
+      this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
+    }
 
     this.ui = this.scene.get("UIScene") as UIScene;
 
@@ -69,6 +73,10 @@ export class BoardScene extends Phaser.Scene {
   // --- Board drawing ---
 
   private drawPaths() {
+    // Path lines are hidden when the board background art is present — the artwork shows the track.
+    // Draw faint guides only as a fallback when there's no board-bg texture.
+    if (this.textures.exists("board-bg")) return;
+
     const g = this.add.graphics();
     g.lineStyle(3, PLACEHOLDER.PATH_COLOR, 0.8);
 
@@ -80,7 +88,6 @@ export class BoardScene extends Phaser.Scene {
       }
     }
 
-    // Arrow heads on paths
     for (const space of BOARD_SPACES) {
       for (const nextId of space.connections) {
         const next = BOARD_SPACE_MAP.get(nextId);
@@ -89,7 +96,6 @@ export class BoardScene extends Phaser.Scene {
         const mx = (space.x + next.x) / 2;
         const my = (space.y + next.y) / 2;
         g.fillStyle(PLACEHOLDER.PATH_COLOR, 0.8);
-        // Tiny arrow at midpoint
         const size = 5;
         const points = [
           { x: mx + Math.cos(angle) * size, y: my + Math.sin(angle) * size },
