@@ -26,6 +26,7 @@ const RARITY_GLOW: Record<string, string> = {
 export default function OpenPage() {
   const router = useRouter();
   const [coins, setCoins] = useState<number | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Cap | null>(null);
   const [error, setError] = useState("");
@@ -36,6 +37,7 @@ export default function OpenPage() {
       .then(d => {
         if (!d.user) { router.push("/capsule"); return; }
         setCoins(d.user.coins);
+        setIsDemo(d.user.email?.endsWith("@capsule.demo") ?? false);
       });
   }, [router]);
 
@@ -71,7 +73,7 @@ export default function OpenPage() {
     setError("");
   }
 
-  const canOpen = coins !== null && coins >= CAPSULE_COST && phase === "idle";
+  const canOpen = (isDemo || (coins !== null && coins >= CAPSULE_COST)) && phase === "idle";
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12" style={{ background: "#06163E" }}>
@@ -202,7 +204,9 @@ export default function OpenPage() {
             >
               {phase === "done"
                 ? (canOpen ? "Open Another" : `Need ${CAPSULE_COST} coins`)
-                : canOpen ? `Open Capsule · ${CAPSULE_COST} coins` : `Need ${CAPSULE_COST} coins`}
+                : canOpen
+                  ? (isDemo ? "Open Capsule" : `Open Capsule · ${CAPSULE_COST} coins`)
+                  : `Need ${CAPSULE_COST} coins`}
             </button>
             <Link href="/capsule" className="text-xs text-white/30 hover:text-white/50">← Back</Link>
           </>

@@ -7,8 +7,11 @@ export async function POST() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
 
-  const spent = await spendCoins(user.id, CAPSULE_COST);
-  if (!spent) return NextResponse.json({ error: "Not enough coins." }, { status: 402 });
+  const isDemo = user.email?.endsWith("@capsule.demo");
+  if (!isDemo) {
+    const spent = await spendCoins(user.id, CAPSULE_COST);
+    if (!spent) return NextResponse.json({ error: "Not enough coins." }, { status: 402 });
+  }
 
   const cap = rollCap();
   await grantCap(user.id, cap.id);
