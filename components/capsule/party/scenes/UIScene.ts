@@ -6,7 +6,7 @@ import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout"
 // UIScene: persistent overlay scene that renders on top of active game scenes.
 // Displays HUD elements: turn banner, player coins + grand caps, item slots,
 // question panels, minigame timer, and countdown indicators.
-// NO React components or Tailwind â€” everything is Phaser GameObjects.
+// NO React components or Tailwind — everything is Phaser GameObjects.
 
 interface UIPlayer {
   id: string;
@@ -186,56 +186,52 @@ export class UIScene extends Phaser.Scene {
 
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
-    const panelW = Math.min(W - 40, 620);
-    const panelH = 280;
-    const px = (W - panelW) / 2;
-    const py = H / 2 - panelH / 2;
-
-    const bg = this.add.rectangle(0, 0, panelW, panelH, 0x0f172a, 0.97).setOrigin(0);
-    const border = this.add.rectangle(0, 0, panelW, panelH, 0x19cdd2, 0).setStrokeStyle(2, 0x19cdd2).setOrigin(0);
-
-    const qText = this.add.text(20, 18, data.q, {
-      fontSize: "15px", fontFamily: "sans-serif", color: "#e2e8f0", wordWrap: { width: panelW - 40 },
-    });
+    const shade = this.add.rectangle(0, 0, W, H, 0x020817, 0.67).setOrigin(0);
+    const questionGlow = this.add.ellipse(W / 2, 90, 700, 150, 0x07142f, 0.82);
+    const qText = this.add.text(W / 2, 78, data.q, {
+      fontSize: "22px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
+      align: "center", wordWrap: { width: 690 }, stroke: "#07142f", strokeThickness: 5,
+    }).setOrigin(0.5);
 
     const labels = ["A", "B", "C", "D"];
+    const colors = [0xe5484d, 0x3b82f6, 0xf59e0b, 0x16a34a];
     const btnObjs: Phaser.GameObjects.Container[] = [];
     data.choices.forEach((choice, i) => {
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const bx = 16 + col * (panelW / 2);
-      const by = 90 + row * 72;
-      const bw = panelW / 2 - 24;
-      const bh = 60;
+      const bx = 96 + col * 356;
+      const by = 160 + row * 90;
+      const bw = 348;
+      const bh = 72;
 
-      const btnBg = this.add.rectangle(0, 0, bw, bh, 0x1e293b, 1).setOrigin(0).setInteractive({ useHandCursor: true });
-      const btnBorder = this.add.rectangle(0, 0, bw, bh, 0x334155, 0).setStrokeStyle(2, 0x334155).setOrigin(0);
-      const label = this.add.text(12, 10, labels[i], {
-        fontSize: "13px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
-      });
-      const txt = this.add.text(28, 10, choice, {
-        fontSize: "12px", fontFamily: "sans-serif", color: "#e2e8f0",
-        wordWrap: { width: bw - 36 }, lineSpacing: 2,
-      });
+      const btnBg = this.add.rectangle(0, 0, bw, bh, colors[i], 0.92).setOrigin(0).setInteractive({ useHandCursor: true });
+      const btnBorder = this.add.rectangle(0, 0, bw, bh, colors[i], 0).setStrokeStyle(4, 0xffffff, 0.72).setOrigin(0);
+      const medallion = this.add.circle(36, bh / 2, 22, 0x07142f, 0.92).setStrokeStyle(2, 0xffffff, 0.7);
+      const label = this.add.text(36, bh / 2, labels[i], {
+        fontSize: "18px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
+      }).setOrigin(0.5);
+      const txt = this.add.text(70, bh / 2, choice, {
+        fontSize: "15px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
+        wordWrap: { width: bw - 86 }, lineSpacing: 2,
+      }).setOrigin(0, 0.5);
 
-      const btn = this.add.container(bx, by, [btnBg, btnBorder, label, txt]);
+      const btn = this.add.container(bx, by, [btnBg, btnBorder, medallion, label, txt]);
       btnBg.on("pointerdown", () => this.handleAnswer(i));
-      btnBg.on("pointerover", () => { btnBorder.setStrokeStyle(2, 0x19cdd2); });
-      btnBg.on("pointerout", () => { btnBorder.setStrokeStyle(2, 0x334155); });
+      btnBg.on("pointerover", () => { btn.setScale(1.025); btnBorder.setStrokeStyle(5, 0xffffff, 1); });
+      btnBg.on("pointerout", () => { btn.setScale(1); btnBorder.setStrokeStyle(4, 0xffffff, 0.72); });
       btnObjs.push(btn);
       this.answerButtons.push(btn);
     });
 
-    // Timer bar
-    const timerBg = this.add.rectangle(16, panelH - 20, panelW - 32, 8, 0x334155, 1).setOrigin(0);
-    const timerBar = this.add.rectangle(16, panelH - 20, panelW - 32, 8, 0x19cdd2, 1).setOrigin(0);
+    const timerBg = this.add.rectangle(96, 356, 704, 10, 0x17233b, 1).setOrigin(0);
+    const timerBar = this.add.rectangle(96, 356, 704, 10, 0xffd166, 1).setOrigin(0);
     this.tweens.add({
       targets: timerBar, scaleX: 0, duration: data.timeLimit * 1000, ease: "Linear",
       onComplete: () => { if (this.lastAnswerCallback) this.handleAnswer(-1); },
     });
 
-    this.questionPanel = this.add.container(px, py, [bg, border, qText, ...btnObjs, timerBg, timerBar]).setDepth(300);
-    this.tweens.add({ targets: this.questionPanel, alpha: { from: 0, to: 1 }, duration: 200 });
+    this.questionPanel = this.add.container(0, 0, [shade, questionGlow, qText, ...btnObjs, timerBg, timerBar]).setDepth(300);
+    this.tweens.add({ targets: this.questionPanel, alpha: { from: 0, to: 1 }, duration: 250 });
   }
 
   private handleAnswer(idx: number) {
@@ -332,8 +328,8 @@ export class UIScene extends Phaser.Scene {
 
   private itemIcon(item: string): string {
     const icons: Record<string, string> = {
-      magnet: "ðŸ§²", "golden-spinner": "âœ¨", "warp-ticket": "ðŸš€",
-      shield: "ðŸ›¡", "raid-block": "ðŸš«",
+      magnet: "🧲", "golden-spinner": "✨", "warp-ticket": "🚀",
+      shield: "🛡", "raid-block": "🚫",
     };
     return icons[item] ?? "?";
   }
@@ -353,7 +349,7 @@ export class UIScene extends Phaser.Scene {
       const name = this.add.text(6, 4, p.displayName.slice(0, 10), {
         fontSize: "10px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
       });
-      const gcLine = this.add.text(6, 18, `â˜… ${p.grandCaps}`, {
+      const gcLine = this.add.text(6, 18, `★ ${p.grandCaps}`, {
         fontSize: "12px", fontFamily: "sans-serif", color: "#ffd700",
       });
       const coinsLine = this.add.text(6, 34, `G ${p.coins}`, {
@@ -366,27 +362,26 @@ export class UIScene extends Phaser.Scene {
   }
 
   private renderPlayerCards() {
-    const cardW = 144;
     const cardH = 56;
-    const gap = 5;
     this.players.forEach((player, index) => {
-      const x = 8 + index * (cardW + gap);
+      const x = 18 + index * 194;
       const y = PARTY_HEIGHT - cardH - 7;
       const color = PLACEHOLDER.PLAYER_COLORS[player.colorIndex] ?? 0x334155;
-      const bg = this.add.rectangle(0, 0, cardW, cardH, 0x071426, 0.96).setOrigin(0).setStrokeStyle(3, color);
+      const glow = this.add.ellipse(78, 29, 166, 52, color, 0.25).setStrokeStyle(3, color, 0.92);
+      const core = this.add.ellipse(78, 29, 154, 44, 0x071426, 0.94);
       const portraitKey = `cap-token-${player.capId.replace(/^cap-/, "")}-${player.colorIndex}`;
-      const portrait = this.add.image(28, 28, this.textures.exists(portraitKey) ? portraitKey : `token-${player.colorIndex}`)
-        .setDisplaySize(42, 42);
-      const name = this.add.text(53, 7, player.displayName.slice(0, 10), {
-        fontSize: "12px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
+      const portrait = this.add.image(27, 29, this.textures.exists(portraitKey) ? portraitKey : `token-${player.colorIndex}`)
+        .setDisplaySize(48, 48);
+      const name = this.add.text(55, 9, player.displayName.slice(0, 10), {
+        fontSize: "11px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
       });
-      const caps = this.add.text(53, 25, `CAPS ${player.grandCaps}`, {
-        fontSize: "10px", fontFamily: "sans-serif", color: "#ffd166", fontStyle: "bold",
+      const caps = this.add.text(55, 27, `${player.grandCaps} CAPS`, {
+        fontSize: "9px", fontFamily: "sans-serif", color: "#ffd166", fontStyle: "bold",
       });
-      const coins = this.add.text(53, 40, `COINS ${player.coins}`, {
-        fontSize: "10px", fontFamily: "sans-serif", color: "#dbeafe",
+      const coins = this.add.text(106, 27, `${player.coins} COINS`, {
+        fontSize: "9px", fontFamily: "sans-serif", color: "#dbeafe", fontStyle: "bold",
       });
-      this.playerCards.push(this.add.container(x, y, [bg, portrait, name, caps, coins]).setDepth(150));
+      this.playerCards.push(this.add.container(x, y, [glow, core, portrait, name, caps, coins]).setDepth(150));
     });
   }
 

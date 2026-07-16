@@ -54,7 +54,7 @@ export default function CapsuleParty({
       alignItems: "center", justifyContent: "center", background: "#0a0e1a",
       position: "relative", overflow: "hidden",
     }}>
-      <div ref={containerRef} style={{ width: "100%", height: "100%", aspectRatio: "16/9", position: "relative" }} />
+      <div ref={containerRef} style={{ position: "absolute", inset: 0, width: "100vw", height: "100dvh" }} />
       {!phaserReady && (
         <div style={{
           position: "absolute", inset: 0, display: "flex", alignItems: "center",

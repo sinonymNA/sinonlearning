@@ -27,9 +27,9 @@ export class BootScene extends Phaser.Scene {
   preload() {
     configurePartyCamera(this);
     // Board background
-    this.load.image("board-bg", "/assets/capsule/game/board-bg-hd.png");
-    this.load.image("arena-bg", "/assets/capsule/party/coin-vacuum-arena-v2.png");
-    this.load.image("crate-arena-bg", "/assets/capsule/party/crate-break-arena-v2.png");
+    this.load.image("board-bg", "/assets/capsule/game/board-bg-hd.webp");
+    this.load.image("arena-bg", "/assets/capsule/party/coin-vacuum-arena-v2.webp");
+    this.load.image("crate-arena-bg", "/assets/capsule/party/crate-break-arena-v2.webp");
     this.load.image("factory-bg", "/assets/capsule/game/factory-bg.png");
     for (const key of PARTY_ART) {
       this.load.image(key, `/assets/capsule/party/ui/${key}.png`);
@@ -238,7 +238,7 @@ export class BootScene extends Phaser.Scene {
     g.strokeCircle(60, 60, 56);
     g.generateTexture("magnet-pulse", 120, 120);
 
-    // Grand Cap pedestal â€” 5-pointed star
+    // Grand Cap pedestal — 5-pointed star
     g.clear();
     g.fillStyle(PLACEHOLDER.SPACE_GRAND_CAP, 1);
     const starPoints = this.starPolygon(24, 24, 5, 22, 10, -Math.PI / 2);

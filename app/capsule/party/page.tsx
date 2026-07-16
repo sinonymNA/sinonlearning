@@ -17,8 +17,9 @@ const CapsuleParty = dynamic(
 
 export default function CapsulePartyPage() {
   return (
-    <div style={{ width: "100%", height: "100%" }}>
+    <div style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", overflow: "hidden", background: "#020817" }}>
       <CapsuleParty />
     </div>
   );
 }
+

@@ -4,7 +4,7 @@ import { createInitialState, type GameState, type PlayerState, rankPlayers } fro
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER, SPACE_RADIUS } from "../AssetManifest";
 import { getAdaptiveQuestion, recordMastery } from "../QuestionEngine";
-import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
+import { PARTY_HEIGHT, PARTY_RENDER_SCALE, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 import type { UIScene } from "./UIScene";
 
 interface BoardSceneData {
@@ -15,7 +15,7 @@ interface BoardSceneData {
 const TWEEN_STEP_DURATION = 360;
 const TWEEN_STEP_GAP = 180;
 
-// Sample questions â€” replaced by server questions in production
+// Sample questions — replaced by server questions in production
 export class BoardScene extends Phaser.Scene {
   private state!: GameState;
   private tokenObjects: Phaser.GameObjects.Container[] = [];
@@ -46,6 +46,7 @@ export class BoardScene extends Phaser.Scene {
     configurePartyCamera(this);
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
+    this.cameras.main.setOrigin(0.5, 0.5).setBounds(0, 0, W, H);
 
     if (this.textures.exists("board-bg")) {
       this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H).setDepth(0);
@@ -72,7 +73,7 @@ export class BoardScene extends Phaser.Scene {
   // --- Board drawing ---
 
   private drawPaths() {
-    // Path lines are hidden when the board background art is present â€” the artwork shows the track.
+    // Path lines are hidden when the board background art is present — the artwork shows the track.
     // Draw faint guides only as a fallback when there's no board-bg texture.
     if (this.textures.exists("board-bg")) return;
 
@@ -193,10 +194,11 @@ export class BoardScene extends Phaser.Scene {
     if (this.currentPhase !== "idle") return;
     const player = this.currentPlayer();
     const hasItems = !player.isBot && player.items.length > 0;
+    this.focusPlayer(this.state.turnIndex, false);
 
     this.ui.showTurnBanner(
       `${player.displayName}'s Turn`,
-      `Round ${this.state.turnNumber}/${this.state.maxRounds} â€¢ ${player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!"}`,
+      `Round ${this.state.turnNumber}/${this.state.maxRounds} • ${player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!"}`,
       2800
     );
 
@@ -204,7 +206,7 @@ export class BoardScene extends Phaser.Scene {
       if (player.isBot) {
         this.handleBotTurn();
       } else {
-        // Show item panel if human has items â€” they can optionally use one first
+        // Show item panel if human has items — they can optionally use one first
         if (player.items.length > 0) {
           this.ui.showItemPanel(player.items, (idx) => {
             this.useItem(this.state.turnIndex, idx);
@@ -258,7 +260,7 @@ export class BoardScene extends Phaser.Scene {
       }
       case "golden-spinner":
         // Flag handled in doSpin
-        player.items.push("golden-spinner"); // push back â€” consumed in doSpin
+        player.items.push("golden-spinner"); // push back — consumed in doSpin
         this.ui.showMessage("Golden Spinner ready for your roll!", "#ffd700");
         break;
       case "turbo-capsule":
@@ -292,14 +294,14 @@ export class BoardScene extends Phaser.Scene {
         player.totalAnswers++;
         if (correct) player.correctAnswers++;
         recordMastery(player.skillMastery, question.skill, correct);
-        this.ui.showMessage(correct ? "Correct â€” full spin unlocked!" : question.explanation, correct ? "#63e6be" : "#ffd166", 1100);
+        this.ui.showMessage(correct ? "Correct — full spin unlocked!" : question.explanation, correct ? "#63e6be" : "#ffd166", 1100);
         this.time.delayedCall(700, () => this.doSpin(correct));
       }
     );
   }
 
   private handleBotTurn() {
-    // Bots always "answer" after a short delay â€” random 60% correct
+    // Bots always "answer" after a short delay — random 60% correct
     const player = this.currentPlayer();
     const profiles = [
       { accuracy: 0.64, delay: 2400, reaction: "Bolt is choosing an answer..." },
@@ -370,6 +372,7 @@ export class BoardScene extends Phaser.Scene {
   private movePlayer(playerIdx: number, steps: number) {
     this.currentPhase = "move";
     const player = this.state.players[playerIdx];
+    this.focusPlayer(playerIdx, true);
     this.moveStep(playerIdx, player.spaceId, steps, []);
   }
 
@@ -392,7 +395,7 @@ export class BoardScene extends Phaser.Scene {
 
     const space = BOARD_SPACE_MAP.get(currentId);
     if (!space || space.connections.length === 0) {
-      // Dead end â€” animate what we have
+      // Dead end — animate what we have
       const fullPath = pathSoFar;
       if (fullPath.length > 0) {
         this.animateAlongPath(playerIdx, fullPath, 0, () => {
@@ -406,7 +409,7 @@ export class BoardScene extends Phaser.Scene {
     }
 
     if (space.connections.length > 1 && !player.isBot) {
-      // Human at a branch â€” animate to current space first, then prompt
+      // Human at a branch — animate to current space first, then prompt
       if (pathSoFar.length > 0) {
         this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
           player.spaceId = pathSoFar[pathSoFar.length - 1];
@@ -463,7 +466,7 @@ export class BoardScene extends Phaser.Scene {
       trap: "Trap (lose coins)",
       challenge: "Challenge (minigame!)",
       warp: "Warp Pad",
-      grand_cap: "Grand Cap Pedestal â˜…",
+      grand_cap: "Grand Cap Pedestal ★",
       start: "Start",
     };
 
@@ -510,6 +513,8 @@ export class BoardScene extends Phaser.Scene {
 
   private onLand(playerIdx: number) {
     this.currentPhase = "land";
+    this.cameras.main.stopFollow();
+    this.focusPlayer(playerIdx, false);
     const player = this.state.players[playerIdx];
     const space = BOARD_SPACE_MAP.get(player.spaceId);
     if (!space) { this.endTurn(); return; }
@@ -518,7 +523,7 @@ export class BoardScene extends Phaser.Scene {
     if (space.type === "warp" && space.warpTargetId) {
       const dest = BOARD_SPACE_MAP.get(space.warpTargetId);
       if (dest) {
-        this.ui.showMessage(`WARP! â†’ ${dest.label ?? space.warpTargetId}`, "#ec4899", 1500);
+        this.ui.showMessage(`WARP! → ${dest.label ?? space.warpTargetId}`, "#ec4899", 1500);
         this.time.delayedCall(400, () => {
           player.spaceId = space.warpTargetId!;
           const token = this.tokenObjects[playerIdx];
@@ -595,7 +600,7 @@ export class BoardScene extends Phaser.Scene {
     if (player.coins >= 20) {
       player.coins -= 20;
       player.grandCaps++;
-      this.ui.showMessage(`â˜… GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`, "#ffd700", 2500);
+      this.ui.showMessage(`★ GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`, "#ffd700", 2500);
 
       // Relocate Grand Cap to a different eligible space
       const eligible = ([] as string[]).concat(
@@ -711,6 +716,21 @@ export class BoardScene extends Phaser.Scene {
 
   private currentPlayer(): PlayerState {
     return this.state.players[this.state.turnIndex];
+  }
+
+  private focusPlayer(playerIndex: number, follow: boolean) {
+    const token = this.tokenObjects[playerIndex];
+    if (!token) return;
+    const camera = this.cameras.main;
+    camera.stopFollow();
+    if (follow) camera.startFollow(token, false, 0.12, 0.12);
+    camera.pan(token.x, token.y, 650, Phaser.Math.Easing.Cubic.InOut);
+    this.tweens.add({
+      targets: camera,
+      zoom: PARTY_RENDER_SCALE * 1.3,
+      duration: 650,
+      ease: "Cubic.InOut",
+    });
   }
 
   // Called when returning from a minigame
