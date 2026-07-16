@@ -154,12 +154,47 @@ function QuestionCard({
   );
 }
 
+/* ── Game Mode Card ────────────────────────────────────────────────────────── */
+
+const GAME_MODES = [
+  {
+    id: "cap-raid",
+    logo: "/assets/capsule/game/cap-raid-logo.png",
+    name: "Cap Raid",
+    tagline: "Raid the Factory",
+    desc: "Answer questions to activate the capsule factory. Pick a machine, pull the lever, and crack open your reward — gold, steals, and chaos.",
+    accent: "#fde047",
+    available: true,
+  },
+  {
+    id: "coming-soon-1",
+    logo: null,
+    name: "???",
+    tagline: "Coming Soon",
+    desc: "A new game mode is in the works. Stay tuned.",
+    accent: "rgba(255,255,255,0.15)",
+    available: false,
+  },
+  {
+    id: "coming-soon-2",
+    logo: null,
+    name: "???",
+    tagline: "Coming Soon",
+    desc: "Another way to play is on the way.",
+    accent: "rgba(255,255,255,0.15)",
+    available: false,
+  },
+] as const;
+
+type GameModeId = (typeof GAME_MODES)[number]["id"];
+
 /* ── Host Setup Page ───────────────────────────────────────────────────────── */
 
 export default function CapsuleHostPage() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
+  const [gameMode, setGameMode] = useState<GameModeId>("cap-raid");
   const [title, setTitle] = useState("Cap Raid");
   const [questions, setQuestions] = useState<CapsuleQuestion[]>([emptyQuestion()]);
   const [creating, setCreating] = useState(false);
@@ -301,6 +336,99 @@ export default function CapsuleHostPage() {
         </AnimatePresence>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* ── Game Mode ── */}
+          <div>
+            <label style={{
+              display: "block", marginBottom: 12,
+              fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase",
+              color: "rgba(25,205,210,0.70)",
+            }}>
+              Game Mode
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+              {GAME_MODES.map(mode => {
+                const selected = gameMode === mode.id;
+                return (
+                  <motion.button
+                    key={mode.id}
+                    onClick={() => { if (mode.available) setGameMode(mode.id); }}
+                    whileTap={mode.available ? { scale: 0.96 } : {}}
+                    style={{
+                      position: "relative", display: "flex", flexDirection: "column",
+                      alignItems: "center", gap: 8, padding: "14px 10px 12px",
+                      borderRadius: 16, border: `2px solid ${selected ? mode.accent : "rgba(255,255,255,0.08)"}`,
+                      background: selected ? `${mode.accent}10` : "rgba(255,255,255,0.02)",
+                      cursor: mode.available ? "pointer" : "default",
+                      opacity: mode.available ? 1 : 0.35,
+                      transition: "border-color 0.15s, background 0.15s",
+                    }}
+                  >
+                    {/* Logo or placeholder */}
+                    {mode.logo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={mode.logo}
+                        alt={mode.name}
+                        style={{ width: "100%", maxWidth: 110, objectFit: "contain", pointerEvents: "none" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 80, height: 64,
+                        borderRadius: 10, border: "2px dashed rgba(255,255,255,0.12)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 22, color: "rgba(255,255,255,0.15)",
+                      }}>
+                        ?
+                      </div>
+                    )}
+
+                    {/* Mode name + tagline */}
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ margin: 0, fontSize: 11, fontWeight: 900, letterSpacing: "0.08em", color: selected ? "#fff" : "rgba(255,255,255,0.30)", textTransform: "uppercase" }}>
+                        {mode.name}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: selected ? mode.accent : "rgba(255,255,255,0.20)", textTransform: "uppercase" }}>
+                        {mode.tagline}
+                      </p>
+                    </div>
+
+                    {/* Selected checkmark */}
+                    {selected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        style={{
+                          position: "absolute", top: 8, right: 8,
+                          width: 18, height: 18, borderRadius: "50%",
+                          background: mode.accent,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 10, color: "#06163E", fontWeight: 900,
+                        }}
+                      >
+                        ✓
+                      </motion.div>
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Selected mode description */}
+            {(() => {
+              const mode = GAME_MODES.find(m => m.id === gameMode);
+              return mode ? (
+                <motion.p
+                  key={gameMode}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{ marginTop: 10, fontSize: 12, color: "rgba(255,255,255,0.40)", lineHeight: 1.5 }}
+                >
+                  {mode.desc}
+                </motion.p>
+              ) : null;
+            })()}
+          </div>
 
           {/* Game title */}
           <div>
