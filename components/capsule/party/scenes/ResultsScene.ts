@@ -17,8 +17,8 @@ export class ResultsScene extends Phaser.Scene {
     const H = this.scale.height;
     const ranked = this.data.get("ranked") as PlayerState[];
 
-    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
-    this.add.rectangle(0, H - 4, W, 4, 0xffd700, 1).setOrigin(0);
+    this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
+    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 0.78).setOrigin(0);
 
     this.add.text(W / 2, 30, "GAME OVER", {
       fontSize: "42px", fontFamily: "sans-serif", color: "#ffd700", fontStyle: "bold",
@@ -32,14 +32,15 @@ export class ResultsScene extends Phaser.Scene {
       const y = 110 + i * 75;
       const color = PLACEHOLDER.PLAYER_COLORS[p.colorIndex] ?? 0x334155;
 
-      const bg = this.add.rectangle(W / 2, y + 30, W - 60, 60, color, 0.3).setOrigin(0.5);
-      this.add.text(50, y + 8, medalLabels[i] ?? `#${i + 1}`, {
+      this.add.rectangle(W / 2, y + 30, W - 110, 60, 0x07142f, 0.94).setOrigin(0.5).setStrokeStyle(3, color);
+      if (this.textures.exists(p.capId)) this.add.image(88, y + 30, p.capId).setDisplaySize(48, 48);
+      this.add.text(122, y + 8, medalLabels[i] ?? `#${i + 1}`, {
         fontSize: "14px", fontFamily: "sans-serif", color: medalColors[i] ?? "#e2e8f0", fontStyle: "bold",
       });
-      this.add.text(50, y + 28, p.displayName, {
+      this.add.text(122, y + 28, p.displayName, {
         fontSize: "22px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
       });
-      this.add.text(W - 60, y + 8, `★ ${p.grandCaps}`, {
+      this.add.text(W - 60, y + 8, `â˜… ${p.grandCaps}`, {
         fontSize: "18px", fontFamily: "sans-serif", color: "#ffd700",
       }).setOrigin(1, 0);
       this.add.text(W - 60, y + 32, `G ${p.coins}`, {
@@ -63,3 +64,4 @@ export class ResultsScene extends Phaser.Scene {
     EventBus.emit("phaser:phase-change", { phase: "results" });
   }
 }
+

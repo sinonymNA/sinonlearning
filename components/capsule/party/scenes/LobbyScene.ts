@@ -15,6 +15,7 @@ export class LobbyScene extends Phaser.Scene {
   private players: LobbyPlayer[] = [];
   private playerGroup: Phaser.GameObjects.Container | null = null;
   private isHost = false;
+  private maxRounds: 10 | 15 = 10;
 
   constructor() {
     super({ key: "LobbyScene" });
@@ -22,6 +23,7 @@ export class LobbyScene extends Phaser.Scene {
 
   init(data: { initialPlayer?: { playerId: string; displayName: string; capId: string }; isHost?: boolean }) {
     this.players = [];
+    this.maxRounds = 10;
     this.isHost = !!data.isHost;
     if (data.initialPlayer) {
       this.addPlayer({
@@ -37,8 +39,9 @@ export class LobbyScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
-    this.add.rectangle(0, H - 4, W, 4, 0x19cdd2, 1).setOrigin(0);
+    this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
+    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 0.78).setOrigin(0);
+    this.add.rectangle(20, 18, W - 40, H - 36, 0x07142f, 0.82).setStrokeStyle(4, 0x19cdd2).setOrigin(0);
 
     this.add.text(W / 2, 28, "CAPSULE PARTY â€” LOBBY", {
       fontSize: "26px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
@@ -50,6 +53,19 @@ export class LobbyScene extends Phaser.Scene {
 
     this.playerGroup = this.add.container(0, 0);
     this.renderPlayers();
+
+    this.add.text(W / 2, H - 136, "MATCH LENGTH", {
+      fontSize: "10px", fontFamily: "sans-serif", color: "#94a3b8", fontStyle: "bold",
+    }).setOrigin(0.5);
+    const tenRounds = this.makeRoundButton(W / 2 - 54, H - 116, "10 ROUNDS");
+    const fifteenRounds = this.makeRoundButton(W / 2 + 54, H - 116, "15 ROUNDS");
+    const refreshRoundButtons = () => {
+      tenRounds.setFillStyle(this.maxRounds === 10 ? 0x19cdd2 : 0x1e293b);
+      fifteenRounds.setFillStyle(this.maxRounds === 15 ? 0x19cdd2 : 0x1e293b);
+    };
+    tenRounds.on("pointerdown", () => { this.maxRounds = 10; refreshRoundButtons(); });
+    fifteenRounds.on("pointerdown", () => { this.maxRounds = 15; refreshRoundButtons(); });
+    refreshRoundButtons();
 
     // Fill with bots button (always available for testing)
     const fillBtn = this.add.text(W / 2, H - 90, "[ Fill with Bots ]", {
@@ -85,12 +101,12 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   private fillWithBots() {
-    const botNames = ["Bot Alpha", "Bot Beta", "Bot Gamma"];
+    const botNames = ["Bolt", "Nova", "Gremlin"];
     for (let i = 0; i < 3 && this.players.length < 4; i++) {
       this.addPlayer({
         id: `bot-${i}`,
         displayName: botNames[i],
-        capId: "cap-default",
+        capId: ["cap-astropup", "cap-dragon", "cap-penguin"][i],
         colorIndex: this.players.length,
       });
     }
@@ -116,7 +132,7 @@ export class LobbyScene extends Phaser.Scene {
       const color = p ? (PLACEHOLDER.PLAYER_COLORS[p.colorIndex] ?? 0x334155) : 0x1e293b;
       const alpha = p ? 1 : 0.3;
 
-      const bg = this.add.rectangle(x, y, slotW, slotH, color, alpha * 0.8).setOrigin(0).setStrokeStyle(2, color);
+      const bg = this.add.rectangle(x, y, slotW, slotH, 0x0b1c3d, alpha * 0.94).setOrigin(0).setStrokeStyle(3, color);
       const nameText = this.add.text(x + slotH + 8, y + 10, p ? p.displayName : "Empty", {
         fontSize: "15px", fontFamily: "sans-serif", color: p ? "#ffffff" : "#475569", fontStyle: p ? "bold" : "normal",
       });
@@ -125,12 +141,20 @@ export class LobbyScene extends Phaser.Scene {
       });
 
       // Cap circle avatar
-      const avatar = this.add.circle(x + slotH / 2, y + slotH / 2, 22, color).setStrokeStyle(3, 0xffffff);
+      const avatar = this.add.circle(x + slotH / 2, y + slotH / 2, 25, color).setStrokeStyle(3, 0xffffff);
       const avatarText = this.add.text(x + slotH / 2, y + slotH / 2, p ? p.displayName[0].toUpperCase() : "?", {
         fontSize: "18px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
       }).setOrigin(0.5);
 
-      this.playerGroup!.add([bg, avatar, avatarText, nameText, subText]);
+      const objects: Phaser.GameObjects.GameObject[] = [bg, avatar, avatarText, nameText, subText];
+      if (p) {
+        const portraitKey = p.capId;
+        if (this.textures.exists(portraitKey)) {
+          avatarText.setVisible(false);
+          objects.push(this.add.image(x + slotH / 2, y + slotH / 2, portraitKey).setDisplaySize(44, 44));
+        }
+      }
+      this.playerGroup!.add(objects);
     }
   }
 
@@ -155,7 +179,17 @@ export class LobbyScene extends Phaser.Scene {
       }))
     );
 
-    this.scene.start("BoardScene", { players: this.players });
+    this.scene.start("BoardScene", { players: this.players, maxRounds: this.maxRounds });
+  }
+
+  private makeRoundButton(x: number, y: number, label: string) {
+    const button = this.add.rectangle(x, y, 100, 28, 0x1e293b, 1)
+      .setStrokeStyle(2, 0x19cdd2)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(x, y, label, {
+      fontSize: "10px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
+    }).setOrigin(0.5);
+    return button;
   }
 }
 

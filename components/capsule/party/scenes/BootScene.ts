@@ -5,9 +5,16 @@ import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS, COIN_RADIUS, PLAYER_RADIUS } f
 export const KNOWN_CAP_IDS = [
   "astropup","bear","brrbrr","bunny","burbaloni","butterfly","cappasino","cappuccina",
   "cat","chimpanzini","cometfox","crown","crystal","dog","dragon","duck","eagle",
-  "fish","flamingo","fox","frog","ghost","lion","monkey","mouse","owl","panda",
-  "parrot","penguin","phoenix","rabbit","shark","shrimp","sloth","snake","turtle",
-  "unicorn","wolf",
+  "fish","flamingo","fox","frigocamelo","frog","galaxy","ghost","glorbo","hamster",
+  "koala","lion","lirililala","moonbunny","nebulacat","orbitdrake","owl","panda",
+  "penguin","phoenix","robowl","shark","tungtungsahur","turtle","voidknight","wolf","zorp",
+];
+
+const PARTY_ART = [
+  "space-coin-art", "space-raid-art", "space-capsule-art", "space-shop-art",
+  "space-trap-art", "space-challenge-art", "space-warp-art", "grand-cap-art",
+  "item-magnet", "item-golden-spinner", "item-warp-ticket", "item-shield",
+  "item-turbo-capsule", "item-swap-capsule", "coin-gold-art", "coin-fake-art",
 ];
 
 // BootScene: loads cap portrait images + generates placeholder textures, then starts TitleScene.
@@ -21,6 +28,10 @@ export class BootScene extends Phaser.Scene {
     this.load.image("board-bg", "/assets/capsule/game/board-bg.png");
     // Coin Vacuum arena background (reuse board-bg until separate art arrives)
     this.load.image("arena-bg", "/assets/capsule/game/board-bg.png");
+    this.load.image("factory-bg", "/assets/capsule/game/factory-bg.png");
+    for (const key of PARTY_ART) {
+      this.load.image(key, `/assets/capsule/party/ui/${key}.png`);
+    }
     // Load portrait images for the caps we know about
     for (const id of KNOWN_CAP_IDS) {
       this.load.image(`cap-${id}`, `/assets/capsule/caps/cap-${id}.png`);
@@ -42,6 +53,41 @@ export class BootScene extends Phaser.Scene {
 
   // Build circular-masked cap portrait textures: "cap-token-{capId}-{colorIndex}"
   private capMaskedTokens() {
+    const createToken = (id: string, colorIndex: number, radius: number, key: string) => {
+      const texture = this.textures.createCanvas(key, radius * 2, radius * 2);
+      if (!texture) return;
+      const context = texture.context;
+      const source = this.textures.get(`cap-${id}`).getSourceImage() as CanvasImageSource;
+      const border = `#${(PLACEHOLDER.PLAYER_COLORS[colorIndex] ?? 0x888888).toString(16).padStart(6, "0")}`;
+      context.clearRect(0, 0, radius * 2, radius * 2);
+      context.fillStyle = border;
+      context.beginPath();
+      context.arc(radius, radius, radius, 0, Math.PI * 2);
+      context.fill();
+      context.save();
+      context.beginPath();
+      context.arc(radius, radius, radius - 3, 0, Math.PI * 2);
+      context.clip();
+      context.drawImage(source, 3, 3, radius * 2 - 6, radius * 2 - 6);
+      context.restore();
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 2;
+      context.beginPath();
+      context.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+      context.stroke();
+      texture.refresh();
+    };
+
+    for (const id of KNOWN_CAP_IDS) {
+      if (!this.textures.exists(`cap-${id}`)) continue;
+      for (let colorIndex = 0; colorIndex < 4; colorIndex++) {
+        createToken(id, colorIndex, TOKEN_RADIUS, `cap-token-${id}-${colorIndex}`);
+        createToken(id, colorIndex, PLAYER_RADIUS, `cap-char-${id}-${colorIndex}`);
+      }
+    }
+  }
+
+  private capMaskedTokensLegacy() {
     const R = TOKEN_RADIUS;
     const D = R * 2;
     const PR = PLAYER_RADIUS;
@@ -190,7 +236,7 @@ export class BootScene extends Phaser.Scene {
     g.strokeCircle(60, 60, 56);
     g.generateTexture("magnet-pulse", 120, 120);
 
-    // Grand Cap pedestal — 5-pointed star
+    // Grand Cap pedestal â€” 5-pointed star
     g.clear();
     g.fillStyle(PLACEHOLDER.SPACE_GRAND_CAP, 1);
     const starPoints = this.starPolygon(24, 24, 5, 22, 10, -Math.PI / 2);
@@ -202,3 +248,4 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 }
+

@@ -3,24 +3,18 @@ import { BOARD_SPACES, BOARD_SPACE_MAP, GRAND_CAPS_TO_WIN, SPIN_CORRECT_RANGE, S
 import { createInitialState, type GameState, type PlayerState, rankPlayers } from "../GameState";
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER, SPACE_RADIUS } from "../AssetManifest";
+import { getAdaptiveQuestion, recordMastery } from "../QuestionEngine";
 import type { UIScene } from "./UIScene";
 
 interface BoardSceneData {
   players: { id: string; displayName: string; capId: string; colorIndex: number }[];
+  maxRounds?: 10 | 15;
 }
 
 const TWEEN_STEP_DURATION = 250; // ms per board step
 const TWEEN_STEP_GAP = 60;       // ms pause between steps
 
 // Sample questions â€” replaced by server questions in production
-const SAMPLE_QUESTIONS = [
-  { q: "What does GDP stand for?", choices: ["Gross Domestic Product", "General Dollar Price", "Government Debt Plan", "Gross Direct Payment"], answer: 0 },
-  { q: "Which is a primary market?", choices: ["Stock exchange trading", "IPO share sale", "Bond secondary market", "Derivative contract"], answer: 1 },
-  { q: "What is inflation?", choices: ["Falling prices", "Rising average prices", "Tax rate increase", "Currency appreciation"], answer: 1 },
-  { q: "A P/E ratio compares price to...", choices: ["Earnings per share", "Employee count", "Product sales", "Equity value"], answer: 0 },
-  { q: "Diversification reduces...", choices: ["Returns", "Unsystematic risk", "Market risk", "Dividend yield"], answer: 1 },
-];
-
 export class BoardScene extends Phaser.Scene {
   private state!: GameState;
   private tokenObjects: Phaser.GameObjects.Container[] = [];
@@ -30,6 +24,7 @@ export class BoardScene extends Phaser.Scene {
   private currentPhase: "question" | "spin" | "move" | "land" | "idle" = "idle";
   private pendingSteps = 0;
   private spinDisplay: Phaser.GameObjects.Container | null = null;
+  private resumeAfterMinigame: "end-turn" | "start-turn" = "end-turn";
 
   constructor() {
     super({ key: "BoardScene" });
@@ -43,7 +38,7 @@ export class BoardScene extends Phaser.Scene {
       isBot: p.id.startsWith("bot-"),
       colorIndex: i,
     }));
-    this.state = createInitialState(allPlayers);
+    this.state = createInitialState(allPlayers, data.maxRounds ?? 10);
   }
 
   create() {
@@ -111,11 +106,16 @@ export class BoardScene extends Phaser.Scene {
 
   private drawSpaces() {
     for (const space of BOARD_SPACES) {
-      const img = this.add.image(space.x, space.y, `space-${space.type}`);
-      const label = this.add.text(space.x, space.y + SPACE_RADIUS + 7, this.spaceLabel(space.type), {
-        fontSize: "8px", fontFamily: "sans-serif", color: "#94a3b8",
-      }).setOrigin(0.5, 0);
-      const container = this.add.container(0, 0, [img, label]);
+      const artKey = space.type === "grand_cap" ? "grand-cap-art" : `space-${space.type}-art`;
+      const objects: Phaser.GameObjects.GameObject[] = [];
+      if (space.type !== "start") {
+        const halo = this.add.circle(space.x, space.y, 14, 0x061a43, 0.82).setStrokeStyle(2, 0xffffff, 0.75);
+        objects.push(halo);
+        if (this.textures.exists(artKey)) {
+          objects.push(this.add.image(space.x, space.y, artKey).setDisplaySize(24, 24));
+        }
+      }
+      const container = this.add.container(0, 0, objects);
       this.spaceObjects.set(space.id, container);
     }
   }
@@ -157,11 +157,26 @@ export class BoardScene extends Phaser.Scene {
     return offsets[index % offsets.length];
   }
 
+  private moveTokenToSpace(playerIdx: number, spaceId: string) {
+    const token = this.tokenObjects[playerIdx];
+    const space = BOARD_SPACE_MAP.get(spaceId);
+    if (!token || !space) return;
+    const offset = this.tokenOffset(playerIdx);
+    this.tweens.add({
+      targets: token,
+      x: space.x + offset.x,
+      y: space.y + offset.y,
+      duration: 500,
+      ease: "Back.Out",
+    });
+  }
+
   private drawGrandCap() {
     this.grandCapObject?.destroy();
     const space = BOARD_SPACE_MAP.get(this.state.activeGrandCapId);
     if (!space) return;
-    this.grandCapObject = this.add.image(space.x, space.y - SPACE_RADIUS - 14, "grand-cap-pedestal").setDepth(5);
+    const texture = this.textures.exists("grand-cap-art") ? "grand-cap-art" : "grand-cap-pedestal";
+    this.grandCapObject = this.add.image(space.x, space.y - SPACE_RADIUS - 14, texture).setDisplaySize(38, 38).setDepth(5);
     this.tweens.add({
       targets: this.grandCapObject, y: space.y - SPACE_RADIUS - 20, duration: 1000,
       yoyo: true, repeat: -1, ease: "Sine.InOut",
@@ -177,7 +192,7 @@ export class BoardScene extends Phaser.Scene {
 
     this.ui.showTurnBanner(
       `${player.displayName}'s Turn`,
-      player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!",
+      `Round ${this.state.turnNumber}/${this.state.maxRounds} â€¢ ${player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!"}`,
       1800
     );
 
@@ -242,34 +257,55 @@ export class BoardScene extends Phaser.Scene {
         player.items.push("golden-spinner"); // push back â€” consumed in doSpin
         this.ui.showMessage("Golden Spinner ready for your roll!", "#ffd700");
         break;
-      case "raid-block":
-        this.ui.showMessage("Raid Block activated this turn!", "#f59e0b");
+      case "turbo-capsule":
+        player.items.push("turbo-capsule");
+        this.ui.showMessage("Turbo Capsule armed: +3 movement!", "#19cdd2");
         break;
+      case "swap-capsule": {
+        const leader = rankPlayers(this.state.players).find((candidate) => candidate.id !== player.id);
+        if (leader) {
+          const leaderIndex = this.state.players.indexOf(leader);
+          [player.spaceId, leader.spaceId] = [leader.spaceId, player.spaceId];
+          this.moveTokenToSpace(playerIdx, player.spaceId);
+          this.moveTokenToSpace(leaderIndex, leader.spaceId);
+          this.ui.showMessage(`Swapped places with ${leader.displayName}!`, "#ff6b6b");
+        }
+        break;
+      }
     }
     this.ui.hideItemPanel();
   }
 
   private askQuestion() {
-    const q = Phaser.Utils.Array.GetRandom(SAMPLE_QUESTIONS) as typeof SAMPLE_QUESTIONS[0];
+    const player = this.currentPlayer();
+    const question = getAdaptiveQuestion(player.skillMastery);
     this.currentPhase = "question";
 
     this.ui.showQuestion(
-      { q: q.q, choices: q.choices, timeLimit: 15 },
+      { q: `[${question.skill}] ${question.prompt}`, choices: question.choices, timeLimit: 15 },
       (chosenIdx) => {
-        const correct = chosenIdx === q.answer;
-        const player = this.currentPlayer();
+        const correct = chosenIdx === question.answer;
         player.totalAnswers++;
         if (correct) player.correctAnswers++;
-        this.doSpin(correct);
+        recordMastery(player.skillMastery, question.skill, correct);
+        this.ui.showMessage(correct ? "Correct â€” full spin unlocked!" : question.explanation, correct ? "#63e6be" : "#ffd166", 1100);
+        this.time.delayedCall(700, () => this.doSpin(correct));
       }
     );
   }
 
   private handleBotTurn() {
     // Bots always "answer" after a short delay â€” random 60% correct
-    this.time.delayedCall(800, () => {
-      const correct = Math.random() < 0.6;
-      const player = this.currentPlayer();
+    const player = this.currentPlayer();
+    const profiles = [
+      { accuracy: 0.64, delay: 950, reaction: "Bolt locks in fast!" },
+      { accuracy: 0.76, delay: 1350, reaction: "Nova thinks it through..." },
+      { accuracy: 0.58, delay: 650, reaction: "Gremlin mashes a button!" },
+    ];
+    const profile = profiles[Math.max(0, player.colorIndex - 1)] ?? profiles[0];
+    this.ui.showMessage(profile.reaction, "#9fb4d8", 700);
+    this.time.delayedCall(profile.delay, () => {
+      const correct = Math.random() < profile.accuracy;
       player.totalAnswers++;
       if (correct) player.correctAnswers++;
       this.doSpin(correct);
@@ -288,6 +324,10 @@ export class BoardScene extends Phaser.Scene {
       steps = Phaser.Math.Between(SPIN_CORRECT_RANGE[0], SPIN_CORRECT_RANGE[1]);
     } else {
       steps = Phaser.Math.Between(SPIN_INCORRECT_RANGE[0], SPIN_INCORRECT_RANGE[1]);
+    }
+    if (player.items.includes("turbo-capsule")) {
+      steps += 3;
+      player.items = player.items.filter((item) => item !== "turbo-capsule");
     }
 
     this.showSpinResult(steps, correct, () => {
@@ -531,7 +571,7 @@ export class BoardScene extends Phaser.Scene {
       }
       case "challenge": {
         // Trigger a minigame
-        this.time.delayedCall(600, () => this.triggerMinigame());
+        this.time.delayedCall(600, () => this.triggerMinigame("end-turn"));
         break;
       }
       case "capsule": {
@@ -596,7 +636,9 @@ export class BoardScene extends Phaser.Scene {
   private doShop(playerIdx: number) {
     // Give player a random item (if they have < 2)
     const player = this.state.players[playerIdx];
-    const items: import("../GameState").ItemType[] = ["magnet", "golden-spinner", "warp-ticket", "shield"];
+    const items: import("../GameState").ItemType[] = [
+      "magnet", "golden-spinner", "warp-ticket", "shield", "turbo-capsule", "swap-capsule",
+    ];
     const item = Phaser.Utils.Array.GetRandom(items) as import("../GameState").ItemType;
 
     if (player.items.length >= 2) {
@@ -608,7 +650,8 @@ export class BoardScene extends Phaser.Scene {
     this.time.delayedCall(1600, () => this.endTurn());
   }
 
-  private triggerMinigame() {
+  private triggerMinigame(resumeAfter: "end-turn" | "start-turn") {
+    this.resumeAfterMinigame = resumeAfter;
     const types: ("coin-vacuum" | "factory-floor" | "crate-break")[] = ["coin-vacuum", "factory-floor", "crate-break"];
     const type = Phaser.Utils.Array.GetRandom(types) as typeof types[0];
     this.state.minigameType = type;
@@ -627,9 +670,16 @@ export class BoardScene extends Phaser.Scene {
 
     // Advance turn
     this.state.turnIndex = (this.state.turnIndex + 1) % this.state.players.length;
-    if (this.state.turnIndex === 0) this.state.turnNumber++;
-
     this.currentPhase = "idle";
+    if (this.state.turnIndex === 0) {
+      if (this.state.turnNumber >= this.state.maxRounds) {
+        this.time.delayedCall(500, () => this.endGame());
+        return;
+      }
+      this.state.turnNumber++;
+      this.time.delayedCall(500, () => this.triggerMinigame("start-turn"));
+      return;
+    }
     this.time.delayedCall(400, () => this.startTurn());
   }
 
@@ -668,8 +718,14 @@ export class BoardScene extends Phaser.Scene {
     this.state.phase = "board";
     this.state.minigameType = null;
     this.scene.resume("BoardScene");
+    this.scene.bringToTop("UIScene");
     this.emitScoreUpdate();
-    this.time.delayedCall(600, () => this.endTurn());
+    if (this.resumeAfterMinigame === "start-turn") {
+      this.currentPhase = "idle";
+      this.time.delayedCall(600, () => this.startTurn());
+    } else {
+      this.time.delayedCall(600, () => this.endTurn());
+    }
   }
 }
 

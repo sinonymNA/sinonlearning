@@ -1,11 +1,11 @@
 import Phaser from "phaser";
-import { EventBus, type PlayerScore } from "../EventBus";
+import { EventBus } from "../EventBus";
 import { PLACEHOLDER } from "../AssetManifest";
 
 // UIScene: persistent overlay scene that renders on top of active game scenes.
 // Displays HUD elements: turn banner, player coins + grand caps, item slots,
 // question panels, minigame timer, and countdown indicators.
-// NO React components or Tailwind — everything is Phaser GameObjects.
+// NO React components or Tailwind â€” everything is Phaser GameObjects.
 
 interface UIPlayer {
   id: string;
@@ -28,7 +28,7 @@ export class UIScene extends Phaser.Scene {
   private turnBanner: Phaser.GameObjects.Container | null = null;
   private questionPanel: Phaser.GameObjects.Container | null = null;
   private timerText: Phaser.GameObjects.Text | null = null;
-  private timerTween: Phaser.Tweens.Tween | null = null;
+  private timerEvent: Phaser.Time.TimerEvent | null = null;
   private timerRemaining = 0;
   private lastAnswerCallback: ((idx: number) => void) | null = null;
   private answerButtons: Phaser.GameObjects.Container[] = [];
@@ -117,7 +117,7 @@ export class UIScene extends Phaser.Scene {
       });
 
       const btn = this.add.container(bx, by, [btnBg, btnBorder, label, txt]);
-      btnBg.on("pointerdown", () => this.handleAnswer(i, data.choices.length));
+      btnBg.on("pointerdown", () => this.handleAnswer(i));
       btnBg.on("pointerover", () => { btnBorder.setStrokeStyle(2, 0x19cdd2); });
       btnBg.on("pointerout", () => { btnBorder.setStrokeStyle(2, 0x334155); });
       btnObjs.push(btn);
@@ -129,14 +129,14 @@ export class UIScene extends Phaser.Scene {
     const timerBar = this.add.rectangle(16, panelH - 20, panelW - 32, 8, 0x19cdd2, 1).setOrigin(0);
     this.tweens.add({
       targets: timerBar, scaleX: 0, duration: data.timeLimit * 1000, ease: "Linear",
-      onComplete: () => { if (this.lastAnswerCallback) this.handleAnswer(-1, data.choices.length); },
+      onComplete: () => { if (this.lastAnswerCallback) this.handleAnswer(-1); },
     });
 
     this.questionPanel = this.add.container(px, py, [bg, border, qText, ...btnObjs, timerBg, timerBar]).setDepth(300);
     this.tweens.add({ targets: this.questionPanel, alpha: { from: 0, to: 1 }, duration: 200 });
   }
 
-  private handleAnswer(idx: number, _total: number) {
+  private handleAnswer(idx: number) {
     const cb = this.lastAnswerCallback;
     this.lastAnswerCallback = null;
     if (this.questionPanel) {
@@ -150,12 +150,13 @@ export class UIScene extends Phaser.Scene {
 
   showMinigameTimer(seconds: number) {
     if (this.timerText) { this.timerText.destroy(); this.timerText = null; }
+    this.timerEvent?.remove();
     const W = this.scale.width;
     this.timerText = this.add.text(W / 2, 10, `${seconds}s`, {
       fontSize: "28px", fontFamily: "monospace", color: "#ffd700", fontStyle: "bold",
     }).setOrigin(0.5, 0).setDepth(250);
     this.timerRemaining = seconds;
-    this.time.addEvent({
+    this.timerEvent = this.time.addEvent({
       delay: 1000, repeat: seconds - 1, callback: () => {
         this.timerRemaining--;
         if (this.timerText) {
@@ -167,6 +168,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   hideMinigameTimer() {
+    this.timerEvent?.remove();
+    this.timerEvent = null;
     this.timerText?.destroy();
     this.timerText = null;
   }
@@ -201,9 +204,12 @@ export class UIScene extends Phaser.Scene {
     items.forEach((item, i) => {
       const bx = 8 + i * 78;
       const btnBg = this.add.rectangle(bx, 16, 70, 44, 0x1e293b, 1).setOrigin(0).setStrokeStyle(1, 0x334155).setInteractive({ useHandCursor: true });
-      const icon = this.add.text(bx + 8, 20, this.itemIcon(item), { fontSize: "16px", fontFamily: "sans-serif" });
-      const name = this.add.text(bx + 4, 44, item.replace(/-/g, " ").slice(0, 8), {
-        fontSize: "8px", fontFamily: "sans-serif", color: "#94a3b8",
+      const iconKey = `item-${item}`;
+      const icon: Phaser.GameObjects.GameObject = this.textures.exists(iconKey)
+        ? this.add.image(bx + 20, 38, iconKey).setDisplaySize(34, 34)
+        : this.add.text(bx + 8, 20, "?", { fontSize: "16px", fontFamily: "sans-serif" });
+      const name = this.add.text(bx + 39, 25, item.replace(/-/g, " ").slice(0, 10), {
+        fontSize: "8px", fontFamily: "sans-serif", color: "#94a3b8", wordWrap: { width: 28 },
       });
       btnBg.on("pointerover", () => btnBg.setStrokeStyle(1, 0x19cdd2));
       btnBg.on("pointerout", () => btnBg.setStrokeStyle(1, 0x334155));
@@ -224,8 +230,8 @@ export class UIScene extends Phaser.Scene {
 
   private itemIcon(item: string): string {
     const icons: Record<string, string> = {
-      magnet: "🧲", "golden-spinner": "✨", "warp-ticket": "🚀",
-      shield: "🛡", "raid-block": "🚫",
+      magnet: "ðŸ§²", "golden-spinner": "âœ¨", "warp-ticket": "ðŸš€",
+      shield: "ðŸ›¡", "raid-block": "ðŸš«",
     };
     return icons[item] ?? "?";
   }
@@ -245,7 +251,7 @@ export class UIScene extends Phaser.Scene {
       const name = this.add.text(6, 4, p.displayName.slice(0, 10), {
         fontSize: "10px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
       });
-      const gcLine = this.add.text(6, 18, `★ ${p.grandCaps}`, {
+      const gcLine = this.add.text(6, 18, `â˜… ${p.grandCaps}`, {
         fontSize: "12px", fontFamily: "sans-serif", color: "#ffd700",
       });
       const coinsLine = this.add.text(6, 34, `G ${p.coins}`, {
@@ -268,3 +274,4 @@ export class UIScene extends Phaser.Scene {
     this.renderPlayerCards();
   }
 }
+

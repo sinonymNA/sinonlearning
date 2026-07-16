@@ -1,9 +1,9 @@
-// Shared game state — passed between scenes and serialized for checkpoint saves.
+// Shared game state â€” passed between scenes and serialized for checkpoint saves.
 
 import { BOARD_SPACES, GRAND_CAP_ELIGIBLE, START_SPACE_ID } from "./BoardData";
 import Phaser from "phaser";
 
-export type ItemType = "magnet" | "golden-spinner" | "warp-ticket" | "shield" | "raid-block";
+export type ItemType = "magnet" | "golden-spinner" | "warp-ticket" | "shield" | "turbo-capsule" | "swap-capsule";
 
 export interface Item {
   type: ItemType;
@@ -13,10 +13,11 @@ export interface Item {
 
 export const ITEM_DEFS: Record<ItemType, Item> = {
   magnet:          { type: "magnet",          name: "Magnet",         description: "Move toward the active Grand Cap location." },
-  "golden-spinner":{ type: "golden-spinner",  name: "Golden Spinner", description: "Spin a 5–6 on your next turn." },
+  "golden-spinner":{ type: "golden-spinner",  name: "Golden Spinner", description: "Spin a 5â€“6 on your next turn." },
   "warp-ticket":   { type: "warp-ticket",     name: "Warp Ticket",    description: "Teleport to a linked warp point." },
   shield:          { type: "shield",          name: "Shield",         description: "Block the next Raid against you." },
-  "raid-block":    { type: "raid-block",      name: "Raid Block",     description: "Cancel a Raid space effect this turn." },
+  "turbo-capsule": { type: "turbo-capsule",   name: "Turbo Capsule",  description: "Add three spaces to your next spin." },
+  "swap-capsule":  { type: "swap-capsule",    name: "Swap Capsule",   description: "Swap board positions with the leader." },
 };
 
 export interface PlayerState {
@@ -32,12 +33,14 @@ export interface PlayerState {
   correctAnswers: number;
   totalAnswers: number;
   hasShield: boolean;
+  skillMastery: Record<string, number>;
 }
 
 export interface GameState {
   players: PlayerState[];
   turnIndex: number;       // Whose turn it is (index into players)
   turnNumber: number;      // Increments after every player has gone once
+  maxRounds: 10 | 15;
   activeGrandCapId: string; // Current space ID where Grand Cap sits
   phase: "lobby" | "board" | "minigame" | "results";
   minigameType: "coin-vacuum" | "factory-floor" | "crate-break" | null;
@@ -45,7 +48,8 @@ export interface GameState {
 }
 
 export function createInitialState(
-  players: { id: string; displayName: string; capId: string; isBot: boolean; colorIndex: number }[]
+  players: { id: string; displayName: string; capId: string; isBot: boolean; colorIndex: number }[],
+  maxRounds: 10 | 15 = 10,
 ): GameState {
   const playerStates: PlayerState[] = players.map(p => ({
     ...p,
@@ -56,6 +60,7 @@ export function createInitialState(
     correctAnswers: 0,
     totalAnswers: 0,
     hasShield: false,
+    skillMastery: {},
   }));
 
   // Random initial Grand Cap placement from eligible spaces
@@ -66,6 +71,7 @@ export function createInitialState(
     players: playerStates,
     turnIndex: 0,
     turnNumber: 1,
+    maxRounds,
     activeGrandCapId,
     phase: "board",
     minigameType: null,
@@ -109,3 +115,4 @@ export function rankPlayers(players: PlayerState[]): PlayerState[] {
     return a.colorIndex - b.colorIndex;
   });
 }
+

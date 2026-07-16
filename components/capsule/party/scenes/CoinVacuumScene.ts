@@ -22,6 +22,8 @@ interface MinigamePlayer {
   coins: number;
   magnetCooldown: number;
   botTarget: string | null; // coin game object name
+  slowUntil: number;
+  label: Phaser.GameObjects.Text;
 }
 
 interface CoinObject {
@@ -130,7 +132,8 @@ export class CoinVacuumScene extends Phaser.Scene {
         }
       }
 
-      body.setVelocity(vx, vy);
+      const speedScale = this.time.now < this.humanPlayer.slowUntil ? 0.45 : 1;
+      body.setVelocity(vx * speedScale, vy * speedScale);
 
       if (Phaser.Input.Keyboard.JustDown(this.actionKey)) {
         this.activateMagnet(this.humanPlayer);
@@ -151,6 +154,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     this.checkCoinPickups();
     this.updateScoreboard();
     this.updateJoystickKnob();
+    this.players.forEach((player) => player.label.setPosition(player.body.x, player.body.y - PLAYER_RADIUS - 14));
   }
 
   private charTextureKey(gp: { capId: string; colorIndex: number }): string {
@@ -175,6 +179,10 @@ export class CoinVacuumScene extends Phaser.Scene {
       sprite.setCircle(PLAYER_RADIUS, 0, 0);
       sprite.setDepth(20);
 
+      const label = this.add.text(pos.x, pos.y - PLAYER_RADIUS - 14, gp.displayName.slice(0, 8), {
+        fontSize: "10px", fontFamily: "sans-serif", color: "#e2e8f0",
+        backgroundColor: "#0f172a80", padding: { x: 3, y: 1 },
+      }).setOrigin(0.5).setDepth(21);
       const mp: MinigamePlayer = {
         id: gp.id,
         displayName: gp.displayName,
@@ -184,15 +192,13 @@ export class CoinVacuumScene extends Phaser.Scene {
         coins: 0,
         magnetCooldown: 0,
         botTarget: null,
+        slowUntil: 0,
+        label,
       };
+      for (const other of this.players) this.physics.add.collider(sprite, other.body);
       this.players.push(mp);
       if (!gp.isBot) this.humanPlayer = mp;
 
-      // Name label
-      this.add.text(pos.x, pos.y - PLAYER_RADIUS - 14, gp.displayName.slice(0, 8), {
-        fontSize: "10px", fontFamily: "sans-serif", color: "#e2e8f0",
-        backgroundColor: "#0f172a80", padding: { x: 3, y: 1 },
-      }).setOrigin(0.5).setDepth(21);
     });
   }
 
@@ -209,12 +215,13 @@ export class CoinVacuumScene extends Phaser.Scene {
 
     const roll = Math.random();
     let type: CoinObject["type"] = "normal";
-    let textureKey = "coin-normal";
+    let textureKey = this.textures.exists("coin-gold-art") ? "coin-gold-art" : "coin-normal";
     let value = 1;
-    if (roll < 0.12) { type = "bonus"; textureKey = "coin-bonus"; value = 3; }
-    else if (roll < 0.22) { type = "fake"; textureKey = "coin-fake"; value = -2; }
+    if (roll < 0.12) { type = "bonus"; textureKey = "grand-cap-art"; value = 3; }
+    else if (roll < 0.22) { type = "fake"; textureKey = this.textures.exists("coin-fake-art") ? "coin-fake-art" : "coin-fake"; value = -2; }
 
     const sprite = this.physics.add.sprite(x, y, textureKey);
+    sprite.setDisplaySize(type === "bonus" ? 30 : 26, type === "bonus" ? 30 : 26);
     sprite.setCircle(COIN_RADIUS);
     sprite.setDepth(10);
 
@@ -241,7 +248,9 @@ export class CoinVacuumScene extends Phaser.Scene {
         if (dist < PLAYER_RADIUS + COIN_RADIUS + 4) {
           p.coins += c.value;
           if (c.type === "fake") {
+            p.slowUntil = this.time.now + 1800;
             this.showFloatingText(cx, cy, `${c.value}`, "#ef4444");
+            this.showFloatingText(px, py - 18, "SLOWED!", "#ef4444");
           } else {
             this.showFloatingText(cx, cy, `+${c.value}`, c.type === "bonus" ? "#00ffff" : "#ffd700");
           }
@@ -290,7 +299,8 @@ export class CoinVacuumScene extends Phaser.Scene {
 
     if (nearest) {
       const angle = Phaser.Math.Angle.Between(bot.body.x, bot.body.y, nearest.sprite.x, nearest.sprite.y);
-      bot.body.setVelocity(Math.cos(angle) * BOT_SPEED, Math.sin(angle) * BOT_SPEED);
+      const speed = this.time.now < bot.slowUntil ? BOT_SPEED * 0.45 : BOT_SPEED;
+      bot.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
     } else {
       // Wander
       if (Math.random() < 0.02) {
