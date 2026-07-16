@@ -132,18 +132,18 @@ export const CAPS: Cap[] = [
 
   // ── Italian Brainrot set ──────────────────────────────────────────────────
   // Common
-  { id: "cap-cappuccina",  name: "Cappuccina",       emoji: "☕", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#f9a8d4,#ec4899)", ring: "#fce7f3" },
-  { id: "cap-tralalero",   name: "Tralalero Tralala", emoji: "🍌", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#fde047,#ca8a04)", ring: "#fef9c3" },
-  { id: "cap-capybara",    name: "Capybara Capybara", emoji: "🦦", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#d97706,#b45309)", ring: "#fde68a" },
+  { id: "cap-cappuccina",   name: "Ballerina Cappuccina", emoji: "☕", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#f9a8d4,#ec4899)", ring: "#fce7f3" },
+  { id: "cap-chimpanzini",  name: "Chimpanzini Bananini", emoji: "🍌", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#fde047,#ca8a04)", ring: "#fef9c3" },
+  { id: "cap-burbaloni",    name: "Burbaloni Luliloli",   emoji: "🦦", rarity: "common",  set: "brainrot", bg: "linear-gradient(135deg,#d97706,#b45309)", ring: "#fde68a" },
   // Rare
-  { id: "cap-bombombini",  name: "Bombombini",        emoji: "🐪", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#38bdf8,#0284c7)", ring: "#bae6fd" },
-  { id: "cap-trippitropi", name: "Trippi Troppi",     emoji: "👃", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#16a34a,#14532d)", ring: "#bbf7d0" },
-  { id: "cap-lirililala",  name: "Lirili Larila",     emoji: "🐘", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#2dd4bf,#0d9488)",  ring: "#99f6e4"  },
+  { id: "cap-frigocamelo",  name: "Frigo Camelo",         emoji: "🐪", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#38bdf8,#0284c7)", ring: "#bae6fd" },
+  { id: "cap-brrbrr",       name: "Brr Brr Patapim",      emoji: "👃", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#16a34a,#14532d)", ring: "#bbf7d0" },
+  { id: "cap-lirililala",   name: "Lirili Larila",         emoji: "🐘", rarity: "rare",    set: "brainrot", bg: "linear-gradient(135deg,#2dd4bf,#0d9488)",  ring: "#99f6e4"  },
   // Epic
-  { id: "cap-bombardiro",  name: "Bombardiro Crocodilo", emoji: "🐊", rarity: "epic", set: "brainrot", bg: "linear-gradient(135deg,#84cc16,#3f6212)", ring: "#bef264" },
-  { id: "cap-tungtung",    name: "Tung Tung Tung",    emoji: "🥷", rarity: "epic",    set: "brainrot", bg: "linear-gradient(135deg,#f97316,#c2410c)", ring: "#fed7aa" },
+  { id: "cap-glorbo",       name: "Glorbo",               emoji: "🍉", rarity: "epic",    set: "brainrot", bg: "linear-gradient(135deg,#84cc16,#3f6212)", ring: "#bef264" },
+  { id: "cap-cappasino",    name: "Cappuccino Assassino", emoji: "🥷", rarity: "epic",    set: "brainrot", bg: "linear-gradient(135deg,#f97316,#c2410c)", ring: "#fed7aa" },
   // Mythic
-  { id: "cap-brrbrr",      name: "Brr Brr Patapim",   emoji: "🌿", rarity: "mythic",  set: "brainrot", bg: "linear-gradient(135deg,#854d0e,#ca8a04,#fbbf24,#ca8a04)", ring: "#fde047" },
+  { id: "cap-tungtungsahur", name: "Tung Tung Sahur",     emoji: "🥁", rarity: "mythic",  set: "brainrot", bg: "linear-gradient(135deg,#854d0e,#ca8a04,#fbbf24,#ca8a04)", ring: "#fde047" },
 
   // ── Space set ─────────────────────────────────────────────────────────────
   // Common
