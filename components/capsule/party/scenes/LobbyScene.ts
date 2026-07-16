@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER } from "../AssetManifest";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 interface LobbyPlayer {
   id: string;
@@ -36,8 +37,9 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
     this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 0.78).setOrigin(0);
@@ -115,7 +117,7 @@ export class LobbyScene extends Phaser.Scene {
   private renderPlayers() {
     if (!this.playerGroup) return;
     this.playerGroup.removeAll(true);
-    const W = this.scale.width;
+    const W = PARTY_WIDTH;
     const cols = 2;
     const slotW = W / 2 - 20;
     const slotH = 70;

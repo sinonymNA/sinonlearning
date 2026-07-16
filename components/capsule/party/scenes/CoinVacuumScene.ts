@@ -4,12 +4,13 @@ import { EventBus } from "../EventBus";
 import { PLACEHOLDER, PLAYER_RADIUS, COIN_RADIUS } from "../AssetManifest";
 import type { UIScene } from "./UIScene";
 import type { BoardScene } from "./BoardScene";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 const ROUND_SECONDS = 35;
 const COIN_SPAWN_INTERVAL = 900;  // ms
 const MAX_COINS = 30;
 const PLAYER_SPEED = 200;
-const BOT_SPEED = 160;
+const BOT_SPEED = 112;
 const MAGNET_RADIUS = 100;
 const MAGNET_COOLDOWN = 4000;
 
@@ -63,13 +64,15 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     this.physics.world.setBounds(0, 0, W, H);
 
     // Arena background
-    this.add.rectangle(0, 0, W, H, PLACEHOLDER.ARENA_BG, 1).setOrigin(0);
+    this.add.image(W / 2, H / 2, "arena-bg").setDisplaySize(W, H);
+    this.add.rectangle(0, 0, W, H, PLACEHOLDER.ARENA_BG, 0.12).setOrigin(0);
 
     // Walls (visual only â€” world bounds handle physics)
     const wallColor = PLACEHOLDER.WALL_COLOR;
@@ -93,19 +96,21 @@ export class CoinVacuumScene extends Phaser.Scene {
 
     this.setupVirtualJoystick();
     this.spawnPlayers();
-    this.spawnInitialCoins();
     this.renderScoreboard();
-
-    this.ui.showMinigameTimer(ROUND_SECONDS);
-
-    // Countdown before round starts
-    this.showCountdown(() => {
+    this.ui.showMinigameIntro({
+      title: "Coin Vacuum",
+      kicker: "Free-for-all challenge",
+      objective: "Grab more gold than anyone else before time runs out.",
+      controls: "ARROWS / WASD to move  â€¢  SPACE for magnet",
+      tip: "Gold is good. Red fakes slow you down.",
+      accent: 0x2dd4bf,
+    }, () => this.showCountdown(() => {
+      this.spawnInitialCoins();
+      this.ui.showMinigameTimer(ROUND_SECONDS);
       this.roundActive = true;
-      this.spawnTimer = this.time.addEvent({
-        delay: COIN_SPAWN_INTERVAL, repeat: -1, callback: this.spawnCoin, callbackScope: this,
-      });
+      this.spawnTimer = this.time.addEvent({ delay: COIN_SPAWN_INTERVAL, repeat: -1, callback: this.spawnCoin, callbackScope: this });
       this.time.delayedCall(ROUND_SECONDS * 1000, () => this.endRound());
-    });
+    }));
   }
 
   update(_time: number, delta: number) {
@@ -164,8 +169,8 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private spawnPlayers() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     const positions = [
       { x: 80, y: 80 }, { x: W - 80, y: 80 },
       { x: 80, y: H - 80 }, { x: W - 80, y: H - 80 },
@@ -208,8 +213,8 @@ export class CoinVacuumScene extends Phaser.Scene {
 
   private spawnCoin() {
     if (this.coins.length >= MAX_COINS) return;
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     const x = Phaser.Math.Between(24, W - 24);
     const y = Phaser.Math.Between(64, H - 64);
 
@@ -311,7 +316,7 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private renderScoreboard() {
-    const W = this.scale.width;
+    const W = PARTY_WIDTH;
     // Mini scoreboard top-right
     const startX = W - 160;
     this.players.forEach((p, i) => {
@@ -331,8 +336,8 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private showCountdown(onDone: () => void) {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     let count = 3;
     const doCount = () => {
       if (count <= 0) { onDone(); return; }
@@ -366,9 +371,9 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private setupVirtualJoystick() {
-    // Only create if touch-capable
-    const H = this.scale.height;
-    const W = this.scale.width;
+    if (!this.sys.game.device.input.touch) return;
+    const H = PARTY_HEIGHT;
+    const W = PARTY_WIDTH;
 
     this.joystickBase = this.add.circle(80, H - 80, 40, 0x334155, 0.5).setDepth(200).setInteractive();
     this.joystickKnob = this.add.circle(80, H - 80, 20, 0x19cdd2, 0.8).setDepth(201);
@@ -397,7 +402,7 @@ export class CoinVacuumScene extends Phaser.Scene {
       this.virtualJoystick.active = false;
       if (this.humanPlayer) {
         this.humanPlayer.body.setVelocity(0, 0);
-        this.joystickKnob?.setPosition(this.joystickBase?.x ?? 80, this.joystickBase?.y ?? (this.scale.height - 80));
+        this.joystickKnob?.setPosition(this.joystickBase?.x ?? 80, this.joystickBase?.y ?? (PARTY_HEIGHT - 80));
       }
     });
   }
@@ -438,7 +443,10 @@ export class CoinVacuumScene extends Phaser.Scene {
     const coinRewards = sorted.map((p, i) => ({ playerId: p.id, coins: rewards[i] ?? 1 }));
 
     // Show results overlay
-    this.showResultsOverlay(sorted, () => {
+    this.ui.showMinigameResults("Coin Vacuum", 0x2dd4bf, sorted.map((player) => ({
+      name: player.displayName,
+      score: player.coins,
+    })), () => {
       this.scene.stop("CoinVacuumScene");
       this.scene.resume("BoardScene");
       const board = this.scene.get("BoardScene") as BoardScene;
@@ -447,8 +455,8 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private showResultsOverlay(sorted: MinigamePlayer[], onContinue: () => void) {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     this.add.rectangle(W / 2, H / 2, 400, 260, 0x0f172a, 0.97).setOrigin(0.5).setDepth(600);
     this.add.rectangle(W / 2, H / 2, 400, 260, 0, 0).setStrokeStyle(2, 0x19cdd2).setOrigin(0.5).setDepth(601);

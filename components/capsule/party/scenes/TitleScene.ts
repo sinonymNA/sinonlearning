@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 // TitleScene: shows the Capsule Party logo and a "Waiting for host..." or "Enter Code" prompt.
 // In production this scene bridges to the real lobby once the React shell passes player data.
@@ -9,8 +10,9 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
     this.add.rectangle(0, 0, W, H, 0x020817, 0.68).setOrigin(0);

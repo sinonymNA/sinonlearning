@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { GameState } from "../GameState";
 import type { BoardScene } from "./BoardScene";
 import type { UIScene } from "./UIScene";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 const ROUND_SECONDS = 22;
 
@@ -50,9 +51,11 @@ export class CrateBreakScene extends Phaser.Scene {
   }
 
   create() {
-    const { width: W, height: H } = this.scale;
-    this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
-    this.add.rectangle(0, 0, W, H, 0x080526, 0.76).setOrigin(0);
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
+    this.add.image(W / 2, H / 2, "crate-arena-bg").setDisplaySize(W, H);
+    this.add.rectangle(0, 0, W, H, 0x030712, 0.12).setOrigin(0);
     this.add.text(W / 2, 18, "CRATE BREAK", {
       fontSize: "25px", fontFamily: "sans-serif", color: "#c4a7ff", fontStyle: "bold",
       stroke: "#07142f", strokeThickness: 6,
@@ -94,11 +97,18 @@ export class CrateBreakScene extends Phaser.Scene {
     });
 
     for (let index = 0; index < 12; index++) this.spawnCrate();
-    this.ui.showMinigameTimer(ROUND_SECONDS);
-    this.showCountdown(() => {
+    this.ui.showMinigameIntro({
+      title: "Crate Coliseum",
+      kicker: "Free-for-all challenge",
+      objective: "Smash prize crates. Golden crates are worth the most.",
+      controls: "ARROWS / WASD to move  â€¢  SPACE to smash",
+      tip: "Get close before swinging. Pick a new crate fast.",
+      accent: 0xc4a7ff,
+    }, () => this.showCountdown(() => {
+      this.ui.showMinigameTimer(ROUND_SECONDS);
       this.active = true;
       this.time.delayedCall(ROUND_SECONDS * 1000, () => this.finishRound());
-    });
+    }));
   }
 
   update(_time: number, delta: number) {
@@ -136,7 +146,7 @@ export class CrateBreakScene extends Phaser.Scene {
       })[0];
       if (!crate) continue;
       const distance = Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, crate.body.x, crate.body.y);
-      if (distance > 58) this.physics.moveToObject(bot.sprite, crate.body, 145);
+      if (distance > 58) this.physics.moveToObject(bot.sprite, crate.body, 112);
       else {
         bot.sprite.setVelocity(0);
         if (bot.cooldown <= 0) this.hitCrate(bot, crate);
@@ -219,8 +229,11 @@ export class CrateBreakScene extends Phaser.Scene {
       const board = this.scene.get("BoardScene") as BoardScene;
       board.onMinigameComplete(ranked.map((breaker, index) => ({ playerId: breaker.id, coins: rewards[index] })));
     };
-    continueText.on("pointerdown", leave);
-    this.time.delayedCall(3200, leave);
+    continueText.setVisible(false).disableInteractive();
+    this.ui.showMinigameResults("Crate Coliseum", 0xc4a7ff, ranked.map((breaker) => ({
+      name: breaker.name,
+      score: breaker.score,
+    })), leave);
   }
 }
 

@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS, COIN_RADIUS, PLAYER_RADIUS } from "../AssetManifest";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 // Cap IDs whose portrait images live at /assets/capsule/caps/cap-{id}.png
 export const KNOWN_CAP_IDS = [
@@ -24,10 +25,11 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    configurePartyCamera(this);
     // Board background
-    this.load.image("board-bg", "/assets/capsule/game/board-bg.png");
-    // Coin Vacuum arena background (reuse board-bg until separate art arrives)
-    this.load.image("arena-bg", "/assets/capsule/game/board-bg.png");
+    this.load.image("board-bg", "/assets/capsule/game/board-bg-hd.png");
+    this.load.image("arena-bg", "/assets/capsule/party/coin-vacuum-arena-v2.png");
+    this.load.image("crate-arena-bg", "/assets/capsule/party/crate-break-arena-v2.png");
     this.load.image("factory-bg", "/assets/capsule/game/factory-bg.png");
     for (const key of PARTY_ART) {
       this.load.image(key, `/assets/capsule/party/ui/${key}.png`);
@@ -37,8 +39,8 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`cap-${id}`, `/assets/capsule/caps/cap-${id}.png`);
     }
     // Loading bar
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
     const bar = this.add.rectangle(W / 2 - 120, H / 2, 0, 8, 0x19cdd2, 1).setOrigin(0, 0.5);
     this.add.rectangle(W / 2 - 120, H / 2, 240, 8, 0x1e293b, 1).setOrigin(0, 0.5);

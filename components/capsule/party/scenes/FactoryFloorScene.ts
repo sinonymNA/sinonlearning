@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import type { GameState } from "../GameState";
 import type { BoardScene } from "./BoardScene";
 import type { UIScene } from "./UIScene";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 const ROUND_SECONDS = 22;
 const HUMAN_SPEED = 220;
@@ -44,7 +45,9 @@ export class FactoryFloorScene extends Phaser.Scene {
   }
 
   create() {
-    const { width: W, height: H } = this.scale;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     this.add.image(W / 2, H / 2, "factory-bg").setDisplaySize(W, H);
     this.add.rectangle(0, 0, W, H, 0x061027, 0.45).setOrigin(0);
     this.add.text(W / 2, 18, "FACTORY FLOOR", {
@@ -82,12 +85,19 @@ export class FactoryFloorScene extends Phaser.Scene {
       this.actors.push(actor);
     });
 
-    this.ui.showMinigameTimer(ROUND_SECONDS);
-    this.showCountdown(() => {
+    this.ui.showMinigameIntro({
+      title: "Factory Frenzy",
+      kicker: "Catch-and-dodge challenge",
+      objective: "Catch falling capsules. Stay away from the red traps.",
+      controls: "ARROWS / WASD to move  â€¢  TAP to dash there",
+      tip: "Rare gold capsules are worth three points.",
+      accent: 0xffd166,
+    }, () => this.showCountdown(() => {
+      this.ui.showMinigameTimer(ROUND_SECONDS);
       this.active = true;
       this.time.addEvent({ delay: 620, loop: true, callback: () => this.spawnPart() });
       this.time.delayedCall(ROUND_SECONDS * 1000, () => this.finishRound());
-    });
+    }));
   }
 
   update() {
@@ -115,7 +125,7 @@ export class FactoryFloorScene extends Phaser.Scene {
       const target = this.parts.filter((part) => !part.harmful)
         .sort((a, b) => Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, a.sprite.x, a.sprite.y)
           - Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, b.sprite.x, b.sprite.y))[0];
-      if (target) this.physics.moveToObject(bot.sprite, target.sprite, 150);
+      if (target) this.physics.moveToObject(bot.sprite, target.sprite, 112);
     }
 
     for (const actor of this.actors) {
@@ -132,7 +142,7 @@ export class FactoryFloorScene extends Phaser.Scene {
       }
     }
     this.parts = this.parts.filter((part) => {
-      if (part.sprite.y < this.scale.height - 56) return true;
+      if (part.sprite.y < PARTY_HEIGHT - 56) return true;
       part.sprite.destroy();
       return false;
     });
@@ -192,8 +202,11 @@ export class FactoryFloorScene extends Phaser.Scene {
       const board = this.scene.get("BoardScene") as BoardScene;
       board.onMinigameComplete(ranked.map((actor, index) => ({ playerId: actor.id, coins: rewards[index] })));
     };
-    continueText.on("pointerdown", leave);
-    this.time.delayedCall(3200, leave);
+    continueText.setVisible(false).disableInteractive();
+    this.ui.showMinigameResults("Factory Frenzy", 0xffd166, ranked.map((actor) => ({
+      name: actor.name,
+      score: actor.score,
+    })), leave);
   }
 }
 

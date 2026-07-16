@@ -15,8 +15,8 @@ export function createPhaserGame(parent: HTMLElement): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: 800,
-    height: 450,
+    width: 1200,
+    height: 675,
     backgroundColor: "#0a0e1a",
     scene: [
       BootScene,
@@ -46,6 +46,8 @@ export function createPhaserGame(parent: HTMLElement): Phaser.Game {
     render: {
       antialias: true,
       pixelArt: false,
+      roundPixels: false,
     },
   });
 }
+

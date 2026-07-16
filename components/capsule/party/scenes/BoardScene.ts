@@ -4,6 +4,7 @@ import { createInitialState, type GameState, type PlayerState, rankPlayers } fro
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER, SPACE_RADIUS } from "../AssetManifest";
 import { getAdaptiveQuestion, recordMastery } from "../QuestionEngine";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 import type { UIScene } from "./UIScene";
 
 interface BoardSceneData {
@@ -11,8 +12,8 @@ interface BoardSceneData {
   maxRounds?: 10 | 15;
 }
 
-const TWEEN_STEP_DURATION = 250; // ms per board step
-const TWEEN_STEP_GAP = 60;       // ms pause between steps
+const TWEEN_STEP_DURATION = 360;
+const TWEEN_STEP_GAP = 180;
 
 // Sample questions â€” replaced by server questions in production
 export class BoardScene extends Phaser.Scene {
@@ -42,8 +43,9 @@ export class BoardScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     if (this.textures.exists("board-bg")) {
       this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H).setDepth(0);
@@ -109,10 +111,12 @@ export class BoardScene extends Phaser.Scene {
       const artKey = space.type === "grand_cap" ? "grand-cap-art" : `space-${space.type}-art`;
       const objects: Phaser.GameObjects.GameObject[] = [];
       if (space.type !== "start") {
-        const halo = this.add.circle(space.x, space.y, 14, 0x061a43, 0.82).setStrokeStyle(2, 0xffffff, 0.75);
+        const isCommon = space.type === "coin";
+        const halo = this.add.circle(space.x, space.y, isCommon ? 8 : 13, 0x061a43, isCommon ? 0.72 : 0.88)
+          .setStrokeStyle(isCommon ? 1 : 2, isCommon ? 0x7dd3fc : 0xffffff, isCommon ? 0.55 : 0.82);
         objects.push(halo);
-        if (this.textures.exists(artKey)) {
-          objects.push(this.add.image(space.x, space.y, artKey).setDisplaySize(24, 24));
+        if (!isCommon && this.textures.exists(artKey)) {
+          objects.push(this.add.image(space.x, space.y, artKey).setDisplaySize(22, 22));
         }
       }
       const container = this.add.container(0, 0, objects);
@@ -193,10 +197,10 @@ export class BoardScene extends Phaser.Scene {
     this.ui.showTurnBanner(
       `${player.displayName}'s Turn`,
       `Round ${this.state.turnNumber}/${this.state.maxRounds} â€¢ ${player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!"}`,
-      1800
+      2800
     );
 
-    this.time.delayedCall(600, () => {
+    this.time.delayedCall(player.isBot ? 1500 : 950, () => {
       if (player.isBot) {
         this.handleBotTurn();
       } else {
@@ -298,12 +302,12 @@ export class BoardScene extends Phaser.Scene {
     // Bots always "answer" after a short delay â€” random 60% correct
     const player = this.currentPlayer();
     const profiles = [
-      { accuracy: 0.64, delay: 950, reaction: "Bolt locks in fast!" },
-      { accuracy: 0.76, delay: 1350, reaction: "Nova thinks it through..." },
-      { accuracy: 0.58, delay: 650, reaction: "Gremlin mashes a button!" },
+      { accuracy: 0.64, delay: 2400, reaction: "Bolt is choosing an answer..." },
+      { accuracy: 0.76, delay: 3000, reaction: "Nova is thinking it through..." },
+      { accuracy: 0.58, delay: 2100, reaction: "Gremlin is taking a wild guess..." },
     ];
     const profile = profiles[Math.max(0, player.colorIndex - 1)] ?? profiles[0];
-    this.ui.showMessage(profile.reaction, "#9fb4d8", 700);
+    this.ui.showMessage(profile.reaction, "#9fb4d8", profile.delay - 300);
     this.time.delayedCall(profile.delay, () => {
       const correct = Math.random() < profile.accuracy;
       player.totalAnswers++;
@@ -336,8 +340,8 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private showSpinResult(steps: number, correct: boolean, onDone: () => void) {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     if (this.spinDisplay) { this.spinDisplay.destroy(); this.spinDisplay = null; }
 
@@ -353,7 +357,7 @@ export class BoardScene extends Phaser.Scene {
     this.spinDisplay = this.add.container((W - 160) / 2, (H - 90) / 2 - 40, [bg, resultTxt, stepsTxt]).setDepth(350);
     this.tweens.add({ targets: this.spinDisplay, alpha: { from: 0, to: 1 }, duration: 200 });
 
-    this.time.delayedCall(1400, () => {
+    this.time.delayedCall(1900, () => {
       if (this.spinDisplay) {
         this.tweens.add({
           targets: this.spinDisplay, alpha: 0, duration: 200,
@@ -440,8 +444,8 @@ export class BoardScene extends Phaser.Scene {
 
   // Prompt the human to choose a path at a branch point.
   private promptBranchChoice(connections: string[], onChoice: (id: string) => void) {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
 
     const panel = this.add.container(0, 0).setDepth(400);
     const bg = this.add.rectangle(W / 2, H / 2, 320, 120 + connections.length * 50, 0x0f172a, 0.97).setOrigin(0.5);
@@ -680,7 +684,7 @@ export class BoardScene extends Phaser.Scene {
       this.time.delayedCall(500, () => this.triggerMinigame("start-turn"));
       return;
     }
-    this.time.delayedCall(400, () => this.startTurn());
+    this.time.delayedCall(900, () => this.startTurn());
   }
 
   private endGame() {
@@ -719,6 +723,7 @@ export class BoardScene extends Phaser.Scene {
     this.state.minigameType = null;
     this.scene.resume("BoardScene");
     this.scene.bringToTop("UIScene");
+    this.ui.showPlayerHud();
     this.emitScoreUpdate();
     if (this.resumeAfterMinigame === "start-turn") {
       this.currentPhase = "idle";

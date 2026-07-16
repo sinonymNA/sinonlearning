@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { type PlayerState } from "../GameState";
 import { PLACEHOLDER } from "../AssetManifest";
 import { EventBus } from "../EventBus";
+import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 
 export class ResultsScene extends Phaser.Scene {
   constructor() {
@@ -13,8 +14,9 @@ export class ResultsScene extends Phaser.Scene {
   }
 
   create() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    configurePartyCamera(this);
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
     const ranked = this.data.get("ranked") as PlayerState[];
 
     this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W, H);
