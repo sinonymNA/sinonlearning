@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, Suspense } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import CapIcon from "@/components/capsule/CapIcon";
@@ -24,8 +24,11 @@ interface GameState {
 
 type JoinPhase = "form" | "joined";
 
-export default function PlayerScreen() {
+function PlayerScreenInner() {
   const { code } = useParams<{ code: string }>();
+  const searchParams = useSearchParams();
+  const isDemo = searchParams.get("demo") === "1";
+
   const [joinPhase, setJoinPhase] = useState<JoinPhase>("form");
   const [displayName, setDisplayName] = useState("");
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -35,6 +38,10 @@ export default function PlayerScreen() {
   const [joinError, setJoinError] = useState("");
   const [timer, setTimer] = useState(20);
   const prevQuestion = useRef(-1);
+
+  // Demo automation refs
+  const demoRef = useRef<{ q: number; done: boolean }>({ q: -1, done: false });
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const fetchState = useCallback(async () => {
     const res = await fetch(`/api/capsule/games/${code}`);
@@ -65,6 +72,48 @@ export default function PlayerScreen() {
     const id = setInterval(() => setTimer(t => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
   }, [game?.currentQuestion, game?.myAnswer]);
+
+  // Demo: auto-submit bot answers + auto-advance for student view
+  useEffect(() => {
+    if (!isDemo || !game || game.status !== "active" || !game.currentQuestionData) return;
+    const q = game.currentQuestion;
+    if (demoRef.current.q === q) return;
+    demoRef.current = { q, done: false };
+
+    demoTimers.current.forEach(t => clearTimeout(t));
+    demoTimers.current = [];
+
+    const { choices, timeLimit } = game.currentQuestionData;
+    const demo = (() => {
+      try { return JSON.parse(localStorage.getItem("capsule-demo") ?? "{}") as { code: string; botPlayerIds: string[] }; }
+      catch { return { code: "", botPlayerIds: [] }; }
+    })();
+    const bots = demo.botPlayerIds ?? [];
+
+    // Submit random answers for bots (play page doesn't know correct answer)
+    bots.forEach((botId, i) => {
+      const delay = 1000 + i * 700 + Math.random() * 400;
+      const idx = Math.floor(Math.random() * choices.length);
+      const t = setTimeout(() => {
+        fetch(`/api/capsule/games/${code}/answer`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerId: botId, answerIndex: idx }),
+        }).catch(() => {/* ignore */});
+      }, delay);
+      demoTimers.current.push(t);
+    });
+
+    // Auto-advance using DemoTeacher session cookie (set during demo setup)
+    const advanceT = setTimeout(async () => {
+      if (demoRef.current.done) return;
+      demoRef.current.done = true;
+      await fetch(`/api/capsule/games/${code}/advance`, { method: "POST" });
+      await fetchState();
+    }, (timeLimit + 1) * 1000);
+    demoTimers.current.push(advanceT);
+
+    return () => demoTimers.current.forEach(t => clearTimeout(t));
+  }, [isDemo, game?.currentQuestion, game?.status, code, fetchState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function join(e: React.FormEvent) {
     e.preventDefault();
@@ -350,6 +399,18 @@ export default function PlayerScreen() {
   return (
     <div style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", background: "#07183F" }}>
 
+      {/* Demo banner */}
+      {isDemo && (
+        <div style={{
+          background: "#fde047", color: "#07183F",
+          padding: "5px 0", textAlign: "center",
+          fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase",
+          flexShrink: 0,
+        }}>
+          DEMO MODE · AUTO-ADVANCE
+        </div>
+      )}
+
       {/* Top bar */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -425,5 +486,13 @@ export default function PlayerScreen() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PlayerScreen() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100dvh", background: "#07183F" }} />}>
+      <PlayerScreenInner />
+    </Suspense>
   );
 }

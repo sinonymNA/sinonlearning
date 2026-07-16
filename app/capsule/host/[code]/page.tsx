@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, useRef, Suspense } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import CapIcon from "@/components/capsule/CapIcon";
 
@@ -15,11 +15,18 @@ interface GameState {
   players: Player[]; answerCount: number; playerCount: number; isHost: boolean;
 }
 
-export default function HostPanel() {
+function HostPanelInner() {
   const { code } = useParams<{ code: string }>();
+  const searchParams = useSearchParams();
+  const isDemo = searchParams.get("demo") === "1";
+
   const [game, setGame] = useState<GameState | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+
+  // Demo automation refs
+  const demoRef = useRef<{ q: number; done: boolean }>({ q: -1, done: false });
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const fetchState = useCallback(async () => {
     const res = await fetch(`/api/capsule/games/${code}`);
@@ -37,17 +44,66 @@ export default function HostPanel() {
 
   useEffect(() => { setRevealed(false); }, [game?.currentQuestion]);
 
+  // Demo: auto-submit bot answers + auto-advance each question
+  useEffect(() => {
+    if (!isDemo || !game || game.status !== "active" || !game.currentQuestionData) return;
+    const q = game.currentQuestion;
+    if (demoRef.current.q === q) return; // already set up for this question
+    demoRef.current = { q, done: false };
+
+    // clear previous timers
+    demoTimers.current.forEach(t => clearTimeout(t));
+    demoTimers.current = [];
+
+    const { answer: correctIdx, choices, timeLimit } = game.currentQuestionData;
+    const demo = (() => {
+      try { return JSON.parse(localStorage.getItem("capsule-demo") ?? "{}") as { code: string; botPlayerIds: string[] }; }
+      catch { return { code: "", botPlayerIds: [] }; }
+    })();
+    const bots = demo.botPlayerIds ?? [];
+
+    // Stagger bot answers over 1–5 seconds, 60% chance correct
+    bots.forEach((botId, i) => {
+      const delay = 1000 + i * 700 + Math.random() * 400;
+      const correct = Math.random() < 0.60;
+      const idx = correct
+        ? correctIdx
+        : (correctIdx + 1 + Math.floor(Math.random() * (choices.length - 1))) % choices.length;
+      const t = setTimeout(() => {
+        fetch(`/api/capsule/games/${code}/answer`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playerId: botId, answerIndex: idx }),
+        }).catch(() => {/* ignore */});
+      }, delay);
+      demoTimers.current.push(t);
+    });
+
+    // Reveal answer 2 seconds before time is up
+    const revealAt = Math.max((timeLimit - 2) * 1000, 2000);
+    const revealT = setTimeout(() => setRevealed(true), revealAt);
+    demoTimers.current.push(revealT);
+
+    // Auto-advance after timeLimit + 1 second
+    const advanceT = setTimeout(async () => {
+      if (demoRef.current.done) return;
+      demoRef.current.done = true;
+      setAdvancing(true);
+      setRevealed(false);
+      await fetch(`/api/capsule/games/${code}/advance`, { method: "POST" });
+      await fetchState();
+      setAdvancing(false);
+    }, (timeLimit + 1) * 1000);
+    demoTimers.current.push(advanceT);
+
+    return () => demoTimers.current.forEach(t => clearTimeout(t));
+  }, [isDemo, game?.currentQuestion, game?.status, code, fetchState]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function advance() {
     setAdvancing(true);
     setRevealed(false);
     await fetch(`/api/capsule/games/${code}/advance`, { method: "POST" });
     await fetchState();
     setAdvancing(false);
-  }
-
-  async function endGame() {
-    await fetch(`/api/capsule/games/${code}/end`, { method: "POST" });
-    await fetchState();
   }
 
   if (!game) {
@@ -62,6 +118,17 @@ export default function HostPanel() {
 
   return (
     <div style={{ minHeight: "100dvh", background: "#07183F" }}>
+
+      {/* Demo banner */}
+      {isDemo && (
+        <div style={{
+          background: "#fde047", color: "#07183F",
+          padding: "5px 0", textAlign: "center",
+          fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase",
+        }}>
+          DEMO MODE · 5 BOT PLAYERS · QUESTIONS AUTO-ADVANCE
+        </div>
+      )}
 
       {/* Header */}
       <header style={{
@@ -378,5 +445,13 @@ export default function HostPanel() {
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function HostPanel() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100dvh", background: "#07183F" }} />}>
+      <HostPanelInner />
+    </Suspense>
   );
 }
