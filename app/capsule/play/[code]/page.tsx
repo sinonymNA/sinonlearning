@@ -6,8 +6,15 @@ import Link from "next/link";
 import CapIcon from "@/components/capsule/CapIcon";
 import type { ChestResult } from "@/lib/capsuleData";
 
-const ANSWER_COLORS = ["#ef4444", "#3b82f6", "#eab308", "#22c55e"];
 const ANSWER_LABELS = ["A", "B", "C", "D"];
+
+const ANSWER_BG = [
+  "linear-gradient(180deg, #ff6b7a 0%, #d42035 100%)",
+  "linear-gradient(180deg, #3dd9e8 0%, #0babbb 100%)",
+  "linear-gradient(180deg, #ffd740 0%, #e6a800 100%)",
+  "linear-gradient(180deg, #c274ff 0%, #8b2fd6 100%)",
+];
+const ANSWER_SHADOW = ["#9a1525", "#067a88", "#a07500", "#5a0090"];
 
 interface Player { id: string; displayName: string; capId: string; gold: number; hasAnswered: boolean; }
 interface GameState {
@@ -38,8 +45,6 @@ export default function PlayerScreen() {
     if (res.ok) {
       const data = await res.json() as GameState;
       setGame(data);
-
-      // Reset chest animation on new question
       if (data.currentQuestion !== prevQuestion.current) {
         prevQuestion.current = data.currentQuestion;
         setChestOpen(false);
@@ -49,20 +54,17 @@ export default function PlayerScreen() {
   }, [code]);
 
   useEffect(() => {
-    // Try to restore session from localStorage
     const saved = localStorage.getItem(`capsule-player-${code}`);
     if (saved) {
       const { pid, name, cap } = JSON.parse(saved) as { pid: string; name: string; cap: string };
       setPlayerId(pid); setDisplayName(name); setCapId(cap);
       setJoinPhase("joined");
     }
-
     fetchState();
     const id = setInterval(fetchState, 2000);
     return () => clearInterval(id);
   }, [fetchState, code]);
 
-  // Client-side countdown (decorative — host controls actual pacing)
   useEffect(() => {
     if (!game?.currentQuestionData || game.myAnswer) return;
     const id = setInterval(() => setTimer(t => Math.max(0, t - 1)), 1000);
@@ -99,22 +101,61 @@ export default function PlayerScreen() {
 
   if (joinPhase === "form") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <Link href="/capsule" className="mb-8 text-2xl font-black text-orange-400" style={{ fontFamily: "var(--font-bebas)", letterSpacing: "0.08em" }}>
-          CAPSULE
-        </Link>
-        <div className="mb-4 rounded-2xl border border-orange-400/20 bg-orange-400/8 px-8 py-3 font-mono text-3xl font-black tracking-[0.2em] text-orange-300">
+      <div style={{
+        display: "flex", minHeight: "100dvh", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", padding: "0 20px",
+        background: "#07183F",
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/capsule/logo.png"
+          alt="Capsule"
+          style={{ height: 64, objectFit: "contain", marginBottom: 24, filter: "drop-shadow(0 2px 16px rgba(25,205,210,0.5))" }}
+        />
+
+        {/* Game code badge */}
+        <div style={{
+          marginBottom: 20,
+          borderRadius: 18, border: "1px solid rgba(25,205,210,0.25)",
+          background: "rgba(25,205,210,0.10)",
+          padding: "10px 32px",
+          fontFamily: "monospace", fontSize: 28, fontWeight: 900,
+          letterSpacing: "0.20em", color: "#19CDD2",
+        }}>
           {code}
         </div>
-        <form onSubmit={join} className="flex w-full max-w-xs flex-col gap-3">
+
+        <form onSubmit={join} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 300 }}>
           <input
-            value={displayName} onChange={e => setDisplayName(e.target.value)}
-            placeholder="Your name" maxLength={24} required autoFocus
-            className="rounded-xl border border-white/12 bg-white/5 px-4 py-3 text-center text-sm font-bold text-white outline-none placeholder:text-white/25 focus:border-orange-400/50"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            placeholder="Your name"
+            maxLength={24}
+            required
+            autoFocus
+            style={{
+              borderRadius: 14, border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              padding: "13px 18px",
+              textAlign: "center", fontSize: 14, fontWeight: 700, color: "#fff",
+              outline: "none",
+            }}
+            onFocus={e => (e.target.style.borderColor = "rgba(25,205,210,0.50)")}
+            onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
           />
-          {joinError && <p className="text-center text-xs text-red-400">{joinError}</p>}
-          <button type="submit" disabled={joining || !displayName.trim()}
-            className="rounded-xl bg-orange-500 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-orange-400 disabled:opacity-40">
+          {joinError && <p style={{ textAlign: "center", fontSize: 12, color: "#f87171" }}>{joinError}</p>}
+          <button
+            type="submit"
+            disabled={joining || !displayName.trim()}
+            style={{
+              borderRadius: 14, background: "#19CDD2", border: "none",
+              padding: "14px 0", fontSize: 14, fontWeight: 900,
+              letterSpacing: "0.08em", textTransform: "uppercase",
+              color: "#06163E", cursor: (joining || !displayName.trim()) ? "not-allowed" : "pointer",
+              opacity: (joining || !displayName.trim()) ? 0.40 : 1,
+              boxShadow: "0 4px 0 #067a88",
+            }}
+          >
             {joining ? "Joining…" : "Join Game"}
           </button>
         </form>
@@ -122,55 +163,110 @@ export default function PlayerScreen() {
     );
   }
 
-  if (!game) return <div className="min-h-screen bg-[#06163E]" />;
+  if (!game) return <div style={{ minHeight: "100dvh", background: "#07183F" }} />;
 
   const myPlayer = game.players.find(p => p.id === playerId);
   const leaderboard = [...game.players].sort((a, b) => b.gold - a.gold);
 
-  // ── Waiting for game to start ─────────────────────────────────────────────
+  // ── Waiting ────────────────────────────────────────────────────────────────
 
   if (game.status === "waiting") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center text-center px-4">
+      <div style={{
+        display: "flex", minHeight: "100dvh", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", textAlign: "center",
+        padding: "0 20px", background: "#07183F",
+      }}>
         <CapIcon capId={capId} size={80} />
-        <p className="mt-4 text-lg font-bold text-white">{displayName}</p>
-        <p className="mt-6 text-sm text-white/40">Waiting for the teacher to start…</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {game.players.filter(p => p.id !== playerId).map(p => (
-            <div key={p.id} className="flex flex-col items-center gap-1">
-              <CapIcon capId={p.capId} size={32} />
-              <span className="text-[10px] text-white/30">{p.displayName}</span>
-            </div>
-          ))}
-        </div>
+        <p style={{ marginTop: 16, fontSize: 17, fontWeight: 700, color: "#fff" }}>{displayName}</p>
+        <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.40)" }}>
+          Waiting for the teacher to start…
+        </p>
+        {game.players.filter(p => p.id !== playerId).length > 0 && (
+          <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10 }}>
+            {game.players.filter(p => p.id !== playerId).map(p => (
+              <div key={p.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <CapIcon capId={p.capId} size={32} />
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>{p.displayName}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
-  // ── Game ended ────────────────────────────────────────────────────────────
+  // ── Game ended ─────────────────────────────────────────────────────────────
 
   if (game.status === "ended") {
     const myRank = leaderboard.findIndex(p => p.id === playerId) + 1;
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
-        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-orange-400/60">
-          {myRank === 1 ? "🏆 YOU WON!" : `#${myRank} Place`}
-        </p>
-        <h2 className="mb-1 text-6xl text-white" style={{ fontFamily: "var(--font-bebas)", letterSpacing: "0.06em" }}>
-          GAME OVER
-        </h2>
-        <p className="mb-8 flex items-center gap-2 text-xl font-black text-yellow-300">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 24, height: 24, objectFit: "contain" }} />
-          {myPlayer?.gold ?? 0} gold
-        </p>
-        <div className="w-full max-w-xs space-y-2">
+      <div style={{
+        display: "flex", minHeight: "100dvh", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", padding: "0 20px",
+        textAlign: "center", background: "#07183F",
+      }}>
+        {/* Rank + crown for winner */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          {myRank === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/assets/capsule/game/crown.png" alt="👑" style={{ height: 40, objectFit: "contain" }} />
+          )}
+          <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(25,205,210,0.70)" }}>
+            {myRank === 1 ? "You Won!" : `#${myRank} Place`}
+          </p>
+          {myRank === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/assets/capsule/game/crown.png" alt="" style={{ height: 40, objectFit: "contain", transform: "scaleX(-1)" }} />
+          )}
+        </div>
+
+        <h2 style={{
+          fontSize: 60, color: "#fff", letterSpacing: "0.06em",
+          fontFamily: "var(--font-bebas)", margin: "0 0 8px",
+        }}>GAME OVER</h2>
+
+        {/* Final gold */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+          {myRank === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/assets/capsule/game/coin-burst.png" alt="" style={{ height: 36, objectFit: "contain" }} />
+          )}
+          <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 22, fontWeight: 900, color: "#fde047" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 24, height: 24, objectFit: "contain" }} />
+            {myPlayer?.gold ?? 0} gold
+          </p>
+          {myRank === 1 && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/assets/capsule/game/coin-burst.png" alt="" style={{ height: 36, objectFit: "contain", transform: "scaleX(-1)" }} />
+          )}
+        </div>
+
+        {/* Leaderboard */}
+        <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 8 }}>
           {leaderboard.slice(0, 5).map((p, i) => (
-            <div key={p.id} className={`flex items-center gap-3 rounded-xl px-4 py-2.5 ${p.id === playerId ? "border border-orange-400/30 bg-orange-400/10" : "border border-white/8 bg-white/4"}`}>
-              <span className="w-5 text-xs font-black text-white/25">#{i + 1}</span>
+            <div key={p.id} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              borderRadius: 14, padding: "10px 14px",
+              border: p.id === playerId
+                ? "1px solid rgba(25,205,210,0.30)"
+                : "1px solid rgba(255,255,255,0.08)",
+              background: p.id === playerId
+                ? "rgba(25,205,210,0.08)"
+                : "rgba(255,255,255,0.04)",
+            }}>
+              {i === 0 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 20, objectFit: "contain" }} />
+              ) : (
+                <span style={{ width: 20, fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
+                  #{i + 1}
+                </span>
+              )}
               <CapIcon capId={p.capId} size={28} />
-              <span className="flex-1 text-sm font-bold text-white">{p.displayName}</span>
-              <span className="flex items-center gap-1 text-sm font-black text-yellow-300">
+              <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#fff", textAlign: "left" }}>{p.displayName}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 900, color: "#fde047" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 14, height: 14, objectFit: "contain" }} />
                 {p.gold}
@@ -178,14 +274,21 @@ export default function PlayerScreen() {
             </div>
           ))}
         </div>
-        <Link href="/capsule" className="mt-8 rounded-xl border border-white/12 px-6 py-3 text-xs font-bold text-white/60 hover:bg-white/5">
+
+        <Link href="/capsule" style={{
+          marginTop: 24,
+          borderRadius: 14, border: "1px solid rgba(255,255,255,0.12)",
+          padding: "11px 24px", fontSize: 12, fontWeight: 700,
+          color: "rgba(255,255,255,0.60)", textDecoration: "none",
+          display: "inline-block",
+        }}>
           Back to Capsule
         </Link>
       </div>
     );
   }
 
-  // ── Active game ───────────────────────────────────────────────────────────
+  // ── Active game ────────────────────────────────────────────────────────────
 
   const q = game.currentQuestionData;
   const answered = !!game.myAnswer;
@@ -193,97 +296,149 @@ export default function PlayerScreen() {
   const timerColor = timer > 8 ? "#22c55e" : timer > 4 ? "#eab308" : "#ef4444";
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", background: "#07183F" }}>
+
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-white/8 px-4 py-2">
-        <div className="flex items-center gap-2">
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(7,24,63,0.90)",
+        backdropFilter: "blur(12px)",
+        padding: "8px 16px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CapIcon capId={capId} size={28} />
-          <span className="text-xs font-bold text-white/70">{displayName}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.70)" }}>{displayName}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-sm font-black text-yellow-300">
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 900, color: "#fde047" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 18, height: 18, objectFit: "contain" }} />
           {myPlayer?.gold ?? 0}
         </div>
-        <span className="text-[10px] text-white/25">Q{game.currentQuestion + 1}/{game.totalQuestions}</span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>
+          Q{game.currentQuestion + 1}/{game.totalQuestions}
+        </span>
       </div>
 
       {/* Timer bar */}
-      <div className="h-1 bg-white/8">
-        <div className="h-full transition-all" style={{ width: `${timerPct}%`, background: timerColor, transition: "width 1s linear" }} />
+      <div style={{ height: 4, background: "rgba(255,255,255,0.06)" }}>
+        <div style={{
+          height: "100%",
+          width: `${timerPct}%`,
+          background: timerColor,
+          transition: "width 1s linear, background 0.3s",
+        }} />
       </div>
 
-      <div className="flex flex-1 flex-col px-4 py-6">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "20px 16px 16px" }}>
         {q && (
           <>
-            {/* Question */}
-            <div className="mb-6 flex-1">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-black uppercase tracking-widest text-orange-400/50">
-                  {answered ? "Waiting for others…" : "Answer now"}
-                </span>
-                {!answered && (
-                  <span className="text-lg font-black tabular-nums" style={{ color: timerColor }}>{timer}s</span>
-                )}
-              </div>
-              <h2 className="text-xl font-bold leading-snug text-white sm:text-2xl">
+            {/* Question header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(25,205,210,0.60)" }}>
+                {answered ? "Waiting for others…" : "Answer now"}
+              </span>
+              {!answered && (
+                <span style={{ fontSize: 18, fontWeight: 900, tabularNums: true, color: timerColor } as React.CSSProperties}>{timer}s</span>
+              )}
+            </div>
+
+            {/* Question text */}
+            <div style={{ flex: 1, marginBottom: 20 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.4, color: "#fff", margin: 0 }}>
                 {q.prompt}
               </h2>
             </div>
 
             {/* Answer buttons */}
             {!answered ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {q.choices.map((choice, i) => (
                   <button
                     key={i}
                     onClick={() => submitAnswer(i)}
-                    className="flex min-h-[90px] flex-col items-start gap-2 rounded-2xl border-2 border-transparent p-4 text-left text-white active:scale-95"
-                    style={{ background: ANSWER_COLORS[i] }}
+                    style={{
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "space-between",
+                      minHeight: 120, borderRadius: 18, border: "none",
+                      padding: "6px 8px 14px",
+                      background: ANSWER_BG[i],
+                      boxShadow: `0 5px 0 ${ANSWER_SHADOW[i]}`,
+                      cursor: "pointer",
+                    }}
                   >
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-70">{ANSWER_LABELS[i]}</span>
-                    <span className="text-sm font-semibold leading-snug">{choice}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
+                      alt={ANSWER_LABELS[i]}
+                      style={{ width: "90%", maxWidth: 150, objectFit: "contain", pointerEvents: "none" }}
+                    />
+                    <span style={{
+                      fontSize: 12, fontWeight: 700, color: "#fff",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                      textAlign: "center", lineHeight: 1.3,
+                      padding: "0 4px",
+                    }}>
+                      {choice}
+                    </span>
                   </button>
                 ))}
               </div>
             ) : (
-              /* Post-answer: chest or X */
-              <div className="flex flex-col items-center gap-4 py-4 text-center">
+              /* Post-answer state */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 8, textAlign: "center" }}>
                 {game.myAnswer?.isCorrect ? (
                   <>
                     {!chestOpen ? (
+                      /* Correct — tap chest */
                       <button
                         onClick={() => setChestOpen(true)}
-                        className="flex flex-col items-center gap-3 rounded-3xl border border-yellow-400/30 bg-yellow-400/10 px-10 py-8 transition-transform hover:scale-105 active:scale-95"
+                        style={{
+                          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                          borderRadius: 24, border: "1px solid rgba(253,224,71,0.35)",
+                          background: "rgba(253,224,71,0.08)",
+                          padding: "28px 48px", cursor: "pointer",
+                        }}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 96, height: 96, objectFit: "contain" }} />
-                        <span className="text-xs font-black uppercase tracking-widest text-yellow-300">Tap to open!</span>
+                        <img src="/assets/capsule/game/badge-correct.png" alt="Correct!" style={{ height: 48, objectFit: "contain" }} />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 88, height: 88, objectFit: "contain" }} />
+                        <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fde047" }}>
+                          Tap to open!
+                        </span>
                       </button>
                     ) : (
-                      <div className="flex flex-col items-center gap-3 rounded-3xl border border-orange-400/30 bg-orange-400/10 px-10 py-8">
+                      /* Chest open */
+                      <div style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                        borderRadius: 24, border: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(255,255,255,0.05)",
+                        padding: "28px 48px",
+                      }}>
                         {game.myAnswer.chestResult?.type === "gold" ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src="/assets/capsule/chest-open.png" alt="chest open" style={{ width: 96, height: 96, objectFit: "contain" }} />
+                          <img src="/assets/capsule/game/coin-burst.png" alt="coins!" style={{ width: 100, objectFit: "contain" }} />
                         ) : (
-                          <span className="text-5xl">
-                            {game.myAnswer.chestResult?.type === "steal" ? "🗡️" :
-                             game.myAnswer.chestResult?.type === "lose" ? "💀" :
-                             game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
+                          <span style={{ fontSize: 52 }}>
+                            {game.myAnswer.chestResult?.type === "steal" ? "🗡️"
+                              : game.myAnswer.chestResult?.type === "lose" ? "💀"
+                              : game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
                           </span>
                         )}
-                        <p className="text-lg font-black text-white">
+                        <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
                           {game.myAnswer.chestResult?.label ?? "Reward!"}
                         </p>
                       </div>
                     )}
-                    <p className="text-xs text-white/30">Waiting for the teacher to advance…</p>
+                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for the teacher to advance…</p>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-3 py-4">
-                    <span className="text-5xl">❌</span>
-                    <p className="text-sm font-bold text-red-400">Wrong answer</p>
-                    <p className="text-xs text-white/30">Waiting for next question…</p>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 8 }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/assets/capsule/game/badge-wrong.png" alt="Wrong" style={{ height: 56, objectFit: "contain" }} />
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Wrong answer</p>
+                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for next question…</p>
                   </div>
                 )}
               </div>
@@ -293,15 +448,26 @@ export default function PlayerScreen() {
       </div>
 
       {/* Mini leaderboard */}
-      <div className="border-t border-white/8 px-4 py-3">
-        <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-white/20">Leaderboard</p>
-        <div className="flex gap-3 overflow-x-auto pb-1">
+      <div style={{
+        borderTop: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(7,24,63,0.80)",
+        padding: "10px 16px 14px",
+      }}>
+        <p style={{ marginBottom: 8, fontSize: 9, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(25,205,210,0.50)" }}>
+          Leaderboard
+        </p>
+        <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 2 }}>
           {leaderboard.slice(0, 8).map((p, i) => (
-            <div key={p.id} className={`flex flex-col items-center gap-1 ${p.id === playerId ? "opacity-100" : "opacity-50"}`}>
+            <div key={p.id} style={{
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              opacity: p.id === playerId ? 1 : 0.45,
+              flexShrink: 0,
+            }}>
               <CapIcon capId={p.capId} size={28} />
-              <span className="flex items-center gap-0.5 text-[9px] text-white/50 whitespace-nowrap">
+              <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 9, color: "rgba(255,255,255,0.50)", whiteSpace: "nowrap" }}>
+                {i === 0 && "👑 "}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 10, height: 10, objectFit: "contain" }} />
+                <img src="/assets/capsule/coin.png" alt="" style={{ width: 10, height: 10, objectFit: "contain" }} />
                 {p.gold}
               </span>
             </div>
