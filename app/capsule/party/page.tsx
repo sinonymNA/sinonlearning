@@ -1,3 +1,4 @@
+"use client";
 import dynamic from "next/dynamic";
 
 // Capsule Party game page — loads Phaser dynamically to avoid SSR issues

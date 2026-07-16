@@ -150,6 +150,12 @@ export class CoinVacuumScene extends Phaser.Scene {
     this.updateJoystickKnob();
   }
 
+  private charTextureKey(gp: { capId: string; colorIndex: number }): string {
+    const capId = gp.capId?.replace(/^cap-/, "") ?? "";
+    const key = `cap-char-${capId}-${gp.colorIndex}`;
+    return this.textures.exists(key) ? key : `player-${gp.colorIndex}`;
+  }
+
   private spawnPlayers() {
     const W = this.scale.width;
     const H = this.scale.height;
@@ -160,7 +166,8 @@ export class CoinVacuumScene extends Phaser.Scene {
 
     this.gameState.players.forEach((gp, i) => {
       const pos = positions[i % 4];
-      const sprite = this.physics.add.sprite(pos.x, pos.y, `player-${gp.colorIndex}`);
+      const texKey = this.charTextureKey(gp);
+      const sprite = this.physics.add.sprite(pos.x, pos.y, texKey);
       sprite.setCollideWorldBounds(true);
       sprite.setCircle(PLAYER_RADIUS, 0, 0);
       sprite.setDepth(20);

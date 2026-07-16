@@ -120,19 +120,24 @@ export class BoardScene extends Phaser.Scene {
     return map[type] ?? type;
   }
 
+  private tokenTextureKey(p: PlayerState): string {
+    const capId = p.capId?.replace(/^cap-/, "") ?? "";
+    const key = `cap-token-${capId}-${p.colorIndex}`;
+    return this.textures.exists(key) ? key : `token-${p.colorIndex}`;
+  }
+
   private drawTokens() {
     this.tokenObjects.forEach(t => t.destroy());
     this.tokenObjects = [];
 
     for (let i = 0; i < this.state.players.length; i++) {
       const p = this.state.players[i];
-      const space = BOARD_SPACE_MAP.get(p.spaceId)!;
+      const space = BOARD_SPACE_MAP.get(p.spaceId);
+      if (!space) continue;
       const offset = this.tokenOffset(i, this.state.players.length);
-      const circle = this.add.circle(0, 0, TOKEN_RADIUS, PLACEHOLDER.PLAYER_COLORS[p.colorIndex] ?? 0x888888).setStrokeStyle(2, 0xffffff);
-      const letter = this.add.text(0, 0, p.displayName[0].toUpperCase(), {
-        fontSize: "12px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
-      }).setOrigin(0.5);
-      const container = this.add.container(space.x + offset.x, space.y + offset.y, [circle, letter]).setDepth(10);
+      const texKey = this.tokenTextureKey(p);
+      const img = this.add.image(0, 0, texKey);
+      const container = this.add.container(space.x + offset.x, space.y + offset.y, [img]).setDepth(10);
       this.tokenObjects.push(container);
     }
   }
@@ -160,9 +165,11 @@ export class BoardScene extends Phaser.Scene {
   private startTurn() {
     if (this.currentPhase !== "idle") return;
     const player = this.currentPlayer();
+    const hasItems = !player.isBot && player.items.length > 0;
+
     this.ui.showTurnBanner(
       `${player.displayName}'s Turn`,
-      player.isBot ? "Bot is thinking..." : "Answer a question to move!",
+      player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!",
       1800
     );
 
@@ -170,9 +177,68 @@ export class BoardScene extends Phaser.Scene {
       if (player.isBot) {
         this.handleBotTurn();
       } else {
+        // Show item panel if human has items — they can optionally use one first
+        if (player.items.length > 0) {
+          this.ui.showItemPanel(player.items, (idx) => {
+            this.useItem(this.state.turnIndex, idx);
+          });
+        }
         this.askQuestion();
       }
     });
+  }
+
+  private useItem(playerIdx: number, itemIdx: number) {
+    const player = this.state.players[playerIdx];
+    const item = player.items[itemIdx];
+    if (!item) return;
+    player.items.splice(itemIdx, 1);
+
+    switch (item) {
+      case "magnet": {
+        // Move toward active Grand Cap
+        const capSpace = BOARD_SPACE_MAP.get(this.state.activeGrandCapId);
+        if (capSpace) {
+          this.ui.showMessage("Magnet! Moving toward Grand Cap...", "#19cdd2", 1500);
+          // Set player position directly to Grand Cap space (simplified)
+          player.spaceId = this.state.activeGrandCapId;
+          const token = this.tokenObjects[playerIdx];
+          if (token) {
+            const offset = this.tokenOffset(playerIdx, this.state.players.length);
+            this.tweens.add({ targets: token, x: capSpace.x + offset.x, y: capSpace.y + offset.y, duration: 600 });
+          }
+        }
+        break;
+      }
+      case "shield":
+        player.hasShield = true;
+        this.ui.showMessage("Shield activated!", "#19cdd2");
+        break;
+      case "warp-ticket": {
+        // Find nearest warp space and teleport there
+        const warpSpaces = BOARD_SPACES.filter(s => s.type === "warp");
+        if (warpSpaces.length > 0) {
+          const dest = Phaser.Utils.Array.GetRandom(warpSpaces) as typeof warpSpaces[0];
+          player.spaceId = dest.id;
+          const token = this.tokenObjects[playerIdx];
+          if (token) {
+            const offset = this.tokenOffset(playerIdx, this.state.players.length);
+            this.tweens.add({ targets: token, x: dest.x + offset.x, y: dest.y + offset.y, duration: 400, ease: "Back.Out" });
+          }
+          this.ui.showMessage(`Warp Ticket! Teleported to ${dest.label ?? dest.id}`, "#ec4899");
+        }
+        break;
+      }
+      case "golden-spinner":
+        // Flag handled in doSpin
+        player.items.push("golden-spinner"); // push back — consumed in doSpin
+        this.ui.showMessage("Golden Spinner ready for your roll!", "#ffd700");
+        break;
+      case "raid-block":
+        this.ui.showMessage("Raid Block activated this turn!", "#f59e0b");
+        break;
+    }
+    this.ui.hideItemPanel();
   }
 
   private askQuestion() {
@@ -252,33 +318,120 @@ export class BoardScene extends Phaser.Scene {
   private movePlayer(playerIdx: number, steps: number) {
     this.currentPhase = "move";
     const player = this.state.players[playerIdx];
-    const path = this.getPath(player.spaceId, steps);
+    this.moveStep(playerIdx, player.spaceId, steps, []);
+  }
 
-    if (path.length === 0) {
-      this.onLand(playerIdx);
+  // Walk one step at a time so human can choose at branch points
+  private moveStep(playerIdx: number, currentId: string, stepsLeft: number, pathSoFar: string[]) {
+    const player = this.state.players[playerIdx];
+    if (stepsLeft <= 0) {
+      // Done moving
+      const fullPath = pathSoFar;
+      if (fullPath.length > 0) {
+        this.animateAlongPath(playerIdx, fullPath, 0, () => {
+          player.spaceId = fullPath[fullPath.length - 1];
+          this.onLand(playerIdx);
+        });
+      } else {
+        this.onLand(playerIdx);
+      }
       return;
     }
 
-    this.animateAlongPath(playerIdx, path, 0, () => {
-      player.spaceId = path[path.length - 1];
-      this.onLand(playerIdx);
-    });
+    const space = BOARD_SPACE_MAP.get(currentId);
+    if (!space || space.connections.length === 0) {
+      // Dead end — animate what we have
+      const fullPath = pathSoFar;
+      if (fullPath.length > 0) {
+        this.animateAlongPath(playerIdx, fullPath, 0, () => {
+          player.spaceId = fullPath[fullPath.length - 1];
+          this.onLand(playerIdx);
+        });
+      } else {
+        this.onLand(playerIdx);
+      }
+      return;
+    }
+
+    if (space.connections.length > 1 && !player.isBot) {
+      // Human at a branch — animate to current space first, then prompt
+      if (pathSoFar.length > 0) {
+        this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
+          player.spaceId = pathSoFar[pathSoFar.length - 1];
+          this.promptBranchChoice(space.connections, (chosen) => {
+            this.moveStep(playerIdx, chosen, stepsLeft - 1, [chosen]);
+          });
+        });
+      } else {
+        this.promptBranchChoice(space.connections, (chosen) => {
+          this.moveStep(playerIdx, chosen, stepsLeft - 1, [chosen]);
+        });
+      }
+    } else {
+      // Single path or bot: auto-pick first connection
+      const nextId = space.connections.length > 1
+        ? Phaser.Utils.Array.GetRandom(space.connections) as string
+        : space.connections[0];
+      this.moveStep(playerIdx, nextId, stepsLeft - 1, [...pathSoFar, nextId]);
+    }
   }
 
   private getPath(fromId: string, count: number): string[] {
-    // For branch points (multiple connections), pick a connection randomly for bots / first for now
     const path: string[] = [];
     let current = fromId;
     for (let i = 0; i < count; i++) {
       const space = BOARD_SPACE_MAP.get(current);
       if (!space || space.connections.length === 0) break;
-      const nextId = space.connections.length > 1
-        ? Phaser.Utils.Array.GetRandom(space.connections) as string
-        : space.connections[0];
+      // Bots always take first (main loop); human branch prompting is handled in movePlayer
+      const nextId = space.connections[0];
       path.push(nextId);
       current = nextId;
     }
     return path;
+  }
+
+  // Prompt the human to choose a path at a branch point.
+  private promptBranchChoice(connections: string[], onChoice: (id: string) => void) {
+    const W = this.scale.width;
+    const H = this.scale.height;
+
+    const panel = this.add.container(0, 0).setDepth(400);
+    const bg = this.add.rectangle(W / 2, H / 2, 320, 120 + connections.length * 50, 0x0f172a, 0.97).setOrigin(0.5);
+    bg.setStrokeStyle(2, 0x19cdd2);
+    const title = this.add.text(W / 2, H / 2 - 40, "Choose a path:", {
+      fontSize: "16px", fontFamily: "sans-serif", color: "#e2e8f0", fontStyle: "bold",
+    }).setOrigin(0.5);
+    panel.add([bg, title]);
+
+    const spaceTypeLabel: Record<string, string> = {
+      coin: "Coin Space (+G)",
+      raid: "Raid Space (steal coins)",
+      capsule: "Capsule Space (bonus)",
+      shop: "Shop (get item)",
+      trap: "Trap (lose coins)",
+      challenge: "Challenge (minigame!)",
+      warp: "Warp Pad",
+      grand_cap: "Grand Cap Pedestal ★",
+      start: "Start",
+    };
+
+    connections.forEach((id, i) => {
+      const space = BOARD_SPACE_MAP.get(id);
+      const label = space ? (spaceTypeLabel[space.type] ?? space.type) : id;
+      const by = H / 2 - 10 + i * 48;
+      const btnBg = this.add.rectangle(W / 2, by, 260, 38, 0x1e293b, 1).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      btnBg.setStrokeStyle(2, 0x334155);
+      const btnTxt = this.add.text(W / 2, by, label, {
+        fontSize: "13px", fontFamily: "sans-serif", color: "#e2e8f0",
+      }).setOrigin(0.5);
+      btnBg.on("pointerover", () => btnBg.setStrokeStyle(2, 0x19cdd2));
+      btnBg.on("pointerout", () => btnBg.setStrokeStyle(2, 0x334155));
+      btnBg.on("pointerdown", () => {
+        panel.destroy();
+        onChoice(id);
+      });
+      panel.add([btnBg, btnTxt]);
+    });
   }
 
   private animateAlongPath(playerIdx: number, path: string[], stepIdx: number, onComplete: () => void) {

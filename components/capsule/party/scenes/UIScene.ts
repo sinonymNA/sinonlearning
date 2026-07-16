@@ -32,6 +32,7 @@ export class UIScene extends Phaser.Scene {
   private timerRemaining = 0;
   private lastAnswerCallback: ((idx: number) => void) | null = null;
   private answerButtons: Phaser.GameObjects.Container[] = [];
+  private itemPanel: Phaser.GameObjects.Container | null = null;
 
   constructor() {
     super({ key: "UIScene", active: false });
@@ -181,6 +182,52 @@ export class UIScene extends Phaser.Scene {
     this.time.delayedCall(duration, () => {
       this.tweens.add({ targets: t, alpha: 0, duration: 300, onComplete: () => t.destroy() });
     });
+  }
+
+  // Show item inventory for the active human player; onUse called with item index if used
+  showItemPanel(items: string[], onUse: (idx: number) => void) {
+    if (this.itemPanel) { this.itemPanel.destroy(); this.itemPanel = null; }
+    if (items.length === 0) return;
+
+    const W = this.scale.width;
+    const panelW = items.length * 80 + 20;
+    const px = W - panelW - 8;
+    const py = this.scale.height - 120;
+
+    const bg = this.add.rectangle(0, 0, panelW, 66, 0x0f172a, 0.9).setOrigin(0).setStrokeStyle(1, 0x334155);
+    const label = this.add.text(8, 4, "ITEMS", { fontSize: "9px", fontFamily: "sans-serif", color: "#64748b" });
+    const btns: Phaser.GameObjects.GameObject[] = [bg, label];
+
+    items.forEach((item, i) => {
+      const bx = 8 + i * 78;
+      const btnBg = this.add.rectangle(bx, 16, 70, 44, 0x1e293b, 1).setOrigin(0).setStrokeStyle(1, 0x334155).setInteractive({ useHandCursor: true });
+      const icon = this.add.text(bx + 8, 20, this.itemIcon(item), { fontSize: "16px", fontFamily: "sans-serif" });
+      const name = this.add.text(bx + 4, 44, item.replace(/-/g, " ").slice(0, 8), {
+        fontSize: "8px", fontFamily: "sans-serif", color: "#94a3b8",
+      });
+      btnBg.on("pointerover", () => btnBg.setStrokeStyle(1, 0x19cdd2));
+      btnBg.on("pointerout", () => btnBg.setStrokeStyle(1, 0x334155));
+      btnBg.on("pointerdown", () => {
+        this.itemPanel?.destroy(); this.itemPanel = null;
+        onUse(i);
+      });
+      btns.push(btnBg, icon, name);
+    });
+
+    this.itemPanel = this.add.container(px, py, btns).setDepth(160);
+  }
+
+  hideItemPanel() {
+    this.itemPanel?.destroy();
+    this.itemPanel = null;
+  }
+
+  private itemIcon(item: string): string {
+    const icons: Record<string, string> = {
+      magnet: "🧲", "golden-spinner": "✨", "warp-ticket": "🚀",
+      shield: "🛡", "raid-block": "🚫",
+    };
+    return icons[item] ?? "?";
   }
 
   // --- Private ---
