@@ -140,16 +140,16 @@ function MachineCard({ color, index, onSelect }: { color: MachineColor; index: n
       }}
     >
       {/* Machine body (stacked layers) */}
-      <div style={{ position: "relative", width: 100, height: 148 }}>
-        <Img name={`machine-${color}`} style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", height: "100%", filter: `drop-shadow(0 0 8px ${accent}55)` }} />
+      <div style={{ position: "relative", width: 240, height: 355 }}>
+        <Img name={`machine-${color}`} style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", height: "100%", filter: `drop-shadow(0 0 18px ${accent}66)` }} />
         <Img name={`machine-window-${color}`} style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "58%" }} />
         <Img name={`machine-lever-${color}`} style={{ position: "absolute", top: "8%", right: "4%", width: "28%", transformOrigin: "50% 90%" }} />
         <Img name={`machine-lights-${color}`} style={{ position: "absolute", bottom: "28%", left: "6%", width: "38%" }} />
       </div>
       {/* Label */}
       <div style={{
-        fontSize: 10, fontWeight: 900, letterSpacing: "0.10em", color: accent,
-        background: `${accent}18`, borderRadius: 6, padding: "2px 8px",
+        fontSize: 13, fontWeight: 900, letterSpacing: "0.10em", color: accent,
+        background: `${accent}18`, borderRadius: 6, padding: "4px 14px",
         border: `1px solid ${accent}40`,
       }}>
         {label}
@@ -164,13 +164,15 @@ function AnimatingMachine({
   const accent = MACHINE_ACCENT[color];
   const isOpen = step >= 4;
 
-  return (
-    <div style={{ position: "relative", width: 200, height: 280, margin: "0 auto" }}>
-      {/* Machine body */}
-      <Img name={`machine-${color}`} style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", height: "85%", filter: `drop-shadow(0 0 16px ${accent}80)` }} />
+  const windowBg = color === "blue" ? "#04091a" : color === "gold" ? "#120c00" : "#120404";
 
-      {/* Window — show gears when step ≥ 1 */}
-      <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "52%", height: "30%", overflow: "hidden", borderRadius: 6 }}>
+  return (
+    <div style={{ position: "relative", width: 380, height: 532, margin: "0 auto" }}>
+      {/* Machine body */}
+      <Img name={`machine-${color}`} style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", height: "85%", filter: `drop-shadow(0 0 28px ${accent}90)` }} />
+
+      {/* Window — dark interior so gears don't show on transparent/checkered bg */}
+      <div style={{ position: "absolute", top: "18%", left: "50%", transform: "translateX(-50%)", width: "52%", height: "30%", overflow: "hidden", borderRadius: 6, background: windowBg }}>
         <Img name={`machine-window-${color}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 2 }} />
         {step >= 1 && (
           <>
@@ -492,11 +494,11 @@ export default function FactoryGame({
               <motion.p
                 initial={{ y: -12, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase", color: "#fde047", margin: 0 }}
+                style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase", color: "#fde047", margin: 0 }}
               >
                 PICK A MACHINE
               </motion.p>
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-end", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 24, alignItems: "flex-end", justifyContent: "center" }}>
                 {(["blue", "gold", "red"] as MachineColor[]).map((color, i) => (
                   <MachineCard key={color} color={color} index={i} onSelect={() => selectMachine(color)} />
                 ))}
