@@ -38,13 +38,17 @@ function PlayerScreenInner() {
   const [joinError, setJoinError] = useState("");
   const [timer, setTimer] = useState(20);
   const prevQuestion = useRef(-1);
+  // Holds playerId synchronously so fetchState can read it without being a dependency
+  const playerIdRef = useRef<string | null>(null);
 
   // Demo automation refs
   const demoRef = useRef<{ q: number; done: boolean }>({ q: -1, done: false });
   const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const fetchState = useCallback(async () => {
-    const res = await fetch(`/api/capsule/games/${code}`);
+    const pid = playerIdRef.current;
+    const url = pid ? `/api/capsule/games/${code}?pid=${encodeURIComponent(pid)}` : `/api/capsule/games/${code}`;
+    const res = await fetch(url);
     if (res.ok) {
       const data = await res.json() as GameState;
       setGame(data);
@@ -59,6 +63,7 @@ function PlayerScreenInner() {
     const saved = localStorage.getItem(`capsule-player-${code}`);
     if (saved) {
       const { pid, name, cap } = JSON.parse(saved) as { pid: string; name: string; cap: string };
+      playerIdRef.current = pid; // Set ref immediately so first fetchState call includes it
       setPlayerId(pid); setDisplayName(name); setCapId(cap);
       setJoinPhase("joined");
     }
@@ -142,7 +147,7 @@ function PlayerScreenInner() {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ playerId, answerIndex }),
     });
-    await fetchState();
+    await fetchState(); // fetchState uses playerIdRef so myAnswer will come back correctly
   }
 
   // ── Join form ──────────────────────────────────────────────────────────────

@@ -10,14 +10,20 @@ export async function GET(
 ) {
   const { code } = await params;
   const user = await getCurrentUser();
+  // Anonymous players (e.g. demo students) pass their playerId as a query param
+  const pidParam = req.nextUrl.searchParams.get("pid");
 
   const game = await getGame(code);
   if (!game) return NextResponse.json({ error: "Game not found." }, { status: 404 });
 
   const players = await getPlayers(code);
 
-  // Find who the caller is (if logged in and in game)
-  const myPlayer = user ? players.find(p => p.user_id === user.id) ?? null : null;
+  // Logged-in users are matched by user_id; anonymous players by explicit pid param
+  const myPlayer = user
+    ? (players.find(p => p.user_id === user.id) ?? null)
+    : pidParam
+    ? (players.find(p => p.id === pidParam) ?? null)
+    : null;
 
   // Get answers for current question (to tell players if they've answered)
   const answers = game.status === "active"

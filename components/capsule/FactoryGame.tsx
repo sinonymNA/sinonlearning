@@ -46,7 +46,7 @@ function rewardSprite(r: ChestResult): string {
 
 // ── CSS animations injected once ──────────────────────────────────────────
 const FACTORY_CSS = `
-@keyframes fc-conveyor{to{transform:translateX(-72px)}}
+@keyframes fc-conveyor{to{transform:translateX(-50%)}}
 @keyframes fc-pulley{to{transform:rotate(360deg)}}
 @keyframes fc-sway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
 @keyframes fc-beacon{0%,100%{opacity:.25}50%{opacity:.95}}
@@ -77,9 +77,9 @@ function FactoryIdle({ active }: { active: boolean }) {
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       {/* Conveyor — scrolling band at bottom */}
       <div style={{ position: "absolute", bottom: "2%", left: "2%", overflow: "hidden", width: "32%", height: "14%" }}>
-        <div style={{ display: "flex", animationName: "fc-conveyor", animationDuration: `${speed}s`, animationTimingFunction: "linear", animationIterationCount: "infinite" }}>
-          <Img name="factory-conveyor" style={{ width: "100%", opacity: bright, flexShrink: 0 }} />
-          <Img name="factory-conveyor" style={{ width: "100%", opacity: bright, flexShrink: 0 }} />
+        <div style={{ display: "flex", width: "200%", animationName: "fc-conveyor", animationDuration: `${speed}s`, animationTimingFunction: "linear", animationIterationCount: "infinite" }}>
+          <Img name="factory-conveyor" style={{ width: "50%", opacity: bright, flexShrink: 0 }} />
+          <Img name="factory-conveyor" style={{ width: "50%", opacity: bright, flexShrink: 0 }} />
         </div>
       </div>
       {/* Pulley — upper left area */}
