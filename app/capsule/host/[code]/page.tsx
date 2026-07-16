@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import CapIcon from "@/components/capsule/CapIcon";
 
 const ANSWER_COLORS = ["#ef4444", "#19CDD2", "#eab308", "#a855f7"];
@@ -134,12 +135,21 @@ export default function HostPanel() {
               {/* Player avatars */}
               {game.players.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12, marginBottom: 32 }}>
-                  {game.players.map(p => (
-                    <div key={p.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                      <CapIcon capId={p.capId} size={44} />
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)" }}>{p.displayName}</span>
-                    </div>
-                  ))}
+                  <AnimatePresence>
+                    {game.players.map(p => (
+                      <motion.div
+                        key={p.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: "spring", damping: 14, stiffness: 260 }}
+                        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
+                      >
+                        <CapIcon capId={p.capId} size={44} animated />
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)" }}>{p.displayName}</span>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
               )}
 
@@ -310,34 +320,54 @@ export default function HostPanel() {
               color: "rgba(25,205,210,0.60)",
             }}>Leaderboard</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {leaderboard.map((p, i) => (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {i === 0 ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 20, objectFit: "contain", flexShrink: 0 }} />
-                  ) : (
-                    <span style={{ width: 20, textAlign: "center", fontSize: 10, fontWeight: 900, color: "rgba(255,255,255,0.20)", flexShrink: 0 }}>
-                      #{i + 1}
-                    </span>
-                  )}
-                  <CapIcon capId={p.capId} size={28} />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {p.displayName}
+              <AnimatePresence>
+                {leaderboard.map((p, i) => (
+                  <motion.div
+                    key={p.id}
+                    layout
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ type: "spring", damping: 22, stiffness: 300 }}
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    {i === 0 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 20, objectFit: "contain", flexShrink: 0 }} />
+                    ) : (
+                      <span style={{ width: 20, textAlign: "center", fontSize: 10, fontWeight: 900, color: "rgba(255,255,255,0.20)", flexShrink: 0 }}>
+                        #{i + 1}
                       </span>
-                      <span style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 900, color: "#fde047", flexShrink: 0 }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 12, height: 12, objectFit: "contain" }} />
-                        {p.gold}
-                      </span>
-                    </div>
-                    {p.hasAnswered && game.status === "active" && (
-                      <div style={{ marginTop: 3, height: 2, width: "100%", borderRadius: 99, background: "rgba(25,205,210,0.50)" }} />
                     )}
-                  </div>
-                </div>
-              ))}
+                    <CapIcon capId={p.capId} size={28} animated={i === 0} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {p.displayName}
+                        </span>
+                        <motion.span
+                          key={p.gold}
+                          initial={{ scale: 1.3, color: "#4ade80" }}
+                          animate={{ scale: 1, color: "#fde047" }}
+                          transition={{ duration: 0.35 }}
+                          style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 900, flexShrink: 0 }}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 12, height: 12, objectFit: "contain" }} />
+                          {p.gold}
+                        </motion.span>
+                      </div>
+                      {p.hasAnswered && game.status === "active" && (
+                        <motion.div
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: 1 }}
+                          style={{ marginTop: 3, height: 2, width: "100%", borderRadius: 99, background: "rgba(25,205,210,0.50)", transformOrigin: "left" }}
+                        />
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               {leaderboard.length === 0 && (
                 <p style={{ padding: "16px 0", textAlign: "center", fontSize: 12, color: "rgba(255,255,255,0.20)" }}>
                   Waiting for players…

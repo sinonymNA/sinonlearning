@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
 import type { ChestResult } from "@/lib/capsuleData";
 
@@ -27,6 +29,16 @@ interface GameState {
 
 type JoinPhase = "form" | "joined";
 
+// Framer-motion variants for the answer grid stagger
+const gridVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+const btnVariants = {
+  hidden: { y: 28, opacity: 0, scale: 0.95 },
+  visible: { y: 0, opacity: 1, scale: 1, transition: { type: "spring" as const, damping: 18, stiffness: 280 } },
+};
+
 export default function PlayerScreen() {
   const { code } = useParams<{ code: string }>();
   const [joinPhase, setJoinPhase] = useState<JoinPhase>("form");
@@ -38,7 +50,10 @@ export default function PlayerScreen() {
   const [joinError, setJoinError] = useState("");
   const [timer, setTimer] = useState(20);
   const [chestOpen, setChestOpen] = useState(false);
+  // Flash overlay state: null | "correct" | "wrong"
+  const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const prevQuestion = useRef(-1);
+  const prevAnswered = useRef(false);
 
   const fetchState = useCallback(async () => {
     const res = await fetch(`/api/capsule/games/${code}`);
@@ -47,8 +62,16 @@ export default function PlayerScreen() {
       setGame(data);
       if (data.currentQuestion !== prevQuestion.current) {
         prevQuestion.current = data.currentQuestion;
+        prevAnswered.current = false;
         setChestOpen(false);
         setTimer(data.currentQuestionData?.timeLimit ?? 20);
+      }
+      // Detect when answer first arrives
+      if (data.myAnswer && !prevAnswered.current) {
+        prevAnswered.current = true;
+        const kind = data.myAnswer.isCorrect ? "correct" : "wrong";
+        setFlash(kind);
+        setTimeout(() => setFlash(null), 450);
       }
     }
   }, [code]);
@@ -97,6 +120,19 @@ export default function PlayerScreen() {
     await fetchState();
   }
 
+  function handleChestOpen() {
+    setChestOpen(true);
+    confetti({
+      particleCount: 65,
+      spread: 58,
+      origin: { y: 0.55 },
+      colors: ["#fde047", "#fbbf24", "#f59e0b", "#fff", "#fef3c7"],
+      shapes: ["circle"],
+      scalar: 1.1,
+      gravity: 1.0,
+    });
+  }
+
   // ── Join form ──────────────────────────────────────────────────────────────
 
   if (joinPhase === "form") {
@@ -112,8 +148,6 @@ export default function PlayerScreen() {
           alt="Capsule"
           style={{ height: 64, objectFit: "contain", marginBottom: 24, filter: "drop-shadow(0 2px 16px rgba(25,205,210,0.5))" }}
         />
-
-        {/* Game code badge */}
         <div style={{
           marginBottom: 20,
           borderRadius: 18, border: "1px solid rgba(25,205,210,0.25)",
@@ -124,7 +158,6 @@ export default function PlayerScreen() {
         }}>
           {code}
         </div>
-
         <form onSubmit={join} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 300 }}>
           <input
             value={displayName}
@@ -144,9 +177,10 @@ export default function PlayerScreen() {
             onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
           />
           {joinError && <p style={{ textAlign: "center", fontSize: 12, color: "#f87171" }}>{joinError}</p>}
-          <button
+          <motion.button
             type="submit"
             disabled={joining || !displayName.trim()}
+            whileTap={{ scale: 0.95 }}
             style={{
               borderRadius: 14, background: "#19CDD2", border: "none",
               padding: "14px 0", fontSize: 14, fontWeight: 900,
@@ -157,7 +191,7 @@ export default function PlayerScreen() {
             }}
           >
             {joining ? "Joining…" : "Join Game"}
-          </button>
+          </motion.button>
         </form>
       </div>
     );
@@ -177,19 +211,40 @@ export default function PlayerScreen() {
         alignItems: "center", justifyContent: "center", textAlign: "center",
         padding: "0 20px", background: "#07183F",
       }}>
-        <CapIcon capId={capId} size={80} />
-        <p style={{ marginTop: 16, fontSize: 17, fontWeight: 700, color: "#fff" }}>{displayName}</p>
-        <p style={{ marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.40)" }}>
+        <motion.div
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", damping: 14, stiffness: 200 }}
+        >
+          <CapIcon capId={capId} size={80} animated />
+        </motion.div>
+        <motion.p
+          initial={{ y: 12, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.15 }}
+          style={{ marginTop: 16, fontSize: 17, fontWeight: 700, color: "#fff" }}
+        >
+          {displayName}
+        </motion.p>
+        <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.40)" }}>
           Waiting for the teacher to start…
         </p>
         {game.players.filter(p => p.id !== playerId).length > 0 && (
           <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10 }}>
-            {game.players.filter(p => p.id !== playerId).map(p => (
-              <div key={p.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <CapIcon capId={p.capId} size={32} />
-                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>{p.displayName}</span>
-              </div>
-            ))}
+            <AnimatePresence>
+              {game.players.filter(p => p.id !== playerId).map(p => (
+                <motion.div
+                  key={p.id}
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", damping: 16 }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
+                >
+                  <CapIcon capId={p.capId} size={32} />
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.30)" }}>{p.displayName}</span>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -206,7 +261,6 @@ export default function PlayerScreen() {
         alignItems: "center", justifyContent: "center", padding: "0 20px",
         textAlign: "center", background: "#07183F",
       }}>
-        {/* Rank + crown for winner */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           {myRank === 1 && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -226,7 +280,6 @@ export default function PlayerScreen() {
           fontFamily: "var(--font-bebas)", margin: "0 0 8px",
         }}>GAME OVER</h2>
 
-        {/* Final gold */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
           {myRank === 1 && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -243,19 +296,20 @@ export default function PlayerScreen() {
           )}
         </div>
 
-        {/* Leaderboard */}
         <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 8 }}>
           {leaderboard.slice(0, 5).map((p, i) => (
-            <div key={p.id} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              borderRadius: 14, padding: "10px 14px",
-              border: p.id === playerId
-                ? "1px solid rgba(25,205,210,0.30)"
-                : "1px solid rgba(255,255,255,0.08)",
-              background: p.id === playerId
-                ? "rgba(25,205,210,0.08)"
-                : "rgba(255,255,255,0.04)",
-            }}>
+            <motion.div
+              key={p.id}
+              initial={{ x: -24, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: i * 0.08, type: "spring", damping: 20 }}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                borderRadius: 14, padding: "10px 14px",
+                border: p.id === playerId ? "1px solid rgba(25,205,210,0.30)" : "1px solid rgba(255,255,255,0.08)",
+                background: p.id === playerId ? "rgba(25,205,210,0.08)" : "rgba(255,255,255,0.04)",
+              }}
+            >
               {i === 0 ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 20, objectFit: "contain" }} />
@@ -264,14 +318,14 @@ export default function PlayerScreen() {
                   #{i + 1}
                 </span>
               )}
-              <CapIcon capId={p.capId} size={28} />
+              <CapIcon capId={p.capId} size={28} animated={p.id === playerId && myRank === 1} />
               <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "#fff", textAlign: "left" }}>{p.displayName}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 900, color: "#fde047" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 14, height: 14, objectFit: "contain" }} />
                 {p.gold}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -298,6 +352,22 @@ export default function PlayerScreen() {
   return (
     <div style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", background: "#07183F" }}>
 
+      {/* Screen flash overlay on answer */}
+      <AnimatePresence>
+        {flash && (
+          <motion.div
+            key={flash}
+            initial={{ opacity: 0.75 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.45 }}
+            style={{
+              position: "fixed", inset: 0, zIndex: 100, pointerEvents: "none",
+              background: flash === "correct" ? "rgba(21,128,61,0.40)" : "rgba(239,68,68,0.40)",
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Top bar */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -320,14 +390,13 @@ export default function PlayerScreen() {
         </span>
       </div>
 
-      {/* Timer bar */}
-      <div style={{ height: 4, background: "rgba(255,255,255,0.06)" }}>
-        <div style={{
-          height: "100%",
-          width: `${timerPct}%`,
-          background: timerColor,
-          transition: "width 1s linear, background 0.3s",
-        }} />
+      {/* Timer bar — smooth width via framer-motion */}
+      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", position: "relative" }}>
+        <motion.div
+          animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
+          transition={{ width: { duration: 1, ease: "linear" }, backgroundColor: { duration: 0.3 } }}
+          style={{ position: "absolute", top: 0, left: 0, height: "100%" }}
+        />
       </div>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "20px 16px 16px" }}>
@@ -339,7 +408,14 @@ export default function PlayerScreen() {
                 {answered ? "Waiting for others…" : "Answer now"}
               </span>
               {!answered && (
-                <span style={{ fontSize: 18, fontWeight: 900, tabularNums: true, color: timerColor } as React.CSSProperties}>{timer}s</span>
+                <motion.span
+                  key={timer}
+                  initial={{ scale: timer <= 5 ? 1.3 : 1 }}
+                  animate={{ scale: 1 }}
+                  style={{ fontSize: 18, fontWeight: 900, color: timerColor } as React.CSSProperties}
+                >
+                  {timer}s
+                </motion.span>
               )}
             </div>
 
@@ -350,99 +426,133 @@ export default function PlayerScreen() {
               </h2>
             </div>
 
-            {/* Answer buttons */}
-            {!answered ? (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {q.choices.map((choice, i) => (
-                  <button
-                    key={i}
-                    onClick={() => submitAnswer(i)}
-                    style={{
-                      display: "flex", flexDirection: "column",
-                      alignItems: "center", justifyContent: "space-between",
-                      minHeight: 120, borderRadius: 18, border: "none",
-                      padding: "6px 8px 14px",
-                      background: ANSWER_BG[i],
-                      boxShadow: `0 5px 0 ${ANSWER_SHADOW[i]}`,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
-                      alt={ANSWER_LABELS[i]}
-                      style={{ width: "90%", maxWidth: 150, objectFit: "contain", pointerEvents: "none" }}
-                    />
-                    <span style={{
-                      fontSize: 12, fontWeight: 700, color: "#fff",
-                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                      textAlign: "center", lineHeight: 1.3,
-                      padding: "0 4px",
-                    }}>
-                      {choice}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              /* Post-answer state */
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 8, textAlign: "center" }}>
-                {game.myAnswer?.isCorrect ? (
-                  <>
-                    {!chestOpen ? (
-                      /* Correct — tap chest */
-                      <button
-                        onClick={() => setChestOpen(true)}
-                        style={{
-                          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                          borderRadius: 24, border: "1px solid rgba(253,224,71,0.35)",
-                          background: "rgba(253,224,71,0.08)",
-                          padding: "28px 48px", cursor: "pointer",
-                        }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/assets/capsule/game/badge-correct.png" alt="Correct!" style={{ height: 48, objectFit: "contain" }} />
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 88, height: 88, objectFit: "contain" }} />
-                        <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fde047" }}>
-                          Tap to open!
-                        </span>
-                      </button>
-                    ) : (
-                      /* Chest open */
-                      <div style={{
-                        display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                        borderRadius: 24, border: "1px solid rgba(255,255,255,0.12)",
-                        background: "rgba(255,255,255,0.05)",
-                        padding: "28px 48px",
+            {/* Answer buttons — stagger in, spring press */}
+            <AnimatePresence mode="wait">
+              {!answered ? (
+                <motion.div
+                  key={`q-${game.currentQuestion}`}
+                  variants={gridVariants}
+                  initial="hidden"
+                  animate="visible"
+                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+                >
+                  {q.choices.map((choice, i) => (
+                    <motion.button
+                      key={i}
+                      variants={btnVariants}
+                      whileTap={{ scale: 0.89, boxShadow: "none" }}
+                      onClick={() => submitAnswer(i)}
+                      style={{
+                        display: "flex", flexDirection: "column",
+                        alignItems: "center", justifyContent: "space-between",
+                        minHeight: 120, borderRadius: 18, border: "none",
+                        padding: "6px 8px 14px",
+                        background: ANSWER_BG[i],
+                        boxShadow: `0 5px 0 ${ANSWER_SHADOW[i]}`,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
+                        alt={ANSWER_LABELS[i]}
+                        style={{ width: "90%", maxWidth: 150, objectFit: "contain", pointerEvents: "none" }}
+                      />
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, color: "#fff",
+                        textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                        textAlign: "center", lineHeight: 1.3,
+                        padding: "0 4px",
                       }}>
-                        {game.myAnswer.chestResult?.type === "gold" ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src="/assets/capsule/game/coin-burst.png" alt="coins!" style={{ width: 100, objectFit: "contain" }} />
-                        ) : (
-                          <span style={{ fontSize: 52 }}>
-                            {game.myAnswer.chestResult?.type === "steal" ? "🗡️"
-                              : game.myAnswer.chestResult?.type === "lose" ? "💀"
-                              : game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
+                        {choice}
+                      </span>
+                    </motion.button>
+                  ))}
+                </motion.div>
+              ) : (
+                /* Post-answer state */
+                <motion.div
+                  key="post-answer"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", damping: 20 }}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 8, textAlign: "center" }}
+                >
+                  {game.myAnswer?.isCorrect ? (
+                    <>
+                      {!chestOpen ? (
+                        <motion.button
+                          onClick={handleChestOpen}
+                          whileTap={{ scale: 0.93 }}
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ y: { duration: 1.8, repeat: Infinity, ease: "easeInOut" } }}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                            borderRadius: 24, border: "1px solid rgba(253,224,71,0.35)",
+                            background: "rgba(253,224,71,0.08)",
+                            padding: "28px 48px", cursor: "pointer",
+                          }}
+                        >
+                          <motion.img
+                            src="/assets/capsule/game/badge-correct.png"
+                            alt="Correct!"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", damping: 10, stiffness: 260 }}
+                            style={{ height: 48, objectFit: "contain" }}
+                          />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 88, height: 88, objectFit: "contain" }} />
+                          <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fde047" }}>
+                            Tap to open!
                           </span>
-                        )}
-                        <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
-                          {game.myAnswer.chestResult?.label ?? "Reward!"}
-                        </p>
-                      </div>
-                    )}
-                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for the teacher to advance…</p>
-                  </>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 8 }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/assets/capsule/game/badge-wrong.png" alt="Wrong" style={{ height: 56, objectFit: "contain" }} />
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Wrong answer</p>
-                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for next question…</p>
-                  </div>
-                )}
-              </div>
-            )}
+                        </motion.button>
+                      ) : (
+                        <motion.div
+                          initial={{ scale: 0.6, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", damping: 11, stiffness: 240 }}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+                            borderRadius: 24, border: "1px solid rgba(255,255,255,0.12)",
+                            background: "rgba(255,255,255,0.05)",
+                            padding: "28px 48px",
+                          }}
+                        >
+                          {game.myAnswer.chestResult?.type === "gold" ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src="/assets/capsule/game/coin-burst.png" alt="coins!" style={{ width: 100, objectFit: "contain" }} />
+                          ) : (
+                            <span style={{ fontSize: 52 }}>
+                              {game.myAnswer.chestResult?.type === "steal" ? "🗡️"
+                                : game.myAnswer.chestResult?.type === "lose" ? "💀"
+                                : game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
+                            </span>
+                          )}
+                          <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
+                            {game.myAnswer.chestResult?.label ?? "Reward!"}
+                          </p>
+                        </motion.div>
+                      )}
+                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for the teacher to advance…</p>
+                    </>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 8 }}>
+                      <motion.img
+                        src="/assets/capsule/game/badge-wrong.png"
+                        alt="Wrong"
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ type: "spring", damping: 14 }}
+                        style={{ height: 56, objectFit: "contain" }}
+                      />
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Wrong answer</p>
+                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for next question…</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </div>
@@ -457,21 +567,26 @@ export default function PlayerScreen() {
           Leaderboard
         </p>
         <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 2 }}>
-          {leaderboard.slice(0, 8).map((p, i) => (
-            <div key={p.id} style={{
-              display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-              opacity: p.id === playerId ? 1 : 0.45,
-              flexShrink: 0,
-            }}>
-              <CapIcon capId={p.capId} size={28} />
-              <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 9, color: "rgba(255,255,255,0.50)", whiteSpace: "nowrap" }}>
-                {i === 0 && "👑 "}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/capsule/coin.png" alt="" style={{ width: 10, height: 10, objectFit: "contain" }} />
-                {p.gold}
-              </span>
-            </div>
-          ))}
+          <AnimatePresence>
+            {leaderboard.slice(0, 8).map((p, i) => (
+              <motion.div
+                key={p.id}
+                layout
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: p.id === playerId ? 1 : 0.45 }}
+                transition={{ type: "spring", damping: 18 }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}
+              >
+                <CapIcon capId={p.capId} size={28} />
+                <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 9, color: "rgba(255,255,255,0.50)", whiteSpace: "nowrap" }}>
+                  {i === 0 && "👑 "}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/capsule/coin.png" alt="" style={{ width: 10, height: 10, objectFit: "contain" }} />
+                  {p.gold}
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
     </div>

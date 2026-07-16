@@ -1,22 +1,51 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { animate, stagger } from "animejs";
+import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
 import type { Cap } from "@/lib/capsuleData";
 import { CAPSULE_SETS } from "@/lib/capsuleData";
 
 type Phase = "idle" | "shaking" | "splitting" | "reveal" | "done";
 
-const RARITY_COLOR: Record<string, string> = {
-  common: "#94a3b8", rare: "#60a5fa", epic: "#a78bfa", mythic: "#fde047",
+const RARITY_CONFETTI: Record<string, { colors: string[]; count: number; shapes: confetti.Shape[] }> = {
+  common: { colors: ["#fff", "#94a3b8", "#e2e8f0"], count: 40,  shapes: ["circle"] },
+  rare:   { colors: ["#60a5fa", "#3b82f6", "#bfdbfe", "#fff"], count: 70,  shapes: ["circle"] },
+  epic:   { colors: ["#a78bfa", "#8b5cf6", "#ddd6fe", "#fff", "#c4b5fd"], count: 100, shapes: ["circle", "square"] },
+  mythic: { colors: ["#fde047", "#fbbf24", "#fff", "#fef3c7", "#f59e0b"],  count: 140, shapes: ["star", "circle"] },
 };
-const RARITY_GLOW: Record<string, string> = {
-  common: "rgba(148,163,184,0.3)", rare: "rgba(96,165,250,0.4)",
-  epic: "rgba(167,139,250,0.5)",   mythic: "rgba(253,224,71,0.6)",
-};
+
+function fireRevealConfetti(rarity: string) {
+  const cfg = RARITY_CONFETTI[rarity] ?? RARITY_CONFETTI.common;
+  confetti({
+    particleCount: cfg.count,
+    spread: 80,
+    origin: { y: 0.55 },
+    colors: cfg.colors,
+    shapes: cfg.shapes,
+    scalar: rarity === "mythic" ? 1.3 : 1.1,
+    startVelocity: 28,
+    gravity: 0.9,
+  });
+  // Second burst slightly offset for mythic
+  if (rarity === "mythic" || rarity === "epic") {
+    setTimeout(() => {
+      confetti({
+        particleCount: Math.round(cfg.count * 0.5),
+        spread: 50,
+        origin: { y: 0.50, x: 0.3 + Math.random() * 0.4 },
+        colors: cfg.colors,
+        shapes: cfg.shapes,
+        scalar: 1.0,
+      });
+    }, 200);
+  }
+}
 
 function OpenPageInner() {
   const router = useRouter();
@@ -30,6 +59,9 @@ function OpenPageInner() {
   const [result, setResult] = useState<Cap | null>(null);
   const [error, setError] = useState("");
 
+  const ballRef = useRef<HTMLImageElement>(null);
+  const sparkTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     fetch("/api/capsule/auth/me").then(r => r.json()).then(d => {
       if (!d.user) { router.push("/capsule"); return; }
@@ -38,12 +70,59 @@ function OpenPageInner() {
     });
   }, [router]);
 
+  function spawnSparks() {
+    if (!ballRef.current) return;
+    const rect = ballRef.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    const sparkColors = [capsuleSet.accentColor, "#19CDD2", "#ffffff", capsuleSet.accentColor, "#fff"];
+    const count = 8;
+    const sparks: HTMLDivElement[] = [];
+
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      const color = sparkColors[i % sparkColors.length];
+      const sz = 3 + Math.random() * 6;
+      el.style.cssText = [
+        "position:fixed",
+        `left:${cx}px`,
+        `top:${cy}px`,
+        `width:${sz}px`,
+        `height:${sz}px`,
+        "border-radius:50%",
+        `background:${color}`,
+        `box-shadow:0 0 ${sz * 2}px ${color}`,
+        "pointer-events:none",
+        "z-index:9999",
+        "transform:translate(-50%,-50%)",
+      ].join(";");
+      document.body.appendChild(el);
+      sparks.push(el);
+    }
+
+    const angles = sparks.map(() => Math.random() * Math.PI * 2);
+    const dists  = sparks.map(() => 45 + Math.random() * 90);
+
+    animate(sparks, {
+      translateX: sparks.map((_, i) => Math.cos(angles[i]) * dists[i]),
+      translateY: sparks.map((_, i) => Math.sin(angles[i]) * dists[i]),
+      opacity: [{ value: 1, duration: 50 }, { value: 0, duration: 500 }],
+      scale:   [{ value: 1.3, duration: 60 }, { value: 0, duration: 480 }],
+      duration: 580,
+      easing: "outQuad",
+      delay: stagger(22),
+      onComplete: () => sparks.forEach(el => el.remove()),
+    });
+  }
+
   async function openCapsule() {
     if (phase !== "idle") return;
     setError("");
     setPhase("shaking");
-    await delay(700);
-    setPhase("splitting");
+
+    // Emit sparks on a tight interval during shake
+    sparkTimerRef.current = setInterval(spawnSparks, 110);
 
     const res = await fetch("/api/capsule/open", {
       method: "POST",
@@ -52,16 +131,25 @@ function OpenPageInner() {
     });
     const data = await res.json() as { cap?: Cap; coins?: number; error?: string };
 
+    clearInterval(sparkTimerRef.current!);
+    sparkTimerRef.current = null;
+
     if (!res.ok || !data.cap) {
       setPhase("idle");
       setError(data.error ?? "Something went wrong.");
       return;
     }
 
+    setPhase("splitting");
     await delay(600);
+
     setResult(data.cap);
     setCoins(data.coins ?? null);
     setPhase("reveal");
+
+    // Fire confetti after a brief pause so the cap is visible first
+    setTimeout(() => fireRevealConfetti(data.cap!.rarity), 180);
+
     await delay(400);
     setPhase("done");
   }
@@ -97,71 +185,106 @@ function OpenPageInner() {
       )}
 
       {/* Stage */}
-      <div className="relative flex h-72 w-72 items-center justify-center">
+      <div className="relative flex items-center justify-center" style={{ width: 288, height: 288 }}>
 
         {/* Background glow on reveal */}
-        {(phase === "reveal" || phase === "done") && result && (
-          <div style={{
-            position: "absolute", inset: -40, borderRadius: "50%",
-            background: `radial-gradient(circle, ${RARITY_GLOW[result.rarity]} 0%, transparent 70%)`,
-            animation: "pulse 1.5s ease-in-out infinite",
-          }} />
-        )}
+        <AnimatePresence>
+          {(phase === "reveal" || phase === "done") && result && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: "absolute", inset: -48, borderRadius: "50%",
+                background: `radial-gradient(circle, ${RARITY_GLOW[result.rarity]} 0%, transparent 70%)`,
+                animation: "cap-pulse 1.8s ease-in-out infinite",
+              }}
+            />
+          )}
+        </AnimatePresence>
 
-        {/* Ball closed */}
-        {(phase === "idle" || phase === "shaking") && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={capsuleSet.ballClosed}
-            alt="capsule"
-            style={{
-              width: 200, objectFit: "contain",
-              animation: phase === "shaking" ? "shake 0.15s ease-in-out infinite" : undefined,
-              filter: phase === "shaking" ? `drop-shadow(0 0 28px ${capsuleSet.glowColor})` : undefined,
-            }}
-          />
-        )}
+        {/* Ball closed — shakes via CSS, sparks via anime.js */}
+        <AnimatePresence>
+          {(phase === "idle" || phase === "shaking") && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              style={{ position: "absolute" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={ballRef}
+                src={capsuleSet.ballClosed}
+                alt="capsule"
+                style={{
+                  width: 200, objectFit: "contain",
+                  animation: phase === "shaking" ? "shake 0.14s ease-in-out infinite" : undefined,
+                  filter: phase === "shaking" ? `drop-shadow(0 0 28px ${capsuleSet.glowColor}) drop-shadow(0 0 56px ${capsuleSet.glowColor})` : undefined,
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Ball splitting */}
-        {phase === "splitting" && (
-          <div style={{ position: "relative", width: 200, height: 220 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={capsuleSet.ballTop} alt="" style={{
-              position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-              width: 160, objectFit: "contain",
-              animation: "flyUp 0.5s ease-out forwards",
-            }} />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={capsuleSet.ballBottom} alt="" style={{
-              position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
-              width: 160, objectFit: "contain",
-              animation: "flyDown 0.5s ease-out forwards",
-            }} />
-          </div>
-        )}
+        <AnimatePresence>
+          {phase === "splitting" && (
+            <motion.div
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ position: "absolute", width: 200, height: 220 }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={capsuleSet.ballTop} alt="" style={{
+                position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                width: 160, objectFit: "contain",
+                animation: "flyUp 0.5s ease-out forwards",
+              }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={capsuleSet.ballBottom} alt="" style={{
+                position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+                width: 160, objectFit: "contain",
+                animation: "flyDown 0.5s ease-out forwards",
+              }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Cap reveal */}
-        {(phase === "reveal" || phase === "done") && result && (
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
-            animation: "popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards",
-          }}>
-            <CapIcon capId={result.id} size={160} />
-          </div>
-        )}
+        {/* Cap reveal — spring pop with framer-motion */}
+        <AnimatePresence>
+          {(phase === "reveal" || phase === "done") && result && (
+            <motion.div
+              initial={{ scale: 0.15, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 11, stiffness: 220, mass: 0.8 }}
+              style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center" }}
+            >
+              <CapIcon capId={result.id} size={160} animated />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Rarity + name on reveal */}
-      {(phase === "reveal" || phase === "done") && result && (
-        <div style={{ marginTop: 24, textAlign: "center", animation: "fadeUp 0.4s ease-out 0.15s both" }}>
-          <p className="mb-1 text-xs font-black uppercase tracking-[0.2em]" style={{ color: RARITY_COLOR[result.rarity] }}>
-            {result.rarity}
-          </p>
-          <p className="text-3xl font-black text-white" style={{ fontFamily: "var(--font-bebas)", letterSpacing: "0.06em" }}>
-            {result.name}
-          </p>
-        </div>
-      )}
+      <AnimatePresence>
+        {(phase === "reveal" || phase === "done") && result && (
+          <motion.div
+            initial={{ y: 18, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.18, type: "spring", damping: 20 }}
+            style={{ marginTop: 28, textAlign: "center" }}
+          >
+            <p className="mb-1 text-xs font-black uppercase tracking-[0.2em]" style={{ color: RARITY_COLOR[result.rarity] }}>
+              {result.rarity}
+            </p>
+            <p className="text-3xl font-black text-white" style={{ fontFamily: "var(--font-bebas)", letterSpacing: "0.06em" }}>
+              {result.name}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* CTA */}
       <div className="mt-8 flex flex-col items-center gap-3 w-full max-w-xs">
@@ -194,16 +317,29 @@ function OpenPageInner() {
       </div>
 
       <style>{`
-        @keyframes shake { 0%,100%{transform:translateX(0) rotate(0deg)} 20%{transform:translateX(-6px) rotate(-3deg)} 40%{transform:translateX(6px) rotate(3deg)} 60%{transform:translateX(-4px) rotate(-2deg)} 80%{transform:translateX(4px) rotate(2deg)} }
-        @keyframes flyUp { from{transform:translateX(-50%) translateY(0);opacity:1} to{transform:translateX(-50%) translateY(-120px);opacity:0} }
-        @keyframes flyDown { from{transform:translateX(-50%) translateY(0);opacity:1} to{transform:translateX(-50%) translateY(80px);opacity:0} }
-        @keyframes popIn { from{transform:scale(0.3);opacity:0} to{transform:scale(1);opacity:1} }
-        @keyframes fadeUp { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes pulse { 0%,100%{opacity:0.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.08)} }
+        @keyframes shake {
+          0%,100% { transform:translateX(0) rotate(0deg); }
+          20%      { transform:translateX(-7px) rotate(-4deg); }
+          40%      { transform:translateX(7px)  rotate(4deg); }
+          60%      { transform:translateX(-5px) rotate(-2deg); }
+          80%      { transform:translateX(5px)  rotate(2deg); }
+        }
+        @keyframes flyUp   { from{transform:translateX(-50%) translateY(0);opacity:1}   to{transform:translateX(-50%) translateY(-130px);opacity:0} }
+        @keyframes flyDown { from{transform:translateX(-50%) translateY(0);opacity:1}   to{transform:translateX(-50%) translateY(90px);opacity:0} }
       `}</style>
     </div>
   );
 }
+
+const RARITY_COLOR: Record<string, string> = {
+  common: "#94a3b8", rare: "#60a5fa", epic: "#a78bfa", mythic: "#fde047",
+};
+const RARITY_GLOW: Record<string, string> = {
+  common: "rgba(148,163,184,0.35)",
+  rare:   "rgba(96,165,250,0.45)",
+  epic:   "rgba(167,139,250,0.55)",
+  mythic: "rgba(253,224,71,0.65)",
+};
 
 export default function OpenPage() {
   return (
