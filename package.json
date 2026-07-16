@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "eslint",
-    "sprites": "node scripts/split-capsule-sprites.mjs"
+    "sprites": "node scripts/split-capsule-sprites.mjs",
+    "sprites:caps": "node scripts/split-cap-portraits.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
