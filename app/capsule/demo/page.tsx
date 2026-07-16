@@ -39,13 +39,16 @@ export default function DemoLauncher() {
       if (!gameRes.ok) throw new Error("Failed to create game");
       const { code } = await gameRes.json() as { code: string };
 
-      // 3. Join 5 bots
+      // 3. Join 5 bots — must use credentials:"omit" so the DemoTeacher session
+      //    cookie is NOT sent; otherwise joinGame() deduplicates all bots onto
+      //    the single DemoTeacher user record, yielding only 1 real player.
       setStatus("Joining bots…");
       const botPlayerIds: string[] = [];
       for (const bot of BOTS) {
         const res = await fetch(`/api/capsule/games/${code}/join`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ displayName: bot.name, capId: bot.cap }),
+          credentials: "omit",
         });
         if (res.ok) {
           const d = await res.json() as { playerId: string };
@@ -53,7 +56,7 @@ export default function DemoLauncher() {
         }
       }
 
-      // 4. Optionally join a "you" player for student view
+      // 4. Optionally join a "you" player for student view (also anonymous)
       let studentPlayerId: string | null = null;
       let studentCap = "cap-frog";
       if (mode === "student") {
@@ -61,6 +64,7 @@ export default function DemoLauncher() {
         const res = await fetch(`/api/capsule/games/${code}/join`, {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ displayName: "You", capId: "cap-frog" }),
+          credentials: "omit",
         });
         if (res.ok) {
           const d = await res.json() as { playerId: string; capId: string };

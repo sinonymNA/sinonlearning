@@ -95,7 +95,11 @@ function HostPanelInner() {
     }, (timeLimit + 1) * 1000);
     demoTimers.current.push(advanceT);
 
-    return () => demoTimers.current.forEach(t => clearTimeout(t));
+    return () => {
+      demoTimers.current.forEach(t => clearTimeout(t));
+      // Reset so React Strict Mode's double-invoke lets the effect re-run
+      demoRef.current = { q: -1, done: false };
+    };
   }, [isDemo, game?.currentQuestion, game?.status, code, fetchState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function advance() {
