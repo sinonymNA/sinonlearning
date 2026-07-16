@@ -10,126 +10,67 @@ interface Me {
   id: string; email: string; username: string; role: string; equippedCapId: string; coins: number;
 }
 
-// Glossy top-stripe identical to spritesheet buttons
-const GLOSS = "linear-gradient(180deg, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.10) 42%, transparent 42%)";
-
-function gameStyle(
-  color: string, dark: string, shadow: string, textColor: string, half?: boolean,
-): React.CSSProperties {
-  return {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-    flex: half ? 1 : undefined,
-    width: half ? undefined : "100%",
-    maxWidth: half ? undefined : 340,
-    height: 68, borderRadius: 18,
-    background: `${GLOSS}, ${color}`,
-    border: `3px solid ${dark}`,
-    boxShadow: `0 7px 0 ${shadow}, 0 14px 28px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.28)`,
-    fontSize: 16, fontWeight: 900, letterSpacing: "0.08em",
-    textTransform: "uppercase" as const,
-    color: textColor, textDecoration: "none",
-    cursor: "pointer", userSelect: "none" as const,
-    textShadow: textColor === "#06163E" ? "none" : "0 1px 4px rgba(0,0,0,0.55)",
-  };
-}
-
-const TAP_LIFT = (shadow: string) => ({
-  y: 6,
-  boxShadow: `0 1px 0 ${shadow}, 0 4px 8px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.28)`,
-});
-
-/* ── Sub-components ────────────────────────────────────── */
-
-function GameBtn({ color, dark, shadow, textColor, icon, label, onClick, disabled, type }: {
-  color: string; dark: string; shadow: string; textColor: string;
-  icon: string; label: string;
-  onClick?: () => void; disabled?: boolean; type?: "button" | "submit";
-}) {
-  return (
-    <motion.button
-      type={type ?? "button"}
-      onClick={onClick}
-      disabled={disabled}
-      whileTap={disabled ? {} : TAP_LIFT(shadow)}
-      style={{ ...gameStyle(color, dark, shadow, textColor), opacity: disabled ? 0.4 : 1 }}
-    >
-      <span style={{ fontSize: 24, lineHeight: 1 }}>{icon}</span>
-      <span>{label}</span>
-    </motion.button>
-  );
-}
-
-function GameLink({ color, dark, shadow, textColor, icon, label, href, half }: {
-  color: string; dark: string; shadow: string; textColor: string;
-  icon: string; label: string; href: string; half?: boolean;
-}) {
-  return (
-    // eslint-disable-next-line @next/next/no-html-link-for-pages
-    <a href={href} style={gameStyle(color, dark, shadow, textColor, half)}>
-      <span style={{ fontSize: 24, lineHeight: 1 }}>{icon}</span>
-      <span>{label}</span>
-    </a>
-  );
-}
-
-function DemoBtn({ textColor, bgColor, borderColor, label, onClick, disabled }: {
-  textColor: string; bgColor: string; borderColor: string;
-  label: string; onClick: () => void; disabled?: boolean;
+/* Sprite-image button — wraps <img> in a pressable element */
+function SpriteBtn({
+  src, alt, onClick, disabled, style,
+}: {
+  src: string; alt: string;
+  onClick?: () => void; disabled?: boolean;
+  style?: React.CSSProperties;
 }) {
   return (
     <motion.button
       onClick={onClick}
       disabled={disabled}
-      whileTap={disabled ? {} : { scale: 0.94 }}
+      whileTap={disabled ? {} : { scale: 0.93, y: 4 }}
       style={{
-        flex: 1, height: 52, borderRadius: 14,
-        background: bgColor, border: `2px solid ${borderColor}`,
-        fontSize: 12, fontWeight: 800, color: textColor,
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        letterSpacing: "0.04em", textTransform: "uppercase" as const,
+        background: "none", border: "none", padding: 0, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.45 : 1, display: "block",
+        ...style,
       }}
     >
-      {label}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block", userSelect: "none" }} draggable={false} />
     </motion.button>
   );
 }
 
-function NavBtn({ icon, label }: { icon: string; label: string }) {
+function SpriteLink({ src, alt, href, style }: { src: string; alt: string; href: string; style?: React.CSSProperties }) {
   return (
-    <motion.button
-      whileTap={{ y: 5, boxShadow: "0 1px 0 #0a1535, 0 4px 8px rgba(0,0,0,0.28)" }}
-      style={{
-        flex: 1, position: "relative",
-        height: 64, borderRadius: 14,
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "flex-end",
-        paddingBottom: 10,
-        background: "linear-gradient(180deg, #172965 0%, #111f50 100%)",
-        border: "2px solid #1e3278",
-        boxShadow: "0 5px 0 #0a1535, 0 8px 18px rgba(0,0,0,0.38)",
-        cursor: "pointer",
-      }}
+    <motion.a
+      href={href}
+      whileTap={{ scale: 0.93, y: 4 }}
+      style={{ display: "block", textDecoration: "none", ...style }}
     >
-      {/* Icon bursts out above the button edge */}
-      <span style={{
-        position: "absolute", top: -22, fontSize: 30,
-        filter: "drop-shadow(0 3px 8px rgba(0,0,0,0.65))",
-        lineHeight: 1,
-      }}>
-        {icon}
-      </span>
-      <span style={{
-        fontSize: 8, fontWeight: 900, color: "rgba(255,255,255,0.55)",
-        letterSpacing: "0.07em", textTransform: "uppercase" as const,
-      }}>
-        {label}
-      </span>
-    </motion.button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block", userSelect: "none" }} draggable={false} />
+    </motion.a>
   );
 }
 
-/* ── Page ──────────────────────────────────────────────── */
+/* HOST button — not in spritesheet, CSS only */
+function HostBtn({ href }: { href: string }) {
+  return (
+    <motion.a
+      href={href}
+      whileTap={{ scale: 0.93, y: 4 }}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+        width: "100%", maxWidth: 340, height: 68, borderRadius: 18,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.10) 42%, transparent 42%), #FF5965",
+        border: "3px solid #b53040",
+        boxShadow: "0 7px 0 #7e1d2a, 0 14px 28px rgba(0,0,0,0.44)",
+        fontSize: 16, fontWeight: 900, letterSpacing: "0.08em", textTransform: "uppercase",
+        color: "#fff", textDecoration: "none",
+        textShadow: "0 1px 4px rgba(0,0,0,0.55)",
+        userSelect: "none" as const,
+      }}
+    >
+      <span style={{ fontSize: 22 }}>🎯</span>
+      <span>Host a Game</span>
+    </motion.a>
+  );
+}
 
 export default function CapsulePage() {
   const router = useRouter();
@@ -186,11 +127,9 @@ export default function CapsulePage() {
         objectFit: "cover", objectPosition: "center bottom",
         pointerEvents: "none", userSelect: "none",
       }} />
-
-      {/* Dark vignette */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
-        background: "linear-gradient(to bottom, rgba(7,24,63,0.62) 0%, rgba(7,24,63,0.06) 42%, rgba(7,24,63,0.68) 100%)",
+        background: "linear-gradient(to bottom, rgba(7,24,63,0.60) 0%, rgba(7,24,63,0.06) 42%, rgba(7,24,63,0.72) 100%)",
       }} />
 
       {/* ── Top bar ─────────────────────────────────────── */}
@@ -213,7 +152,6 @@ export default function CapsulePage() {
             </div>
           </div>
         )}
-
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {me && (
             <div style={{
@@ -238,15 +176,13 @@ export default function CapsulePage() {
         </div>
       </div>
 
-      {/* ── Logo — SLAMS DOWN, then floats ──────────────── */}
+      {/* ── Logo: slam down → float ──────────────────────── */}
       <div style={{ position: "relative", zIndex: 10, pointerEvents: "none" }}>
-        {/* Float wrapper — starts after slam settles */}
         <motion.div
           style={{ display: "flex", justifyContent: "center", paddingTop: 16 }}
           animate={{ y: [0, -18, 0] }}
           transition={{ repeat: Infinity, duration: 3.8, ease: "easeInOut", delay: 1.9 }}
         >
-          {/* Slam-in */}
           <motion.div
             initial={{ y: -520, scale: 1.65, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
@@ -257,9 +193,7 @@ export default function CapsulePage() {
               src="/assets/capsule/logo.png"
               alt="Capsule"
               style={{
-                width: "min(88vw, 500px)",
-                objectFit: "contain",
-                display: "block",
+                width: "min(88vw, 500px)", objectFit: "contain", display: "block",
                 filter: [
                   "drop-shadow(0 12px 56px rgba(25,205,210,0.85))",
                   "drop-shadow(0 4px 18px rgba(0,0,0,0.98))",
@@ -271,7 +205,6 @@ export default function CapsulePage() {
         </motion.div>
       </div>
 
-      {/* ── Spacer ──────────────────────────────────────── */}
       <div style={{ flex: "1 1 auto" }} />
 
       {/* ── Action buttons ──────────────────────────────── */}
@@ -281,13 +214,14 @@ export default function CapsulePage() {
         gap: 12, padding: "0 20px",
       }}>
 
-        {/* ── Logged-out ── */}
+        {/* Logged-out */}
         {!loading && !me && (
           <>
-            <GameBtn
-              color="#19CDD2" dark="#0a8d93" shadow="#056870" textColor="#06163E"
-              icon="🎮" label="Join Game"
+            <SpriteBtn
+              src="/assets/capsule/ui/btn-join-game.png"
+              alt="Join Game"
               onClick={() => setShowJoin(v => !v)}
+              style={{ width: "100%", maxWidth: 340 }}
             />
 
             <AnimatePresence>
@@ -301,53 +235,36 @@ export default function CapsulePage() {
                   <input
                     value={code} onChange={e => setCode(e.target.value.toUpperCase())}
                     placeholder="ENTER CODE" maxLength={6} autoFocus
-                    style={{
-                      width: "100%", boxSizing: "border-box",
-                      borderRadius: 18, border: "3px solid rgba(255,255,255,0.25)",
-                      background: "rgba(255,255,255,0.09)",
-                      padding: "14px 20px", textAlign: "center",
-                      fontSize: 24, fontWeight: 900, letterSpacing: "0.28em",
-                      color: "#fff", outline: "none",
-                    }}
+                    style={codeInputStyle}
                   />
-                  <GameBtn
-                    color="#19CDD2" dark="#0a8d93" shadow="#056870" textColor="#06163E"
-                    icon="▶" label="Let's Go"
-                    disabled={code.trim().length !== 6} type="submit"
-                  />
+                  <button type="submit" disabled={code.trim().length !== 6} style={{
+                    ...submitBtnStyle,
+                    opacity: code.trim().length === 6 ? 1 : 0.35,
+                    cursor: code.trim().length === 6 ? "pointer" : "not-allowed",
+                  }}>
+                    Let&apos;s Go →
+                  </button>
                 </motion.form>
               )}
             </AnimatePresence>
 
             <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 340 }}>
-              <DemoBtn
-                textColor="#19CDD2" bgColor="rgba(25,205,210,0.10)" borderColor="rgba(25,205,210,0.35)"
-                label={demoLoading === "student" ? "…" : "Demo Student"}
-                onClick={() => loginAsDemo("student")} disabled={demoLoading !== null}
-              />
-              <DemoBtn
-                textColor="#FF5965" bgColor="rgba(255,89,101,0.10)" borderColor="rgba(255,89,101,0.35)"
-                label={demoLoading === "teacher" ? "…" : "Demo Teacher"}
-                onClick={() => loginAsDemo("teacher")} disabled={demoLoading !== null}
-              />
+              <DemoBtn color="#19CDD2" label={demoLoading === "student" ? "…" : "Demo Student"} onClick={() => loginAsDemo("student")} disabled={demoLoading !== null} />
+              <DemoBtn color="#FF5965" label={demoLoading === "teacher" ? "…" : "Demo Teacher"} onClick={() => loginAsDemo("teacher")} disabled={demoLoading !== null} />
             </div>
           </>
         )}
 
-        {/* ── Logged-in ── */}
+        {/* Logged-in */}
         {me && (
           <>
-            {me.role === "teacher" && (
-              <GameLink
-                color="#FF5965" dark="#b53040" shadow="#7e1d2a" textColor="#fff"
-                icon="🎯" label="Host a Game" href="/capsule/host"
-              />
-            )}
+            {me.role === "teacher" && <HostBtn href="/capsule/host" />}
 
-            <GameBtn
-              color="#19CDD2" dark="#0a8d93" shadow="#056870" textColor="#06163E"
-              icon="🎮" label="Join Game"
+            <SpriteBtn
+              src="/assets/capsule/ui/btn-join-game.png"
+              alt="Join Game"
               onClick={() => setShowJoin(v => !v)}
+              style={{ width: "100%", maxWidth: 340 }}
             />
 
             <AnimatePresence>
@@ -361,46 +278,30 @@ export default function CapsulePage() {
                   <input
                     value={code} onChange={e => setCode(e.target.value.toUpperCase())}
                     placeholder="ENTER CODE" maxLength={6} autoFocus
-                    style={{
-                      width: "100%", boxSizing: "border-box",
-                      borderRadius: 18, border: "3px solid rgba(255,255,255,0.25)",
-                      background: "rgba(255,255,255,0.09)",
-                      padding: "14px 20px", textAlign: "center",
-                      fontSize: 24, fontWeight: 900, letterSpacing: "0.28em",
-                      color: "#fff", outline: "none",
-                    }}
+                    style={codeInputStyle}
                   />
-                  <GameBtn
-                    color="#19CDD2" dark="#0a8d93" shadow="#056870" textColor="#06163E"
-                    icon="▶" label="Let's Go"
-                    disabled={code.trim().length !== 6} type="submit"
-                  />
+                  <button type="submit" disabled={code.trim().length !== 6} style={{
+                    ...submitBtnStyle,
+                    opacity: code.trim().length === 6 ? 1 : 0.35,
+                    cursor: code.trim().length === 6 ? "pointer" : "not-allowed",
+                  }}>
+                    Let&apos;s Go →
+                  </button>
                 </motion.form>
               )}
             </AnimatePresence>
 
-            <div style={{ display: "flex", gap: 12, width: "100%", maxWidth: 340 }}>
-              <GameLink
-                color="#FFC52E" dark="#b88514" shadow="#8a5f0a" textColor="#06163E"
-                icon="🎲" label="Capsule Store" href="/capsule/store"
-                half
-              />
-              <GameLink
-                color="#7C3AED" dark="#5825b5" shadow="#3d1680" textColor="#fff"
-                icon="📒" label="Collection" href="/capsule/collection"
-                half
-              />
+            {/* CAPSULE STORE + COLLECTION side by side */}
+            <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 340 }}>
+              <SpriteLink src="/assets/capsule/ui/btn-capsule-store.png" alt="Capsule Store" href="/capsule/store" style={{ flex: 1 }} />
+              <SpriteLink src="/assets/capsule/ui/btn-collection.png" alt="Collection" href="/capsule/collection" style={{ flex: 1 }} />
             </div>
 
             {me.email?.endsWith("@capsule.demo") && (
-              <button
-                onClick={() => loginAsDemo(me.role === "teacher" ? "student" : "teacher")}
-                disabled={demoLoading !== null}
-                style={{
-                  background: "none", border: "none", padding: "4px 0",
-                  fontSize: 12, color: "rgba(255,255,255,0.32)", cursor: "pointer",
-                }}
-              >
+              <button onClick={() => loginAsDemo(me.role === "teacher" ? "student" : "teacher")} disabled={demoLoading !== null} style={{
+                background: "none", border: "none", padding: "4px 0",
+                fontSize: 12, color: "rgba(255,255,255,0.32)", cursor: "pointer",
+              }}>
                 {demoLoading ? "…" : `Switch to Demo ${me.role === "teacher" ? "Student" : "Teacher"}`}
               </button>
             )}
@@ -408,22 +309,32 @@ export default function CapsulePage() {
         )}
       </div>
 
-      <div style={{ flex: "0 0 26px" }} />
+      <div style={{ flex: "0 0 20px" }} />
 
-      {/* ── Bottom nav ──────────────────────────────────── */}
-      {/* Extra top padding gives room for icons that burst above the button edge */}
+      {/* ── Bottom nav — sprite buttons ─────────────────── */}
       <nav style={{
         position: "relative", zIndex: 10,
         background: "rgba(6,16,50,0.90)",
         backdropFilter: "blur(14px)",
         borderTop: "1px solid rgba(255,255,255,0.07)",
-        padding: "32px 14px 22px",
+        padding: "20px 14px 18px",
       }}>
-        <div style={{ display: "flex", gap: 10, maxWidth: 440, margin: "0 auto" }}>
-          <NavBtn icon="📅" label="Daily" />
-          <NavBtn icon="🏆" label="Leaderboard" />
-          <NavBtn icon="⭐" label="Achievements" />
-          <NavBtn icon="✉️" label="Inbox" />
+        <div style={{ display: "flex", gap: 8, maxWidth: 440, margin: "0 auto", alignItems: "flex-end" }}>
+          {[
+            { src: "/assets/capsule/ui/btn-daily.png",        alt: "Daily" },
+            { src: "/assets/capsule/ui/btn-leaderboard.png",  alt: "Leaderboard" },
+            { src: "/assets/capsule/ui/btn-achievements.png", alt: "Achievements" },
+            { src: "/assets/capsule/ui/btn-inbox.png",        alt: "Inbox" },
+          ].map(({ src, alt }) => (
+            <motion.button
+              key={alt}
+              whileTap={{ scale: 0.90, y: 4 }}
+              style={{ flex: 1, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block", userSelect: "none" }} draggable={false} />
+            </motion.button>
+          ))}
         </div>
       </nav>
 
@@ -441,6 +352,27 @@ export default function CapsulePage() {
 
 /* ── Tiny helpers ──────────────────────────────────────── */
 
+function DemoBtn({ color, label, onClick, disabled }: {
+  color: string; label: string; onClick: () => void; disabled?: boolean;
+}) {
+  return (
+    <motion.button
+      onClick={onClick} disabled={disabled}
+      whileTap={disabled ? {} : { scale: 0.94 }}
+      style={{
+        flex: 1, height: 52, borderRadius: 14,
+        background: `${color}18`, border: `2px solid ${color}50`,
+        fontSize: 12, fontWeight: 800, color,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        letterSpacing: "0.04em", textTransform: "uppercase" as const,
+      }}
+    >
+      {label}
+    </motion.button>
+  );
+}
+
 function topBtn(bg: string, border: string): React.CSSProperties {
   return {
     padding: "7px 14px", borderRadius: 99,
@@ -449,3 +381,20 @@ function topBtn(bg: string, border: string): React.CSSProperties {
     textDecoration: "none", display: "inline-block", cursor: "pointer",
   };
 }
+
+const codeInputStyle: React.CSSProperties = {
+  width: "100%", boxSizing: "border-box",
+  borderRadius: 18, border: "3px solid rgba(255,255,255,0.25)",
+  background: "rgba(255,255,255,0.09)",
+  padding: "14px 20px", textAlign: "center",
+  fontSize: 24, fontWeight: 900, letterSpacing: "0.28em",
+  color: "#fff", outline: "none",
+};
+
+const submitBtnStyle: React.CSSProperties = {
+  width: "100%", padding: "16px 24px", borderRadius: 99,
+  background: "#19CDD2", color: "#06163E",
+  fontSize: 15, fontWeight: 900, letterSpacing: "0.08em",
+  textTransform: "uppercase", border: "none",
+  boxShadow: "0 6px 0 #056870, 0 10px 20px rgba(0,0,0,0.35)",
+};
