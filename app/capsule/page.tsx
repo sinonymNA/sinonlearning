@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import CapIcon from "@/components/capsule/CapIcon";
 
 interface Me {
-  id: string; username: string; role: string; equippedCapId: string; coins: number;
+  id: string; email: string; username: string; role: string; equippedCapId: string; coins: number;
 }
 
 export default function CapsulePage() {
@@ -14,6 +14,8 @@ export default function CapsulePage() {
   const [me, setMe] = useState<Me | null>(null);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState<"student" | "teacher" | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     fetch("/api/capsule/auth/me")
@@ -27,11 +29,33 @@ export default function CapsulePage() {
     if (c.length === 6) router.push(`/capsule/play/${c}`);
   };
 
+  async function loginAsDemo(role: "student" | "teacher") {
+    setDemoLoading(role);
+    const res = await fetch("/api/capsule/auth/demo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    const data = await res.json() as { user?: Me };
+    setDemoLoading(null);
+    if (data.user) {
+      setMe(data.user);
+      if (role === "teacher") router.push("/capsule/host");
+    }
+  }
+
+  async function signOut() {
+    setSigningOut(true);
+    await fetch("/api/capsule/auth/logout", { method: "POST" });
+    setMe(null);
+    setSigningOut(false);
+  }
+
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-16">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-500/10 blur-[120px]" />
+        <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/8 blur-[120px]" />
       </div>
 
       {/* Logo */}
@@ -47,7 +71,7 @@ export default function CapsulePage() {
         >
           CAPSULE
         </h1>
-        <p className="mt-2 text-sm text-orange-300/70">Live classroom games · Collect caps · Win gold</p>
+        <p className="mt-2 text-sm text-white/40">Live classroom games · Collect caps · Win gold</p>
       </div>
 
       {/* Join by code */}
@@ -57,12 +81,12 @@ export default function CapsulePage() {
           onChange={e => setCode(e.target.value.toUpperCase())}
           placeholder="ENTER CODE"
           maxLength={6}
-          className="w-full rounded-2xl border border-orange-400/25 bg-orange-400/8 px-5 py-4 text-center text-xl font-black tracking-[0.3em] text-white placeholder-white/20 outline-none focus:border-orange-400/60"
+          className="w-full rounded-2xl border border-white/12 bg-white/5 px-5 py-4 text-center text-xl font-black tracking-[0.3em] text-white placeholder-white/20 outline-none focus:border-white/30"
         />
         <button
           type="submit"
           disabled={code.trim().length !== 6}
-          className="rounded-2xl bg-orange-500 py-4 text-sm font-black uppercase tracking-widest text-white transition-colors hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-30"
+          className="rounded-2xl bg-[#19CDD2] py-4 text-sm font-black uppercase tracking-widest text-[#06163E] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
         >
           Join Game
         </button>
@@ -75,9 +99,9 @@ export default function CapsulePage() {
         <div className="h-px flex-1 bg-white/8" />
       </div>
 
-      {/* Auth / teacher actions */}
       {loading ? null : !me ? (
         <div className="flex w-full max-w-xs flex-col gap-3">
+          {/* Real auth */}
           <Link
             href="/capsule/login"
             className="rounded-2xl border border-white/15 py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-white/5"
@@ -86,29 +110,72 @@ export default function CapsulePage() {
           </Link>
           <Link
             href="/capsule/signup"
-            className="rounded-2xl border border-orange-400/30 bg-orange-400/10 py-3.5 text-center text-sm font-bold text-orange-200 transition-colors hover:bg-orange-400/20"
+            className="rounded-2xl border border-white/20 bg-white/5 py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-white/8"
           >
             Create account
           </Link>
+
+          {/* Demo divider */}
+          <div className="flex items-center gap-3 py-1">
+            <div className="h-px flex-1 bg-white/8" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Demo</span>
+            <div className="h-px flex-1 bg-white/8" />
+          </div>
+
+          {/* Demo buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => loginAsDemo("student")}
+              disabled={demoLoading !== null}
+              className="rounded-xl border border-[#19CDD2]/30 bg-[#19CDD2]/10 py-3 text-xs font-black uppercase tracking-wider text-[#19CDD2] transition-colors hover:bg-[#19CDD2]/20 disabled:opacity-50"
+            >
+              {demoLoading === "student" ? "…" : "Demo Student"}
+            </button>
+            <button
+              onClick={() => loginAsDemo("teacher")}
+              disabled={demoLoading !== null}
+              className="rounded-xl border border-[#FF5965]/30 bg-[#FF5965]/10 py-3 text-xs font-black uppercase tracking-wider text-[#FF5965] transition-colors hover:bg-[#FF5965]/20 disabled:opacity-50"
+            >
+              {demoLoading === "teacher" ? "…" : "Demo Teacher"}
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex w-full max-w-xs flex-col gap-3">
           {/* Logged-in user */}
           <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
             <CapIcon capId={me.equippedCapId} size={36} />
-            <div>
-              <div className="text-sm font-bold text-white">{me.username}</div>
-              <div className="text-xs text-orange-300/70">{me.coins} coins</div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-bold text-white truncate">{me.username}</div>
+              <div className="text-xs text-white/40 capitalize">{me.role}</div>
             </div>
+            <button
+              onClick={signOut}
+              disabled={signingOut}
+              className="rounded-lg px-3 py-1.5 text-xs font-bold text-white/40 transition-colors hover:bg-white/8 hover:text-white/70 disabled:opacity-40"
+            >
+              {signingOut ? "…" : "Sign out"}
+            </button>
           </div>
 
           {me.role === "teacher" && (
             <Link
               href="/capsule/host"
-              className="rounded-2xl bg-orange-500 py-3.5 text-center text-sm font-black uppercase tracking-widest text-white transition-colors hover:bg-orange-400"
+              className="rounded-2xl bg-[#FF5965] py-3.5 text-center text-sm font-black uppercase tracking-widest text-white transition-opacity hover:opacity-90"
             >
               Host a Game
             </Link>
+          )}
+
+          {/* Switch demo role */}
+          {me.email?.endsWith("@capsule.demo") && (
+            <button
+              onClick={() => loginAsDemo(me.role === "teacher" ? "student" : "teacher")}
+              disabled={demoLoading !== null}
+              className="rounded-xl border border-white/10 py-3 text-xs font-bold text-white/40 transition-colors hover:bg-white/5 hover:text-white/60 disabled:opacity-40"
+            >
+              {demoLoading ? "…" : `Switch to Demo ${me.role === "teacher" ? "Student" : "Teacher"}`}
+            </button>
           )}
         </div>
       )}
