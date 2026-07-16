@@ -146,25 +146,27 @@ export default function CapsulePage() {
         </div>
       </div>
 
-      {/* ── Logo (center-top) ─────────────────────────────── */}
+      {/* ── Logo — big, centered over the machine ─────────── */}
       <div style={{
-        position: "relative", zIndex: 10,
-        display: "flex", justifyContent: "center",
-        marginTop: 8,
+        position: "absolute",
+        top: "50%", left: "50%",
+        transform: "translate(-50%, -60%)",
+        zIndex: 10,
+        pointerEvents: "none",
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/capsule/logo.png"
           alt="Capsule"
           style={{
-            height: "clamp(90px, 18vw, 150px)",
+            width: "clamp(200px, 55vw, 340px)",
             objectFit: "contain",
-            filter: "drop-shadow(0 4px 24px rgba(25,205,210,0.50))",
+            filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.65)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))",
           }}
         />
       </div>
 
-      {/* ── Spacer pushes buttons toward center ──────────── */}
+      {/* ── Spacer ────────────────────────────────────────── */}
       <div style={{ flex: "1 1 auto" }} />
 
       {/* ── Action buttons ───────────────────────────────── */}
