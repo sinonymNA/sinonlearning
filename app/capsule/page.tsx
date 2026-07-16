@@ -286,7 +286,7 @@ export default function CapsulePage() {
             )}
 
             <div style={{ display: "flex", gap: 10 }}>
-              <Link href="/capsule/open" style={{ ...pillStyle("#FFC52E", "#06163E"), flex: 1, textAlign: "center" }}>
+              <Link href="/capsule/store" style={{ ...pillStyle("#FFC52E", "#06163E"), flex: 1, textAlign: "center" }}>
                 Open Capsule
               </Link>
               <Link href="/capsule/collection" style={{ ...pillStyle("rgba(255,255,255,0.10)", "#fff"), border: "1.5px solid rgba(255,255,255,0.20)", flex: 1, textAlign: "center" }}>
