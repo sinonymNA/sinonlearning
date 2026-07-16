@@ -4,24 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
+import FactoryGame from "@/components/capsule/FactoryGame";
 import type { ChestResult } from "@/lib/capsuleData";
 
 const GUEST_CAPS = [
   "cap-fox", "cap-cat", "cap-dog", "cap-frog", "cap-fish",
   "cap-duck", "cap-owl", "cap-bunny", "cap-bear", "cap-hamster",
 ];
-
-const ANSWER_LABELS = ["A", "B", "C", "D"];
-
-const ANSWER_BG = [
-  "linear-gradient(180deg, #ff6b7a 0%, #d42035 100%)",
-  "linear-gradient(180deg, #3dd9e8 0%, #0babbb 100%)",
-  "linear-gradient(180deg, #ffd740 0%, #e6a800 100%)",
-  "linear-gradient(180deg, #c274ff 0%, #8b2fd6 100%)",
-];
-const ANSWER_SHADOW = ["#9a1525", "#067a88", "#a07500", "#5a0090"];
 
 interface Player { id: string; displayName: string; capId: string; gold: number; hasAnswered: boolean; }
 interface GameState {
@@ -34,16 +24,6 @@ interface GameState {
 
 type JoinPhase = "form" | "joined";
 
-// Framer-motion variants for the answer grid stagger
-const gridVariants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
-};
-const btnVariants = {
-  hidden: { y: 28, opacity: 0, scale: 0.95 },
-  visible: { y: 0, opacity: 1, scale: 1, transition: { type: "spring" as const, damping: 18, stiffness: 280 } },
-};
-
 export default function PlayerScreen() {
   const { code } = useParams<{ code: string }>();
   const [joinPhase, setJoinPhase] = useState<JoinPhase>("form");
@@ -54,11 +34,7 @@ export default function PlayerScreen() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [timer, setTimer] = useState(20);
-  const [chestOpen, setChestOpen] = useState(false);
-  // Flash overlay state: null | "correct" | "wrong"
-  const [flash, setFlash] = useState<"correct" | "wrong" | null>(null);
   const prevQuestion = useRef(-1);
-  const prevAnswered = useRef(false);
 
   const fetchState = useCallback(async () => {
     const res = await fetch(`/api/capsule/games/${code}`);
@@ -67,16 +43,7 @@ export default function PlayerScreen() {
       setGame(data);
       if (data.currentQuestion !== prevQuestion.current) {
         prevQuestion.current = data.currentQuestion;
-        prevAnswered.current = false;
-        setChestOpen(false);
         setTimer(data.currentQuestionData?.timeLimit ?? 20);
-      }
-      // Detect when answer first arrives
-      if (data.myAnswer && !prevAnswered.current) {
-        prevAnswered.current = true;
-        const kind = data.myAnswer.isCorrect ? "correct" : "wrong";
-        setFlash(kind);
-        setTimeout(() => setFlash(null), 450);
       }
     }
   }, [code]);
@@ -123,19 +90,6 @@ export default function PlayerScreen() {
       body: JSON.stringify({ playerId, answerIndex }),
     });
     await fetchState();
-  }
-
-  function handleChestOpen() {
-    setChestOpen(true);
-    confetti({
-      particleCount: 65,
-      spread: 58,
-      origin: { y: 0.55 },
-      colors: ["#fde047", "#fbbf24", "#f59e0b", "#fff", "#fef3c7"],
-      shapes: ["circle"],
-      scalar: 1.1,
-      gravity: 1.0,
-    });
   }
 
   // ── Join form ──────────────────────────────────────────────────────────────
@@ -390,28 +344,11 @@ export default function PlayerScreen() {
   // ── Active game ────────────────────────────────────────────────────────────
 
   const q = game.currentQuestionData;
-  const answered = !!game.myAnswer;
   const timerPct = (timer / (q?.timeLimit ?? 20)) * 100;
   const timerColor = timer > 8 ? "#22c55e" : timer > 4 ? "#eab308" : "#ef4444";
 
   return (
     <div style={{ display: "flex", minHeight: "100dvh", flexDirection: "column", background: "#07183F" }}>
-
-      {/* Screen flash overlay on answer */}
-      <AnimatePresence>
-        {flash && (
-          <motion.div
-            key={flash}
-            initial={{ opacity: 0.75 }}
-            animate={{ opacity: 0 }}
-            transition={{ duration: 0.45 }}
-            style={{
-              position: "fixed", inset: 0, zIndex: 100, pointerEvents: "none",
-              background: flash === "correct" ? "rgba(21,128,61,0.40)" : "rgba(239,68,68,0.40)",
-            }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Top bar */}
       <div style={{
@@ -420,6 +357,7 @@ export default function PlayerScreen() {
         background: "rgba(7,24,63,0.90)",
         backdropFilter: "blur(12px)",
         padding: "8px 16px",
+        flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <CapIcon capId={capId} size={28} />
@@ -435,8 +373,8 @@ export default function PlayerScreen() {
         </span>
       </div>
 
-      {/* Timer bar — smooth width via framer-motion */}
-      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", position: "relative" }}>
+      {/* Timer bar */}
+      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", position: "relative", flexShrink: 0 }}>
         <motion.div
           animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
           transition={{ width: { duration: 1, ease: "linear" }, backgroundColor: { duration: 0.3 } }}
@@ -444,163 +382,15 @@ export default function PlayerScreen() {
         />
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", padding: "20px 16px 16px" }}>
-        {q && (
-          <>
-            {/* Question header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(25,205,210,0.60)" }}>
-                {answered ? "Waiting for others…" : "Answer now"}
-              </span>
-              {!answered && (
-                <motion.span
-                  key={timer}
-                  initial={{ scale: timer <= 5 ? 1.3 : 1 }}
-                  animate={{ scale: 1 }}
-                  style={{ fontSize: 18, fontWeight: 900, color: timerColor } as React.CSSProperties}
-                >
-                  {timer}s
-                </motion.span>
-              )}
-            </div>
-
-            {/* Question text */}
-            <div style={{ flex: 1, marginBottom: 20 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.4, color: "#fff", margin: 0 }}>
-                {q.prompt}
-              </h2>
-            </div>
-
-            {/* Answer buttons — stagger in, spring press */}
-            <AnimatePresence mode="wait">
-              {!answered ? (
-                <motion.div
-                  key={`q-${game.currentQuestion}`}
-                  variants={gridVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
-                >
-                  {q.choices.map((choice, i) => (
-                    <motion.button
-                      key={i}
-                      variants={btnVariants}
-                      whileTap={{ scale: 0.89, boxShadow: "none" }}
-                      onClick={() => submitAnswer(i)}
-                      style={{
-                        display: "flex", flexDirection: "column",
-                        alignItems: "center", justifyContent: "space-between",
-                        minHeight: 120, borderRadius: 18, border: "none",
-                        padding: "6px 8px 14px",
-                        background: ANSWER_BG[i],
-                        boxShadow: `0 5px 0 ${ANSWER_SHADOW[i]}`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
-                        alt={ANSWER_LABELS[i]}
-                        style={{ width: "90%", maxWidth: 150, objectFit: "contain", pointerEvents: "none" }}
-                      />
-                      <span style={{
-                        fontSize: 12, fontWeight: 700, color: "#fff",
-                        textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                        textAlign: "center", lineHeight: 1.3,
-                        padding: "0 4px",
-                      }}>
-                        {choice}
-                      </span>
-                    </motion.button>
-                  ))}
-                </motion.div>
-              ) : (
-                /* Post-answer state */
-                <motion.div
-                  key="post-answer"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", damping: 20 }}
-                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 8, textAlign: "center" }}
-                >
-                  {game.myAnswer?.isCorrect ? (
-                    <>
-                      {!chestOpen ? (
-                        <motion.button
-                          onClick={handleChestOpen}
-                          whileTap={{ scale: 0.93 }}
-                          animate={{ y: [0, -4, 0] }}
-                          transition={{ y: { duration: 1.8, repeat: Infinity, ease: "easeInOut" } }}
-                          style={{
-                            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                            borderRadius: 24, border: "1px solid rgba(253,224,71,0.35)",
-                            background: "rgba(253,224,71,0.08)",
-                            padding: "28px 48px", cursor: "pointer",
-                          }}
-                        >
-                          <motion.img
-                            src="/assets/capsule/game/badge-correct.png"
-                            alt="Correct!"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: "spring", damping: 10, stiffness: 260 }}
-                            style={{ height: 48, objectFit: "contain" }}
-                          />
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/assets/capsule/chest-closed.png" alt="chest" style={{ width: 88, height: 88, objectFit: "contain" }} />
-                          <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "#fde047" }}>
-                            Tap to open!
-                          </span>
-                        </motion.button>
-                      ) : (
-                        <motion.div
-                          initial={{ scale: 0.6, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ type: "spring", damping: 11, stiffness: 240 }}
-                          style={{
-                            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-                            borderRadius: 24, border: "1px solid rgba(255,255,255,0.12)",
-                            background: "rgba(255,255,255,0.05)",
-                            padding: "28px 48px",
-                          }}
-                        >
-                          {game.myAnswer.chestResult?.type === "gold" ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src="/assets/capsule/game/coin-burst.png" alt="coins!" style={{ width: 100, objectFit: "contain" }} />
-                          ) : (
-                            <span style={{ fontSize: 52 }}>
-                              {game.myAnswer.chestResult?.type === "steal" ? "🗡️"
-                                : game.myAnswer.chestResult?.type === "lose" ? "💀"
-                                : game.myAnswer.chestResult?.type === "double" ? "🔥" : "✨"}
-                            </span>
-                          )}
-                          <p style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>
-                            {game.myAnswer.chestResult?.label ?? "Reward!"}
-                          </p>
-                        </motion.div>
-                      )}
-                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for the teacher to advance…</p>
-                    </>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, paddingTop: 8 }}>
-                      <motion.img
-                        src="/assets/capsule/game/badge-wrong.png"
-                        alt="Wrong"
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ type: "spring", damping: 14 }}
-                        style={{ height: 56, objectFit: "contain" }}
-                      />
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#f87171" }}>Wrong answer</p>
-                      <p style={{ fontSize: 11, color: "rgba(255,255,255,0.30)" }}>Waiting for next question…</p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </div>
+      {/* Factory game — handles question overlay + animation sequence */}
+      <FactoryGame
+        question={q}
+        answered={!!game.myAnswer}
+        myAnswer={game.myAnswer}
+        timer={timer}
+        currentQuestion={game.currentQuestion}
+        onSubmit={submitAnswer}
+      />
 
       {/* Mini leaderboard */}
       <div style={{
