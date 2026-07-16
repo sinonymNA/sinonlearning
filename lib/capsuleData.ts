@@ -100,6 +100,26 @@ export function rollChest(
   return { type: "double", label: "DOUBLED! 🔥" };
 }
 
+// ─── Cap rolling ──────────────────────────────────────────────────────────────
+
+const RARITY_WEIGHTS: Record<CapRarity, number> = {
+  common: 65,
+  rare:   25,
+  epic:    8,
+  mythic:  2,
+};
+
+export const CAPSULE_COST = 50; // coins per open
+
+export function rollCap(): Cap {
+  const pool: Cap[] = [];
+  for (const cap of CAPS) {
+    const weight = RARITY_WEIGHTS[cap.rarity];
+    for (let i = 0; i < weight; i++) pool.push(cap);
+  }
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ─── Built-in demo question set ───────────────────────────────────────────────
 
 export interface CapsuleQuestion {

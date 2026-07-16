@@ -196,6 +196,20 @@ export async function grantCap(userId: string, capId: string): Promise<void> {
   );
 }
 
+export async function spendCoins(userId: string, amount: number): Promise<boolean> {
+  await ensureCapsuleSchema();
+  const res = await query<{ coins: number }>(
+    `UPDATE capsule_users SET coins = coins - $1 WHERE id = $2 AND coins >= $1 RETURNING coins`,
+    [amount, userId],
+  );
+  return res.rows.length > 0;
+}
+
+export async function awardCoins(userId: string, amount: number): Promise<void> {
+  await ensureCapsuleSchema();
+  await query(`UPDATE capsule_users SET coins = coins + $1 WHERE id = $2`, [amount, userId]);
+}
+
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 
 export async function createCapsuleSession(userId: string, expiresAt: Date): Promise<string> {

@@ -60,17 +60,8 @@ export default function CapsulePage() {
 
       {/* Logo */}
       <div className="relative mb-10 text-center">
-        <div className="mb-3 flex justify-center gap-2">
-          {["cap-fox", "cap-dragon", "cap-crown"].map(id => (
-            <CapIcon key={id} capId={id} size={40} />
-          ))}
-        </div>
-        <h1
-          className="text-[clamp(4rem,18vw,9rem)] leading-none tracking-tight text-white"
-          style={{ fontFamily: "var(--font-bebas)" }}
-        >
-          CAPSULE
-        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/capsule/logo.png" alt="Capsule" className="mx-auto mb-3" style={{ height: "clamp(80px,20vw,130px)", objectFit: "contain" }} />
         <p className="mt-2 text-sm text-white/40">Live classroom games · Collect caps · Win gold</p>
       </div>
 
@@ -166,6 +157,20 @@ export default function CapsulePage() {
               Host a Game
             </Link>
           )}
+
+          <Link
+            href="/capsule/open"
+            className="rounded-2xl bg-[#19CDD2] py-3.5 text-center text-sm font-black uppercase tracking-widest text-[#06163E] transition-opacity hover:opacity-90"
+          >
+            Open Capsule
+          </Link>
+
+          <Link
+            href="/capsule/collection"
+            className="rounded-2xl border border-white/12 py-3.5 text-center text-sm font-bold text-white/70 transition-colors hover:bg-white/5"
+          >
+            My Collection
+          </Link>
 
           {/* Switch demo role */}
           {me.email?.endsWith("@capsule.demo") && (
