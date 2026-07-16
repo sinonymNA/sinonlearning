@@ -18,11 +18,12 @@ export async function GET(
 
   const players = await getPlayers(code);
 
-  // Logged-in users are matched by user_id; anonymous players by explicit pid param
-  const myPlayer = user
-    ? (players.find(p => p.user_id === user.id) ?? null)
-    : pidParam
+  // Explicit pid param takes priority (play page always sends it for anonymous/guest players,
+  // even when a DemoTeacher session cookie is present from the same tab)
+  const myPlayer = pidParam
     ? (players.find(p => p.id === pidParam) ?? null)
+    : user
+    ? (players.find(p => p.user_id === user.id) ?? null)
     : null;
 
   // Get answers for current question (to tell players if they've answered)
