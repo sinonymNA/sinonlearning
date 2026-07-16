@@ -27,6 +27,20 @@ export class TitleScene extends Phaser.Scene {
       fontSize: "18px", fontFamily: "sans-serif", color: "#94a3b8",
     }).setOrigin(0.5);
 
+    const soloButton = this.add.container(W / 2, H * 0.61).setDepth(20);
+    const soloShadow = this.add.rectangle(0, 5, 250, 54, 0x071226, 1).setOrigin(0.5).setStrokeStyle(4, 0x071226);
+    const soloBg = this.add.rectangle(0, 0, 250, 54, 0x19cdd2, 1).setOrigin(0.5).setStrokeStyle(4, 0x071226).setInteractive({ useHandCursor: true });
+    const soloText = this.add.text(0, 0, "START SOLO PARTY", {
+      fontSize: "18px", fontFamily: "sans-serif", color: "#071226", fontStyle: "bold",
+    }).setOrigin(0.5);
+    soloButton.add([soloShadow, soloBg, soloText]);
+    soloBg.on("pointerover", () => soloButton.setScale(1.04));
+    soloBg.on("pointerout", () => soloButton.setScale(1));
+    soloBg.on("pointerdown", () => {
+      soloBg.disableInteractive();
+      EventBus.emit("party:join", { playerId: "player-local", displayName: "You", capId: "cap-fox" });
+    });
+
     // Floating animated coins (placeholder)
     for (let i = 0; i < 8; i++) {
       const cx = Phaser.Math.Between(40, W - 40);
@@ -41,7 +55,7 @@ export class TitleScene extends Phaser.Scene {
     }
 
     // Waiting indicator
-    const waiting = this.add.text(W / 2, H * 0.65, "Waiting for game...", {
+    const waiting = this.add.text(W / 2, H * 0.72, "Or waiting for a hosted game...", {
       fontSize: "15px", fontFamily: "sans-serif", color: "#64748b",
     }).setOrigin(0.5);
 
@@ -50,7 +64,7 @@ export class TitleScene extends Phaser.Scene {
     this.time.addEvent({
       delay: 600, repeat: -1, callback: () => {
         dots = (dots + 1) % 4;
-        waiting.setText("Waiting for game" + ".".repeat(dots));
+        waiting.setText("Or waiting for a hosted game" + ".".repeat(dots));
       },
     });
 
@@ -63,6 +77,8 @@ export class TitleScene extends Phaser.Scene {
       this.scene.start("LobbyScene", { initialPlayer: data });
     });
 
+    EventBus.emit("phaser:phase-change", { phase: "title" });
     EventBus.emit("phaser:ready");
   }
 }
+

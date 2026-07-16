@@ -1,8 +1,8 @@
 import Phaser from "phaser";
-import { BOARD_SPACES, BOARD_SPACE_MAP, type BoardSpace, GRAND_CAPS_TO_WIN, SPIN_CORRECT_RANGE, SPIN_INCORRECT_RANGE } from "../BoardData";
-import { createInitialState, type GameState, type PlayerState, getPathSteps, rankPlayers } from "../GameState";
+import { BOARD_SPACES, BOARD_SPACE_MAP, GRAND_CAPS_TO_WIN, SPIN_CORRECT_RANGE, SPIN_INCORRECT_RANGE } from "../BoardData";
+import { createInitialState, type GameState, type PlayerState, rankPlayers } from "../GameState";
 import { EventBus } from "../EventBus";
-import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS } from "../AssetManifest";
+import { PLACEHOLDER, SPACE_RADIUS } from "../AssetManifest";
 import type { UIScene } from "./UIScene";
 
 interface BoardSceneData {
@@ -12,7 +12,7 @@ interface BoardSceneData {
 const TWEEN_STEP_DURATION = 250; // ms per board step
 const TWEEN_STEP_GAP = 60;       // ms pause between steps
 
-// Sample questions — replaced by server questions in production
+// Sample questions â€” replaced by server questions in production
 const SAMPLE_QUESTIONS = [
   { q: "What does GDP stand for?", choices: ["Gross Domestic Product", "General Dollar Price", "Government Debt Plan", "Gross Direct Payment"], answer: 0 },
   { q: "Which is a primary market?", choices: ["Stock exchange trading", "IPO share sale", "Bond secondary market", "Derivative contract"], answer: 1 },
@@ -57,6 +57,8 @@ export class BoardScene extends Phaser.Scene {
     }
 
     this.ui = this.scene.get("UIScene") as UIScene;
+    this.scene.bringToTop("UIScene");
+    EventBus.emit("phaser:phase-change", { phase: "board" });
 
     this.drawPaths();
     this.drawSpaces();
@@ -73,7 +75,7 @@ export class BoardScene extends Phaser.Scene {
   // --- Board drawing ---
 
   private drawPaths() {
-    // Path lines are hidden when the board background art is present — the artwork shows the track.
+    // Path lines are hidden when the board background art is present â€” the artwork shows the track.
     // Draw faint guides only as a fallback when there's no board-bg texture.
     if (this.textures.exists("board-bg")) return;
 
@@ -140,7 +142,7 @@ export class BoardScene extends Phaser.Scene {
       const p = this.state.players[i];
       const space = BOARD_SPACE_MAP.get(p.spaceId);
       if (!space) continue;
-      const offset = this.tokenOffset(i, this.state.players.length);
+      const offset = this.tokenOffset(i);
       const texKey = this.tokenTextureKey(p);
       const img = this.add.image(0, 0, texKey);
       const container = this.add.container(space.x + offset.x, space.y + offset.y, [img]).setDepth(10);
@@ -148,7 +150,7 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  private tokenOffset(index: number, total: number): { x: number; y: number } {
+  private tokenOffset(index: number): { x: number; y: number } {
     const offsets = [
       { x: -8, y: -8 }, { x: 8, y: -8 }, { x: -8, y: 8 }, { x: 8, y: 8 },
     ];
@@ -183,7 +185,7 @@ export class BoardScene extends Phaser.Scene {
       if (player.isBot) {
         this.handleBotTurn();
       } else {
-        // Show item panel if human has items — they can optionally use one first
+        // Show item panel if human has items â€” they can optionally use one first
         if (player.items.length > 0) {
           this.ui.showItemPanel(player.items, (idx) => {
             this.useItem(this.state.turnIndex, idx);
@@ -210,7 +212,7 @@ export class BoardScene extends Phaser.Scene {
           player.spaceId = this.state.activeGrandCapId;
           const token = this.tokenObjects[playerIdx];
           if (token) {
-            const offset = this.tokenOffset(playerIdx, this.state.players.length);
+            const offset = this.tokenOffset(playerIdx);
             this.tweens.add({ targets: token, x: capSpace.x + offset.x, y: capSpace.y + offset.y, duration: 600 });
           }
         }
@@ -228,7 +230,7 @@ export class BoardScene extends Phaser.Scene {
           player.spaceId = dest.id;
           const token = this.tokenObjects[playerIdx];
           if (token) {
-            const offset = this.tokenOffset(playerIdx, this.state.players.length);
+            const offset = this.tokenOffset(playerIdx);
             this.tweens.add({ targets: token, x: dest.x + offset.x, y: dest.y + offset.y, duration: 400, ease: "Back.Out" });
           }
           this.ui.showMessage(`Warp Ticket! Teleported to ${dest.label ?? dest.id}`, "#ec4899");
@@ -237,7 +239,7 @@ export class BoardScene extends Phaser.Scene {
       }
       case "golden-spinner":
         // Flag handled in doSpin
-        player.items.push("golden-spinner"); // push back — consumed in doSpin
+        player.items.push("golden-spinner"); // push back â€” consumed in doSpin
         this.ui.showMessage("Golden Spinner ready for your roll!", "#ffd700");
         break;
       case "raid-block":
@@ -264,7 +266,7 @@ export class BoardScene extends Phaser.Scene {
   }
 
   private handleBotTurn() {
-    // Bots always "answer" after a short delay — random 60% correct
+    // Bots always "answer" after a short delay â€” random 60% correct
     this.time.delayedCall(800, () => {
       const correct = Math.random() < 0.6;
       const player = this.currentPlayer();
@@ -346,7 +348,7 @@ export class BoardScene extends Phaser.Scene {
 
     const space = BOARD_SPACE_MAP.get(currentId);
     if (!space || space.connections.length === 0) {
-      // Dead end — animate what we have
+      // Dead end â€” animate what we have
       const fullPath = pathSoFar;
       if (fullPath.length > 0) {
         this.animateAlongPath(playerIdx, fullPath, 0, () => {
@@ -360,7 +362,7 @@ export class BoardScene extends Phaser.Scene {
     }
 
     if (space.connections.length > 1 && !player.isBot) {
-      // Human at a branch — animate to current space first, then prompt
+      // Human at a branch â€” animate to current space first, then prompt
       if (pathSoFar.length > 0) {
         this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
           player.spaceId = pathSoFar[pathSoFar.length - 1];
@@ -417,7 +419,7 @@ export class BoardScene extends Phaser.Scene {
       trap: "Trap (lose coins)",
       challenge: "Challenge (minigame!)",
       warp: "Warp Pad",
-      grand_cap: "Grand Cap Pedestal ★",
+      grand_cap: "Grand Cap Pedestal â˜…",
       start: "Start",
     };
 
@@ -447,7 +449,7 @@ export class BoardScene extends Phaser.Scene {
     const nextSpace = BOARD_SPACE_MAP.get(path[stepIdx]);
     if (!token || !nextSpace) { onComplete(); return; }
 
-    const offset = this.tokenOffset(playerIdx, this.state.players.length);
+    const offset = this.tokenOffset(playerIdx);
     this.tweens.add({
       targets: token,
       x: nextSpace.x + offset.x,
@@ -472,11 +474,11 @@ export class BoardScene extends Phaser.Scene {
     if (space.type === "warp" && space.warpTargetId) {
       const dest = BOARD_SPACE_MAP.get(space.warpTargetId);
       if (dest) {
-        this.ui.showMessage(`WARP! → ${dest.label ?? space.warpTargetId}`, "#ec4899", 1500);
+        this.ui.showMessage(`WARP! â†’ ${dest.label ?? space.warpTargetId}`, "#ec4899", 1500);
         this.time.delayedCall(400, () => {
           player.spaceId = space.warpTargetId!;
           const token = this.tokenObjects[playerIdx];
-          const offset = this.tokenOffset(playerIdx, this.state.players.length);
+          const offset = this.tokenOffset(playerIdx);
           this.tweens.add({
             targets: token, x: dest.x + offset.x, y: dest.y + offset.y,
             duration: 400, ease: "Back.Out",
@@ -549,7 +551,7 @@ export class BoardScene extends Phaser.Scene {
     if (player.coins >= 20) {
       player.coins -= 20;
       player.grandCaps++;
-      this.ui.showMessage(`★ GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`, "#ffd700", 2500);
+      this.ui.showMessage(`â˜… GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`, "#ffd700", 2500);
 
       // Relocate Grand Cap to a different eligible space
       const eligible = ([] as string[]).concat(
@@ -670,3 +672,4 @@ export class BoardScene extends Phaser.Scene {
     this.time.delayedCall(600, () => this.endTurn());
   }
 }
+

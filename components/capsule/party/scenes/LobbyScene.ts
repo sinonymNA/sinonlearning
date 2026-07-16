@@ -40,7 +40,7 @@ export class LobbyScene extends Phaser.Scene {
     this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 1).setOrigin(0);
     this.add.rectangle(0, H - 4, W, 4, 0x19cdd2, 1).setOrigin(0);
 
-    this.add.text(W / 2, 28, "CAPSULE PARTY — LOBBY", {
+    this.add.text(W / 2, 28, "CAPSULE PARTY â€” LOBBY", {
       fontSize: "26px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
     }).setOrigin(0.5);
 
@@ -75,6 +75,7 @@ export class LobbyScene extends Phaser.Scene {
       this.addPlayer({ id: d.playerId, displayName: d.displayName, capId: d.capId, colorIndex: this.players.length });
     });
     EventBus.on("party:start", () => this.startGame());
+    EventBus.emit("phaser:phase-change", { phase: "lobby" });
   }
 
   private addPlayer(p: LobbyPlayer) {
@@ -119,7 +120,7 @@ export class LobbyScene extends Phaser.Scene {
       const nameText = this.add.text(x + slotH + 8, y + 10, p ? p.displayName : "Empty", {
         fontSize: "15px", fontFamily: "sans-serif", color: p ? "#ffffff" : "#475569", fontStyle: p ? "bold" : "normal",
       });
-      const subText = this.add.text(x + slotH + 8, y + 32, p ? (isBot ? "🤖 Bot" : "Player") : "Waiting...", {
+      const subText = this.add.text(x + slotH + 8, y + 32, p ? (isBot ? "ðŸ¤– Bot" : "Player") : "Waiting...", {
         fontSize: "11px", fontFamily: "sans-serif", color: "#94a3b8",
       });
 
@@ -136,7 +137,7 @@ export class LobbyScene extends Phaser.Scene {
   private startGame() {
     if (this.players.length === 0) {
       // Add default player for solo testing
-      this.addPlayer({ id: "player-0", displayName: "You", capId: "cap-default", colorIndex: 0 });
+      this.addPlayer({ id: "player-0", displayName: "You", capId: "cap-fox", colorIndex: 0 });
     }
     // Fill remaining slots with bots
     this.fillWithBots();
@@ -144,7 +145,7 @@ export class LobbyScene extends Phaser.Scene {
     const uiScene = this.scene.get("UIScene") as import("./UIScene").UIScene;
     uiScene.scene.start();
     uiScene.initPlayers(
-      this.players.map((p, i) => ({
+      this.players.map((p) => ({
         id: p.id,
         displayName: p.displayName,
         capId: p.capId,
@@ -157,3 +158,4 @@ export class LobbyScene extends Phaser.Scene {
     this.scene.start("BoardScene", { players: this.players });
   }
 }
+

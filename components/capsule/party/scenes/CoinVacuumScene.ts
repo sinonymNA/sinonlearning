@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { type GameState } from "../GameState";
+import { EventBus } from "../EventBus";
 import { PLACEHOLDER, PLAYER_RADIUS, COIN_RADIUS } from "../AssetManifest";
 import type { UIScene } from "./UIScene";
 import type { BoardScene } from "./BoardScene";
@@ -68,7 +69,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     // Arena background
     this.add.rectangle(0, 0, W, H, PLACEHOLDER.ARENA_BG, 1).setOrigin(0);
 
-    // Walls (visual only — world bounds handle physics)
+    // Walls (visual only â€” world bounds handle physics)
     const wallColor = PLACEHOLDER.WALL_COLOR;
     this.add.rectangle(0, 0, W, 8, wallColor, 1).setOrigin(0);
     this.add.rectangle(0, H - 8, W, 8, wallColor, 1).setOrigin(0);
@@ -76,6 +77,8 @@ export class CoinVacuumScene extends Phaser.Scene {
     this.add.rectangle(W - 8, 0, 8, H, wallColor, 1).setOrigin(0);
 
     this.ui = this.scene.get("UIScene") as UIScene;
+    this.scene.bringToTop("UIScene");
+    EventBus.emit("phaser:phase-change", { phase: "minigame" });
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = {
@@ -138,7 +141,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     for (const p of this.players) {
       if (!p.isBot) continue;
       p.magnetCooldown = Math.max(0, p.magnetCooldown - delta);
-      this.updateBotMovement(p, delta);
+      this.updateBotMovement(p);
       if (p.magnetCooldown <= 0 && Math.random() < 0.003) {
         this.activateMagnet(p);
       }
@@ -275,7 +278,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     }
   }
 
-  private updateBotMovement(bot: MinigamePlayer, _delta: number) {
+  private updateBotMovement(bot: MinigamePlayer) {
     // Find nearest non-fake coin
     let nearest: CoinObject | null = null;
     let nearestDist = Infinity;
@@ -437,13 +440,13 @@ export class CoinVacuumScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
 
-    const bg = this.add.rectangle(W / 2, H / 2, 400, 260, 0x0f172a, 0.97).setOrigin(0.5).setDepth(600);
-    const border = this.add.rectangle(W / 2, H / 2, 400, 260, 0, 0).setStrokeStyle(2, 0x19cdd2).setOrigin(0.5).setDepth(601);
-    const title = this.add.text(W / 2, H / 2 - 110, "COIN VACUUM RESULTS", {
+    this.add.rectangle(W / 2, H / 2, 400, 260, 0x0f172a, 0.97).setOrigin(0.5).setDepth(600);
+    this.add.rectangle(W / 2, H / 2, 400, 260, 0, 0).setStrokeStyle(2, 0x19cdd2).setOrigin(0.5).setDepth(601);
+    this.add.text(W / 2, H / 2 - 110, "COIN VACUUM RESULTS", {
       fontSize: "18px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
     }).setOrigin(0.5).setDepth(602);
 
-    const medals = ["🥇", "🥈", "🥉", "4th"];
+    const medals = ["ðŸ¥‡", "ðŸ¥ˆ", "ðŸ¥‰", "4th"];
     sorted.forEach((p, i) => {
       const y = H / 2 - 70 + i * 38;
       this.add.text(W / 2 - 140, y, `${medals[i] ?? (i + 1)}.`, {
@@ -457,7 +460,7 @@ export class CoinVacuumScene extends Phaser.Scene {
       }).setOrigin(0, 0.5).setDepth(602);
     });
 
-    const btn = this.add.text(W / 2, H / 2 + 100, "Continue →", {
+    const btn = this.add.text(W / 2, H / 2 + 100, "Continue â†’", {
       fontSize: "16px", fontFamily: "sans-serif", color: "#0f172a",
       backgroundColor: "#19cdd2", padding: { x: 20, y: 8 }, fontStyle: "bold",
     }).setOrigin(0.5).setDepth(602).setInteractive({ useHandCursor: true });
@@ -466,3 +469,4 @@ export class CoinVacuumScene extends Phaser.Scene {
     btn.on("pointerout", () => btn.setBackgroundColor("#19cdd2"));
   }
 }
+
