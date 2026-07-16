@@ -1,7 +1,7 @@
 import { CAP_MAP, type Cap } from "@/lib/capsuleData";
 
 const CAP_PORTRAITS: Record<string, string> = {
-  // Classic set
+  // Classic set (original 10)
   "cap-fox":        "/assets/capsule/caps/cap-fox.png",
   "cap-cat":        "/assets/capsule/caps/cap-cat.png",
   "cap-dog":        "/assets/capsule/caps/cap-dog.png",
@@ -12,6 +12,23 @@ const CAP_PORTRAITS: Record<string, string> = {
   "cap-bunny":      "/assets/capsule/caps/cap-bunny.png",
   "cap-bear":       "/assets/capsule/caps/cap-bear.png",
   "cap-hamster":    "/assets/capsule/caps/cap-hamster.png",
+  // Classic Rare set (16 new)
+  "cap-lion":       "/assets/capsule/caps/cap-lion.png",
+  "cap-shark":      "/assets/capsule/caps/cap-shark.png",
+  "cap-penguin":    "/assets/capsule/caps/cap-penguin.png",
+  "cap-butterfly":  "/assets/capsule/caps/cap-butterfly.png",
+  "cap-flamingo":   "/assets/capsule/caps/cap-flamingo.png",
+  "cap-koala":      "/assets/capsule/caps/cap-koala.png",
+  "cap-panda":      "/assets/capsule/caps/cap-panda.png",
+  "cap-turtle":     "/assets/capsule/caps/cap-turtle.png",
+  "cap-dragon":     "/assets/capsule/caps/cap-dragon.png",
+  "cap-wolf":       "/assets/capsule/caps/cap-wolf.png",
+  "cap-eagle":      "/assets/capsule/caps/cap-eagle.png",
+  "cap-crystal":    "/assets/capsule/caps/cap-crystal.png",
+  "cap-phoenix":    "/assets/capsule/caps/cap-phoenix.png",
+  "cap-crown":      "/assets/capsule/caps/cap-crown.png",
+  "cap-galaxy":     "/assets/capsule/caps/cap-galaxy.png",
+  "cap-ghost":      "/assets/capsule/caps/cap-ghost.png",
   // Italian Brainrot set
   "cap-cappuccina":    "/assets/capsule/caps/cap-cappuccina.png",
   "cap-chimpanzini":   "/assets/capsule/caps/cap-chimpanzini.png",
