@@ -14,13 +14,14 @@ export async function POST(
   if (!game) return NextResponse.json({ error: "Game not found." }, { status: 404 });
   if (game.status === "ended") return NextResponse.json({ error: "This game has ended." }, { status: 410 });
 
-  let body: { displayName?: string };
+  let body: { displayName?: string; capId?: string };
   try { body = await req.json(); } catch { body = {}; }
 
   const displayName = (body.displayName ?? user?.username ?? "").trim().slice(0, 24);
   if (!displayName) return NextResponse.json({ error: "Enter a display name." }, { status: 400 });
 
-  const capId = user?.equipped_cap_id ?? STARTER_CAP_ID;
+  // Logged-in users always use their equipped cap; guests may choose
+  const capId = user?.equipped_cap_id ?? (body.capId || STARTER_CAP_ID);
   const player = await joinGame(code, user?.id ?? null, displayName, capId);
 
   return NextResponse.json({ playerId: player.id, displayName: player.display_name, capId: player.cap_id });

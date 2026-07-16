@@ -8,6 +8,11 @@ import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
 import type { ChestResult } from "@/lib/capsuleData";
 
+const GUEST_CAPS = [
+  "cap-fox", "cap-cat", "cap-dog", "cap-frog", "cap-fish",
+  "cap-duck", "cap-owl", "cap-bunny", "cap-bear", "cap-hamster",
+];
+
 const ANSWER_LABELS = ["A", "B", "C", "D"];
 
 const ANSWER_BG = [
@@ -99,7 +104,7 @@ export default function PlayerScreen() {
     setJoining(true); setJoinError("");
     const res = await fetch(`/api/capsule/games/${code}/join`, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ displayName }),
+      body: JSON.stringify({ displayName, capId }),
     });
     const data = await res.json() as { playerId?: string; capId?: string; error?: string };
     setJoining(false);
@@ -139,26 +144,64 @@ export default function PlayerScreen() {
     return (
       <div style={{
         display: "flex", minHeight: "100dvh", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", padding: "0 20px",
+        alignItems: "center", justifyContent: "center", padding: "20px 20px 32px",
         background: "#07183F",
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/assets/capsule/logo.png"
           alt="Capsule"
-          style={{ height: 64, objectFit: "contain", marginBottom: 24, filter: "drop-shadow(0 2px 16px rgba(25,205,210,0.5))" }}
+          style={{ height: 56, objectFit: "contain", marginBottom: 16, filter: "drop-shadow(0 2px 16px rgba(25,205,210,0.5))" }}
         />
+
         <div style={{
-          marginBottom: 20,
-          borderRadius: 18, border: "1px solid rgba(25,205,210,0.25)",
+          marginBottom: 24,
+          borderRadius: 14, border: "1px solid rgba(25,205,210,0.25)",
           background: "rgba(25,205,210,0.10)",
-          padding: "10px 32px",
-          fontFamily: "monospace", fontSize: 28, fontWeight: 900,
+          padding: "8px 28px",
+          fontFamily: "monospace", fontSize: 24, fontWeight: 900,
           letterSpacing: "0.20em", color: "#19CDD2",
         }}>
           {code}
         </div>
-        <form onSubmit={join} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 300 }}>
+
+        <form onSubmit={join} style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 320 }}>
+
+          {/* Selected cap preview + picker */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <motion.div
+              key={capId}
+              initial={{ scale: 0.7, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", damping: 14, stiffness: 300 }}
+            >
+              <CapIcon capId={capId} size={72} animated />
+            </motion.div>
+            <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(255,255,255,0.30)" }}>
+              Pick your cap
+            </p>
+            {/* Cap selection row */}
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, width: "100%", justifyContent: "center", flexWrap: "wrap" }}>
+              {GUEST_CAPS.map(id => (
+                <motion.button
+                  key={id}
+                  type="button"
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => setCapId(id)}
+                  style={{
+                    background: "none", border: "none", padding: 2, cursor: "pointer",
+                    borderRadius: "50%",
+                    outline: id === capId ? "2px solid #19CDD2" : "2px solid transparent",
+                    outlineOffset: 2,
+                  }}
+                >
+                  <CapIcon capId={id} size={36} />
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
+          {/* Name input */}
           <input
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
@@ -176,7 +219,9 @@ export default function PlayerScreen() {
             onFocus={e => (e.target.style.borderColor = "rgba(25,205,210,0.50)")}
             onBlur={e => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
           />
+
           {joinError && <p style={{ textAlign: "center", fontSize: 12, color: "#f87171" }}>{joinError}</p>}
+
           <motion.button
             type="submit"
             disabled={joining || !displayName.trim()}
