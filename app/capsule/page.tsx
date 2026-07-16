@@ -16,6 +16,7 @@ export default function CapsulePage() {
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState<"student" | "teacher" | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
 
   useEffect(() => {
     fetch("/api/capsule/auth/me")
@@ -52,143 +53,344 @@ export default function CapsulePage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-16">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/3 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-500/8 blur-[120px]" />
-      </div>
+    <div style={{
+      position: "relative",
+      minHeight: "100dvh",
+      background: "#07183F",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+    }}>
+      {/* Full-bleed scene background */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/capsule/scene.png"
+        alt=""
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "center bottom",
+          pointerEvents: "none",
+          userSelect: "none",
+        }}
+      />
 
-      {/* Logo */}
-      <div className="relative mb-10 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/assets/capsule/logo.png" alt="Capsule" className="mx-auto mb-3" style={{ height: "clamp(80px,20vw,130px)", objectFit: "contain" }} />
-        <p className="mt-2 text-sm text-white/40">Live classroom games · Collect caps · Win gold</p>
-      </div>
+      {/* Dark overlay so UI reads clearly */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: "linear-gradient(to bottom, rgba(7,24,63,0.55) 0%, rgba(7,24,63,0.10) 40%, rgba(7,24,63,0.55) 100%)",
+        pointerEvents: "none",
+      }} />
 
-      {/* Join by code */}
-      <form onSubmit={join} className="relative mb-6 flex w-full max-w-xs flex-col gap-3">
-        <input
-          value={code}
-          onChange={e => setCode(e.target.value.toUpperCase())}
-          placeholder="ENTER CODE"
-          maxLength={6}
-          className="w-full rounded-2xl border border-white/12 bg-white/5 px-5 py-4 text-center text-xl font-black tracking-[0.3em] text-white placeholder-white/20 outline-none focus:border-white/30"
-        />
-        <button
-          type="submit"
-          disabled={code.trim().length !== 6}
-          className="rounded-2xl bg-[#19CDD2] py-4 text-sm font-black uppercase tracking-widest text-[#06163E] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-30"
-        >
-          Join Game
-        </button>
-      </form>
-
-      {/* Divider */}
-      <div className="relative mb-6 flex w-full max-w-xs items-center gap-3">
-        <div className="h-px flex-1 bg-white/8" />
-        <span className="text-xs text-white/25">or</span>
-        <div className="h-px flex-1 bg-white/8" />
-      </div>
-
-      {loading ? null : !me ? (
-        <div className="flex w-full max-w-xs flex-col gap-3">
-          {/* Real auth */}
-          <Link
-            href="/capsule/login"
-            className="rounded-2xl border border-white/15 py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-white/5"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/capsule/signup"
-            className="rounded-2xl border border-white/20 bg-white/5 py-3.5 text-center text-sm font-bold text-white transition-colors hover:bg-white/8"
-          >
-            Create account
-          </Link>
-
-          {/* Demo divider */}
-          <div className="flex items-center gap-3 py-1">
-            <div className="h-px flex-1 bg-white/8" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/20">Demo</span>
-            <div className="h-px flex-1 bg-white/8" />
+      {/* ── Top bar ───────────────────────────────────────── */}
+      <div style={{
+        position: "relative",
+        zIndex: 10,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "14px 18px 0",
+      }}>
+        {loading ? (
+          <div style={{ height: 40 }} />
+        ) : !me ? (
+          /* Logged-out: sign-in / create / demo buttons */
+          <div style={{ display: "flex", gap: 8 }}>
+            <Link href="/capsule/login" style={smallBtn("#07183F", "rgba(255,255,255,0.18)")}>Sign in</Link>
+            <Link href="/capsule/signup" style={smallBtn("#19CDD2", "#0e8d91")}>Create account</Link>
           </div>
-
-          {/* Demo buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => loginAsDemo("student")}
-              disabled={demoLoading !== null}
-              className="rounded-xl border border-[#19CDD2]/30 bg-[#19CDD2]/10 py-3 text-xs font-black uppercase tracking-wider text-[#19CDD2] transition-colors hover:bg-[#19CDD2]/20 disabled:opacity-50"
-            >
-              {demoLoading === "student" ? "…" : "Demo Student"}
-            </button>
-            <button
-              onClick={() => loginAsDemo("teacher")}
-              disabled={demoLoading !== null}
-              className="rounded-xl border border-[#FF5965]/30 bg-[#FF5965]/10 py-3 text-xs font-black uppercase tracking-wider text-[#FF5965] transition-colors hover:bg-[#FF5965]/20 disabled:opacity-50"
-            >
-              {demoLoading === "teacher" ? "…" : "Demo Teacher"}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex w-full max-w-xs flex-col gap-3">
-          {/* Logged-in user */}
-          <div className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/4 px-4 py-3">
-            <CapIcon capId={me.equippedCapId} size={36} />
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-bold text-white truncate">{me.username}</div>
-              <div className="text-xs text-white/40 capitalize">{me.role}</div>
+        ) : (
+          /* Logged-in: avatar + name + coins */
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <CapIcon capId={me.equippedCapId} size={40} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 900, color: "#fff", lineHeight: 1.1 }}>{me.username}</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", textTransform: "capitalize" }}>{me.role}</div>
             </div>
+          </div>
+        )}
+
+        {/* Coin counter + sign-out */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {me && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "rgba(255,197,46,0.15)",
+              border: "1px solid rgba(255,197,46,0.35)",
+              borderRadius: 99, padding: "5px 12px",
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 18, height: 18, objectFit: "contain" }} />
+              <span style={{ fontSize: 13, fontWeight: 900, color: "#FFC52E" }}>{me.coins}</span>
+            </div>
+          )}
+          {me && (
             <button
               onClick={signOut}
               disabled={signingOut}
-              className="rounded-lg px-3 py-1.5 text-xs font-bold text-white/40 transition-colors hover:bg-white/8 hover:text-white/70 disabled:opacity-40"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                borderRadius: 99, padding: "5px 12px",
+                fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.50)",
+                cursor: "pointer",
+              }}
             >
               {signingOut ? "…" : "Sign out"}
             </button>
-          </div>
-
-          {me.role === "teacher" && (
-            <Link
-              href="/capsule/host"
-              className="rounded-2xl bg-[#FF5965] py-3.5 text-center text-sm font-black uppercase tracking-widest text-white transition-opacity hover:opacity-90"
-            >
-              Host a Game
-            </Link>
-          )}
-
-          <Link
-            href="/capsule/open"
-            className="rounded-2xl bg-[#19CDD2] py-3.5 text-center text-sm font-black uppercase tracking-widest text-[#06163E] transition-opacity hover:opacity-90"
-          >
-            Open Capsule
-          </Link>
-
-          <Link
-            href="/capsule/collection"
-            className="rounded-2xl border border-white/12 py-3.5 text-center text-sm font-bold text-white/70 transition-colors hover:bg-white/5"
-          >
-            My Collection
-          </Link>
-
-          {/* Switch demo role */}
-          {me.email?.endsWith("@capsule.demo") && (
-            <button
-              onClick={() => loginAsDemo(me.role === "teacher" ? "student" : "teacher")}
-              disabled={demoLoading !== null}
-              className="rounded-xl border border-white/10 py-3 text-xs font-bold text-white/40 transition-colors hover:bg-white/5 hover:text-white/60 disabled:opacity-40"
-            >
-              {demoLoading ? "…" : `Switch to Demo ${me.role === "teacher" ? "Student" : "Teacher"}`}
-            </button>
           )}
         </div>
-      )}
+      </div>
+
+      {/* ── Logo (center-top) ─────────────────────────────── */}
+      <div style={{
+        position: "relative", zIndex: 10,
+        display: "flex", justifyContent: "center",
+        marginTop: 8,
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/assets/capsule/logo.png"
+          alt="Capsule"
+          style={{
+            height: "clamp(90px, 18vw, 150px)",
+            objectFit: "contain",
+            filter: "drop-shadow(0 4px 24px rgba(25,205,210,0.50))",
+          }}
+        />
+      </div>
+
+      {/* ── Spacer pushes buttons toward center ──────────── */}
+      <div style={{ flex: "1 1 auto" }} />
+
+      {/* ── Action buttons ───────────────────────────────── */}
+      <div style={{
+        position: "relative", zIndex: 10,
+        display: "flex", flexDirection: "column", alignItems: "center",
+        gap: 12, padding: "0 20px",
+      }}>
+        {!loading && !me ? (
+          /* Logged-out CTA */
+          <>
+            <PillButton color="#19CDD2" textColor="#06163E" onClick={() => setShowJoin(v => !v)}>
+              Join Game
+            </PillButton>
+
+            {showJoin && (
+              <form onSubmit={join} style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 10 }}>
+                <input
+                  value={code}
+                  onChange={e => setCode(e.target.value.toUpperCase())}
+                  placeholder="ENTER CODE"
+                  maxLength={6}
+                  autoFocus
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    borderRadius: 18, border: "2px solid rgba(255,255,255,0.20)",
+                    background: "rgba(255,255,255,0.08)",
+                    padding: "14px 20px",
+                    textAlign: "center", fontSize: 22, fontWeight: 900,
+                    letterSpacing: "0.3em", color: "#fff",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={code.trim().length !== 6}
+                  style={{
+                    ...pillStyle("#19CDD2", "#06163E"),
+                    opacity: code.trim().length === 6 ? 1 : 0.35,
+                    cursor: code.trim().length === 6 ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Let&apos;s Go →
+                </button>
+              </form>
+            )}
+
+            {/* Demo row */}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button
+                onClick={() => loginAsDemo("student")}
+                disabled={demoLoading !== null}
+                style={{
+                  ...pillStyle("rgba(25,205,210,0.15)", "#19CDD2"),
+                  border: "1.5px solid rgba(25,205,210,0.40)",
+                  fontSize: 12, padding: "10px 20px",
+                }}
+              >
+                {demoLoading === "student" ? "…" : "Demo Student"}
+              </button>
+              <button
+                onClick={() => loginAsDemo("teacher")}
+                disabled={demoLoading !== null}
+                style={{
+                  ...pillStyle("rgba(255,89,101,0.15)", "#FF5965"),
+                  border: "1.5px solid rgba(255,89,101,0.40)",
+                  fontSize: 12, padding: "10px 20px",
+                }}
+              >
+                {demoLoading === "teacher" ? "…" : "Demo Teacher"}
+              </button>
+            </div>
+          </>
+        ) : me ? (
+          /* Logged-in action grid */
+          <>
+            {me.role === "teacher" && (
+              <Link href="/capsule/host" style={pillStyle("#FF5965", "#fff")}>
+                Host a Game
+              </Link>
+            )}
+
+            <PillButton color="#19CDD2" textColor="#06163E" onClick={() => setShowJoin(v => !v)}>
+              Join Game
+            </PillButton>
+
+            {showJoin && (
+              <form onSubmit={join} style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 10 }}>
+                <input
+                  value={code}
+                  onChange={e => setCode(e.target.value.toUpperCase())}
+                  placeholder="ENTER CODE"
+                  maxLength={6}
+                  autoFocus
+                  style={{
+                    width: "100%", boxSizing: "border-box",
+                    borderRadius: 18, border: "2px solid rgba(255,255,255,0.20)",
+                    background: "rgba(255,255,255,0.08)",
+                    padding: "14px 20px",
+                    textAlign: "center", fontSize: 22, fontWeight: 900,
+                    letterSpacing: "0.3em", color: "#fff",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={code.trim().length !== 6}
+                  style={{
+                    ...pillStyle("#19CDD2", "#06163E"),
+                    opacity: code.trim().length === 6 ? 1 : 0.35,
+                    cursor: code.trim().length === 6 ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Let&apos;s Go →
+                </button>
+              </form>
+            )}
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <Link href="/capsule/open" style={{ ...pillStyle("#FFC52E", "#06163E"), flex: 1, textAlign: "center" }}>
+                Open Capsule
+              </Link>
+              <Link href="/capsule/collection" style={{ ...pillStyle("rgba(255,255,255,0.10)", "#fff"), border: "1.5px solid rgba(255,255,255,0.20)", flex: 1, textAlign: "center" }}>
+                Collection
+              </Link>
+            </div>
+
+            {/* Switch demo role */}
+            {me.email?.endsWith("@capsule.demo") && (
+              <button
+                onClick={() => loginAsDemo(me.role === "teacher" ? "student" : "teacher")}
+                disabled={demoLoading !== null}
+                style={{
+                  background: "none", border: "none", padding: "6px 0",
+                  fontSize: 12, color: "rgba(255,255,255,0.35)", cursor: "pointer",
+                }}
+              >
+                {demoLoading ? "…" : `Switch to Demo ${me.role === "teacher" ? "Student" : "Teacher"}`}
+              </button>
+            )}
+          </>
+        ) : null}
+      </div>
+
+      {/* ── Spacer ───────────────────────────────────────── */}
+      <div style={{ flex: "0 0 32px" }} />
+
+      {/* ── Bottom nav ───────────────────────────────────── */}
+      <div style={{
+        position: "relative", zIndex: 10,
+        display: "flex", justifyContent: "center", gap: 6,
+        padding: "12px 16px 20px",
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        background: "rgba(7,24,63,0.70)",
+        backdropFilter: "blur(12px)",
+      }}>
+        {[
+          { label: "Daily", icon: "☀️" },
+          { label: "Leaderboard", icon: "🏆" },
+          { label: "Achievements", icon: "⭐" },
+          { label: "Inbox", icon: "📬" },
+        ].map(({ label, icon }) => (
+          <button key={label} style={{
+            flex: 1, background: "none", border: "none",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+            padding: "6px 4px", cursor: "pointer",
+          }}>
+            <span style={{ fontSize: 18 }}>{icon}</span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.35)", letterSpacing: "0.05em", textTransform: "uppercase" }}>{label}</span>
+          </button>
+        ))}
+      </div>
 
       {/* Footer */}
-      <p className="absolute bottom-4 text-[10px] text-white/15">
-        A <Link href="/" className="underline decoration-white/10">Sinon Learning</Link> product
+      <p style={{
+        position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+        zIndex: 20, fontSize: 9, color: "rgba(255,255,255,0.12)", whiteSpace: "nowrap",
+        pointerEvents: "none",
+      }}>
+        A Sinon Learning product
       </p>
     </div>
   );
+}
+
+/* ── Helpers ──────────────────────────────────────────── */
+
+function pillStyle(bg: string, color: string): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    maxWidth: 320,
+    padding: "16px 24px",
+    borderRadius: 99,
+    background: bg,
+    color,
+    fontSize: 14,
+    fontWeight: 900,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
+    textDecoration: "none",
+    border: "none",
+    cursor: "pointer",
+    textAlign: "center" as const,
+    boxShadow: `0 4px 0 rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.08) inset`,
+  };
+}
+
+function PillButton({ color, textColor, onClick, children }: {
+  color: string; textColor: string; onClick: () => void; children: React.ReactNode;
+}) {
+  return (
+    <button onClick={onClick} style={pillStyle(color, textColor)}>
+      {children}
+    </button>
+  );
+}
+
+function smallBtn(bg: string, border: string): React.CSSProperties {
+  return {
+    padding: "7px 14px",
+    borderRadius: 99,
+    background: bg,
+    border: `1px solid ${border}`,
+    fontSize: 12, fontWeight: 700, color: "#fff",
+    textDecoration: "none", display: "inline-block",
+    cursor: "pointer",
+  };
 }
