@@ -13,6 +13,16 @@ const CAP_PORTRAITS: Record<string, string> = {
   "cap-bunny":      "/assets/capsule/caps/cap-bunny.png",
   "cap-bear":       "/assets/capsule/caps/cap-bear.png",
   "cap-hamster":    "/assets/capsule/caps/cap-hamster.png",
+  // Italian Brainrot set
+  "cap-cappuccina":  "/assets/capsule/caps/cap-cappuccina.png",
+  "cap-tralalero":   "/assets/capsule/caps/cap-tralalero.png",
+  "cap-capybara":    "/assets/capsule/caps/cap-capybara.png",
+  "cap-bombombini":  "/assets/capsule/caps/cap-bombombini.png",
+  "cap-trippitropi": "/assets/capsule/caps/cap-trippitropi.png",
+  "cap-lirililala":  "/assets/capsule/caps/cap-lirililala.png",
+  "cap-bombardiro":  "/assets/capsule/caps/cap-bombardiro.png",
+  "cap-tungtung":    "/assets/capsule/caps/cap-tungtung.png",
+  "cap-brrbrr":      "/assets/capsule/caps/cap-brrbrr.png",
   // Space set
   "cap-astropup":   "/assets/capsule/caps/cap-astropup.png",
   "cap-moonbunny":  "/assets/capsule/caps/cap-moonbunny.png",
