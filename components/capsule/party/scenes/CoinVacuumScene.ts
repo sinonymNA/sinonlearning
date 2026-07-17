@@ -6,14 +6,16 @@ import type { UIScene } from "./UIScene";
 import type { BoardScene } from "./BoardScene";
 import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 import { partyText } from "../Presentation";
+import type { AudioManager } from "../AudioManager";
 
 const ROUND_SECONDS = 35;
 const COIN_SPAWN_INTERVAL = 900;  // ms
 const MAX_COINS = 30;
 const PLAYER_SPEED = 200;
-const BOT_SPEED = 74;
+const BOT_SPEED = 155;
 const MAGNET_RADIUS = 100;
 const MAGNET_COOLDOWN = 4000;
+const OBSTACLE_RADIUS = 35;
 
 interface MinigamePlayer {
   id: string;
@@ -30,7 +32,7 @@ interface MinigamePlayer {
 
 interface CoinObject {
   id: string;
-  type: "normal" | "bonus" | "fake";
+  type: "normal" | "bonus" | "fake" | "grand-cap";
   sprite: Phaser.Physics.Arcade.Sprite;
   value: number;
 }
@@ -44,9 +46,11 @@ export class CoinVacuumScene extends Phaser.Scene {
   private actionKey!: Phaser.Input.Keyboard.Key;
   private gameState!: GameState;
   private ui!: UIScene;
+  private audio: AudioManager | null = null;
   private roundActive = false;
   private spawnTimer: Phaser.Time.TimerEvent | null = null;
   private scoreTexts: Map<string, Phaser.GameObjects.Text> = new Map();
+  private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private virtualJoystick: { active: boolean; startX: number; startY: number; currentX: number; currentY: number } = {
     active: false, startX: 0, startY: 0, currentX: 0, currentY: 0,
   };
@@ -82,7 +86,24 @@ export class CoinVacuumScene extends Phaser.Scene {
     this.add.rectangle(0, 0, 8, H, wallColor, 1).setOrigin(0);
     this.add.rectangle(W - 8, 0, 8, H, wallColor, 1).setOrigin(0);
 
+    // Obstacles — 4 dark hex pillars at fixed arena positions
+    this.obstacles = this.physics.add.staticGroup();
+    const obstaclePositions = [
+      { x: 200, y: 150 }, { x: 600, y: 150 },
+      { x: 200, y: 300 }, { x: 600, y: 300 },
+    ];
+    for (const pos of obstaclePositions) {
+      this.add.circle(pos.x, pos.y, OBSTACLE_RADIUS, 0x1e293b)
+        .setStrokeStyle(4, 0x475569, 1).setDepth(9);
+      this.add.circle(pos.x, pos.y, OBSTACLE_RADIUS - 10, 0x0f172a, 0.6).setDepth(9);
+      const obs = this.obstacles.create(pos.x, pos.y, "__DEFAULT") as Phaser.Physics.Arcade.Sprite;
+      obs.setAlpha(0).setDisplaySize(OBSTACLE_RADIUS * 2, OBSTACLE_RADIUS * 2);
+      (obs.body as Phaser.Physics.Arcade.StaticBody).setCircle(OBSTACLE_RADIUS);
+      obs.refreshBody();
+    }
+
     this.ui = this.scene.get("UIScene") as UIScene;
+    this.audio = this.registry.get("audio") as AudioManager | null;
     this.scene.bringToTop("UIScene");
     EventBus.emit("phaser:phase-change", { phase: "minigame" });
 
@@ -202,6 +223,7 @@ export class CoinVacuumScene extends Phaser.Scene {
         label,
       };
       for (const other of this.players) this.physics.add.collider(sprite, other.body);
+      this.physics.add.collider(sprite, this.obstacles);
       this.players.push(mp);
       if (!gp.isBot) this.humanPlayer = mp;
 
@@ -216,18 +238,24 @@ export class CoinVacuumScene extends Phaser.Scene {
     if (this.coins.length >= MAX_COINS) return;
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
-    const x = Phaser.Math.Between(24, W - 24);
-    const y = Phaser.Math.Between(64, H - 64);
+    const x = Phaser.Math.Between(60, W - 60);
+    const y = Phaser.Math.Between(60, H - 60);
 
     const roll = Math.random();
     let type: CoinObject["type"] = "normal";
     let textureKey = this.textures.exists("coin-gold-art") ? "coin-gold-art" : "coin-normal";
     let value = 1;
-    if (roll < 0.12) { type = "bonus"; textureKey = "grand-cap-art"; value = 3; }
-    else if (roll < 0.22) { type = "fake"; textureKey = this.textures.exists("coin-fake-art") ? "coin-fake-art" : "coin-fake"; value = -2; }
+    if (roll < 0.05) {
+      type = "grand-cap"; textureKey = "grand-cap-art"; value = 5;
+    } else if (roll < 0.17) {
+      type = "bonus"; textureKey = this.textures.exists("coin-gold-art") ? "coin-gold-art" : "coin-normal"; value = 3;
+    } else if (roll < 0.27) {
+      type = "fake"; textureKey = this.textures.exists("coin-fake-art") ? "coin-fake-art" : "coin-fake"; value = -2;
+    }
 
+    const size = type === "grand-cap" ? 34 : type === "bonus" ? 30 : 26;
     const sprite = this.physics.add.sprite(x, y, textureKey);
-    sprite.setDisplaySize(type === "bonus" ? 30 : 26, type === "bonus" ? 30 : 26);
+    sprite.setDisplaySize(size, size);
     sprite.setCircle(COIN_RADIUS);
     sprite.setDepth(10);
 
@@ -258,7 +286,9 @@ export class CoinVacuumScene extends Phaser.Scene {
             this.showFloatingText(cx, cy, `${c.value}`, "#ef4444");
             this.showFloatingText(px, py - 18, "SLOWED!", "#ef4444");
           } else {
-            this.showFloatingText(cx, cy, `+${c.value}`, c.type === "bonus" ? "#00ffff" : "#ffd700");
+            this.audio?.play("coin");
+            const color = c.type === "grand-cap" ? "#ffd700" : c.type === "bonus" ? "#00ffff" : "#ffd700";
+            this.showFloatingText(cx, cy, `+${c.value}`, color);
           }
           c.sprite.destroy();
           this.coins.splice(i, 1);
@@ -270,11 +300,20 @@ export class CoinVacuumScene extends Phaser.Scene {
   private activateMagnet(player: MinigamePlayer) {
     if (player.magnetCooldown > 0) return;
     player.magnetCooldown = MAGNET_COOLDOWN;
+    this.audio?.play("item-use");
 
     const px = player.body.x;
     const py = player.body.y;
 
-    // Visual ring
+    // Range indicator circle — visible for 0.3s so the area is clear
+    const rangeCircle = this.add.circle(px, py, MAGNET_RADIUS, 0x19cdd2, 0.18)
+      .setStrokeStyle(2, 0x19cdd2, 0.8).setDepth(26);
+    this.tweens.add({
+      targets: rangeCircle, alpha: 0, duration: 300, ease: "Cubic.Out",
+      onComplete: () => rangeCircle.destroy(),
+    });
+
+    // Pulse ring
     const ring = this.add.image(px, py, "magnet-pulse").setAlpha(0.8).setDepth(25);
     this.tweens.add({
       targets: ring, scaleX: 1.5, scaleY: 1.5, alpha: 0,
@@ -294,17 +333,17 @@ export class CoinVacuumScene extends Phaser.Scene {
   }
 
   private updateBotMovement(bot: MinigamePlayer) {
-    // Find nearest non-fake coin
-    let nearest: CoinObject | null = null;
-    let nearestDist = Infinity;
-    for (const c of this.coins) {
-      if (c.type === "fake") continue;
-      const d = Phaser.Math.Distance.Between(bot.body.x, bot.body.y, c.sprite.x, c.sprite.y);
-      if (d < nearestDist) { nearestDist = d; nearest = c; }
-    }
+    // Prioritize grand-cap coins (value 5), then bonus, then normal — ignore fake
+    const best = this.coins
+      .filter((c) => c.type !== "fake")
+      .sort((a, b) => {
+        const scoreA = a.value * 90 - Phaser.Math.Distance.Between(bot.body.x, bot.body.y, a.sprite.x, a.sprite.y) * 0.8;
+        const scoreB = b.value * 90 - Phaser.Math.Distance.Between(bot.body.x, bot.body.y, b.sprite.x, b.sprite.y) * 0.8;
+        return scoreB - scoreA;
+      })[0] ?? null;
 
-    if (nearest) {
-      const angle = Phaser.Math.Angle.Between(bot.body.x, bot.body.y, nearest.sprite.x, nearest.sprite.y);
+    if (best) {
+      const angle = Phaser.Math.Angle.Between(bot.body.x, bot.body.y, best.sprite.x, best.sprite.y);
       const speed = this.time.now < bot.slowUntil ? BOT_SPEED * 0.45 : BOT_SPEED;
       bot.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
     } else {
@@ -341,6 +380,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     let count = 3;
     const doCount = () => {
       if (count <= 0) { onDone(); return; }
+      this.audio?.play("countdown");
       const t = this.add.text(W / 2, H / 2, count.toString(), {
         fontSize: "96px", fontFamily: "monospace", color: "#ffd700", fontStyle: "bold",
         stroke: "#000000", strokeThickness: 6,
@@ -437,6 +477,7 @@ export class CoinVacuumScene extends Phaser.Scene {
 
     // Sort by coins
     const sorted = [...this.players].sort((a, b) => b.coins - a.coins);
+    this.audio?.play("minigame-win");
 
     // Reward coins (1st: 8, 2nd: 5, 3rd: 3, 4th: 1)
     const rewards = [8, 5, 3, 1];
@@ -454,37 +495,5 @@ export class CoinVacuumScene extends Phaser.Scene {
     });
   }
 
-  private showResultsOverlay(sorted: MinigamePlayer[], onContinue: () => void) {
-    const W = PARTY_WIDTH;
-    const H = PARTY_HEIGHT;
-
-    this.add.rectangle(W / 2, H / 2, 400, 260, 0x0f172a, 0.97).setOrigin(0.5).setDepth(600);
-    this.add.rectangle(W / 2, H / 2, 400, 260, 0, 0).setStrokeStyle(2, 0x19cdd2).setOrigin(0.5).setDepth(601);
-    this.add.text(W / 2, H / 2 - 110, "COIN VACUUM RESULTS", {
-      fontSize: "18px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(602);
-
-    const medals = ["🥇", "🥈", "🥉", "4th"];
-    sorted.forEach((p, i) => {
-      const y = H / 2 - 70 + i * 38;
-      this.add.text(W / 2 - 140, y, `${medals[i] ?? (i + 1)}.`, {
-        fontSize: "18px", fontFamily: "sans-serif", color: "#ffd700",
-      }).setOrigin(0, 0.5).setDepth(602);
-      this.add.text(W / 2 - 110, y, p.displayName.slice(0, 12), {
-        fontSize: "15px", fontFamily: "sans-serif", color: "#e2e8f0",
-      }).setOrigin(0, 0.5).setDepth(602);
-      this.add.text(W / 2 + 100, y, `${Math.max(0, p.coins)} coins`, {
-        fontSize: "13px", fontFamily: "monospace", color: "#ffd700",
-      }).setOrigin(0, 0.5).setDepth(602);
-    });
-
-    const btn = this.add.text(W / 2, H / 2 + 100, "Continue →", {
-      fontSize: "16px", fontFamily: "sans-serif", color: "#0f172a",
-      backgroundColor: "#19cdd2", padding: { x: 20, y: 8 }, fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(602).setInteractive({ useHandCursor: true });
-    btn.on("pointerdown", () => onContinue());
-    btn.on("pointerover", () => btn.setBackgroundColor("#10e0e8"));
-    btn.on("pointerout", () => btn.setBackgroundColor("#19cdd2"));
-  }
 }
 

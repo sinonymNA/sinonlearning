@@ -125,13 +125,17 @@ export class LobbyScene extends Phaser.Scene {
   private startGame() {
     if (this.players.length === 0) this.addPlayer({ id: "player-0", displayName: "You", capId: "cap-fox", colorIndex: 0 });
     this.fillWithBots();
+
+    // Randomize turn order — shuffle a copy so colorIndex assignments stay stable
+    const shuffled = Phaser.Utils.Array.Shuffle([...this.players]) as LobbyPlayer[];
+
     const ui = this.scene.get("UIScene") as import("./UIScene").UIScene;
     ui.scene.start();
-    ui.initPlayers(this.players.map((player) => ({
+    ui.initPlayers(shuffled.map((player) => ({
       id: player.id, displayName: player.displayName, capId: player.capId,
       grandCaps: 0, coins: 0, colorIndex: player.colorIndex,
     })));
-    this.scene.start("BoardScene", { players: this.players, maxRounds: this.maxRounds });
+    this.scene.start("BoardScene", { players: shuffled, maxRounds: this.maxRounds });
   }
 }
 

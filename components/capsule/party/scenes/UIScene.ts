@@ -3,6 +3,7 @@ import { EventBus } from "../EventBus";
 import { PLACEHOLDER } from "../AssetManifest";
 import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 import { partyText } from "../Presentation";
+import { type ItemType, ITEM_DEFS } from "../GameState";
 
 // UIScene: persistent overlay scene that renders on top of active game scenes.
 // Displays HUD elements: turn banner, player coins + grand caps, item slots,
@@ -317,40 +318,62 @@ export class UIScene extends Phaser.Scene {
     this.itemPanel = null;
   }
 
-  private itemIcon(item: string): string {
-    const icons: Record<string, string> = {
-      magnet: "🧲", "golden-spinner": "✨", "warp-ticket": "🚀",
-      shield: "🛡", "raid-block": "🚫",
-    };
-    return icons[item] ?? "?";
+  // Show a shop panel with 3 item choices; human picks one, bots use callback directly
+  showShopPanel(items: ItemType[], onSelect: (item: ItemType) => void) {
+    const W = PARTY_WIDTH;
+    const H = PARTY_HEIGHT;
+    const shade = this.add.rectangle(0, 0, W, H, 0x020617, 0.72).setOrigin(0);
+    const panel = this.add.image(W / 2, H / 2 - 20, "panel-briefing").setDisplaySize(600, 290);
+    const heading = partyText(this, W / 2, H / 2 - 108, "SHOP — CHOOSE AN ITEM", 11, "#9fdcf6", {
+      letterSpacing: 2,
+    }).setOrigin(0.5);
+    const children: Phaser.GameObjects.GameObject[] = [shade, panel, heading];
+    const container = this.add.container(0, 0, children).setDepth(500).setAlpha(0);
+    this.tweens.add({ targets: container, alpha: 1, duration: 200 });
+
+    items.forEach((item, i) => {
+      const bx = W / 2 + (i - 1) * 185;
+      const by = H / 2;
+      const def = ITEM_DEFS[item];
+      const iconKey = `item-${item}`;
+      const btnBg = this.add.image(bx, by - 14, "hud-player").setDisplaySize(168, 168)
+        .setInteractive({ useHandCursor: true });
+      const icon: Phaser.GameObjects.GameObject = this.textures.exists(iconKey)
+        ? this.add.image(bx, by - 42, iconKey).setDisplaySize(54, 54)
+        : this.add.circle(bx, by - 42, 22, 0x334155);
+      const nameText = partyText(this, bx, by + 18, def.name, 13, "#ffffff", { align: "center" }).setOrigin(0.5);
+      const descText = partyText(this, bx, by + 44, def.description, 9, "#9fb4d8", {
+        align: "center", wordWrap: { width: 148 },
+      }).setOrigin(0.5);
+      btnBg.on("pointerover", () => btnBg.setScale(1.06));
+      btnBg.on("pointerout", () => btnBg.setScale(1));
+      btnBg.on("pointerdown", () => {
+        container.destroy();
+        onSelect(item);
+      });
+      container.add([btnBg, icon, nameText, descText]);
+    });
+  }
+
+  // Float a coin gain/loss text from a player's HUD card and bounce the card
+  showCoinFloat(playerIdx: number, amount: number) {
+    const cardX = 8 + playerIdx * 198 + 91;
+    const cardY = PARTY_HEIGHT - 62 - 7;
+    const sign = amount >= 0 ? "+" : "";
+    const color = amount >= 0 ? "#ffd166" : "#ef4444";
+    const t = partyText(this, cardX, cardY - 16, `${sign}${amount}`, 16, color)
+      .setOrigin(0.5).setDepth(210);
+    this.tweens.add({
+      targets: t, y: cardY - 56, alpha: 0, duration: 800, ease: "Cubic.Out",
+      onComplete: () => t.destroy(),
+    });
+    const card = this.playerCards[playerIdx];
+    if (card) {
+      this.tweens.add({ targets: card, scaleX: 1.1, scaleY: 1.1, duration: 100, yoyo: true });
+    }
   }
 
   // --- Private ---
-
-  private renderPlayerCardsLegacy() {
-    const W = PARTY_WIDTH;
-    const cardW = Math.min(W / 4 - 6, 120);
-    const cardH = 52;
-
-    this.players.forEach((p, i) => {
-      const x = 4 + i * (cardW + 4);
-      const y = PARTY_HEIGHT - cardH - 4;
-
-      const bg = this.add.rectangle(0, 0, cardW, cardH, PLACEHOLDER.PLAYER_COLORS[p.colorIndex] ?? 0x334155, 0.9).setOrigin(0);
-      const name = this.add.text(6, 4, p.displayName.slice(0, 10), {
-        fontSize: "10px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
-      });
-      const gcLine = this.add.text(6, 18, `★ ${p.grandCaps}`, {
-        fontSize: "12px", fontFamily: "sans-serif", color: "#ffd700",
-      });
-      const coinsLine = this.add.text(6, 34, `G ${p.coins}`, {
-        fontSize: "11px", fontFamily: "sans-serif", color: "#e2e8f0",
-      });
-
-      const container = this.add.container(x, y, [bg, name, gcLine, coinsLine]).setDepth(150);
-      this.playerCards.push(container);
-    });
-  }
 
   private renderPlayerCards() {
     const cardH = 62;

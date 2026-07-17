@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS, COIN_RADIUS, PLAYER_RADIUS } from "../AssetManifest";
 import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
+import { AudioManager } from "../AudioManager";
 
 // Cap IDs whose portrait images live at /assets/capsule/caps/cap-{id}.png
 export const KNOWN_CAP_IDS = [
@@ -61,6 +62,11 @@ export class BootScene extends Phaser.Scene {
   create() {
     this.generateTextures();
     this.capMaskedTokens();
+    // Initialize procedural audio manager and store in registry for all scenes
+    const soundManager = this.sound as Phaser.Sound.WebAudioSoundManager;
+    if (soundManager.context) {
+      this.registry.set("audio", new AudioManager(soundManager.context));
+    }
     this.scene.start("TitleScene");
   }
 
@@ -100,65 +106,6 @@ export class BootScene extends Phaser.Scene {
       for (let colorIndex = 0; colorIndex < 4; colorIndex++) {
         createToken(id, colorIndex, TOKEN_RADIUS, `cap-token-${id}-${colorIndex}`);
         createToken(id, colorIndex, PLAYER_RADIUS, `cap-char-${id}-${colorIndex}`);
-      }
-    }
-  }
-
-  private capMaskedTokensLegacy() {
-    const R = TOKEN_RADIUS;
-    const D = R * 2;
-    const PR = PLAYER_RADIUS;
-    const PD = PR * 2;
-
-    // For each known cap, build a board token texture and a minigame character texture
-    for (const id of KNOWN_CAP_IDS) {
-      if (!this.textures.exists(`cap-${id}`)) continue;
-      for (let ci = 0; ci < 4; ci++) {
-        const borderColor = PLACEHOLDER.PLAYER_COLORS[ci] ?? 0x888888;
-
-        // --- Board token (TOKEN_RADIUS) ---
-        const tokenKey = `cap-token-${id}-${ci}`;
-        const rt = this.add.renderTexture(0, 0, D, D).setVisible(false);
-        // Draw border ring
-        const g = this.add.graphics().setVisible(false);
-        g.fillStyle(borderColor, 1);
-        g.fillCircle(R, R, R);
-        rt.draw(g, 0, 0);
-        // Draw portrait clipped to circle: draw image then mask
-        const portrait = this.add.image(R, R, `cap-${id}`).setDisplaySize(D - 4, D - 4).setVisible(false);
-        const maskGraphics = this.add.graphics().setVisible(false);
-        maskGraphics.fillStyle(0xffffff);
-        maskGraphics.fillCircle(R, R, R - 3);
-        const mask = maskGraphics.createGeometryMask();
-        portrait.setMask(mask);
-        rt.draw(portrait, 0, 0);
-        portrait.clearMask(true);
-        portrait.destroy();
-        maskGraphics.destroy();
-        g.destroy();
-        rt.saveTexture(tokenKey);
-        rt.destroy();
-
-        // --- Minigame character (PLAYER_RADIUS) ---
-        const charKey = `cap-char-${id}-${ci}`;
-        const rt2 = this.add.renderTexture(0, 0, PD, PD).setVisible(false);
-        const g2 = this.add.graphics().setVisible(false);
-        g2.fillStyle(borderColor, 1);
-        g2.fillCircle(PR, PR, PR);
-        rt2.draw(g2, 0, 0);
-        const portrait2 = this.add.image(PR, PR, `cap-${id}`).setDisplaySize(PD - 6, PD - 6).setVisible(false);
-        const mg2 = this.add.graphics().setVisible(false);
-        mg2.fillStyle(0xffffff);
-        mg2.fillCircle(PR, PR, PR - 3);
-        const mask2 = mg2.createGeometryMask();
-        portrait2.setMask(mask2);
-        rt2.draw(portrait2, 0, 0);
-        portrait2.clearMask(true);
-        portrait2.destroy();
-        mg2.destroy();
-        g2.destroy();
-        rt2.saveTexture(charKey);
-        rt2.destroy();
       }
     }
   }

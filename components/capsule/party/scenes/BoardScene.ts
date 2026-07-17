@@ -1,12 +1,13 @@
 import Phaser from "phaser";
 import { BOARD_SPACES, BOARD_SPACE_MAP, GRAND_CAPS_TO_WIN, SPIN_CORRECT_RANGE, SPIN_INCORRECT_RANGE } from "../BoardData";
-import { createInitialState, type GameState, type PlayerState, rankPlayers } from "../GameState";
+import { createInitialState, ITEM_DEFS, type GameState, type ItemType, type PlayerState, rankPlayers } from "../GameState";
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS } from "../AssetManifest";
 import { getAdaptiveQuestion, recordMastery } from "../QuestionEngine";
 import { PARTY_HEIGHT, PARTY_RENDER_SCALE, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
 import { partyText } from "../Presentation";
 import type { UIScene } from "./UIScene";
+import type { AudioManager } from "../AudioManager";
 
 interface BoardSceneData {
   players: { id: string; displayName: string; capId: string; colorIndex: number }[];
@@ -16,15 +17,14 @@ interface BoardSceneData {
 const TWEEN_STEP_DURATION = 360;
 const TWEEN_STEP_GAP = 180;
 
-// Sample questions — replaced by server questions in production
 export class BoardScene extends Phaser.Scene {
   private state!: GameState;
   private tokenObjects: Phaser.GameObjects.Container[] = [];
   private grandCapObject: Phaser.GameObjects.Image | null = null;
   private spaceObjects: Map<string, Phaser.GameObjects.Container> = new Map();
   private ui!: UIScene;
+  private audio: AudioManager | null = null;
   private currentPhase: "question" | "spin" | "move" | "land" | "idle" = "idle";
-  private pendingSteps = 0;
   private spinDisplay: Phaser.GameObjects.Container | null = null;
   private resumeAfterMinigame: "end-turn" | "start-turn" = "end-turn";
 
@@ -56,6 +56,7 @@ export class BoardScene extends Phaser.Scene {
     }
 
     this.ui = this.scene.get("UIScene") as UIScene;
+    this.audio = this.registry.get("audio") as AudioManager | null;
     this.scene.bringToTop("UIScene");
     EventBus.emit("phaser:phase-change", { phase: "board" });
 
@@ -63,24 +64,15 @@ export class BoardScene extends Phaser.Scene {
     this.drawSpaces();
     this.drawTokens();
     this.drawGrandCap();
-
-    // Push initial score
     this.emitScoreUpdate();
 
-    // Short delay before first turn
     this.time.delayedCall(800, () => this.startTurn());
   }
 
-  // --- Board drawing ---
-
   private drawPaths() {
-    // Path lines are hidden when the board background art is present — the artwork shows the track.
-    // Draw faint guides only as a fallback when there's no board-bg texture.
     if (this.textures.exists("board-bg")) return;
-
     const g = this.add.graphics();
     g.lineStyle(3, PLACEHOLDER.PATH_COLOR, 0.8);
-
     for (const space of BOARD_SPACES) {
       for (const nextId of space.connections) {
         const next = BOARD_SPACE_MAP.get(nextId);
@@ -88,7 +80,6 @@ export class BoardScene extends Phaser.Scene {
         g.lineBetween(space.x, space.y, next.x, next.y);
       }
     }
-
     for (const space of BOARD_SPACES) {
       for (const nextId of space.connections) {
         const next = BOARD_SPACE_MAP.get(nextId);
@@ -98,12 +89,12 @@ export class BoardScene extends Phaser.Scene {
         const my = (space.y + next.y) / 2;
         g.fillStyle(PLACEHOLDER.PATH_COLOR, 0.8);
         const size = 5;
-        const points = [
+        const pts = [
           { x: mx + Math.cos(angle) * size, y: my + Math.sin(angle) * size },
           { x: mx + Math.cos(angle + 2.4) * size * 0.6, y: my + Math.sin(angle + 2.4) * size * 0.6 },
           { x: mx + Math.cos(angle - 2.4) * size * 0.6, y: my + Math.sin(angle - 2.4) * size * 0.6 },
         ];
-        g.fillTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y);
+        g.fillTriangle(pts[0].x, pts[0].y, pts[1].x, pts[1].y, pts[2].x, pts[2].y);
       }
     }
   }
@@ -126,14 +117,6 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  private spaceLabel(type: string): string {
-    const map: Record<string, string> = {
-      coin: "+G", raid: "RAID", capsule: "CAP", shop: "SHOP",
-      trap: "TRAP", challenge: "?", warp: "WARP", grand_cap: "GC", start: "GO",
-    };
-    return map[type] ?? type;
-  }
-
   private tokenTextureKey(p: PlayerState): string {
     const capId = p.capId?.replace(/^cap-/, "") ?? "";
     const key = `cap-token-${capId}-${p.colorIndex}`;
@@ -143,23 +126,19 @@ export class BoardScene extends Phaser.Scene {
   private drawTokens() {
     this.tokenObjects.forEach(t => t.destroy());
     this.tokenObjects = [];
-
     for (let i = 0; i < this.state.players.length; i++) {
       const p = this.state.players[i];
       const space = BOARD_SPACE_MAP.get(p.spaceId);
       if (!space) continue;
       const offset = this.tokenOffset(i);
-      const texKey = this.tokenTextureKey(p);
-      const img = this.add.image(0, 0, texKey).setDisplaySize(TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
+      const img = this.add.image(0, 0, this.tokenTextureKey(p)).setDisplaySize(TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
       const container = this.add.container(space.x + offset.x, space.y + offset.y, [img]).setDepth(10);
       this.tokenObjects.push(container);
     }
   }
 
   private tokenOffset(index: number): { x: number; y: number } {
-    const offsets = [
-      { x: -8, y: -8 }, { x: 8, y: -8 }, { x: -8, y: 8 }, { x: 8, y: 8 },
-    ];
+    const offsets = [{ x: -8, y: -8 }, { x: 8, y: -8 }, { x: -8, y: 8 }, { x: 8, y: 8 }];
     return offsets[index % offsets.length];
   }
 
@@ -168,13 +147,7 @@ export class BoardScene extends Phaser.Scene {
     const space = BOARD_SPACE_MAP.get(spaceId);
     if (!token || !space) return;
     const offset = this.tokenOffset(playerIdx);
-    this.tweens.add({
-      targets: token,
-      x: space.x + offset.x,
-      y: space.y + offset.y,
-      duration: 500,
-      ease: "Back.Out",
-    });
+    this.tweens.add({ targets: token, x: space.x + offset.x, y: space.y + offset.y, duration: 500, ease: "Back.Out" });
   }
 
   private drawGrandCap() {
@@ -183,10 +156,7 @@ export class BoardScene extends Phaser.Scene {
     if (!space) return;
     const texture = this.textures.exists("grand-cap-art") ? "grand-cap-art" : "grand-cap-pedestal";
     this.grandCapObject = this.add.image(space.x, space.y - SPACE_RADIUS - 14, texture).setDisplaySize(38, 38).setDepth(5);
-    this.tweens.add({
-      targets: this.grandCapObject, y: space.y - SPACE_RADIUS - 20, duration: 1000,
-      yoyo: true, repeat: -1, ease: "Sine.InOut",
-    });
+    this.tweens.add({ targets: this.grandCapObject, y: space.y - SPACE_RADIUS - 20, duration: 1000, yoyo: true, repeat: -1, ease: "Sine.InOut" });
   }
 
   // --- Turn flow ---
@@ -196,22 +166,20 @@ export class BoardScene extends Phaser.Scene {
     const player = this.currentPlayer();
     const hasItems = !player.isBot && player.items.length > 0;
     this.focusPlayer(this.state.turnIndex, false);
+    this.audio?.play("banner");
 
     this.ui.showTurnBanner(
       `${player.displayName}'s Turn`,
       `Round ${this.state.turnNumber}/${this.state.maxRounds} • ${player.isBot ? "Bot is thinking..." : hasItems ? "Use an item or answer the question!" : "Answer a question to move!"}`,
-      2800
+      2800,
     );
 
     this.time.delayedCall(player.isBot ? 1500 : 950, () => {
       if (player.isBot) {
         this.handleBotTurn();
       } else {
-        // Show item panel if human has items — they can optionally use one first
         if (player.items.length > 0) {
-          this.ui.showItemPanel(player.items, (idx) => {
-            this.useItem(this.state.turnIndex, idx);
-          });
+          this.ui.showItemPanel(player.items, (idx) => this.useItem(this.state.turnIndex, idx));
         }
         this.askQuestion();
       }
@@ -226,11 +194,10 @@ export class BoardScene extends Phaser.Scene {
 
     switch (item) {
       case "magnet": {
-        // Move toward active Grand Cap
         const capSpace = BOARD_SPACE_MAP.get(this.state.activeGrandCapId);
         if (capSpace) {
+          this.audio?.play("item-use");
           this.ui.showMessage("Magnet! Moving toward Grand Cap...", "#19cdd2", 1500);
-          // Set player position directly to Grand Cap space (simplified)
           player.spaceId = this.state.activeGrandCapId;
           const token = this.tokenObjects[playerIdx];
           if (token) {
@@ -242,10 +209,10 @@ export class BoardScene extends Phaser.Scene {
       }
       case "shield":
         player.hasShield = true;
+        this.audio?.play("item-use");
         this.ui.showMessage("Shield activated!", "#19cdd2");
         break;
       case "warp-ticket": {
-        // Find nearest warp space and teleport there
         const warpSpaces = BOARD_SPACES.filter(s => s.type === "warp");
         if (warpSpaces.length > 0) {
           const dest = Phaser.Utils.Array.GetRandom(warpSpaces) as typeof warpSpaces[0];
@@ -255,13 +222,13 @@ export class BoardScene extends Phaser.Scene {
             const offset = this.tokenOffset(playerIdx);
             this.tweens.add({ targets: token, x: dest.x + offset.x, y: dest.y + offset.y, duration: 400, ease: "Back.Out" });
           }
+          this.audio?.play("warp");
           this.ui.showMessage(`Warp Ticket! Teleported to ${dest.label ?? dest.id}`, "#ec4899");
         }
         break;
       }
       case "golden-spinner":
-        // Flag handled in doSpin
-        player.items.push("golden-spinner"); // push back — consumed in doSpin
+        player.items.push("golden-spinner");
         this.ui.showMessage("Golden Spinner ready for your roll!", "#ffd700");
         break;
       case "turbo-capsule":
@@ -269,12 +236,13 @@ export class BoardScene extends Phaser.Scene {
         this.ui.showMessage("Turbo Capsule armed: +3 movement!", "#19cdd2");
         break;
       case "swap-capsule": {
-        const leader = rankPlayers(this.state.players).find((candidate) => candidate.id !== player.id);
+        const leader = rankPlayers(this.state.players).find(c => c.id !== player.id);
         if (leader) {
           const leaderIndex = this.state.players.indexOf(leader);
           [player.spaceId, leader.spaceId] = [leader.spaceId, player.spaceId];
           this.moveTokenToSpace(playerIdx, player.spaceId);
           this.moveTokenToSpace(leaderIndex, leader.spaceId);
+          this.audio?.play("item-use");
           this.ui.showMessage(`Swapped places with ${leader.displayName}!`, "#ff6b6b");
         }
         break;
@@ -293,17 +261,23 @@ export class BoardScene extends Phaser.Scene {
       (chosenIdx) => {
         const correct = chosenIdx === question.answer;
         player.totalAnswers++;
-        if (correct) player.correctAnswers++;
+        if (correct) {
+          player.correctAnswers++;
+          this.audio?.play("correct");
+        } else {
+          this.audio?.play("wrong");
+        }
         recordMastery(player.skillMastery, question.skill, correct);
         this.ui.showMessage(correct ? "Correct — full spin unlocked!" : question.explanation, correct ? "#63e6be" : "#ffd166", 1100);
         this.time.delayedCall(700, () => this.doSpin(correct));
-      }
+      },
     );
   }
 
   private handleBotTurn() {
-    // Bots always "answer" after a short delay — random 60% correct
     const player = this.currentPlayer();
+    this.useBotItems(player, this.state.turnIndex);
+
     const profiles = [
       { accuracy: 0.64, delay: 2400, reaction: "Bolt is choosing an answer..." },
       { accuracy: 0.76, delay: 3000, reaction: "Nova is thinking it through..." },
@@ -317,6 +291,49 @@ export class BoardScene extends Phaser.Scene {
       if (correct) player.correctAnswers++;
       this.doSpin(correct);
     });
+  }
+
+  private useBotItems(player: PlayerState, playerIdx: number) {
+    const distToGC = this.stepsToGrandCap(player);
+    const leader = rankPlayers(this.state.players)[0];
+    const isTrailing = leader.grandCaps > player.grandCaps;
+
+    for (let i = player.items.length - 1; i >= 0; i--) {
+      const item = player.items[i];
+      let shouldUse = false;
+
+      if (item === "magnet" && distToGC >= 5 && player.grandCaps < 1 && Math.random() < 0.4) {
+        shouldUse = true;
+      } else if (item === "golden-spinner" && distToGC >= 3 && player.grandCaps === 0 && Math.random() < 0.6) {
+        shouldUse = true;
+      } else if (item === "turbo-capsule" && distToGC >= 2 && distToGC <= 4 && Math.random() < 0.7) {
+        shouldUse = true;
+      } else if (item === "swap-capsule" && isTrailing && Math.random() < 0.35) {
+        shouldUse = true;
+      } else if (item === "shield") {
+        const threatNearby = this.state.players.some((p, pi) => {
+          if (pi === playerIdx) return false;
+          return BOARD_SPACE_MAP.get(p.spaceId)?.type === "raid";
+        });
+        if (threatNearby && Math.random() < 0.9) shouldUse = true;
+      }
+
+      if (shouldUse) {
+        this.useItem(playerIdx, i);
+        break;
+      }
+    }
+  }
+
+  private stepsToGrandCap(player: PlayerState): number {
+    let current = player.spaceId;
+    for (let i = 0; i < 20; i++) {
+      if (current === this.state.activeGrandCapId) return i;
+      const space = BOARD_SPACE_MAP.get(current);
+      if (!space || space.connections.length === 0) return 99;
+      current = space.connections[0];
+    }
+    return 99;
   }
 
   private doSpin(correct: boolean) {
@@ -334,18 +351,15 @@ export class BoardScene extends Phaser.Scene {
     }
     if (player.items.includes("turbo-capsule")) {
       steps += 3;
-      player.items = player.items.filter((item) => item !== "turbo-capsule");
+      player.items = player.items.filter(i => i !== "turbo-capsule");
     }
 
-    this.showSpinResult(steps, correct, () => {
-      this.movePlayer(this.state.turnIndex, steps);
-    });
+    this.showSpinResult(steps, correct, () => this.movePlayer(this.state.turnIndex, steps));
   }
 
   private showSpinResult(steps: number, correct: boolean, onDone: () => void) {
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
-
     if (this.spinDisplay) { this.spinDisplay.destroy(); this.spinDisplay = null; }
 
     const plate = this.add.image(0, 0, "plaque-reward").setDisplaySize(330, 126);
@@ -373,15 +387,12 @@ export class BoardScene extends Phaser.Scene {
     this.moveStep(playerIdx, player.spaceId, steps, []);
   }
 
-  // Walk one step at a time so human can choose at branch points
   private moveStep(playerIdx: number, currentId: string, stepsLeft: number, pathSoFar: string[]) {
     const player = this.state.players[playerIdx];
     if (stepsLeft <= 0) {
-      // Done moving
-      const fullPath = pathSoFar;
-      if (fullPath.length > 0) {
-        this.animateAlongPath(playerIdx, fullPath, 0, () => {
-          player.spaceId = fullPath[fullPath.length - 1];
+      if (pathSoFar.length > 0) {
+        this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
+          player.spaceId = pathSoFar[pathSoFar.length - 1];
           this.onLand(playerIdx);
         });
       } else {
@@ -392,11 +403,9 @@ export class BoardScene extends Phaser.Scene {
 
     const space = BOARD_SPACE_MAP.get(currentId);
     if (!space || space.connections.length === 0) {
-      // Dead end — animate what we have
-      const fullPath = pathSoFar;
-      if (fullPath.length > 0) {
-        this.animateAlongPath(playerIdx, fullPath, 0, () => {
-          player.spaceId = fullPath[fullPath.length - 1];
+      if (pathSoFar.length > 0) {
+        this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
+          player.spaceId = pathSoFar[pathSoFar.length - 1];
           this.onLand(playerIdx);
         });
       } else {
@@ -406,7 +415,6 @@ export class BoardScene extends Phaser.Scene {
     }
 
     if (space.connections.length > 1 && !player.isBot) {
-      // Human at a branch — animate to current space first, then prompt
       if (pathSoFar.length > 0) {
         this.animateAlongPath(playerIdx, pathSoFar, 0, () => {
           player.spaceId = pathSoFar[pathSoFar.length - 1];
@@ -420,7 +428,6 @@ export class BoardScene extends Phaser.Scene {
         });
       }
     } else {
-      // Single path or bot: auto-pick first connection
       const nextId = space.connections.length > 1
         ? Phaser.Utils.Array.GetRandom(space.connections) as string
         : space.connections[0];
@@ -428,25 +435,9 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 
-  private getPath(fromId: string, count: number): string[] {
-    const path: string[] = [];
-    let current = fromId;
-    for (let i = 0; i < count; i++) {
-      const space = BOARD_SPACE_MAP.get(current);
-      if (!space || space.connections.length === 0) break;
-      // Bots always take first (main loop); human branch prompting is handled in movePlayer
-      const nextId = space.connections[0];
-      path.push(nextId);
-      current = nextId;
-    }
-    return path;
-  }
-
-  // Prompt the human to choose a path at a branch point.
   private promptBranchChoice(connections: string[], onChoice: (id: string) => void) {
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
-
     const panel = this.add.container(0, 0).setDepth(400);
     const panelHeight = 150 + connections.length * 50;
     const bg = this.add.image(W / 2, H / 2, "panel-briefing").setDisplaySize(390, panelHeight);
@@ -456,15 +447,9 @@ export class BoardScene extends Phaser.Scene {
     panel.add([bg, title]);
 
     const spaceTypeLabel: Record<string, string> = {
-      coin: "Coin Space (+G)",
-      raid: "Raid Space (steal coins)",
-      capsule: "Capsule Space (bonus)",
-      shop: "Shop (get item)",
-      trap: "Trap (lose coins)",
-      challenge: "Challenge (minigame!)",
-      warp: "Warp Pad",
-      grand_cap: "Grand Cap Pedestal ★",
-      start: "Start",
+      coin: "Coin Space (+G)", raid: "Raid Space (steal coins)", capsule: "Capsule Space (item!)",
+      shop: "Shop (pick an item)", trap: "Trap (lose coins)", challenge: "Challenge (minigame!)",
+      warp: "Warp Pad", grand_cap: "Grand Cap Pedestal ★", start: "Start",
     };
 
     connections.forEach((id, i) => {
@@ -475,22 +460,19 @@ export class BoardScene extends Phaser.Scene {
       const btnTxt = partyText(this, W / 2, by, label, 12, "#ffffff").setOrigin(0.5);
       btnBg.on("pointerover", () => { btnBg.setScale(1.04); btnTxt.setScale(1.04); });
       btnBg.on("pointerout", () => { btnBg.setScale(1); btnTxt.setScale(1); });
-      btnBg.on("pointerdown", () => {
-        panel.destroy();
-        onChoice(id);
-      });
+      btnBg.on("pointerdown", () => { panel.destroy(); onChoice(id); });
       panel.add([btnBg, btnTxt]);
     });
   }
 
   private animateAlongPath(playerIdx: number, path: string[], stepIdx: number, onComplete: () => void) {
     if (stepIdx >= path.length) { onComplete(); return; }
-
     const token = this.tokenObjects[playerIdx];
     const nextSpace = BOARD_SPACE_MAP.get(path[stepIdx]);
     if (!token || !nextSpace) { onComplete(); return; }
 
     const offset = this.tokenOffset(playerIdx);
+    this.audio?.play("move");
     this.tweens.add({
       targets: token,
       x: nextSpace.x + offset.x,
@@ -498,9 +480,7 @@ export class BoardScene extends Phaser.Scene {
       duration: TWEEN_STEP_DURATION,
       ease: "Cubic.InOut",
       onComplete: () => {
-        this.time.delayedCall(TWEEN_STEP_GAP, () => {
-          this.animateAlongPath(playerIdx, path, stepIdx + 1, onComplete);
-        });
+        this.time.delayedCall(TWEEN_STEP_GAP, () => this.animateAlongPath(playerIdx, path, stepIdx + 1, onComplete));
       },
     });
   }
@@ -513,10 +493,10 @@ export class BoardScene extends Phaser.Scene {
     const space = BOARD_SPACE_MAP.get(player.spaceId);
     if (!space) { this.endTurn(); return; }
 
-    // Handle warp
     if (space.type === "warp" && space.warpTargetId) {
       const dest = BOARD_SPACE_MAP.get(space.warpTargetId);
       if (dest) {
+        this.audio?.play("warp");
         this.ui.showMessage(`WARP! → ${dest.label ?? space.warpTargetId}`, "#ec4899", 1500);
         this.time.delayedCall(400, () => {
           player.spaceId = space.warpTargetId!;
@@ -544,6 +524,8 @@ export class BoardScene extends Phaser.Scene {
       case "coin": {
         const earned = Phaser.Math.Between(2, 5);
         player.coins += earned;
+        this.audio?.play("coin");
+        this.ui.showCoinFloat(playerIdx, earned);
         this.ui.showMessage(`+${earned} coins!`, "#ffd700");
         this.time.delayedCall(1200, () => this.endTurn());
         break;
@@ -557,31 +539,40 @@ export class BoardScene extends Phaser.Scene {
         }
         break;
       }
-      case "raid": {
+      case "raid":
         this.doRaid(playerIdx);
         break;
-      }
-      case "shop": {
+      case "shop":
         this.doShop(playerIdx);
         break;
-      }
       case "trap": {
         const lost = Math.min(player.coins, Phaser.Math.Between(3, 8));
         player.coins -= lost;
+        this.audio?.play("trap");
+        this.ui.showCoinFloat(playerIdx, -lost);
         this.ui.showMessage(`TRAP! -${lost} coins`, "#ff6b35");
         this.time.delayedCall(1200, () => this.endTurn());
         break;
       }
-      case "challenge": {
-        // Trigger a minigame
+      case "challenge":
         this.time.delayedCall(600, () => this.triggerMinigame("end-turn"));
         break;
-      }
       case "capsule": {
-        const bonus = Phaser.Math.Between(6, 12);
-        player.coins += bonus;
-        this.ui.showMessage(`CAPSULE! +${bonus} coins!`, "#8b5cf6");
-        this.time.delayedCall(1200, () => this.endTurn());
+        const allItems: ItemType[] = ["magnet", "golden-spinner", "warp-ticket", "shield", "turbo-capsule", "swap-capsule"];
+        if (player.items.length < 2) {
+          const item = Phaser.Utils.Array.GetRandom(allItems) as ItemType;
+          player.items.push(item);
+          player.coins += 3;
+          this.audio?.play("item-use");
+          this.ui.showCoinFloat(playerIdx, 3);
+          this.ui.showMessage(`CAPSULE! Got ${ITEM_DEFS[item].name} + 3 coins!`, "#8b5cf6");
+        } else {
+          player.coins += 8;
+          this.audio?.play("coin");
+          this.ui.showCoinFloat(playerIdx, 8);
+          this.ui.showMessage("CAPSULE! Bag full — +8 coins!", "#8b5cf6");
+        }
+        this.time.delayedCall(1500, () => this.endTurn());
         break;
       }
       default:
@@ -591,34 +582,85 @@ export class BoardScene extends Phaser.Scene {
 
   private purchaseGrandCap(playerIdx: number) {
     const player = this.state.players[playerIdx];
-    if (player.coins >= 20) {
-      player.coins -= 20;
-      player.grandCaps++;
-      this.ui.showMessage(`★ GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`, "#ffd700", 2500);
-
-      // Relocate Grand Cap to a different eligible space
-      const eligible = ([] as string[]).concat(
-        ...BOARD_SPACES.filter(s => s.grandCapEligible && s.id !== this.state.activeGrandCapId).map(s => [s.id])
-      );
-      this.state.activeGrandCapId = eligible.length > 0
-        ? Phaser.Utils.Array.GetRandom(eligible) as string
-        : this.state.activeGrandCapId;
-
-      this.time.delayedCall(500, () => this.drawGrandCap());
-
-      if (player.grandCaps >= GRAND_CAPS_TO_WIN) {
-        this.time.delayedCall(2600, () => this.endGame());
-      } else {
-        this.time.delayedCall(2600, () => this.endTurn());
-      }
-    } else {
+    if (player.coins < 20) {
       this.ui.showMessage(`Need 20 coins for Grand Cap (have ${player.coins})`, "#94a3b8");
       this.time.delayedCall(1600, () => this.endTurn());
+      return;
     }
+
+    player.coins -= 20;
+    player.grandCaps++;
+    this.audio?.play("grand-cap");
+
+    const camera = this.cameras.main;
+    const token = this.tokenObjects[playerIdx];
+    camera.stopFollow();
+    if (token) {
+      camera.pan(token.x, token.y, 600, Phaser.Math.Easing.Cubic.InOut);
+      this.tweens.add({ targets: camera, zoom: 4.0, duration: 600, ease: "Cubic.InOut" });
+    }
+
+    // Particle burst at player's space
+    const space = BOARD_SPACE_MAP.get(player.spaceId);
+    if (space && this.textures.exists("grand-cap-art")) {
+      const emitter = this.add.particles(space.x, space.y, "grand-cap-art", {
+        speed: { min: 60, max: 180 },
+        angle: { min: 0, max: 360 },
+        scale: { start: 0.5, end: 0 },
+        lifespan: 900,
+        quantity: 3,
+        frequency: 60,
+      }).setDepth(30);
+      this.time.delayedCall(1200, () => emitter.stop());
+    }
+
+    this.ui.showMessage(
+      `⭐ ${player.displayName} CAPTURED THE GRAND CAP! (${player.grandCaps}/${GRAND_CAPS_TO_WIN})`,
+      "#ffd700", 2500,
+    );
+
+    // Relocate Grand Cap
+    const eligible = BOARD_SPACES.filter(s => s.grandCapEligible && s.id !== this.state.activeGrandCapId).map(s => s.id);
+    this.state.activeGrandCapId = eligible.length > 0
+      ? Phaser.Utils.Array.GetRandom(eligible) as string
+      : this.state.activeGrandCapId;
+    this.emitScoreUpdate();
+
+    this.time.delayedCall(2600, () => {
+      const newSpace = BOARD_SPACE_MAP.get(this.state.activeGrandCapId);
+      if (newSpace) {
+        camera.pan(newSpace.x, newSpace.y, 700, Phaser.Math.Easing.Cubic.InOut);
+        this.tweens.add({ targets: camera, zoom: PARTY_RENDER_SCALE * 1.3, duration: 700, ease: "Cubic.InOut" });
+        this.ui.showMessage("THE GRAND CAP HAS MOVED!", "#ffd700", 1400);
+      }
+
+      this.time.delayedCall(600, () => {
+        this.drawGrandCap();
+        if (this.grandCapObject) {
+          this.grandCapObject.setAlpha(0).setScale(0.4);
+          this.tweens.add({
+            targets: this.grandCapObject, alpha: 1, scale: 1.25, duration: 320, ease: "Back.Out",
+            onComplete: () => {
+              if (this.grandCapObject) {
+                this.tweens.add({ targets: this.grandCapObject, scale: 1, duration: 180 });
+              }
+            },
+          });
+        }
+      });
+
+      this.time.delayedCall(1800, () => {
+        this.tweens.add({ targets: camera, zoom: PARTY_RENDER_SCALE, duration: 400 });
+        if (player.grandCaps >= GRAND_CAPS_TO_WIN) {
+          this.time.delayedCall(400, () => this.endGame());
+        } else {
+          this.time.delayedCall(400, () => this.endTurn());
+        }
+      });
+    });
   }
 
   private doRaid(playerIdx: number) {
-    // Steal coins from richest other player
     const player = this.state.players[playerIdx];
     const others = this.state.players.filter((_, i) => i !== playerIdx);
     const target = others.sort((a, b) => b.coins - a.coins)[0];
@@ -629,34 +671,44 @@ export class BoardScene extends Phaser.Scene {
       this.ui.showMessage(`RAID blocked by ${target.displayName}'s shield!`, "#94a3b8");
     } else {
       const stolen = Math.min(target.coins, Phaser.Math.Between(4, 10));
+      const targetIdx = this.state.players.indexOf(target);
       target.coins -= stolen;
       player.coins += stolen;
+      this.audio?.play("raid");
+      this.ui.showCoinFloat(playerIdx, stolen);
+      this.ui.showCoinFloat(targetIdx, -stolen);
       this.ui.showMessage(`RAID! Stole ${stolen} coins from ${target.displayName}`, "#ef4444");
     }
     this.time.delayedCall(1600, () => this.endTurn());
   }
 
   private doShop(playerIdx: number) {
-    // Give player a random item (if they have < 2)
     const player = this.state.players[playerIdx];
-    const items: import("../GameState").ItemType[] = [
-      "magnet", "golden-spinner", "warp-ticket", "shield", "turbo-capsule", "swap-capsule",
-    ];
-    const item = Phaser.Utils.Array.GetRandom(items) as import("../GameState").ItemType;
+    this.audio?.play("shop");
+    const allItems: ItemType[] = ["magnet", "golden-spinner", "warp-ticket", "shield", "turbo-capsule", "swap-capsule"];
+    const offered = (Phaser.Utils.Array.Shuffle([...allItems]) as ItemType[]).slice(0, 3);
 
-    if (player.items.length >= 2) {
-      // Drop oldest
-      player.items.shift();
+    const giveItem = (item: ItemType) => {
+      if (player.items.length >= 2) player.items.shift();
+      player.items.push(item);
+      this.audio?.play("item-use");
+      this.ui.showMessage(`Shop: Got ${ITEM_DEFS[item].name}!`, "#f59e0b");
+      this.time.delayedCall(1200, () => this.endTurn());
+    };
+
+    if (player.isBot) {
+      this.time.delayedCall(1200, () => giveItem(Phaser.Utils.Array.GetRandom(offered) as ItemType));
+    } else {
+      this.ui.showShopPanel(offered, (item) => giveItem(item));
     }
-    player.items.push(item);
-    this.ui.showMessage(`Shop: Got ${item}!`, "#f59e0b");
-    this.time.delayedCall(1600, () => this.endTurn());
   }
 
   private triggerMinigame(resumeAfter: "end-turn" | "start-turn") {
     this.resumeAfterMinigame = resumeAfter;
-    const types: ("coin-vacuum" | "factory-floor" | "crate-break")[] = ["coin-vacuum", "factory-floor", "crate-break"];
-    const type = Phaser.Utils.Array.GetRandom(types) as typeof types[0];
+    const allTypes = ["coin-vacuum", "factory-floor", "crate-break"] as const;
+    const candidates = allTypes.filter(t => t !== this.state.lastMinigameKey);
+    const type = Phaser.Utils.Array.GetRandom(candidates.length > 0 ? [...candidates] : [...allTypes]) as typeof allTypes[number];
+    this.state.lastMinigameKey = type;
     this.state.minigameType = type;
     this.state.phase = "minigame";
 
@@ -670,8 +722,6 @@ export class BoardScene extends Phaser.Scene {
 
   private endTurn() {
     this.emitScoreUpdate();
-
-    // Advance turn
     this.state.turnIndex = (this.state.turnIndex + 1) % this.state.players.length;
     this.currentPhase = "idle";
     if (this.state.turnIndex === 0) {
@@ -719,16 +769,16 @@ export class BoardScene extends Phaser.Scene {
     camera.stopFollow();
     if (follow) camera.startFollow(token, false, 0.12, 0.12);
     camera.pan(token.x, token.y, 650, Phaser.Math.Easing.Cubic.InOut);
-    this.tweens.add({
-      targets: camera,
-      zoom: PARTY_RENDER_SCALE * 1.3,
-      duration: 650,
-      ease: "Cubic.InOut",
-    });
+    this.tweens.add({ targets: camera, zoom: PARTY_RENDER_SCALE * 1.3, duration: 650, ease: "Cubic.InOut" });
   }
 
-  // Called when returning from a minigame
   onMinigameComplete(rewards: { playerId: string; coins: number }[]) {
+    // Track minigame wins (first entry is 1st place)
+    if (rewards.length > 0) {
+      const winner = this.state.players.find(p => p.id === rewards[0].playerId);
+      if (winner) winner.minigameWins++;
+    }
+
     for (const r of rewards) {
       const p = this.state.players.find(x => x.id === r.playerId);
       if (p) p.coins += r.coins;
@@ -739,6 +789,14 @@ export class BoardScene extends Phaser.Scene {
     this.scene.bringToTop("UIScene");
     this.ui.showPlayerHud();
     this.emitScoreUpdate();
+
+    this.time.delayedCall(400, () => {
+      for (const r of rewards) {
+        const playerIdx = this.state.players.findIndex(x => x.id === r.playerId);
+        if (playerIdx >= 0) this.ui.showCoinFloat(playerIdx, r.coins);
+      }
+    });
+
     if (this.resumeAfterMinigame === "start-turn") {
       this.currentPhase = "idle";
       this.time.delayedCall(600, () => this.startTurn());
@@ -747,4 +805,3 @@ export class BoardScene extends Phaser.Scene {
     }
   }
 }
-

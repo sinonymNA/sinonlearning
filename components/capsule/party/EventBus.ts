@@ -9,8 +9,6 @@ export type EventMap = {
   // Phaser → React
   "phaser:ready": void;
   "phaser:phase-change": { phase: string };
-  "phaser:question": { q: string; choices: string[]; timeLimit: number };
-  "phaser:answer-result": { correct: boolean; spinResult: number };
   "phaser:score-update": PlayerScore[];
   "phaser:game-over": { ranking: PlayerScore[] };
 };

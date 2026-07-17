@@ -34,6 +34,7 @@ export interface PlayerState {
   totalAnswers: number;
   hasShield: boolean;
   skillMastery: Record<string, number>;
+  minigameWins: number;
 }
 
 export interface GameState {
@@ -44,7 +45,7 @@ export interface GameState {
   activeGrandCapId: string; // Current space ID where Grand Cap sits
   phase: "lobby" | "board" | "minigame" | "results";
   minigameType: "coin-vacuum" | "factory-floor" | "crate-break" | null;
-  turnOrder: number[];     // Player indices in play order for this round
+  lastMinigameKey: string; // Prevents same minigame back-to-back
 }
 
 export function createInitialState(
@@ -61,6 +62,7 @@ export function createInitialState(
     totalAnswers: 0,
     hasShield: false,
     skillMastery: {},
+    minigameWins: 0,
   }));
 
   // Random initial Grand Cap placement from eligible spaces
@@ -75,7 +77,7 @@ export function createInitialState(
     activeGrandCapId,
     phase: "board",
     minigameType: null,
-    turnOrder: players.map((_, i) => i),
+    lastMinigameKey: "",
   };
 }
 
