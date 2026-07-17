@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import type { ChestResult } from "@/lib/capsuleData";
+import { useCapsuleAudio } from "@/components/capsule/useCapsuleAudio";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type FactoryPhase =
@@ -211,6 +212,9 @@ function AnimatingMachine({
         animationDuration: "0.4s", animationIterationCount: "infinite",
       }} />
 
+      {/* Chute above tray */}
+      <Img name="machine-chute" style={{ position: "absolute", bottom: "22%", left: "50%", transform: "translateX(-50%)", width: "40%", opacity: 0.7 }} />
+
       {/* Tray */}
       <Img name={`machine-tray-${color}`} style={{ position: "absolute", bottom: "2%", left: "50%", transform: "translateX(-50%)", width: "60%" }} />
 
@@ -278,6 +282,7 @@ export default function FactoryGame({
   const prevAnswered = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const resolvePromiseRef = useRef<Promise<void> | null>(null);
+  const { play } = useCapsuleAudio();
 
   function clearTimers() {
     timerRef.current.forEach(clearTimeout);
@@ -322,6 +327,28 @@ export default function FactoryGame({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myAnswer]);
+
+  // Audio: phase transitions
+  useEffect(() => {
+    switch (phase) {
+      case "activating": play("correct"); break;
+      case "wrong":      play("wrong"); break;
+      case "lever":      play("move"); break;
+      case "opening":    play("item-use"); break;
+      case "reaction":   play("countdown"); break;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // Audio: reward type
+  useEffect(() => {
+    if (phase !== "reward" || !myAnswer?.chestResult) return;
+    const t = myAnswer.chestResult.type;
+    if (t === "steal") play("raid");
+    else if (t === "double" || (t === "gold" && myAnswer.chestResult.amount >= 80)) play("grand-cap");
+    else play("coin");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, myAnswer?.chestResult]);
 
   // Reaction phase: countdown timer
   useEffect(() => {
@@ -376,6 +403,23 @@ export default function FactoryGame({
     <div style={{ flex: 1, position: "relative", overflow: "hidden", minHeight: 0 }}>
       {/* CSS keyframes */}
       <style dangerouslySetInnerHTML={{ __html: FACTORY_CSS }} />
+
+      {/* Flash burst overlay — FACTORY ACTIVATED */}
+      <AnimatePresence>
+        {phase === "activating" && (
+          <motion.img
+            key="flash-overlay"
+            // eslint-disable-next-line @next/next/no-img-element
+            src="/assets/capsule/game/flash-burst.png"
+            alt=""
+            initial={{ scale: 0.5, opacity: 0.9 }}
+            animate={{ scale: 2.8, opacity: 0 }}
+            transition={{ duration: 0.65, ease: "easeOut" }}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
+                     objectFit: "cover", zIndex: 20, pointerEvents: "none" }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Factory background layer — always present */}
       <div style={{ position: "absolute", inset: 0 }}>
@@ -514,19 +558,17 @@ export default function FactoryGame({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}
             >
-              <motion.div
-                animate={{ scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 0.4, repeat: 1 }}
-                style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.25em", textTransform: "uppercase", color: "#fde047" }}
-              >
-                FACTORY ACTIVATED
-              </motion.div>
-              <motion.div
-                animate={{ scaleX: [0, 1.1, 1] }}
-                transition={{ duration: 0.55, ease: "easeOut" }}
-                style={{ height: 3, width: 160, background: "linear-gradient(90deg, transparent, #fde047, transparent)", borderRadius: 2 }}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <motion.img
+                src="/assets/capsule/game/cap-raid-logo.png"
+                alt="Cap Raid"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: [0, 1.25, 1], opacity: [0, 1, 1] }}
+                transition={{ duration: 0.55, times: [0, 0.65, 1], ease: "easeOut" }}
+                style={{ width: "70%", maxWidth: 260, objectFit: "contain",
+                         filter: "drop-shadow(0 0 32px rgba(25,205,210,0.9))" }}
               />
             </motion.div>
           )}
@@ -549,7 +591,13 @@ export default function FactoryGame({
               </motion.p>
               <div style={{ display: "flex", gap: 24, alignItems: "flex-end", justifyContent: "center" }}>
                 {(["blue", "gold", "red"] as MachineColor[]).map((color, i) => (
-                  <MachineCard key={color} color={color} index={i} onSelect={() => selectMachine(color)} />
+                  <div key={color} style={{
+                    animationName: "fc-activeglow", animationDuration: "1.8s",
+                    animationTimingFunction: "ease-in-out", animationIterationCount: "infinite",
+                    borderRadius: 12,
+                  }}>
+                    <MachineCard color={color} index={i} onSelect={() => selectMachine(color)} />
+                  </div>
                 ))}
               </div>
             </motion.div>
@@ -583,13 +631,18 @@ export default function FactoryGame({
               exit={{ opacity: 0 }}
               style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}
             >
-              <motion.img
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={`/assets/capsule/game/${rewardSprite(myAnswer.chestResult)}.png`}
                 alt="reward"
-                initial={{ scale: 0, rotate: -12 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", damping: 10, stiffness: 220 }}
-                style={{ width: 140, objectFit: "contain", filter: "drop-shadow(0 0 20px rgba(253,224,71,0.5))" }}
+                style={{
+                  width: 140, objectFit: "contain",
+                  filter: "drop-shadow(0 0 20px rgba(253,224,71,0.5))",
+                  animationName: "fc-rewardpop",
+                  animationDuration: "0.5s",
+                  animationFillMode: "forwards",
+                  animationTimingFunction: "cubic-bezier(.3,1.4,.5,1)",
+                }}
               />
               <motion.p
                 initial={{ y: 12, opacity: 0 }}

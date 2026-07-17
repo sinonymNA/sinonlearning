@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
+import { useCapsuleAudio } from "@/components/capsule/useCapsuleAudio";
 
 const ANSWER_COLORS = ["#ef4444", "#19CDD2", "#eab308", "#a855f7"];
 const ANSWER_LABELS = ["A", "B", "C", "D"];
@@ -27,13 +29,20 @@ function HostPanelInner() {
   // Demo automation refs
   const demoRef = useRef<{ q: number; done: boolean }>({ q: -1, done: false });
   const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const prevPlayerCountRef = useRef(0);
+  const { play } = useCapsuleAudio();
 
   const fetchState = useCallback(async () => {
     const res = await fetch(`/api/capsule/games/${code}`);
     if (res.ok) {
       const data = await res.json() as GameState;
+      if (data.playerCount > prevPlayerCountRef.current && prevPlayerCountRef.current > 0) {
+        play("shop");
+      }
+      prevPlayerCountRef.current = data.playerCount;
       setGame(data);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   useEffect(() => {
@@ -43,6 +52,16 @@ function HostPanelInner() {
   }, [fetchState]);
 
   useEffect(() => { setRevealed(false); }, [game?.currentQuestion]);
+
+  // Audio: answer revealed
+  useEffect(() => { if (revealed) play("correct"); }, [revealed, play]);
+
+  // Confetti on game over
+  useEffect(() => {
+    if (game?.status !== "ended") return;
+    confetti({ particleCount: 120, spread: 100, origin: { y: 0.3 }, colors: ["#fde047","#fbbf24","#fff","#19CDD2"] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.status]);
 
   // Demo: auto-submit bot answers + auto-advance each question
   useEffect(() => {
@@ -103,6 +122,7 @@ function HostPanelInner() {
   }, [isDemo, game?.currentQuestion, game?.status, code, fetchState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function advance() {
+    play("banner");
     setAdvancing(true);
     setRevealed(false);
     await fetch(`/api/capsule/games/${code}/advance`, { method: "POST" });
@@ -145,7 +165,7 @@ function HostPanelInner() {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/capsule/logo.png" alt="Capsule" style={{ height: 28, objectFit: "contain", filter: "drop-shadow(0 1px 6px rgba(25,205,210,0.4))" }} />
+          <img src="/assets/capsule/game/cap-raid-logo.png" alt="Cap Raid" style={{ height: 28, objectFit: "contain", filter: "drop-shadow(0 1px 6px rgba(25,205,210,0.4))" }} />
           <span style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{game.title}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -287,31 +307,54 @@ function HostPanelInner() {
                 </p>
               </div>
 
-              {/* Answer grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-                {game.currentQuestionData.choices.map((choice, i) => {
-                  const isCorrect = revealed && i === game.currentQuestionData!.answer;
-                  return (
-                    <div key={i} style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      minHeight: 68, borderRadius: 14, padding: "12px 16px",
-                      background: isCorrect ? "rgba(21,128,61,0.25)" : `${ANSWER_COLORS[i]}1a`,
-                      border: `2px solid ${isCorrect ? "#4ade80" : ANSWER_COLORS[i] + "55"}`,
-                    }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
-                        alt={ANSWER_LABELS[i]}
-                        style={{ height: 32, objectFit: "contain", flexShrink: 0 }}
-                      />
-                      <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", flex: 1 }}>{choice}</span>
-                      {isCorrect && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src="/assets/capsule/game/badge-correct.png" alt="✓" style={{ height: 28, objectFit: "contain" }} />
-                      )}
-                    </div>
-                  );
-                })}
+              {/* Answer grid — with reveal flash overlay */}
+              <div style={{ position: "relative", marginBottom: 20 }}>
+                <AnimatePresence>
+                  {revealed && (
+                    <motion.img
+                      key="reveal-flash"
+                      // eslint-disable-next-line @next/next/no-img-element
+                      src="/assets/capsule/game/flash-burst.png"
+                      alt=""
+                      initial={{ scale: 0.3, opacity: 0.95 }}
+                      animate={{ scale: 2.5, opacity: 0 }}
+                      transition={{ duration: 0.7, ease: "easeOut" }}
+                      style={{ position: "absolute", top: "50%", left: "50%",
+                               transform: "translate(-50%,-50%)",
+                               width: "100%", pointerEvents: "none", zIndex: 10 }}
+                    />
+                  )}
+                </AnimatePresence>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {game.currentQuestionData.choices.map((choice, i) => {
+                    const isCorrect = revealed && i === game.currentQuestionData!.answer;
+                    return (
+                      <motion.div
+                        key={i}
+                        animate={isCorrect ? { scale: [1, 1.08, 1], boxShadow: ["0 0 0 0 #4ade8000", "0 0 0 8px #4ade8055", "0 0 0 0 #4ade8000"] } : { scale: 1 }}
+                        transition={{ duration: 0.35 }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          minHeight: 68, borderRadius: 14, padding: "12px 16px",
+                          background: isCorrect ? "rgba(21,128,61,0.25)" : `${ANSWER_COLORS[i]}1a`,
+                          border: `2px solid ${isCorrect ? "#4ade80" : ANSWER_COLORS[i] + "55"}`,
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/assets/capsule/game/answer-btn-${ANSWER_LABELS[i].toLowerCase()}.png`}
+                          alt={ANSWER_LABELS[i]}
+                          style={{ height: 32, objectFit: "contain", flexShrink: 0 }}
+                        />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", flex: 1 }}>{choice}</span>
+                        {isCorrect && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src="/assets/capsule/game/badge-correct.png" alt="✓" style={{ height: 28, objectFit: "contain" }} />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Controls */}
@@ -349,23 +392,29 @@ function HostPanelInner() {
           {/* GAME OVER */}
           {game.status === "ended" && (
             <div style={{ padding: "48px 0", textAlign: "center" }}>
-              <h2 style={{
-                fontSize: 56, color: "#fff", letterSpacing: "0.06em",
-                fontFamily: "var(--font-bebas)", marginBottom: 8,
-              }}>GAME OVER</h2>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/capsule/game/cap-raid-logo.png" alt="Cap Raid"
+                style={{ width: "60%", maxWidth: 320, objectFit: "contain", marginBottom: 8,
+                         filter: "drop-shadow(0 0 24px rgba(25,205,210,0.6))" }} />
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.40)", marginBottom: 28 }}>Final standings</p>
               <div style={{ maxWidth: 400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 10 }}>
                 {leaderboard.slice(0, 5).map((p, i) => (
-                  <div key={p.id} style={{
-                    display: "flex", alignItems: "center", gap: 14,
-                    borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)",
-                    background: "rgba(255,255,255,0.04)", padding: "12px 16px",
-                  }}>
+                  <motion.div
+                    key={p.id}
+                    initial={{ y: 24, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.12, type: "spring", damping: 20 }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 14,
+                      borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(255,255,255,0.04)", padding: "12px 16px",
+                    }}
+                  >
                     {i === 0 ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 28, objectFit: "contain" }} />
+                      <img src="/assets/capsule/game/reward-grand-prize.png" alt="🏆" style={{ width: 32, objectFit: "contain" }} />
                     ) : (
-                      <span style={{ width: 28, textAlign: "center", fontSize: 12, fontWeight: 900, color: "rgba(255,255,255,0.30)" }}>
+                      <span style={{ width: 32, textAlign: "center", fontSize: 12, fontWeight: 900, color: "rgba(255,255,255,0.30)" }}>
                         #{i + 1}
                       </span>
                     )}
@@ -376,7 +425,7 @@ function HostPanelInner() {
                       <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 18, height: 18, objectFit: "contain" }} />
                       {p.gold}
                     </span>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </div>

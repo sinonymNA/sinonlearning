@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import confetti from "canvas-confetti";
 import CapIcon from "@/components/capsule/CapIcon";
 import FactoryGame from "@/components/capsule/FactoryGame";
 import type { ChestResult } from "@/lib/capsuleData";
+import { useCapsuleAudio } from "@/components/capsule/useCapsuleAudio";
 
 const GUEST_CAPS = [
   "cap-fox", "cap-cat", "cap-dog", "cap-frog", "cap-fish",
@@ -37,9 +39,17 @@ function PlayerScreenInner() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const [timer, setTimer] = useState(20);
+  const [streak, setStreak] = useState(0);
+  const [showStreakBadge, setShowStreakBadge] = useState(false);
+  const [floats, setFloats] = useState<Array<{ id: string; delta: number; key: number }>>([]);
   const prevQuestion = useRef(-1);
   // Holds playerId synchronously so fetchState can read it without being a dependency
   const playerIdRef = useRef<string | null>(null);
+  const lastAnswerCorrectRef = useRef<boolean | null>(null);
+  const goldPrevRef = useRef<Record<string, number>>({});
+  const prevStatusRef = useRef<string | null>(null);
+  const streakTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { play } = useCapsuleAudio();
 
 
   const fetchState = useCallback(async () => {
@@ -49,8 +59,33 @@ function PlayerScreenInner() {
     if (res.ok) {
       const data = await res.json() as GameState;
       setGame(data);
+
+      // Status audio triggers
+      if (data.status === "active" && prevStatusRef.current !== "active") {
+        play("banner");
+      }
+      prevStatusRef.current = data.status;
+
+      // Streak tracking: when question changes, check previous answer
       if (data.currentQuestion !== prevQuestion.current) {
+        const wasCorrect = lastAnswerCorrectRef.current;
+        lastAnswerCorrectRef.current = null;
         prevQuestion.current = data.currentQuestion;
+
+        if (wasCorrect === true) {
+          setStreak(s => {
+            const next = s + 1;
+            if (next >= 3) {
+              setShowStreakBadge(true);
+              if (streakTimerRef.current) clearTimeout(streakTimerRef.current);
+              streakTimerRef.current = setTimeout(() => setShowStreakBadge(false), 2200);
+            }
+            return next;
+          });
+        } else {
+          setStreak(0);
+        }
+
         if (data.questionStartedAt && data.currentQuestionData) {
           const elapsed = (Date.now() - new Date(data.questionStartedAt).getTime()) / 1000;
           const remaining = Math.max(0, (data.currentQuestionData.timeLimit ?? 20) - elapsed);
@@ -59,7 +94,22 @@ function PlayerScreenInner() {
           setTimer(data.currentQuestionData?.timeLimit ?? 20);
         }
       }
+
+      // Track current question answer for next streak check
+      if (data.myAnswer !== null) {
+        lastAnswerCorrectRef.current = data.myAnswer.isCorrect;
+      }
+
+      // Gold float tracking for mini-leaderboard
+      data.players.forEach(p => {
+        const prev = goldPrevRef.current[p.id] ?? p.gold;
+        if (p.gold > prev) {
+          setFloats(f => [...f, { id: p.id, delta: p.gold - prev, key: Date.now() + Math.random() }]);
+        }
+        goldPrevRef.current[p.id] = p.gold;
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code]);
 
   useEffect(() => {
@@ -80,6 +130,17 @@ function PlayerScreenInner() {
     const id = setInterval(() => setTimer(t => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
   }, [game?.currentQuestion, game?.myAnswer]);
+
+  // Confetti + winner sound on rank 1
+  useEffect(() => {
+    if (game?.status !== "ended" || !playerId) return;
+    const myRank = [...game.players].sort((a, b) => b.gold - a.gold).findIndex(p => p.id === playerId) + 1;
+    if (myRank === 1) {
+      play("grand-cap");
+      confetti({ particleCount: 120, spread: 100, origin: { y: 0.4 }, colors: ["#fde047","#fbbf24","#f59e0b","#fff","#19CDD2"] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game?.status]);
 
   async function join(e: React.FormEvent) {
     e.preventDefault();
@@ -136,8 +197,8 @@ function PlayerScreenInner() {
       }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/assets/capsule/logo.png"
-          alt="Capsule"
+          src="/assets/capsule/game/cap-raid-logo.png"
+          alt="Cap Raid"
           style={{ height: 56, objectFit: "contain", marginBottom: 16, filter: "drop-shadow(0 2px 16px rgba(25,205,210,0.5))" }}
         />
 
@@ -242,27 +303,35 @@ function PlayerScreenInner() {
         display: "flex", minHeight: "100dvh", flexDirection: "column",
         alignItems: "center", justifyContent: "center", textAlign: "center",
         padding: "0 20px", background: "#07183F",
+        position: "relative", overflow: "hidden",
       }}>
-        <motion.div
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", damping: 14, stiffness: 200 }}
-        >
-          <CapIcon capId={capId} size={80} animated />
-        </motion.div>
+        {/* Ambient factory background */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/capsule/game/factory-bg.png" alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%",
+                   objectFit: "cover", opacity: 0.18, pointerEvents: "none" }} />
+
+        {/* Floating mascot */}
+        <motion.img
+          src="/assets/capsule/mascot.png"
+          alt=""
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+          style={{ width: 88, objectFit: "contain", marginBottom: 8, position: "relative" }}
+        />
         <motion.p
           initial={{ y: 12, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.15 }}
-          style={{ marginTop: 16, fontSize: 17, fontWeight: 700, color: "#fff" }}
+          style={{ marginTop: 8, fontSize: 17, fontWeight: 700, color: "#fff", position: "relative" }}
         >
           {displayName}
         </motion.p>
-        <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.40)" }}>
+        <p style={{ marginTop: 10, fontSize: 13, color: "rgba(255,255,255,0.40)", position: "relative" }}>
           Waiting for the teacher to start…
         </p>
         {game.players.filter(p => p.id !== playerId).length > 0 && (
-          <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10 }}>
+          <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 10, position: "relative" }}>
             <AnimatePresence>
               {game.players.filter(p => p.id !== playerId).map(p => (
                 <motion.div
@@ -293,48 +362,40 @@ function PlayerScreenInner() {
         alignItems: "center", justifyContent: "center", padding: "0 20px",
         textAlign: "center", background: "#07183F",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          {myRank === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/assets/capsule/game/crown.png" alt="👑" style={{ height: 40, objectFit: "contain" }} />
-          )}
-          <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(25,205,210,0.70)" }}>
-            {myRank === 1 ? "You Won!" : `#${myRank} Place`}
-          </p>
-          {myRank === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/assets/capsule/game/crown.png" alt="" style={{ height: 40, objectFit: "contain", transform: "scaleX(-1)" }} />
-          )}
-        </div>
+        {myRank === 1 && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <motion.img
+            src="/assets/capsule/game/reward-grand-prize.png"
+            alt="Grand Prize"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 10, stiffness: 200, delay: 0.1 }}
+            style={{ width: 80, objectFit: "contain", marginBottom: 8,
+                     filter: "drop-shadow(0 0 20px rgba(253,224,71,0.7))" }}
+          />
+        )}
+        <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(25,205,210,0.70)", marginBottom: 4 }}>
+          {myRank === 1 ? "You Won!" : `#${myRank} Place`}
+        </p>
 
         <h2 style={{
           fontSize: 60, color: "#fff", letterSpacing: "0.06em",
           fontFamily: "var(--font-bebas)", margin: "0 0 8px",
         }}>GAME OVER</h2>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
-          {myRank === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/assets/capsule/game/coin-burst.png" alt="" style={{ height: 36, objectFit: "contain" }} />
-          )}
-          <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 22, fontWeight: 900, color: "#fde047" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 24, height: 24, objectFit: "contain" }} />
-            {myPlayer?.gold ?? 0} gold
-          </p>
-          {myRank === 1 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/assets/capsule/game/coin-burst.png" alt="" style={{ height: 36, objectFit: "contain", transform: "scaleX(-1)" }} />
-          )}
-        </div>
+        <p style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 22, fontWeight: 900, color: "#fde047", marginBottom: 28 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/assets/capsule/coin.png" alt="coin" style={{ width: 24, height: 24, objectFit: "contain" }} />
+          {myPlayer?.gold ?? 0} gold
+        </p>
 
         <div style={{ width: "100%", maxWidth: 320, display: "flex", flexDirection: "column", gap: 8 }}>
           {leaderboard.slice(0, 5).map((p, i) => (
             <motion.div
               key={p.id}
-              initial={{ x: -24, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: i * 0.08, type: "spring", damping: 20 }}
+              initial={{ y: 24, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: i * 0.12, type: "spring", damping: 20 }}
               style={{
                 display: "flex", alignItems: "center", gap: 12,
                 borderRadius: 14, padding: "10px 14px",
@@ -344,9 +405,9 @@ function PlayerScreenInner() {
             >
               {i === 0 ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src="/assets/capsule/game/crown.png" alt="👑" style={{ width: 20, objectFit: "contain" }} />
+                <img src="/assets/capsule/game/reward-grand-prize.png" alt="🏆" style={{ width: 24, objectFit: "contain" }} />
               ) : (
-                <span style={{ width: 20, fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
+                <span style={{ width: 24, fontSize: 11, fontWeight: 900, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
                   #{i + 1}
                 </span>
               )}
@@ -418,14 +479,40 @@ function PlayerScreenInner() {
         </span>
       </div>
 
-      {/* Timer bar */}
-      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", position: "relative", flexShrink: 0 }}>
+      {/* Timer bar — uses timer-bar.png asset */}
+      <div style={{ height: 10, position: "relative", flexShrink: 0, overflow: "hidden" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/assets/capsule/game/timer-bar.png" alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "fill", opacity: 0.22, pointerEvents: "none" }} />
         <motion.div
-          animate={{ width: `${timerPct}%`, backgroundColor: timerColor }}
-          transition={{ width: { duration: 1, ease: "linear" }, backgroundColor: { duration: 0.3 } }}
-          style={{ position: "absolute", top: 0, left: 0, height: "100%" }}
+          animate={{ scaleX: timerPct / 100 }}
+          transition={{ scaleX: { duration: 1, ease: "linear" } }}
+          style={{
+            position: "absolute", inset: 0, transformOrigin: "left",
+            backgroundImage: "url(/assets/capsule/game/timer-bar.png)",
+            backgroundSize: "100% 100%",
+            filter: timerColor === "#ef4444" ? "hue-rotate(220deg)" : "none",
+          }}
         />
       </div>
+
+      {/* Streak badge — fixed top-right overlay */}
+      <AnimatePresence>
+        {showStreakBadge && streak >= 3 && (
+          <motion.div
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            style={{ position: "fixed", top: 64, right: 12, zIndex: 50,
+                     display: "flex", alignItems: "center", gap: 6, pointerEvents: "none" }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/capsule/game/badge-streak.png" alt="Streak" style={{ height: 44, objectFit: "contain" }} />
+            <span style={{ fontSize: 22, fontWeight: 900, color: "#fde047",
+                           textShadow: "0 0 12px rgba(253,224,71,0.8)" }}>×{streak}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Factory game — handles question overlay + animation sequence */}
       <FactoryGame
@@ -459,7 +546,26 @@ function PlayerScreenInner() {
                 transition={{ type: "spring", damping: 18 }}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}
               >
-                <CapIcon capId={p.capId} size={28} />
+                <div style={{ position: "relative" }}>
+                  <CapIcon capId={p.capId} size={28} />
+                  {floats.filter(f => f.id === p.id).map(f => (
+                    <motion.div
+                      key={f.key}
+                      initial={{ y: 0, opacity: 1 }}
+                      animate={{ y: -30, opacity: 0 }}
+                      transition={{ duration: 0.8 }}
+                      onAnimationComplete={() => setFloats(fs => fs.filter(x => x.key !== f.key))}
+                      style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+                               display: "flex", gap: 2, alignItems: "center",
+                               fontSize: 11, fontWeight: 900, color: "#fde047",
+                               pointerEvents: "none", whiteSpace: "nowrap" }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/assets/capsule/coin.png" alt="" style={{ width: 10, height: 10, objectFit: "contain" }} />
+                      +{f.delta}
+                    </motion.div>
+                  ))}
+                </div>
                 <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 9, color: "rgba(255,255,255,0.50)", whiteSpace: "nowrap" }}>
                   {i === 0 && "👑 "}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
