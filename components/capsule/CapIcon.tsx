@@ -48,6 +48,16 @@ const CAP_PORTRAITS: Record<string, string> = {
   "cap-nebulacat":  "/assets/capsule/caps/cap-nebulacat.png",
   "cap-orbitdrake": "/assets/capsule/caps/cap-orbitdrake.png",
   "cap-voidknight": "/assets/capsule/caps/cap-voidknight.png",
+  // Caroline's Emotions set
+  "cap-caroline-happy":     "/assets/capsule/caps/cap-caroline-happy.png",
+  "cap-caroline-sassy":     "/assets/capsule/caps/cap-caroline-sassy.png",
+  "cap-caroline-sad":       "/assets/capsule/caps/cap-caroline-sad.png",
+  "cap-caroline-angry":     "/assets/capsule/caps/cap-caroline-angry.png",
+  "cap-caroline-silly":     "/assets/capsule/caps/cap-caroline-silly.png",
+  "cap-caroline-scared":    "/assets/capsule/caps/cap-caroline-scared.png",
+  "cap-caroline-surprised": "/assets/capsule/caps/cap-caroline-surprised.png",
+  "cap-caroline-tired":     "/assets/capsule/caps/cap-caroline-tired.png",
+  "cap-caroline-confused":  "/assets/capsule/caps/cap-caroline-confused.png",
 };
 
 // Multi-layer box-shadows — richer and deeper than a single blur
