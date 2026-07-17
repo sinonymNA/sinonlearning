@@ -9,3 +9,6 @@ export default function CapsulePartyLayout({ children }: { children: React.React
     </div>
   );
 }
+import "@fontsource/nunito/700.css";
+import "@fontsource/nunito/900.css";
+

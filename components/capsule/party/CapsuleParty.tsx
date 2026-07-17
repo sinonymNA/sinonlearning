@@ -60,7 +60,7 @@ export default function CapsuleParty({
           position: "absolute", inset: 0, display: "flex", alignItems: "center",
           justifyContent: "center", background: "#0a0e1a",
         }}>
-          <div style={{ color: "#19cdd2", fontSize: 18, fontFamily: "sans-serif" }}>
+          <div style={{ color: "#19cdd2", fontSize: 18, fontFamily: "Nunito, sans-serif", fontWeight: 900 }}>
             Loading Capsule Party...
           </div>
         </div>

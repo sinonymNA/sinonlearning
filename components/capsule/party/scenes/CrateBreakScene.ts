@@ -60,7 +60,7 @@ export class CrateBreakScene extends Phaser.Scene {
       fontSize: "25px", fontFamily: "sans-serif", color: "#c4a7ff", fontStyle: "bold",
       stroke: "#07142f", strokeThickness: 6,
     }).setOrigin(0.5);
-    this.add.text(W / 2, 48, "Move close and press SPACE â€” or tap a nearby crate.", {
+    this.add.text(W / 2, 48, "Move close and press SPACE — or tap a nearby crate.", {
       fontSize: "11px", fontFamily: "sans-serif", color: "#ffffff",
     }).setOrigin(0.5);
 
@@ -88,6 +88,7 @@ export class CrateBreakScene extends Phaser.Scene {
       const preferred = `cap-char-${capId}-${player.colorIndex}`;
       const texture = this.textures.exists(preferred) ? preferred : `player-${player.colorIndex}`;
       const sprite = this.physics.add.sprite(starts[index].x, starts[index].y, texture).setCollideWorldBounds(true).setDepth(12);
+      sprite.setDisplaySize(40, 40);
       const label = this.add.text(sprite.x, sprite.y - 29, player.displayName.slice(0, 9), {
         fontSize: "9px", color: "#ffffff", backgroundColor: "#07142faa",
       }).setOrigin(0.5).setDepth(13);
@@ -101,7 +102,7 @@ export class CrateBreakScene extends Phaser.Scene {
       title: "Crate Coliseum",
       kicker: "Free-for-all challenge",
       objective: "Smash prize crates. Golden crates are worth the most.",
-      controls: "ARROWS / WASD to move  â€¢  SPACE to smash",
+      controls: "ARROWS / WASD to move  •  SPACE to smash",
       tip: "Get close before swinging. Pick a new crate fast.",
       accent: 0xc4a7ff,
     }, () => this.showCountdown(() => {
@@ -146,7 +147,7 @@ export class CrateBreakScene extends Phaser.Scene {
       })[0];
       if (!crate) continue;
       const distance = Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, crate.body.x, crate.body.y);
-      if (distance > 58) this.physics.moveToObject(bot.sprite, crate.body, 112);
+      if (distance > 58) this.physics.moveToObject(bot.sprite, crate.body, 82);
       else {
         bot.sprite.setVelocity(0);
         if (bot.cooldown <= 0) this.hitCrate(bot, crate);

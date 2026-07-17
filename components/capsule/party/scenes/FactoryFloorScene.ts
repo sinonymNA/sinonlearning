@@ -76,6 +76,7 @@ export class FactoryFloorScene extends Phaser.Scene {
       const preferred = `cap-char-${capId}-${player.colorIndex}`;
       const texture = this.textures.exists(preferred) ? preferred : `player-${player.colorIndex}`;
       const sprite = this.physics.add.sprite(starts[index], H - 92, texture).setCollideWorldBounds(true).setDepth(10);
+      sprite.setDisplaySize(40, 40);
       sprite.setCircle(18);
       const label = this.add.text(sprite.x, sprite.y - 30, player.displayName.slice(0, 9), {
         fontSize: "9px", fontFamily: "sans-serif", color: "#ffffff", backgroundColor: "#07142faa",
@@ -89,7 +90,7 @@ export class FactoryFloorScene extends Phaser.Scene {
       title: "Factory Frenzy",
       kicker: "Catch-and-dodge challenge",
       objective: "Catch falling capsules. Stay away from the red traps.",
-      controls: "ARROWS / WASD to move  â€¢  TAP to dash there",
+      controls: "ARROWS / WASD to move  •  TAP to dash there",
       tip: "Rare gold capsules are worth three points.",
       accent: 0xffd166,
     }, () => this.showCountdown(() => {
@@ -125,7 +126,7 @@ export class FactoryFloorScene extends Phaser.Scene {
       const target = this.parts.filter((part) => !part.harmful)
         .sort((a, b) => Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, a.sprite.x, a.sprite.y)
           - Phaser.Math.Distance.Between(bot.sprite.x, bot.sprite.y, b.sprite.x, b.sprite.y))[0];
-      if (target) this.physics.moveToObject(bot.sprite, target.sprite, 112);
+      if (target) this.physics.moveToObject(bot.sprite, target.sprite, 78);
     }
 
     for (const actor of this.actors) {

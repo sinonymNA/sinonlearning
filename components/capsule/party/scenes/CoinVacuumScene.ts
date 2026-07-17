@@ -5,12 +5,13 @@ import { PLACEHOLDER, PLAYER_RADIUS, COIN_RADIUS } from "../AssetManifest";
 import type { UIScene } from "./UIScene";
 import type { BoardScene } from "./BoardScene";
 import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
+import { partyText } from "../Presentation";
 
 const ROUND_SECONDS = 35;
 const COIN_SPAWN_INTERVAL = 900;  // ms
 const MAX_COINS = 30;
 const PLAYER_SPEED = 200;
-const BOT_SPEED = 112;
+const BOT_SPEED = 74;
 const MAGNET_RADIUS = 100;
 const MAGNET_COOLDOWN = 4000;
 
@@ -74,7 +75,7 @@ export class CoinVacuumScene extends Phaser.Scene {
     this.add.image(W / 2, H / 2, "arena-bg").setDisplaySize(W, H);
     this.add.rectangle(0, 0, W, H, PLACEHOLDER.ARENA_BG, 0.12).setOrigin(0);
 
-    // Walls (visual only â€” world bounds handle physics)
+    // Walls (visual only — world bounds handle physics)
     const wallColor = PLACEHOLDER.WALL_COLOR;
     this.add.rectangle(0, 0, W, 8, wallColor, 1).setOrigin(0);
     this.add.rectangle(0, H - 8, W, 8, wallColor, 1).setOrigin(0);
@@ -101,7 +102,7 @@ export class CoinVacuumScene extends Phaser.Scene {
       title: "Coin Vacuum",
       kicker: "Free-for-all challenge",
       objective: "Grab more gold than anyone else before time runs out.",
-      controls: "ARROWS / WASD to move  â€¢  SPACE for magnet",
+      controls: "ARROWS / WASD to move  •  SPACE for magnet",
       tip: "Gold is good. Red fakes slow you down.",
       accent: 0x2dd4bf,
     }, () => this.showCountdown(() => {
@@ -180,13 +181,13 @@ export class CoinVacuumScene extends Phaser.Scene {
       const pos = positions[i % 4];
       const texKey = this.charTextureKey(gp);
       const sprite = this.physics.add.sprite(pos.x, pos.y, texKey);
+      sprite.setDisplaySize(PLAYER_RADIUS * 2, PLAYER_RADIUS * 2);
       sprite.setCollideWorldBounds(true);
       sprite.setCircle(PLAYER_RADIUS, 0, 0);
       sprite.setDepth(20);
 
-      const label = this.add.text(pos.x, pos.y - PLAYER_RADIUS - 14, gp.displayName.slice(0, 8), {
-        fontSize: "10px", fontFamily: "sans-serif", color: "#e2e8f0",
-        backgroundColor: "#0f172a80", padding: { x: 3, y: 1 },
+      const label = partyText(this, pos.x, pos.y - PLAYER_RADIUS - 14, gp.displayName.slice(0, 8), 10, "#ffffff", {
+        stroke: "#020817", strokeThickness: 3,
       }).setOrigin(0.5).setDepth(21);
       const mp: MinigamePlayer = {
         id: gp.id,
@@ -317,13 +318,12 @@ export class CoinVacuumScene extends Phaser.Scene {
 
   private renderScoreboard() {
     const W = PARTY_WIDTH;
-    // Mini scoreboard top-right
-    const startX = W - 160;
+    const startX = W - 146;
     this.players.forEach((p, i) => {
-      const t = this.add.text(startX, 14 + i * 20, `${p.displayName.slice(0, 8)}: 0`, {
-        fontSize: "11px", fontFamily: "monospace", color: "#e2e8f0",
-        backgroundColor: "#0f172a90", padding: { x: 4, y: 2 },
-      }).setDepth(100);
+      const y = 17 + i * 25;
+      this.add.image(startX + 68, y + 8, "hud-player").setDisplaySize(145, 25).setAlpha(0.9).setDepth(99);
+      const t = partyText(this, startX + 8, y + 8, `${p.displayName.slice(0, 8)}  0`, 10, "#ffffff")
+        .setOrigin(0, 0.5).setDepth(100);
       this.scoreTexts.set(p.id, t);
     });
   }
@@ -331,7 +331,7 @@ export class CoinVacuumScene extends Phaser.Scene {
   private updateScoreboard() {
     for (const p of this.players) {
       const t = this.scoreTexts.get(p.id);
-      if (t) t.setText(`${p.displayName.slice(0, 8)}: ${Math.max(0, p.coins)}`);
+      if (t) t.setText(`${p.displayName.slice(0, 8)}  ${Math.max(0, p.coins)}`);
     }
   }
 
@@ -464,7 +464,7 @@ export class CoinVacuumScene extends Phaser.Scene {
       fontSize: "18px", fontFamily: "sans-serif", color: "#19cdd2", fontStyle: "bold",
     }).setOrigin(0.5).setDepth(602);
 
-    const medals = ["ðŸ¥‡", "ðŸ¥ˆ", "ðŸ¥‰", "4th"];
+    const medals = ["🥇", "🥈", "🥉", "4th"];
     sorted.forEach((p, i) => {
       const y = H / 2 - 70 + i * 38;
       this.add.text(W / 2 - 140, y, `${medals[i] ?? (i + 1)}.`, {
@@ -478,7 +478,7 @@ export class CoinVacuumScene extends Phaser.Scene {
       }).setOrigin(0, 0.5).setDepth(602);
     });
 
-    const btn = this.add.text(W / 2, H / 2 + 100, "Continue â†’", {
+    const btn = this.add.text(W / 2, H / 2 + 100, "Continue →", {
       fontSize: "16px", fontFamily: "sans-serif", color: "#0f172a",
       backgroundColor: "#19cdd2", padding: { x: 20, y: 8 }, fontStyle: "bold",
     }).setOrigin(0.5).setDepth(602).setInteractive({ useHandCursor: true });

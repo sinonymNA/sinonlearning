@@ -15,8 +15,10 @@ export function createPhaserGame(parent: HTMLElement): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: 1200,
-    height: 675,
+    // Render natively at 1080p. The old 1200x675 canvas was enlarged by
+    // desktop browsers, softening every text texture, portrait, and UI edge.
+    width: 1920,
+    height: 1080,
     backgroundColor: "#0a0e1a",
     scene: [
       BootScene,
@@ -47,6 +49,7 @@ export function createPhaserGame(parent: HTMLElement): Phaser.Game {
       antialias: true,
       pixelArt: false,
       roundPixels: false,
+      powerPreference: "high-performance",
     },
   });
 }

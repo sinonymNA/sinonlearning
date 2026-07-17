@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import { PLACEHOLDER } from "../AssetManifest";
 import { PARTY_HEIGHT, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
+import { imageButton, partyText } from "../Presentation";
 
 interface LobbyPlayer {
   id: string;
@@ -14,10 +15,9 @@ export class LobbyScene extends Phaser.Scene {
   private players: LobbyPlayer[] = [];
   private playerGroup: Phaser.GameObjects.Container | null = null;
   private maxRounds: 10 | 15 = 10;
+  private roundButtons: Phaser.GameObjects.Image[] = [];
 
-  constructor() {
-    super({ key: "LobbyScene" });
-  }
+  constructor() { super({ key: "LobbyScene" }); }
 
   init(data: { initialPlayer?: { playerId: string; displayName: string; capId: string } }) {
     this.players = [];
@@ -32,55 +32,35 @@ export class LobbyScene extends Phaser.Scene {
     const W = PARTY_WIDTH;
     const H = PARTY_HEIGHT;
     this.add.image(W / 2, H / 2, "board-bg").setDisplaySize(W * 1.08, H * 1.08);
-    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 0.48).setOrigin(0);
-    this.add.ellipse(W / 2, 300, 760, 330, 0x06152e, 0.64);
+    this.add.rectangle(0, 0, W, H, PLACEHOLDER.BOARD_BG, 0.38).setOrigin(0);
+    this.add.ellipse(W / 2, 285, 760, 330, 0x06152e, 0.48);
 
-    this.add.text(W / 2, 32, "PARTY ASSEMBLY", {
-      fontSize: "30px", fontFamily: "sans-serif", color: "#ffffff", fontStyle: "bold",
-      stroke: "#07142f", strokeThickness: 7,
+    this.add.image(W / 2, 48, "banner-ribbon").setDisplaySize(400, 92);
+    partyText(this, W / 2, 39, "PARTY ASSEMBLY", 25, "#ffffff", {
+      stroke: "#030b1c", strokeThickness: 4,
     }).setOrigin(0.5);
-    this.add.text(W / 2, 66, "Four challengers. One Grand Cap.", {
-      fontSize: "13px", fontFamily: "sans-serif", color: "#9fb4d8",
+    partyText(this, W / 2, 101, "FOUR CHALLENGERS  •  ONE GRAND CAP", 10, "#dbeafe", {
+      letterSpacing: 1.4,
+      stroke: "#020817", strokeThickness: 3,
     }).setOrigin(0.5);
 
     this.playerGroup = this.add.container(0, 0);
     this.renderPlayers();
 
-    const consoleGlow = this.add.ellipse(W / 2, 392, 440, 70, 0x19cdd2, 0.12);
-    this.tweens.add({ targets: consoleGlow, scaleX: 1.08, alpha: 0.05, duration: 1200, yoyo: true, repeat: -1 });
+    partyText(this, 176, 349, "MATCH LENGTH", 9, "#9fb4d8", { letterSpacing: 2 }).setOrigin(0.5);
+    this.roundButtons = [
+      this.makeRoundChoice(176, 373, "10 ROUNDS", 10),
+      this.makeRoundChoice(176, 407, "15 ROUNDS", 15),
+    ];
+    this.refreshRoundButtons();
 
-    this.add.text(220, 348, "MATCH", { fontSize: "10px", color: "#9fb4d8", fontStyle: "bold", letterSpacing: 2 }).setOrigin(0.5);
-    const ten = this.makePill(220, 373, "10 ROUNDS", true);
-    const fifteen = this.makePill(220, 407, "15 ROUNDS", false);
-    const refresh = () => {
-      ten.setFillStyle(this.maxRounds === 10 ? 0xffd166 : 0x17233b);
-      fifteen.setFillStyle(this.maxRounds === 15 ? 0xffd166 : 0x17233b);
-    };
-    ten.on("pointerdown", () => { this.maxRounds = 10; refresh(); });
-    fifteen.on("pointerdown", () => { this.maxRounds = 15; refresh(); });
+    imageButton(this, 388, 386, "ADD RIVALS", () => this.fillWithBots(), {
+      width: 178, height: 58, secondary: true, fontSize: 14,
+    });
 
-    const rivalButton = this.add.container(395, 373);
-    const rivalPlate = this.add.ellipse(0, 0, 154, 42, 0x17233b, 1).setStrokeStyle(2, 0x7dd3fc, 0.7);
-    const rivalHit = this.add.zone(0, 0, 154, 42).setInteractive({ useHandCursor: true });
-    const rivalText = this.add.text(0, 0, "ADD RIVALS", {
-      fontSize: "13px", fontFamily: "sans-serif", color: "#dbeafe", fontStyle: "bold",
-    }).setOrigin(0.5);
-    rivalButton.add([rivalPlate, rivalHit, rivalText]);
-    rivalHit.on("pointerover", () => rivalButton.setScale(1.05));
-    rivalHit.on("pointerout", () => rivalButton.setScale(1));
-    rivalHit.on("pointerdown", () => this.fillWithBots());
-
-    const launch = this.add.container(590, 389);
-    const launchGlow = this.add.ellipse(0, 5, 250, 68, 0xffd166, 0.18);
-    const launchPlate = this.add.graphics().fillStyle(0x19cdd2, 1).fillRoundedRect(-112, -28, 224, 56, 28);
-    const launchHit = this.add.zone(0, 0, 224, 56).setInteractive({ useHandCursor: true });
-    const launchText = this.add.text(0, 0, "LAUNCH GAME", {
-      fontSize: "17px", fontFamily: "sans-serif", color: "#07142f", fontStyle: "bold",
-    }).setOrigin(0.5);
-    launch.add([launchGlow, launchPlate, launchHit, launchText]);
-    launchHit.on("pointerover", () => launch.setScale(1.05));
-    launchHit.on("pointerout", () => launch.setScale(1));
-    launchHit.on("pointerdown", () => this.startGame());
+    imageButton(this, 615, 386, "LAUNCH GAME", () => this.startGame(), {
+      width: 250, height: 70, fontSize: 18,
+    });
 
     EventBus.on("party:join", (data) => this.addPlayer({
       id: data.playerId, displayName: data.displayName, capId: data.capId, colorIndex: this.players.length,
@@ -89,13 +69,18 @@ export class LobbyScene extends Phaser.Scene {
     EventBus.emit("phaser:phase-change", { phase: "lobby" });
   }
 
-  private makePill(x: number, y: number, label: string, selected: boolean) {
-    const pill = this.add.ellipse(x, y, 132, 28, selected ? 0xffd166 : 0x17233b, 1)
-      .setStrokeStyle(2, 0xffffff, 0.35).setInteractive({ useHandCursor: true });
-    this.add.text(x, y, label, {
-      fontSize: "10px", fontFamily: "sans-serif", color: selected ? "#07142f" : "#ffffff", fontStyle: "bold",
-    }).setOrigin(0.5);
-    return pill;
+  private makeRoundChoice(x: number, y: number, label: string, rounds: 10 | 15) {
+    const image = this.add.image(x, y, "button-secondary").setDisplaySize(148, 34).setInteractive({ useHandCursor: true });
+    partyText(this, x, y, label, 10, "#ffffff").setOrigin(0.5);
+    image.on("pointerdown", () => { this.maxRounds = rounds; this.refreshRoundButtons(); });
+    return image;
+  }
+
+  private refreshRoundButtons() {
+    this.roundButtons.forEach((button, index) => {
+      const selected = (index === 0 && this.maxRounds === 10) || (index === 1 && this.maxRounds === 15);
+      button.setTexture(selected ? "button-primary" : "button-secondary");
+    });
   }
 
   private addPlayer(player: LobbyPlayer) {
@@ -127,13 +112,11 @@ export class LobbyScene extends Phaser.Scene {
       const pedestal = this.add.ellipse(x, 278, 132, 35, color, player ? 0.55 : 0.18).setStrokeStyle(3, color, 0.9);
       const halo = this.add.circle(x, 183, 61, color, player ? 0.18 : 0.06).setStrokeStyle(3, color, player ? 0.9 : 0.3);
       const portrait = player
-        ? this.add.image(x, 183, player.capId).setDisplaySize(96, 96)
-        : this.add.text(x, 183, "?", { fontSize: "42px", color: "#64748b", fontStyle: "bold" }).setOrigin(0.5);
-      const name = this.add.text(x, 252, player ? player.displayName : "OPEN", {
-        fontSize: "15px", fontFamily: "sans-serif", color: player ? "#ffffff" : "#64748b", fontStyle: "bold",
-      }).setOrigin(0.5);
-      const role = this.add.text(x, 297, player ? (player.id.startsWith("bot-") ? "RIVAL" : "YOU") : "WAITING", {
-        fontSize: "9px", fontFamily: "sans-serif", color: player ? "#dbeafe" : "#475569", fontStyle: "bold", letterSpacing: 2,
+        ? this.add.image(x, 183, player.capId).setDisplaySize(104, 104)
+        : partyText(this, x, 183, "?", 42, "#64748b").setOrigin(0.5);
+      const name = partyText(this, x, 252, player ? player.displayName : "OPEN", 15, player ? "#ffffff" : "#64748b").setOrigin(0.5);
+      const role = partyText(this, x, 298, player ? (player.id.startsWith("bot-") ? "RIVAL" : "YOU") : "WAITING", 9, player ? "#dbeafe" : "#475569", {
+        letterSpacing: 2,
       }).setOrigin(0.5);
       this.playerGroup.add([pedestal, halo, portrait, name, role]);
     }

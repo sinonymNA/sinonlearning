@@ -18,6 +18,14 @@ const PARTY_ART = [
   "item-turbo-capsule", "item-swap-capsule", "coin-gold-art", "coin-fake-art",
 ];
 
+const PRESENTATION_ART = [
+  "capsule-party-logo", "banner-ribbon", "panel-briefing", "plaque-reward",
+  "button-primary", "button-secondary", "hud-player", "reward-coin-stack",
+  "reward-coin", "reward-capsule", "reward-grand-cap", "reward-trap",
+  "reward-shield", "reward-turbo", "reward-warp", "reward-magnet",
+  "reward-raid", "reward-correct", "reward-incorrect",
+];
+
 // BootScene: loads cap portrait images + generates placeholder textures, then starts TitleScene.
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -33,6 +41,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image("factory-bg", "/assets/capsule/game/factory-bg.png");
     for (const key of PARTY_ART) {
       this.load.image(key, `/assets/capsule/party/ui/${key}.png`);
+    }
+    for (const key of PRESENTATION_ART) {
+      this.load.image(key, `/assets/capsule/party/presentation/${key}.png`);
     }
     // Load portrait images for the caps we know about
     for (const id of KNOWN_CAP_IDS) {
@@ -56,26 +67,30 @@ export class BootScene extends Phaser.Scene {
   // Build circular-masked cap portrait textures: "cap-token-{capId}-{colorIndex}"
   private capMaskedTokens() {
     const createToken = (id: string, colorIndex: number, radius: number, key: string) => {
-      const texture = this.textures.createCanvas(key, radius * 2, radius * 2);
+      const textureScale = 3;
+      const scaledRadius = radius * textureScale;
+      const texture = this.textures.createCanvas(key, scaledRadius * 2, scaledRadius * 2);
       if (!texture) return;
       const context = texture.context;
       const source = this.textures.get(`cap-${id}`).getSourceImage() as CanvasImageSource;
       const border = `#${(PLACEHOLDER.PLAYER_COLORS[colorIndex] ?? 0x888888).toString(16).padStart(6, "0")}`;
-      context.clearRect(0, 0, radius * 2, radius * 2);
+      context.clearRect(0, 0, scaledRadius * 2, scaledRadius * 2);
       context.fillStyle = border;
       context.beginPath();
-      context.arc(radius, radius, radius, 0, Math.PI * 2);
+      context.arc(scaledRadius, scaledRadius, scaledRadius, 0, Math.PI * 2);
       context.fill();
       context.save();
       context.beginPath();
-      context.arc(radius, radius, radius - 3, 0, Math.PI * 2);
+      context.arc(scaledRadius, scaledRadius, scaledRadius - 8, 0, Math.PI * 2);
       context.clip();
-      context.drawImage(source, 3, 3, radius * 2 - 6, radius * 2 - 6);
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = "high";
+      context.drawImage(source, 8, 8, scaledRadius * 2 - 16, scaledRadius * 2 - 16);
       context.restore();
       context.strokeStyle = "#ffffff";
-      context.lineWidth = 2;
+      context.lineWidth = 5;
       context.beginPath();
-      context.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+      context.arc(scaledRadius, scaledRadius, scaledRadius - 5, 0, Math.PI * 2);
       context.stroke();
       texture.refresh();
     };

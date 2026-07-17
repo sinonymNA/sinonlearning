@@ -8,7 +8,7 @@ const CapsuleParty = dynamic(
     <div style={{
       width: "100%", height: "100%", display: "flex", alignItems: "center",
       justifyContent: "center", background: "#0a0e1a", color: "#19cdd2",
-      fontFamily: "sans-serif", fontSize: 18,
+      fontFamily: "Nunito, sans-serif", fontWeight: 900, fontSize: 18,
     }}>
       Loading Capsule Party...
     </div>

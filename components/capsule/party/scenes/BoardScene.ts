@@ -2,9 +2,10 @@ import Phaser from "phaser";
 import { BOARD_SPACES, BOARD_SPACE_MAP, GRAND_CAPS_TO_WIN, SPIN_CORRECT_RANGE, SPIN_INCORRECT_RANGE } from "../BoardData";
 import { createInitialState, type GameState, type PlayerState, rankPlayers } from "../GameState";
 import { EventBus } from "../EventBus";
-import { PLACEHOLDER, SPACE_RADIUS } from "../AssetManifest";
+import { PLACEHOLDER, SPACE_RADIUS, TOKEN_RADIUS } from "../AssetManifest";
 import { getAdaptiveQuestion, recordMastery } from "../QuestionEngine";
 import { PARTY_HEIGHT, PARTY_RENDER_SCALE, PARTY_WIDTH, configurePartyCamera } from "../PartyLayout";
+import { partyText } from "../Presentation";
 import type { UIScene } from "./UIScene";
 
 interface BoardSceneData {
@@ -149,7 +150,7 @@ export class BoardScene extends Phaser.Scene {
       if (!space) continue;
       const offset = this.tokenOffset(i);
       const texKey = this.tokenTextureKey(p);
-      const img = this.add.image(0, 0, texKey);
+      const img = this.add.image(0, 0, texKey).setDisplaySize(TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
       const container = this.add.container(space.x + offset.x, space.y + offset.y, [img]).setDepth(10);
       this.tokenObjects.push(container);
     }
@@ -347,17 +348,13 @@ export class BoardScene extends Phaser.Scene {
 
     if (this.spinDisplay) { this.spinDisplay.destroy(); this.spinDisplay = null; }
 
-    const bg = this.add.rectangle(0, 0, 160, 90, 0x0f172a, 0.95).setOrigin(0);
-    const resultTxt = this.add.text(80, 18, correct ? "CORRECT!" : "Incorrect", {
-      fontSize: "16px", fontFamily: "sans-serif",
-      color: correct ? "#16a34a" : "#ef4444", fontStyle: "bold",
-    }).setOrigin(0.5, 0);
-    const stepsTxt = this.add.text(80, 46, `Move ${steps} space${steps !== 1 ? "s" : ""}`, {
-      fontSize: "22px", fontFamily: "monospace", color: "#ffd700", fontStyle: "bold",
-    }).setOrigin(0.5, 0);
+    const plate = this.add.image(0, 0, "plaque-reward").setDisplaySize(330, 126);
+    const emblem = this.add.image(-112, 0, correct ? "reward-correct" : "reward-incorrect").setDisplaySize(88, 88);
+    const resultTxt = partyText(this, 48, -19, correct ? "FULL POWER!" : "SHORT BOOST", 14, correct ? "#0c6b45" : "#a72c35").setOrigin(0.5);
+    const stepsTxt = partyText(this, 48, 17, `MOVE ${steps} SPACE${steps !== 1 ? "S" : ""}`, 21, "#07142f").setOrigin(0.5);
 
-    this.spinDisplay = this.add.container((W - 160) / 2, (H - 90) / 2 - 40, [bg, resultTxt, stepsTxt]).setDepth(350);
-    this.tweens.add({ targets: this.spinDisplay, alpha: { from: 0, to: 1 }, duration: 200 });
+    this.spinDisplay = this.add.container(W / 2, H / 2 - 38, [plate, emblem, resultTxt, stepsTxt]).setDepth(350).setScale(0.8).setAlpha(0);
+    this.tweens.add({ targets: this.spinDisplay, alpha: 1, scale: 1, duration: 240, ease: "Back.Out" });
 
     this.time.delayedCall(1900, () => {
       if (this.spinDisplay) {
@@ -451,10 +448,10 @@ export class BoardScene extends Phaser.Scene {
     const H = PARTY_HEIGHT;
 
     const panel = this.add.container(0, 0).setDepth(400);
-    const bg = this.add.rectangle(W / 2, H / 2, 320, 120 + connections.length * 50, 0x0f172a, 0.97).setOrigin(0.5);
-    bg.setStrokeStyle(2, 0x19cdd2);
-    const title = this.add.text(W / 2, H / 2 - 40, "Choose a path:", {
-      fontSize: "16px", fontFamily: "sans-serif", color: "#e2e8f0", fontStyle: "bold",
+    const panelHeight = 150 + connections.length * 50;
+    const bg = this.add.image(W / 2, H / 2, "panel-briefing").setDisplaySize(390, panelHeight);
+    const title = partyText(this, W / 2, H / 2 - 55, "CHOOSE YOUR ROUTE", 17, "#ffffff", {
+      stroke: "#020817", strokeThickness: 4,
     }).setOrigin(0.5);
     panel.add([bg, title]);
 
@@ -474,13 +471,10 @@ export class BoardScene extends Phaser.Scene {
       const space = BOARD_SPACE_MAP.get(id);
       const label = space ? (spaceTypeLabel[space.type] ?? space.type) : id;
       const by = H / 2 - 10 + i * 48;
-      const btnBg = this.add.rectangle(W / 2, by, 260, 38, 0x1e293b, 1).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      btnBg.setStrokeStyle(2, 0x334155);
-      const btnTxt = this.add.text(W / 2, by, label, {
-        fontSize: "13px", fontFamily: "sans-serif", color: "#e2e8f0",
-      }).setOrigin(0.5);
-      btnBg.on("pointerover", () => btnBg.setStrokeStyle(2, 0x19cdd2));
-      btnBg.on("pointerout", () => btnBg.setStrokeStyle(2, 0x334155));
+      const btnBg = this.add.image(W / 2, by, "button-secondary").setDisplaySize(280, 42).setInteractive({ useHandCursor: true });
+      const btnTxt = partyText(this, W / 2, by, label, 12, "#ffffff").setOrigin(0.5);
+      btnBg.on("pointerover", () => { btnBg.setScale(1.04); btnTxt.setScale(1.04); });
+      btnBg.on("pointerout", () => { btnBg.setScale(1); btnTxt.setScale(1); });
       btnBg.on("pointerdown", () => {
         panel.destroy();
         onChoice(id);
