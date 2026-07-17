@@ -7,16 +7,18 @@ import type { ChestResult } from "@/lib/capsuleData";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type FactoryPhase =
-  | "question"    // factory idles, question overlaid
-  | "activating"  // factory powers up (0.75 s flash)
-  | "selecting"   // player picks one of 3 machines
-  | "lever"       // lever pull (0.9 s)
-  | "gears"       // gears spin + capsule forms (1.0 s)
-  | "dropping"    // capsule falls to tray (0.7 s)
-  | "shaking"     // capsule bounces (0.5 s)
-  | "opening"     // capsule pops open + flash (0.6 s)
-  | "reward"      // reward sprite shown (3 s)
-  | "wrong";      // wrong-answer state
+  | "question"     // factory idles, question overlaid
+  | "activating"   // factory powers up (0.75 s flash)
+  | "selecting"    // player picks one of 3 machines
+  | "lever"        // lever pull (0.9 s)
+  | "gears"        // gears spin + capsule forms (1.0 s)
+  | "dropping"     // capsule falls to tray (0.7 s)
+  | "shaking"      // capsule bounces (0.5 s)
+  | "opening"      // capsule pops open + flash (0.6 s)
+  | "reward"       // reward sprite shown (3 s)
+  | "wrong"        // wrong-answer waiting state
+  | "reaction"     // tap-the-capsule mini-game (4 s window)
+  | "consolation"; // +3 gold result (success or fail)
 
 type MachineColor = "blue" | "gold" | "red";
 
@@ -61,6 +63,7 @@ const FACTORY_CSS = `
 @keyframes fc-flash{0%{opacity:.9}100%{opacity:0}}
 @keyframes fc-rewardpop{0%{transform:scale(0)rotate(-15deg)}60%{transform:scale(1.15)rotate(4deg)}100%{transform:scale(1)rotate(0deg)}}
 @keyframes fc-activeglow{0%,100%{box-shadow:0 0 20px 4px rgba(253,224,71,0.3)}50%{box-shadow:0 0 40px 12px rgba(253,224,71,0.7)}}
+@keyframes fc-capsule-bounce{0%{transform:translateX(0) translateY(0)}25%{transform:translateX(60px) translateY(-18px)}50%{transform:translateX(120px) translateY(0)}75%{transform:translateX(60px) translateY(-18px)}100%{transform:translateX(0) translateY(0)}}
 `;
 
 // ── Sub-components ────────────────────────────────────────────────────────
@@ -259,16 +262,22 @@ interface Props {
   timer: number;
   currentQuestion: number;
   onSubmit: (i: number) => void;
+  onResolve: (machine: MachineColor) => Promise<void>;
+  onConsolation: () => Promise<void>;
 }
 
 export default function FactoryGame({
-  question, answered, myAnswer, timer, currentQuestion, onSubmit,
+  question, answered, myAnswer, timer, currentQuestion, onSubmit, onResolve, onConsolation,
 }: Props) {
   const [phase, setPhase] = useState<FactoryPhase>("question");
   const [selectedMachine, setSelectedMachine] = useState<MachineColor | null>(null);
   const [animStep, setAnimStep] = useState(0);
+  const [tapCount, setTapCount] = useState(0);
+  const [reactionTimeLeft, setReactionTimeLeft] = useState(4);
+  const [consolationResult, setConsolationResult] = useState<"success" | "fail" | null>(null);
   const prevAnswered = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const resolvePromiseRef = useRef<Promise<void> | null>(null);
 
   function clearTimers() {
     timerRef.current.forEach(clearTimeout);
@@ -287,6 +296,10 @@ export default function FactoryGame({
     setPhase("question");
     setSelectedMachine(null);
     setAnimStep(0);
+    setTapCount(0);
+    setReactionTimeLeft(4);
+    setConsolationResult(null);
+    resolvePromiseRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion]);
 
@@ -300,19 +313,55 @@ export default function FactoryGame({
       after(750, () => setPhase("selecting"));
     } else {
       setPhase("wrong");
+      after(1500, () => {
+        setTapCount(0);
+        setReactionTimeLeft(4);
+        setConsolationResult(null);
+        setPhase("reaction");
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myAnswer]);
 
-  function selectMachine(color: MachineColor) {
+  // Reaction phase: countdown timer
+  useEffect(() => {
+    if (phase !== "reaction") return;
+    if (reactionTimeLeft <= 0) {
+      setConsolationResult("fail");
+      setPhase("consolation");
+      after(2000, () => setPhase("wrong"));
+      return;
+    }
+    const id = setTimeout(() => setReactionTimeLeft(t => t - 1), 1000);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, reactionTimeLeft]);
+
+  async function handleCapsuleTap() {
+    const next = tapCount + 1;
+    setTapCount(next);
+    if (next >= 3) {
+      resolvePromiseRef.current = onConsolation();
+      await resolvePromiseRef.current;
+      setConsolationResult("success");
+      setPhase("consolation");
+      confetti({ particleCount: 50, spread: 55, origin: { y: 0.6 }, colors: ["#19CDD2","#fde047","#fff"] });
+      after(2000, () => setPhase("wrong"));
+    }
+  }
+
+  async function selectMachine(color: MachineColor) {
     setSelectedMachine(color);
     setPhase("lever");
     setAnimStep(0);
+    // Fire resolve immediately — result arrives while 3.6s animation plays
+    resolvePromiseRef.current = onResolve(color);
     after(900, () => { setPhase("gears"); setAnimStep(1); });
     after(1800, () => { setPhase("dropping"); setAnimStep(2); });
     after(2500, () => { setPhase("shaking"); setAnimStep(3); });
     after(3000, () => { setPhase("opening"); setAnimStep(4); });
-    after(3600, () => {
+    after(3600, async () => {
+      await resolvePromiseRef.current;
       setPhase("reward");
       if (myAnswer?.chestResult?.type === "gold" || myAnswer?.chestResult?.type === "double") {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.5 }, colors: ["#fde047","#fbbf24","#f59e0b","#fff"], shapes: ["circle"], scalar: 1.1, gravity: 1.0 });
@@ -558,6 +607,89 @@ export default function FactoryGame({
               >
                 Waiting for teacher to advance…
               </motion.p>
+            </motion.div>
+          )}
+
+          {/* ── REACTION phase — tap the bouncing capsule ── */}
+          {phase === "reaction" && (
+            <motion.div
+              key="reaction"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "16px 20px", position: "relative", overflow: "hidden" }}
+            >
+              <p style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.20em", textTransform: "uppercase", color: "#fde047", margin: 0, textAlign: "center" }}>
+                QUICK — TAP THE CAPSULE!
+              </p>
+
+              {/* Bouncing capsule button */}
+              <div style={{ position: "relative", width: "100%", height: 80, overflow: "hidden" }}>
+                <button
+                  onClick={handleCapsuleTap}
+                  style={{
+                    background: "none", border: "none", padding: 0, cursor: "pointer",
+                    position: "absolute", left: "15%",
+                    animationName: "fc-capsule-bounce", animationDuration: "1.2s",
+                    animationTimingFunction: "ease-in-out", animationIterationCount: "infinite",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/capsule/game/capsule-closed.png" alt="Capsule" style={{ width: 52, objectFit: "contain", filter: "drop-shadow(0 0 10px rgba(25,205,210,0.6))" }} />
+                </button>
+              </div>
+
+              {/* Tap counter */}
+              <p style={{ fontSize: 18, fontWeight: 900, color: "#fff", margin: 0 }}>
+                {tapCount} / 3
+              </p>
+
+              {/* Countdown bar */}
+              <div style={{ width: "80%", height: 6, background: "rgba(255,255,255,0.10)", borderRadius: 3, overflow: "hidden" }}>
+                <motion.div
+                  animate={{ width: `${(reactionTimeLeft / 4) * 100}%` }}
+                  transition={{ duration: 0.9, ease: "linear" }}
+                  style={{ height: "100%", background: reactionTimeLeft > 2 ? "#22c55e" : "#ef4444", borderRadius: 3 }}
+                />
+              </div>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", margin: 0 }}>{reactionTimeLeft}s left</p>
+            </motion.div>
+          )}
+
+          {/* ── CONSOLATION phase — result of reaction game ── */}
+          {phase === "consolation" && (
+            <motion.div
+              key="consolation"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12 }}
+            >
+              {consolationResult === "success" ? (
+                <>
+                  <motion.img
+                    src="/assets/capsule/game/badge-correct.png"
+                    alt="Nice!"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", damping: 10, stiffness: 260 }}
+                    style={{ height: 60, objectFit: "contain" }}
+                  />
+                  <p style={{ fontSize: 16, fontWeight: 900, color: "#22c55e", margin: 0 }}>+3 Gold! NICE REFLEXES!</p>
+                </>
+              ) : (
+                <>
+                  <motion.img
+                    src="/assets/capsule/game/badge-wrong.png"
+                    alt="Miss"
+                    initial={{ x: -24, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ type: "spring", damping: 14 }}
+                    style={{ height: 60, objectFit: "contain" }}
+                  />
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#f87171", margin: 0 }}>Better luck next time…</p>
+                </>
+              )}
             </motion.div>
           )}
 

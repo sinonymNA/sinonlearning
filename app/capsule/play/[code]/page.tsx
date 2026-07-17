@@ -41,9 +41,6 @@ function PlayerScreenInner() {
   // Holds playerId synchronously so fetchState can read it without being a dependency
   const playerIdRef = useRef<string | null>(null);
 
-  // Demo automation refs
-  const demoRef = useRef<{ q: number; done: boolean }>({ q: -1, done: false });
-  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const fetchState = useCallback(async () => {
     const pid = playerIdRef.current;
@@ -54,7 +51,13 @@ function PlayerScreenInner() {
       setGame(data);
       if (data.currentQuestion !== prevQuestion.current) {
         prevQuestion.current = data.currentQuestion;
-        setTimer(data.currentQuestionData?.timeLimit ?? 20);
+        if (data.questionStartedAt && data.currentQuestionData) {
+          const elapsed = (Date.now() - new Date(data.questionStartedAt).getTime()) / 1000;
+          const remaining = Math.max(0, (data.currentQuestionData.timeLimit ?? 20) - elapsed);
+          setTimer(Math.floor(remaining));
+        } else {
+          setTimer(data.currentQuestionData?.timeLimit ?? 20);
+        }
       }
     }
   }, [code]);
@@ -77,52 +80,6 @@ function PlayerScreenInner() {
     const id = setInterval(() => setTimer(t => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
   }, [game?.currentQuestion, game?.myAnswer]);
-
-  // Demo: auto-submit bot answers + auto-advance for student view
-  useEffect(() => {
-    if (!isDemo || !game || game.status !== "active" || !game.currentQuestionData) return;
-    const q = game.currentQuestion;
-    if (demoRef.current.q === q) return;
-    demoRef.current = { q, done: false };
-
-    demoTimers.current.forEach(t => clearTimeout(t));
-    demoTimers.current = [];
-
-    const { choices, timeLimit } = game.currentQuestionData;
-    const demo = (() => {
-      try { return JSON.parse(localStorage.getItem("capsule-demo") ?? "{}") as { code: string; botPlayerIds: string[] }; }
-      catch { return { code: "", botPlayerIds: [] }; }
-    })();
-    const bots = demo.botPlayerIds ?? [];
-
-    // Submit random answers for bots (play page doesn't know correct answer)
-    bots.forEach((botId, i) => {
-      const delay = 1000 + i * 700 + Math.random() * 400;
-      const idx = Math.floor(Math.random() * choices.length);
-      const t = setTimeout(() => {
-        fetch(`/api/capsule/games/${code}/answer`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playerId: botId, answerIndex: idx }),
-        }).catch(() => {/* ignore */});
-      }, delay);
-      demoTimers.current.push(t);
-    });
-
-    // Auto-advance using DemoTeacher session cookie (set during demo setup)
-    const advanceT = setTimeout(async () => {
-      if (demoRef.current.done) return;
-      demoRef.current.done = true;
-      await fetch(`/api/capsule/games/${code}/advance`, { method: "POST" });
-      await fetchState();
-    }, (timeLimit + 1) * 1000);
-    demoTimers.current.push(advanceT);
-
-    return () => {
-      demoTimers.current.forEach(t => clearTimeout(t));
-      // Reset so React Strict Mode's double-invoke lets the effect re-run
-      demoRef.current = { q: -1, done: false };
-    };
-  }, [isDemo, game?.currentQuestion, game?.status, code, fetchState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function join(e: React.FormEvent) {
     e.preventDefault();
@@ -148,6 +105,24 @@ function PlayerScreenInner() {
       body: JSON.stringify({ playerId, answerIndex }),
     });
     await fetchState(); // fetchState uses playerIdRef so myAnswer will come back correctly
+  }
+
+  async function resolveChoice(machine: string) {
+    if (!playerId) return;
+    await fetch(`/api/capsule/games/${code}/resolve`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId, machineChoice: machine }),
+    });
+    await fetchState();
+  }
+
+  async function earnConsolation() {
+    if (!playerId) return;
+    await fetch(`/api/capsule/games/${code}/consolation`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ playerId }),
+    });
+    await fetchState();
   }
 
   // ── Join form ──────────────────────────────────────────────────────────────
@@ -460,6 +435,8 @@ function PlayerScreenInner() {
         timer={timer}
         currentQuestion={game.currentQuestion}
         onSubmit={submitAnswer}
+        onResolve={resolveChoice}
+        onConsolation={earnConsolation}
       />
 
       {/* Mini leaderboard */}

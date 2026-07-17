@@ -16,6 +16,8 @@ export function query<T extends QueryResultRow>(text: string, params?: unknown[]
   return getPool().query<T>(text, params);
 }
 
+export { getPool };
+
 let schemaReady: Promise<void> | null = null;
 
 export function ensureSchema(): Promise<void> {

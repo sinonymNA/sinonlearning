@@ -229,18 +229,23 @@ function HostPanelInner() {
                   await fetch(`/api/capsule/games/${code}/start`, { method: "POST" });
                   await fetchState();
                 }}
-                disabled={game.playerCount < 1}
+                disabled={game.playerCount < 2}
                 style={{
                   borderRadius: 18, background: "#FF5965", border: "none",
                   padding: "16px 48px",
                   fontSize: 14, fontWeight: 900, letterSpacing: "0.08em", textTransform: "uppercase",
-                  color: "#fff", cursor: game.playerCount < 1 ? "not-allowed" : "pointer",
-                  opacity: game.playerCount < 1 ? 0.30 : 1,
+                  color: "#fff", cursor: game.playerCount < 2 ? "not-allowed" : "pointer",
+                  opacity: game.playerCount < 2 ? 0.30 : 1,
                   boxShadow: "0 4px 0 rgba(0,0,0,0.25)",
                 }}
               >
                 Start Game →
               </button>
+              {game.playerCount < 2 && (
+                <p style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                  Waiting for at least 2 players…
+                </p>
+              )}
             </div>
           )}
 

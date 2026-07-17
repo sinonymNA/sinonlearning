@@ -179,41 +179,36 @@ export type ChestResult =
   | { type: "lose"; amount: number; label: string }
   | { type: "double"; label: string };
 
-export function rollChest(
+export type MachineChoice = "volt" | "aurum" | "ruby";
+
+export function rollMachineChest(
+  machine: MachineChoice,
   playerId: string,
   players: Array<{ id: string; display_name: string; gold: number }>,
 ): ChestResult {
   const others = players.filter(p => p.id !== playerId && p.gold > 0);
   const r = Math.random();
 
-  if (r < 0.38) {
-    const amount = Math.floor(Math.random() * 51) + 30;
+  if (machine === "aurum") {
+    // Safe: guaranteed moderate gold
+    const amount = Math.floor(Math.random() * 21) + 25; // 25–45
     return { type: "gold", amount, label: `+${amount} Gold!` };
   }
-  if (r < 0.60) {
-    const amount = Math.floor(Math.random() * 71) + 80;
-    return { type: "gold", amount, label: `+${amount} Gold!` };
+
+  if (machine === "volt") {
+    // Volatile: big reward or near-nothing
+    if (r < 0.52) {
+      const amount = Math.floor(Math.random() * 71) + 60; // 60–130
+      return { type: "gold", amount, label: `+${amount} Gold! ⚡` };
+    }
+    return { type: "gold", amount: 5, label: "+5 Gold" };
   }
-  if (r < 0.70) {
-    const amount = Math.floor(Math.random() * 151) + 150;
-    return { type: "gold", amount, label: `+${amount} Gold! 🎉` };
-  }
-  if (r < 0.80) {
-    if (!others.length) return { type: "gold", amount: 50, label: "+50 Gold!" };
-    const target = others[Math.floor(Math.random() * others.length)];
-    const amount = Math.min(75, target.gold);
-    return { type: "steal", fromId: target.id, fromName: target.display_name, amount, label: `Robbed ${target.display_name} for ${amount}!` };
-  }
-  if (r < 0.88) {
-    if (!others.length) return { type: "gold", amount: 75, label: "+75 Gold!" };
-    const richest = others.reduce((a, b) => a.gold > b.gold ? a : b);
-    const amount = Math.min(120, richest.gold);
-    return { type: "steal", fromId: richest.id, fromName: richest.display_name, amount, label: `Robbed the leader for ${amount}!` };
-  }
-  if (r < 0.95) {
-    return { type: "lose", amount: 50, label: "Vault Tax! -50 Gold 💀" };
-  }
-  return { type: "double", label: "DOUBLED! 🔥" };
+
+  // ruby: steal mechanic — takes 30% of richest opponent + 10, capped at 120
+  if (others.length === 0) return { type: "gold", amount: 30, label: "+30 Gold!" };
+  const richest = others.reduce((a, b) => a.gold > b.gold ? a : b);
+  const amount = Math.min(Math.floor(richest.gold * 0.30) + 10, 120);
+  return { type: "steal", fromId: richest.id, fromName: richest.display_name, amount, label: `Robbed ${richest.display_name} for ${amount}! ♦` };
 }
 
 // ─── Cap rolling ──────────────────────────────────────────────────────────────
@@ -249,28 +244,28 @@ export interface CapsuleQuestion {
 export const DEMO_QUESTIONS: CapsuleQuestion[] = [
   {
     prompt: "What is the powerhouse of the cell?",
-    choices: ["Mitochondria", "Nucleus", "Ribosome", "Golgi apparatus"],
-    answer: 0, timeLimit: 20,
+    choices: ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"],
+    answer: 2, timeLimit: 20,
   },
   {
     prompt: "Which planet is closest to the Sun?",
-    choices: ["Mercury", "Venus", "Earth", "Mars"],
-    answer: 0, timeLimit: 20,
+    choices: ["Venus", "Mercury", "Earth", "Mars"],
+    answer: 1, timeLimit: 20,
   },
   {
     prompt: "What is 7 × 8?",
-    choices: ["56", "54", "64", "48"],
-    answer: 0, timeLimit: 15,
+    choices: ["54", "64", "48", "56"],
+    answer: 3, timeLimit: 15,
   },
   {
     prompt: "Who wrote Romeo and Juliet?",
-    choices: ["Shakespeare", "Dickens", "Austen", "Chaucer"],
-    answer: 0, timeLimit: 20,
+    choices: ["Dickens", "Austen", "Shakespeare", "Chaucer"],
+    answer: 2, timeLimit: 20,
   },
   {
     prompt: "What year did World War II end?",
-    choices: ["1945", "1944", "1946", "1943"],
-    answer: 0, timeLimit: 20,
+    choices: ["1944", "1946", "1943", "1945"],
+    answer: 3, timeLimit: 20,
   },
   {
     prompt: "What is the chemical symbol for gold?",
@@ -279,12 +274,22 @@ export const DEMO_QUESTIONS: CapsuleQuestion[] = [
   },
   {
     prompt: "Which ocean is the largest?",
-    choices: ["Pacific", "Atlantic", "Indian", "Arctic"],
-    answer: 0, timeLimit: 20,
+    choices: ["Atlantic", "Pacific", "Indian", "Arctic"],
+    answer: 1, timeLimit: 20,
   },
   {
     prompt: "What is the square root of 144?",
-    choices: ["12", "14", "11", "13"],
-    answer: 0, timeLimit: 15,
+    choices: ["14", "11", "12", "13"],
+    answer: 2, timeLimit: 15,
+  },
+  {
+    prompt: "How many sides does a hexagon have?",
+    choices: ["5", "7", "8", "6"],
+    answer: 3, timeLimit: 15,
+  },
+  {
+    prompt: "What gas do plants absorb from the air during photosynthesis?",
+    choices: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
+    answer: 1, timeLimit: 20,
   },
 ];

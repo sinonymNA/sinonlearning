@@ -1,6 +1,6 @@
-import { randomBytes, randomUUID } from "crypto";
-import { query } from "./db";
-import { rollChest, type CapsuleQuestion, type ChestResult } from "./capsuleData";
+import { randomBytes } from "crypto";
+import { query, getPool } from "./db";
+import { rollMachineChest, type MachineChoice, type CapsuleQuestion, type ChestResult } from "./capsuleData";
 import { STARTER_CAP_ID } from "./capsuleData";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -47,6 +47,8 @@ export interface CapsuleAnswer {
   answer_index: number;
   is_correct: boolean;
   chest_result: ChestResult | null;
+  machine_choice: string | null;
+  consolation_earned: boolean;
   answered_at: string;
 }
 
@@ -128,6 +130,8 @@ async function _buildSchema() {
       UNIQUE(game_code, player_id, question_index)
     );
   `);
+  await query(`ALTER TABLE capsule_answers ADD COLUMN IF NOT EXISTS machine_choice TEXT`);
+  await query(`ALTER TABLE capsule_answers ADD COLUMN IF NOT EXISTS consolation_earned BOOLEAN NOT NULL DEFAULT false`);
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -391,41 +395,86 @@ export async function submitAnswer(
 ): Promise<{ answer: CapsuleAnswer; goldDelta: number }> {
   await ensureCapsuleSchema();
 
-  let chest: ChestResult | null = null;
+  const res = await query<CapsuleAnswer>(
+    `INSERT INTO capsule_answers (game_code, player_id, question_index, answer_index, is_correct)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (game_code, player_id, question_index) DO NOTHING
+     RETURNING *`,
+    [gameCode, playerId, questionIndex, answerIndex, isCorrect],
+  );
+
+  return { answer: res.rows[0], goldDelta: 0 };
+}
+
+export async function resolveAnswer(
+  gameCode: string,
+  playerId: string,
+  questionIndex: number,
+  machine: MachineChoice,
+): Promise<{ chestResult: ChestResult; goldDelta: number }> {
+  await ensureCapsuleSchema();
+
+  const existing = await getAnswer(gameCode, playerId, questionIndex);
+  if (!existing || !existing.is_correct || existing.chest_result !== null) {
+    throw new Error("Cannot resolve: answer not found, incorrect, or already resolved.");
+  }
+
+  const players = await getPlayers(gameCode);
+  const chest = rollMachineChest(machine, playerId, players);
   let goldDelta = 0;
 
-  if (isCorrect) {
-    const players = await getPlayers(gameCode);
-    chest = rollChest(playerId, players);
-
-    if (chest.type === "gold") {
-      goldDelta = chest.amount;
-      await query(`UPDATE capsule_players SET gold = gold + $1 WHERE id = $2`, [chest.amount, playerId]);
-    } else if (chest.type === "steal") {
-      goldDelta = chest.amount;
-      await query(`UPDATE capsule_players SET gold = GREATEST(0, gold - $1) WHERE id = $2`, [chest.amount, chest.fromId]);
-      await query(`UPDATE capsule_players SET gold = gold + $1 WHERE id = $2`, [chest.amount, playerId]);
-    } else if (chest.type === "lose") {
-      goldDelta = -chest.amount;
-      await query(`UPDATE capsule_players SET gold = GREATEST(0, gold - $1) WHERE id = $2`, [chest.amount, playerId]);
-    } else if (chest.type === "double") {
-      const p = await getPlayerById(playerId);
-      if (p) {
-        goldDelta = p.gold;
-        await query(`UPDATE capsule_players SET gold = gold * 2 WHERE id = $1`, [playerId]);
-      }
+  if (chest.type === "gold") {
+    goldDelta = chest.amount;
+    await query(`UPDATE capsule_players SET gold = gold + $1 WHERE id = $2`, [chest.amount, playerId]);
+  } else if (chest.type === "steal") {
+    goldDelta = chest.amount;
+    const client = await getPool().connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(`UPDATE capsule_players SET gold = GREATEST(0, gold - $1) WHERE id = $2`, [chest.amount, chest.fromId]);
+      await client.query(`UPDATE capsule_players SET gold = gold + $1 WHERE id = $2`, [chest.amount, playerId]);
+      await client.query("COMMIT");
+    } catch (e) {
+      await client.query("ROLLBACK");
+      throw e;
+    } finally {
+      client.release();
+    }
+  } else if (chest.type === "lose") {
+    goldDelta = -chest.amount;
+    await query(`UPDATE capsule_players SET gold = GREATEST(0, gold - $1) WHERE id = $2`, [chest.amount, playerId]);
+  } else if (chest.type === "double") {
+    const p = await getPlayerById(playerId);
+    if (p) {
+      goldDelta = p.gold;
+      await query(`UPDATE capsule_players SET gold = gold * 2 WHERE id = $1`, [playerId]);
     }
   }
 
-  const res = await query<CapsuleAnswer>(
-    `INSERT INTO capsule_answers (game_code, player_id, question_index, answer_index, is_correct, chest_result)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT (game_code, player_id, question_index) DO NOTHING
-     RETURNING *`,
-    [gameCode, playerId, questionIndex, answerIndex, isCorrect, chest ? JSON.stringify(chest) : null],
+  await query(
+    `UPDATE capsule_answers SET chest_result = $1, machine_choice = $2 WHERE id = $3`,
+    [JSON.stringify(chest), machine, existing.id],
   );
 
-  return { answer: res.rows[0], goldDelta };
+  return { chestResult: chest, goldDelta };
+}
+
+export async function awardConsolation(
+  gameCode: string,
+  playerId: string,
+  questionIndex: number,
+): Promise<{ goldDelta: number }> {
+  await ensureCapsuleSchema();
+
+  const existing = await getAnswer(gameCode, playerId, questionIndex);
+  if (!existing || existing.is_correct || existing.consolation_earned) {
+    throw new Error("Cannot award consolation: answer not found, was correct, or already earned.");
+  }
+
+  await query(`UPDATE capsule_players SET gold = gold + 3 WHERE id = $1`, [playerId]);
+  await query(`UPDATE capsule_answers SET consolation_earned = true WHERE id = $1`, [existing.id]);
+
+  return { goldDelta: 3 };
 }
 
 export async function getAnswersForQuestion(
