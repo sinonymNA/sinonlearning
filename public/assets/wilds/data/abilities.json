@@ -1,0 +1,50 @@
+{
+  "first_strike": {
+    "name": "First Strike",
+    "description": "First correct answer each battle deals +30% damage."
+  },
+  "post_battle_heal": {
+    "name": "Forest Recovery",
+    "description": "Heal 8 HP after every victory."
+  },
+  "extra_hp": {
+    "name": "Squishy Body",
+    "description": "Starts each run with +10 max HP."
+  },
+  "shield_start": {
+    "name": "Stone Shell",
+    "description": "Begin each battle with a small shield."
+  },
+  "wrong_chip": {
+    "name": "Thorn Scratch",
+    "description": "Wrong answers still deal 3 damage."
+  },
+  "streak_boost": {
+    "name": "Tailwind",
+    "description": "Streak bonuses are slightly stronger."
+  },
+  "bonus_capture": {
+    "name": "Gentle Glow",
+    "description": "Capture chance is increased by 10%."
+  },
+  "heal_on_correct_streak": {
+    "name": "Brook Blessing",
+    "description": "Heal 3 HP when reaching a 3-answer streak."
+  },
+  "fourth_crit": {
+    "name": "Crystal Focus",
+    "description": "Every fourth correct answer is a critical hit."
+  },
+  "wrong_chip_plus": {
+    "name": "Shadow Bite",
+    "description": "Wrong answers still deal 5 damage."
+  },
+  "victory_heal_big": {
+    "name": "Sun Renewal",
+    "description": "Heal 15 HP after each victory."
+  },
+  "boss_guardian": {
+    "name": "Guardian Wisp",
+    "description": "Boss gains a shield every third turn."
+  }
+}

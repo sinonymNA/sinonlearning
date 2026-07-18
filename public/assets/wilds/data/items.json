@@ -1,0 +1,42 @@
+[
+  {
+    "id": "heal_capsule",
+    "name": "Heal Capsule",
+    "description": "Restore 25 HP.",
+    "icon": "item_heal_capsule",
+    "type": "battle",
+    "value": 25
+  },
+  {
+    "id": "power_capsule",
+    "name": "Power Capsule",
+    "description": "Next correct answer deals +50% damage.",
+    "icon": "item_power_capsule",
+    "type": "battle",
+    "value": 0
+  },
+  {
+    "id": "shield_capsule",
+    "name": "Shield Capsule",
+    "description": "Reduce the next enemy attack by 50%.",
+    "icon": "item_shield_capsule",
+    "type": "battle",
+    "value": 0
+  },
+  {
+    "id": "lucky_capsule",
+    "name": "Lucky Capsule",
+    "description": "Add +20% to the next capture chance.",
+    "icon": "item_lucky_capsule",
+    "type": "capture",
+    "value": 0.2
+  },
+  {
+    "id": "revive_capsule",
+    "name": "Revive Capsule",
+    "description": "Revive once at 50% HP.",
+    "icon": "item_revive_capsule",
+    "type": "passive",
+    "value": 0.5
+  }
+]

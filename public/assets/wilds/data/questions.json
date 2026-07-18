@@ -1,0 +1,44 @@
+[
+  {
+    "id": "q1",
+    "prompt": "What is the powerhouse of the cell?",
+    "choices": ["Nucleus", "Ribosome", "Mitochondria", "Golgi apparatus"],
+    "correctIndex": 2,
+    "explanation": "Mitochondria generate most of a cell's usable energy."
+  },
+  {
+    "id": "q2",
+    "prompt": "Which planet is closest to the Sun?",
+    "choices": ["Venus", "Mercury", "Earth", "Mars"],
+    "correctIndex": 1,
+    "explanation": "Mercury is the innermost planet."
+  },
+  {
+    "id": "q3",
+    "prompt": "What is 7 x 8?",
+    "choices": ["54", "64", "48", "56"],
+    "correctIndex": 3,
+    "explanation": "Seven groups of eight make 56."
+  },
+  {
+    "id": "q4",
+    "prompt": "Who wrote Romeo and Juliet?",
+    "choices": ["Dickens", "Austen", "Shakespeare", "Chaucer"],
+    "correctIndex": 2,
+    "explanation": "Romeo and Juliet is one of Shakespeare's best-known plays."
+  },
+  {
+    "id": "q5",
+    "prompt": "What gas do plants absorb during photosynthesis?",
+    "choices": ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
+    "correctIndex": 1,
+    "explanation": "Plants use carbon dioxide and water to make glucose."
+  },
+  {
+    "id": "q6",
+    "prompt": "How many sides does a hexagon have?",
+    "choices": ["5", "6", "7", "8"],
+    "correctIndex": 1,
+    "explanation": "A hexagon has six sides."
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "verdant_rift",
+    "name": "Verdant Rift",
+    "difficulty": 1,
+    "mapBackground": "verdant_map_bg",
+    "battleBackground": "verdant_battle_bg",
+    "wildPool": [
+      "sparkit",
+      "mossprout",
+      "aquablob",
+      "pebblit",
+      "thornpaw",
+      "galehawk",
+      "lumimoth",
+      "brookhorn",
+      "crystal_drake",
+      "nightfang",
+      "sun_stag"
+    ],
+    "boss": "warden_wisp"
+  }
+]

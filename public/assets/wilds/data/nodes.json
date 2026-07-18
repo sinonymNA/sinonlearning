@@ -1,0 +1,11 @@
+[
+  { "id": "n0", "type": "start", "x": 220, "y": 780, "next": ["n1"] },
+  { "id": "n1", "type": "wild", "x": 420, "y": 640, "next": ["n2", "n3"] },
+  { "id": "n2", "type": "treasure", "x": 650, "y": 520, "next": ["n4"] },
+  { "id": "n3", "type": "shop", "x": 660, "y": 730, "next": ["n4"] },
+  { "id": "n4", "type": "wild", "x": 900, "y": 600, "next": ["n5", "n6"] },
+  { "id": "n5", "type": "heal", "x": 1130, "y": 460, "next": ["n7"] },
+  { "id": "n6", "type": "mystery", "x": 1140, "y": 720, "next": ["n7"] },
+  { "id": "n7", "type": "miniboss", "x": 1370, "y": 560, "next": ["n8"] },
+  { "id": "n8", "type": "boss", "x": 1620, "y": 350, "next": [] }
+]
