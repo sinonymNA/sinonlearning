@@ -11,6 +11,7 @@ export class StarterScene extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.fadeIn(220, 8, 18, 31);
     fitBackground(this, "title-bg");
     this.add.rectangle(960, 540, 1920, 1080, 0x08121f, 0.42);
 
@@ -39,7 +40,8 @@ export class StarterScene extends Phaser.Scene {
         align: "center",
         wordWrap: { width: 310 },
       }).setOrigin(0.5);
-      const hp = wildsText(this, -120, 285, `HP ${creature.maxHp}`, 18, "#a7f3d0").setOrigin(0, 0.5);
+      const displayHp = creature.ability === "extra_hp" ? creature.maxHp + 10 : creature.maxHp;
+      const hp = wildsText(this, -120, 285, `HP ${displayHp}`, 18, "#a7f3d0").setOrigin(0, 0.5);
       const atk = wildsText(this, 30, 285, `ATK ${creature.attack}`, 18, "#f9d17b").setOrigin(0, 0.5);
 
       const hitbox = this.add.rectangle(0, 0, 400, 620, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
@@ -53,7 +55,8 @@ export class StarterScene extends Phaser.Scene {
           run.currentHp += 10;
         }
         setRunSave(run);
-        this.scene.start("MapScene");
+        this.cameras.main.fadeOut(280, 8, 18, 31);
+        this.time.delayedCall(280, () => this.scene.start("MapScene"));
       });
 
       card.add([bg, portrait, rarity, name, element, abilityName, abilityDesc, hp, atk, hitbox]);

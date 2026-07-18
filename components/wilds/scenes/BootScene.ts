@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
-import { WILDS_HEIGHT, WILDS_WIDTH } from "../gameState";
+import { REGISTRY_KEYS, WILDS_HEIGHT, WILDS_WIDTH } from "../gameState";
+import { WildsAudioManager } from "../WildsAudio";
 
 type CropRect = { x: number; y: number; width: number; height: number };
 
@@ -156,6 +157,9 @@ export class BootScene extends Phaser.Scene {
       bar.width = 312 * value;
       barBg.setAlpha(1);
     });
+    this.load.on("loaderror", (file: Phaser.Loader.File) => {
+      console.error("Wilds asset 404:", file.src);
+    });
   }
 
   create() {
@@ -175,7 +179,10 @@ export class BootScene extends Phaser.Scene {
     this.cropExpeditionAssets();
 
     this.registry.set("wilds:assets-ready", true);
-    EventBus.emit("phaser:ready");
+    try {
+      const ctx = new AudioContext();
+      this.registry.set(REGISTRY_KEYS.wildsAudio, new WildsAudioManager(ctx));
+    } catch { /* audio unavailable */ }
     this.scene.start("TitleScene");
   }
 
@@ -255,8 +262,10 @@ export class BootScene extends Phaser.Scene {
       enqueue(width - 1, y);
     }
 
-    while (queue.length > 0) {
-      const flat = queue.shift()!;
+    let head = 0;
+    while (head < queue.length) {
+      if (head > 1000) { queue.splice(0, head); head = 0; }
+      const flat = queue[head++];
       const x = flat % width;
       const y = Math.floor(flat / width);
       const index = flat * 4;

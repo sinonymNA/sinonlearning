@@ -1,6 +1,7 @@
 import Phaser from "phaser";
+import { EventBus } from "../EventBus";
 import { fitBackground, imageButton, wildsText } from "../Presentation";
-import { getPermanentSave, getRunSave } from "../save";
+import { clearRunSave, getPermanentSave } from "../save";
 
 export class TitleScene extends Phaser.Scene {
   private collectionOverlay: Phaser.GameObjects.Container | null = null;
@@ -10,7 +11,9 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create() {
-    const run = getRunSave();
+    EventBus.emit("phaser:ready");
+    this.cameras.main.fadeIn(220, 8, 18, 31);
+
     fitBackground(this, "title-bg");
 
     this.add.rectangle(960, 540, 1920, 1080, 0x07111d, 0.22);
@@ -21,17 +24,33 @@ export class TitleScene extends Phaser.Scene {
       wordWrap: { width: 980 },
     }).setOrigin(0.5);
 
-    imageButton(this, 640, 600, "btn_primary", "", () => this.scene.start("ExpeditionScene"), 420, 150);
-    imageButton(this, 1280, 600, "btn_secondary", "", () => this.scene.start("ExpeditionScene"), 460, 150);
-    imageButton(this, 640, 780, "btn_purple", "", () => this.toggleCollection(), 430, 150).setAlpha(0.96);
-    imageButton(this, 1280, 780, "btn_gold", "", () => {
-      this.scene.start("ExpeditionScene");
-    }, 430, 150).setAlpha(run ? 1 : 0.55);
+    const btnNewRun = imageButton(this, 640, 600, "btn_primary", "", () => {
+      clearRunSave();
+      this.cameras.main.fadeOut(280, 8, 18, 31);
+      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
+    }, 420, 150);
+    const labelNewRun = wildsText(this, 0, 90, "Explore the Verdant Rift", 18, "#e6fff9").setOrigin(0.5);
+    btnNewRun.add(labelNewRun);
 
-    wildsText(this, 640, 690, "Explore the Verdant Rift", 18, "#e6fff9").setOrigin(0.5);
-    wildsText(this, 1280, 690, "Start a fresh field expedition", 18, "#e6fff9").setOrigin(0.5);
-    wildsText(this, 640, 870, "View your captured Wilds", 18, "#eadbff").setOrigin(0.5);
-    wildsText(this, 1280, 870, "Replay Verdant Rift anytime", 18, "#fff2c9").setOrigin(0.5);
+    const btnQuickStart = imageButton(this, 1280, 600, "btn_secondary", "", () => {
+      this.cameras.main.fadeOut(280, 8, 18, 31);
+      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
+    }, 460, 150);
+    const labelQuickStart = wildsText(this, 0, 90, "Start a fresh field expedition", 18, "#e6fff9").setOrigin(0.5);
+    btnQuickStart.add(labelQuickStart);
+
+    const btnCollection = imageButton(this, 640, 780, "btn_purple", "", () => this.toggleCollection(), 430, 150);
+    btnCollection.setAlpha(0.96);
+    const labelCollection = wildsText(this, 0, 90, "View your captured Wilds", 18, "#eadbff").setOrigin(0.5);
+    btnCollection.add(labelCollection);
+
+    const btnResume = imageButton(this, 1280, 780, "btn_gold", "", () => {
+      this.cameras.main.fadeOut(280, 8, 18, 31);
+      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
+    }, 430, 150);
+    btnResume.setAlpha(1);
+    const labelResume = wildsText(this, 0, 90, "Replay Verdant Rift anytime", 18, "#fff2c9").setOrigin(0.5);
+    btnResume.add(labelResume);
   }
 
   private toggleCollection() {

@@ -18,6 +18,8 @@ export const REGISTRY_KEYS = {
   playerShieldBuff: "wilds:playerShieldBuff",
   playerLuckyBuff: "wilds:playerLuckyBuff",
   lastBattleResult: "wilds:lastBattleResult",
+  enemyShieldActive: "wilds:enemyShieldActive",
+  wildsAudio: "wilds:audio",
 } as const;
 
 export function getCreatures(scene: Phaser.Scene): WildsCreature[] {
