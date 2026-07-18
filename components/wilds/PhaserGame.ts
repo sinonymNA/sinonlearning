@@ -8,15 +8,16 @@ import { MapScene } from "./scenes/MapScene";
 import { BattleScene } from "./scenes/BattleScene";
 import { CaptureScene } from "./scenes/CaptureScene";
 import { RewardScene } from "./scenes/RewardScene";
+import { ExpeditionScene } from "./scenes/ExpeditionScene";
 
-export function createPhaserGame(parent: HTMLElement): Phaser.Game {
+export function createPhaserGame(parent: HTMLElement, equippedCapId = "cap-fox"): Phaser.Game {
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
     width: 1920,
     height: 1080,
     backgroundColor: "#08121f",
-    scene: [BootScene, TitleScene, StarterScene, MapScene, BattleScene, CaptureScene, RewardScene],
+    scene: [new BootScene(equippedCapId), TitleScene, StarterScene, MapScene, BattleScene, CaptureScene, RewardScene, ExpeditionScene],
     physics: {
       default: "arcade",
       arcade: {

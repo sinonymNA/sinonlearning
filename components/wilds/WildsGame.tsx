@@ -11,12 +11,17 @@ export default function WildsGame() {
 
   useEffect(() => {
     if (!containerRef.current || gameRef.current) return;
-    import("./PhaserGame").then(({ createPhaserGame }) => {
-      if (!containerRef.current) return;
-      gameRef.current = createPhaserGame(containerRef.current);
+    let disposed = false;
+    Promise.all([
+      import("./PhaserGame"),
+      fetch("/api/capsule/auth/me").then((response) => response.ok ? response.json() : null).catch(() => null),
+    ]).then(([{ createPhaserGame }, account]) => {
+      if (disposed || !containerRef.current || gameRef.current) return;
+      gameRef.current = createPhaserGame(containerRef.current, account?.user?.equippedCapId ?? "cap-fox");
     });
 
     return () => {
+      disposed = true;
       gameRef.current?.destroy(true);
       gameRef.current = null;
     };

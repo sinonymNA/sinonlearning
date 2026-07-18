@@ -177,7 +177,7 @@ export default function CapsulePage() {
       </div>
 
       {/* ── Logo: slam down → float ──────────────────────── */}
-      <div style={{ position: "relative", zIndex: 10, pointerEvents: "none" }}>
+      <div style={{ position: "relative", zIndex: 10 }}>
         <motion.div
           style={{ display: "flex", justifyContent: "center", paddingTop: 16, willChange: "transform" }}
           animate={{ y: [0, -18, 0] }}
@@ -189,15 +189,17 @@ export default function CapsulePage() {
             transition={{ type: "spring", damping: 9, stiffness: 95, mass: 1.5, delay: 0.12 }}
             style={{ willChange: "transform, opacity" }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/assets/capsule/logo.png"
-              alt="Capsule"
-              style={{
-                width: "min(88vw, 500px)", objectFit: "contain", display: "block",
-                filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.70)) drop-shadow(0 2px 8px rgba(0,0,0,0.90))",
-              }}
-            />
+            <Link href="/capsule/wilds" aria-label="Play Wilds" style={{ display: "block" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/assets/capsule/logo.png"
+                alt="Capsule - play Wilds"
+                style={{
+                  width: "min(88vw, 500px)", objectFit: "contain", display: "block", cursor: "pointer",
+                  filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.70)) drop-shadow(0 2px 8px rgba(0,0,0,0.90))",
+                }}
+              />
+            </Link>
           </motion.div>
         </motion.div>
       </div>

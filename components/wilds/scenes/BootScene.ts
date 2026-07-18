@@ -114,7 +114,7 @@ const NODE_ICONS: Record<string, CropRect> = {
 };
 
 export class BootScene extends Phaser.Scene {
-  constructor() {
+  constructor(private readonly equippedCapId = "cap-fox") {
     super({ key: "BootScene" });
   }
 
@@ -133,6 +133,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image("results-ui-sheet", "/assets/wilds/ui/results_ui_sheet.png");
     this.load.image("items-rewards-sheet", "/assets/wilds/items/items_rewards_sheet.png");
     this.load.image("node-icons-sheet", "/assets/wilds/nodes/node_icons_sheet.png");
+    this.load.image("expedition-meadow", "/assets/wilds/expedition/meadow.jpg");
+    this.load.image("expedition-crystal", "/assets/wilds/expedition/crystal_grove.jpg");
+    this.load.image("expedition-gate", "/assets/wilds/expedition/rift_gate.jpg");
+    this.load.image("expedition-creatures-sheet", "/assets/wilds/expedition/creatures_sheet.jpg");
+    this.load.image("expedition-props-sheet", "/assets/wilds/expedition/props_sheet.jpg");
+    this.load.image("expedition-pickups-sheet", "/assets/wilds/expedition/pickups_sheet.jpg");
+    this.load.image("expedition-effects-sheet", "/assets/wilds/expedition/effects_sheet.jpg");
+    this.load.image("wilds-player-cap", `/assets/capsule/caps/${this.equippedCapId}.png`);
 
     this.load.json("wilds-creatures", "/assets/wilds/data/creatures.json");
     this.load.json("wilds-abilities", "/assets/wilds/data/abilities.json");
@@ -164,10 +172,32 @@ export class BootScene extends Phaser.Scene {
     this.cropFromSheet("results-ui-sheet", RESULTS_UI);
     this.cropFromSheet("items-rewards-sheet", ITEM_REWARD_UI);
     this.cropFromSheet("node-icons-sheet", NODE_ICONS);
+    this.cropExpeditionAssets();
 
     this.registry.set("wilds:assets-ready", true);
     EventBus.emit("phaser:ready");
     this.scene.start("TitleScene");
+  }
+
+  private cropExpeditionAssets() {
+    const creatures = ["sparkit", "mossprout", "aquablob", "pebblit", "thornpaw", "galehawk", "lumimoth", "brookhorn", "crystal_drake", "nightfang", "sun_stag", "warden_wisp"];
+    const creatureCrops = Object.fromEntries(creatures.map((id, index) => [
+      `field_${id}`,
+      { x: (index % 4) * 320, y: Math.floor(index / 4) * 320, width: 320, height: 320 },
+    ]));
+    this.cropFromSheet("expedition-creatures-sheet", creatureCrops);
+
+    const propCrops = Object.fromEntries(["grass", "flowers", "mushrooms", "crystal", "rock", "pillar", "ruin", "stump", "bush", "log", "rune", "stream"].map((id, index) => [
+      `prop_${id}`,
+      { x: (index % 4) * 320, y: Math.floor(index / 4) * 320, width: 320, height: 320 },
+    ]));
+    this.cropFromSheet("expedition-props-sheet", propCrops);
+
+    const pickupCrops = Object.fromEntries(["coin", "heal", "shield", "power", "lucky", "hint", "double", "streak"].map((id, index) => [
+      `pickup_${id}`,
+      { x: (index % 4) * 320, y: Math.floor(index / 4) * 360, width: 320, height: 360 },
+    ]));
+    this.cropFromSheet("expedition-pickups-sheet", pickupCrops);
   }
 
   private cropFromSheet(sheetKey: string, map: Record<string, CropRect>) {
