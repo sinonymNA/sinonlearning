@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { creatureById } from "../gameState";
 import { fitBackground, imageButton, wildsText } from "../Presentation";
-import { applyUpgradeToRun, getRunSave, grantCoins, registerRunComplete, setRunSave } from "../save";
+import { applyUpgradeToRun, getPermanentSave, getRunSave, grantCoins, registerRunComplete, setRunSave } from "../save";
 import type { RewardSceneData, UpgradeChoice } from "../types";
 
 export class RewardScene extends Phaser.Scene {
@@ -16,6 +16,7 @@ export class RewardScene extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.fadeIn(220, 8, 18, 31);
     fitBackground(this, "verdant-map-bg");
     this.add.rectangle(960, 540, 1920, 1080, 0x08121f, 0.48);
 
@@ -26,7 +27,10 @@ export class RewardScene extends Phaser.Scene {
       align: "center",
       wordWrap: { width: 700 },
     }).setOrigin(0.5);
-    wildsText(this, 960, 360, `Coins earned: ${this.sceneData.baseCoins}`, 24, "#f6d485").setOrigin(0.5);
+
+    const run = getRunSave();
+    const multiplied = run ? Math.round(this.sceneData.baseCoins * (1 + run.coinBonus)) : this.sceneData.baseCoins;
+    wildsText(this, 960, 360, `Coins earned: ${multiplied}`, 24, "#f6d485").setOrigin(0.5);
 
     if (this.sceneData.captureSuccess && this.sceneData.capturedCreatureId) {
       const creature = creatureById(this, this.sceneData.capturedCreatureId);
@@ -38,13 +42,13 @@ export class RewardScene extends Phaser.Scene {
 
     if (this.sceneData.victory && this.sceneData.upgradeChoices?.length) {
       wildsText(this, 960, 545, "Choose one reward", 28, "#d7f7f0").setOrigin(0.5);
-      this.drawUpgradeChoices(this.sceneData.upgradeChoices);
+      this.drawUpgradeChoices(this.sceneData.upgradeChoices, multiplied);
     } else {
-      this.finishReward(null);
+      this.finishReward(null, multiplied);
     }
   }
 
-  private drawUpgradeChoices(choices: UpgradeChoice[]) {
+  private drawUpgradeChoices(choices: UpgradeChoice[], multiplied: number) {
     choices.forEach((choice, index) => {
       const x = 500 + index * 460;
       const y = 770;
@@ -62,20 +66,23 @@ export class RewardScene extends Phaser.Scene {
       hitbox.on("pointerover", () => card.setScale(1.03));
       hitbox.on("pointerout", () => card.setScale(1));
       hitbox.on("pointerdown", () => card.setScale(0.98));
-      hitbox.on("pointerup", () => this.finishReward(choice));
+      hitbox.on("pointerup", () => this.finishReward(choice, multiplied));
       card.add([bg, title, desc, hitbox]);
     });
   }
 
-  private finishReward(choice: UpgradeChoice | null) {
+  private finishReward(choice: UpgradeChoice | null, multiplied: number) {
     const run = getRunSave();
     if (!run) {
-      imageButton(this, 960, 930, "results_continue_button", "BACK TO TITLE", () => this.scene.start("TitleScene"), 320, 118);
+      imageButton(this, 960, 930, "results_continue_button", "BACK TO TITLE", () => {
+        this.cameras.main.fadeOut(280, 8, 18, 31);
+        this.time.delayedCall(280, () => this.scene.start("TitleScene"));
+      }, 320, 118);
       return;
     }
 
-    grantCoins(this.sceneData.baseCoins);
-    run.coinsEarned += this.sceneData.baseCoins;
+    grantCoins(multiplied);
+    run.coinsEarned += multiplied;
     run.completedNodes = Array.from(new Set([...run.completedNodes, this.sceneData.nodeId]));
     if (choice) {
       const next = applyUpgradeToRun(run, choice);
@@ -86,16 +93,47 @@ export class RewardScene extends Phaser.Scene {
 
     const nodes = this.cache.json.get("wilds-nodes") as Array<{ id: string; next: string[] }>;
     const currentNode = nodes.find((node) => node.id === run.currentNode);
-    if (currentNode && currentNode.next.length === 0 && this.sceneData.victory) {
+    const isRunComplete = currentNode && currentNode.next.length === 0 && this.sceneData.victory;
+
+    if (isRunComplete) {
       registerRunComplete();
+      this.showRunComplete(run.coinsEarned);
+      return;
     }
 
     imageButton(this, 960, 960, "results_continue_button", this.sceneData.victory ? "CONTINUE" : "RETURN TO TITLE", () => {
-      if (this.sceneData.victory) {
-        this.scene.start("MapScene");
-      } else {
-        this.scene.start("TitleScene");
-      }
+      this.cameras.main.fadeOut(280, 8, 18, 31);
+      this.time.delayedCall(280, () => {
+        if (this.sceneData.victory) {
+          this.scene.start("MapScene");
+        } else {
+          this.scene.start("TitleScene");
+        }
+      });
+    }, 320, 118);
+  }
+
+  private showRunComplete(totalCoinsEarned: number) {
+    const perm = getPermanentSave();
+
+    // dim the existing content
+    this.add.rectangle(960, 540, 1920, 1080, 0x04101b, 0.80);
+    this.add.image(960, 280, "results_victory_badge").setDisplaySize(240, 180);
+
+    wildsText(this, 960, 420, "RUN COMPLETE", 64, "#fdf7ce").setOrigin(0.5);
+    wildsText(this, 960, 500, "EXPEDITION COMPLETE — Well done, Trainer.", 28, "#d7f7f0", {
+      align: "center",
+      wordWrap: { width: 900 },
+    }).setOrigin(0.5);
+
+    wildsText(this, 960, 570, `Coins earned this run: ${totalCoinsEarned}`, 24, "#f6d485").setOrigin(0.5);
+    wildsText(this, 960, 620, `Battles won all time: ${perm.stats.battlesWon}`, 22, "#c9ffe9").setOrigin(0.5);
+    wildsText(this, 960, 666, `Creatures captured all time: ${perm.stats.creaturesCaptured}`, 22, "#b6f4ff").setOrigin(0.5);
+    wildsText(this, 960, 712, `Runs completed: ${perm.stats.runsCompleted}`, 22, "#d2b4fe").setOrigin(0.5);
+
+    imageButton(this, 960, 860, "results_continue_button", "BACK TO TITLE", () => {
+      this.cameras.main.fadeOut(280, 8, 18, 31);
+      this.time.delayedCall(280, () => this.scene.start("TitleScene"));
     }, 320, 118);
   }
 }

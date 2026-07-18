@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { captureChance, creatureById, generateUpgradeChoices, REGISTRY_KEYS } from "../gameState";
 import { fitBackground, wildsText } from "../Presentation";
 import { appendToCollection, getRunSave, registerBattleWin } from "../save";
+import type { WildsAudioManager } from "../WildsAudio";
 import type { CaptureSceneData } from "../types";
 
 export class CaptureScene extends Phaser.Scene {
@@ -21,6 +22,8 @@ export class CaptureScene extends Phaser.Scene {
       this.scene.start("TitleScene");
       return;
     }
+
+    this.cameras.main.fadeIn(220, 8, 18, 31);
 
     const creature = creatureById(this, this.sceneData.encounterId);
     fitBackground(this, "verdant-battle-bg");
@@ -51,34 +54,42 @@ export class CaptureScene extends Phaser.Scene {
         status.setText("One... Two... Three...");
 
         this.time.delayedCall(700, () => {
+          const audio = this.registry.get(REGISTRY_KEYS.wildsAudio) as WildsAudioManager | undefined;
           const lastBattle = this.registry.get(REGISTRY_KEYS.lastBattleResult) as { perfect?: boolean } | undefined;
           const lucky = Number(this.registry.get(REGISTRY_KEYS.playerLuckyBuff) ?? 0);
           this.registry.remove(REGISTRY_KEYS.playerLuckyBuff);
-          const chance = captureChance(creature.captureRate, run.captureBonus, lucky, lastBattle?.perfect ? 0.1 : 0);
+
+          const abilityBonus = creatureById(this, run.playerCreature).ability === "bonus_capture" ? 0.1 : 0;
+          const chance = captureChance(creature.captureRate, run.captureBonus + abilityBonus, lucky, lastBattle?.perfect ? 0.1 : 0);
           const success = Math.random() < chance;
 
           if (success) {
+            audio?.play("capture-success");
             appendToCollection(creature.id);
             registerBattleWin();
             this.add.image(960, 690, "capture_success_burst").setDisplaySize(280, 220);
             status.setText(`${creature.name} was captured!`);
           } else {
+            audio?.play("capture-fail");
             this.add.image(960, 690, "capture_fail_puff").setDisplaySize(220, 220);
             status.setText(`${creature.name} broke free!`);
           }
 
           this.time.delayedCall(950, () => {
-            this.scene.start("RewardScene", {
-              nodeId: this.sceneData.nodeId,
-              title: success ? "Victory!" : "Escape!",
-              summary: success
-                ? `${creature.name} joins your collection. Choose one reward for the road.`
-                : `${creature.name} slipped away, but you still earn progress for winning the fight.`,
-              victory: true,
-              captureSuccess: success,
-              capturedCreatureId: success ? creature.id : undefined,
-              baseCoins: this.sceneData.isBoss ? 35 : creature.rarity === "epic" ? 24 : 16,
-              upgradeChoices: generateUpgradeChoices(),
+            this.cameras.main.fadeOut(280, 8, 18, 31);
+            this.time.delayedCall(280, () => {
+              this.scene.start("RewardScene", {
+                nodeId: this.sceneData.nodeId,
+                title: success ? "Victory!" : "Escape!",
+                summary: success
+                  ? `${creature.name} joins your collection. Choose one reward for the road.`
+                  : `${creature.name} slipped away, but you still earn progress for winning the fight.`,
+                victory: true,
+                captureSuccess: success,
+                capturedCreatureId: success ? creature.id : undefined,
+                baseCoins: this.sceneData.isBoss ? 35 : creature.rarity === "epic" ? 24 : 16,
+                upgradeChoices: generateUpgradeChoices(),
+              });
             });
           });
         });

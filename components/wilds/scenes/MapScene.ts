@@ -1,7 +1,8 @@
 import Phaser from "phaser";
-import { creatureById, getNodes, nodeIconKey, pickEncounter } from "../gameState";
+import { creatureById, getNodes, nodeIconKey, pickEncounter, REGISTRY_KEYS } from "../gameState";
 import { fitBackground, wildsText } from "../Presentation";
 import { getRunSave, setRunSave } from "../save";
+import type { WildsAudioManager } from "../WildsAudio";
 import type { WildsNode } from "../types";
 
 export class MapScene extends Phaser.Scene {
@@ -15,6 +16,8 @@ export class MapScene extends Phaser.Scene {
       this.scene.start("TitleScene");
       return;
     }
+
+    this.cameras.main.fadeIn(220, 8, 18, 31);
 
     fitBackground(this, "verdant-map-bg");
     this.add.rectangle(960, 540, 1920, 1080, 0x08121f, 0.16);
@@ -49,7 +52,15 @@ export class MapScene extends Phaser.Scene {
       }
 
       if (node.id === run.currentNode) {
-        this.add.image(node.x, node.y - 92, "map_player_marker").setDisplaySize(64, 64);
+        const marker = this.add.image(node.x, node.y - 92, "map_player_marker").setDisplaySize(64, 64);
+        this.tweens.add({
+          targets: marker,
+          y: marker.y - 5,
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: "Sine.easeInOut",
+        });
       }
     }
 
@@ -72,40 +83,47 @@ export class MapScene extends Phaser.Scene {
   private enterNode(node: WildsNode) {
     const run = getRunSave();
     if (!run) return;
+
+    const audio = this.registry.get(REGISTRY_KEYS.wildsAudio) as WildsAudioManager | undefined;
+    audio?.play("map-move");
+
     run.currentNode = node.id;
     setRunSave(run);
 
-    if (node.type === "wild" || node.type === "miniboss" || node.type === "boss") {
-      const encounterId = pickEncounter(this, node.type);
-      this.scene.start("BattleScene", {
-        nodeId: node.id,
-        encounterId,
-        isBoss: node.type === "boss",
-      });
-      return;
-    }
+    this.cameras.main.fadeOut(280, 8, 18, 31);
+    this.time.delayedCall(280, () => {
+      if (node.type === "wild" || node.type === "miniboss" || node.type === "boss") {
+        const encounterId = pickEncounter(this, node.type);
+        this.scene.start("BattleScene", {
+          nodeId: node.id,
+          encounterId,
+          isBoss: node.type === "boss",
+        });
+        return;
+      }
 
-    let title = node.type.toUpperCase();
-    let summary = "Your Wilds press deeper into the ruins.";
-    let baseCoins = 12;
-    if (node.type === "heal") {
-      run.currentHp = Math.min(run.maxHp, run.currentHp + 25);
-      summary = "A healing spring restores 25 HP.";
-      baseCoins = 6;
-    } else if (node.type === "treasure") {
-      summary = "You crack open a treasure cache and pocket extra coins.";
-      baseCoins = 22;
-    } else if (node.type === "shop") {
-      summary = "A traveler leaves behind a Power Capsule for your pack.";
-      const item = run.items.find((entry) => entry.id === "power_capsule");
-      if (item) item.quantity += 1; else run.items.push({ id: "power_capsule", quantity: 1 });
-      baseCoins = 8;
-    } else if (node.type === "mystery") {
-      summary = "A glowing shrine blesses your next capture.";
-      run.captureBonus += 0.1;
-      baseCoins = 10;
-    }
-    setRunSave(run);
-    this.scene.start("RewardScene", { nodeId: node.id, title, summary, victory: true, baseCoins });
+      let title = node.type.toUpperCase();
+      let summary = "Your Wilds press deeper into the ruins.";
+      let baseCoins = 12;
+      if (node.type === "heal") {
+        run.currentHp = Math.min(run.maxHp, run.currentHp + 25);
+        summary = "A healing spring restores 25 HP.";
+        baseCoins = 6;
+      } else if (node.type === "treasure") {
+        summary = "You crack open a treasure cache and pocket extra coins.";
+        baseCoins = 22;
+      } else if (node.type === "shop") {
+        summary = "A traveler leaves behind a Power Capsule for your pack.";
+        const item = run.items.find((entry) => entry.id === "power_capsule");
+        if (item) item.quantity += 1; else run.items.push({ id: "power_capsule", quantity: 1 });
+        baseCoins = 8;
+      } else if (node.type === "mystery") {
+        summary = "A glowing shrine blesses your next capture.";
+        run.captureBonus += 0.1;
+        baseCoins = 10;
+      }
+      setRunSave(run);
+      this.scene.start("RewardScene", { nodeId: node.id, title, summary, victory: true, baseCoins });
+    });
   }
 }
