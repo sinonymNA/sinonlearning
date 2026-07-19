@@ -89,6 +89,16 @@ export const simulations: SimulationCatalogEntry[] = [
     subject: "AP World History",
     status: "Available",
   },
+  {
+    slug: "dice-merge",
+    number: 9,
+    title: "DICE//MERGE: Build the Perfect Chain",
+    tagline: "Place, combine, and cascade your way from a single spark to a board-clearing Prism.",
+    description:
+      "A fast strategy puzzle built for short, replayable runs. Place one- and two-die pieces, connect matching groups, trigger scoring cascades, and use tactical tools to keep the board alive.",
+    subject: "Logic & Strategy",
+    status: "Available",
+  },
 ];
 
 export function getSimulationBySlug(slug: string): SimulationCatalogEntry | undefined {
