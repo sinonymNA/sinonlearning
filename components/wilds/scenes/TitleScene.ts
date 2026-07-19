@@ -16,41 +16,42 @@ export class TitleScene extends Phaser.Scene {
 
     fitBackground(this, "title-bg");
 
-    this.add.rectangle(960, 540, 1920, 1080, 0x07111d, 0.22);
-    this.add.image(960, 230, "wilds_logo").setScale(0.84);
+    this.add.rectangle(960, 540, 1920, 1080, 0x07111d, 0.26);
+    this.add.image(960, 250, "wilds_logo").setScale(0.68);
 
-    wildsText(this, 960, 380, "A creature adventure where answering questions is how you fight.", 28, "#effffb", {
+    wildsText(this, 960, 418, "A creature adventure where answering questions is how you fight.", 25, "#effffb", {
       align: "center",
       wordWrap: { width: 980 },
     }).setOrigin(0.5);
 
-    const btnNewRun = imageButton(this, 640, 600, "btn_primary", "", () => {
+    const startExpedition = () => {
       clearRunSave();
-      this.cameras.main.fadeOut(280, 8, 18, 31);
-      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
-    }, 420, 150);
-    const labelNewRun = wildsText(this, 0, 90, "Explore the Verdant Rift", 18, "#e6fff9").setOrigin(0.5);
+      this.scene.start("ExpeditionScene");
+    };
+    const replayExpedition = () => {
+      this.scene.start("ExpeditionScene");
+    };
+
+    const btnNewRun = imageButton(this, 650, 610, "btn_primary", "", startExpedition, 380, 132);
+    const labelNewRun = wildsText(this, 0, 78, "Explore the Verdant Rift", 17, "#e6fff9").setOrigin(0.5);
     btnNewRun.add(labelNewRun);
 
-    const btnQuickStart = imageButton(this, 1280, 600, "btn_secondary", "", () => {
-      this.cameras.main.fadeOut(280, 8, 18, 31);
-      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
-    }, 460, 150);
-    const labelQuickStart = wildsText(this, 0, 90, "Start a fresh field expedition", 18, "#e6fff9").setOrigin(0.5);
+    const btnQuickStart = imageButton(this, 1270, 610, "btn_secondary", "", replayExpedition, 410, 132);
+    const labelQuickStart = wildsText(this, 0, 78, "Start a fresh field expedition", 17, "#e6fff9").setOrigin(0.5);
     btnQuickStart.add(labelQuickStart);
 
-    const btnCollection = imageButton(this, 640, 780, "btn_purple", "", () => this.toggleCollection(), 430, 150);
+    const btnCollection = imageButton(this, 650, 765, "btn_purple", "", () => this.toggleCollection(), 390, 132);
     btnCollection.setAlpha(0.96);
-    const labelCollection = wildsText(this, 0, 90, "View your captured Wilds", 18, "#eadbff").setOrigin(0.5);
+    const labelCollection = wildsText(this, 0, 78, "View your captured Wilds", 17, "#eadbff").setOrigin(0.5);
     btnCollection.add(labelCollection);
 
-    const btnResume = imageButton(this, 1280, 780, "btn_gold", "", () => {
-      this.cameras.main.fadeOut(280, 8, 18, 31);
-      this.time.delayedCall(280, () => this.scene.start("ExpeditionScene"));
-    }, 430, 150);
+    const btnResume = imageButton(this, 1270, 765, "btn_gold", "", replayExpedition, 390, 132);
     btnResume.setAlpha(1);
-    const labelResume = wildsText(this, 0, 90, "Replay Verdant Rift anytime", 18, "#fff2c9").setOrigin(0.5);
+    const labelResume = wildsText(this, 0, 78, "Replay Verdant Rift anytime", 17, "#fff2c9").setOrigin(0.5);
     btnResume.add(labelResume);
+
+    this.input.keyboard?.once("keydown-ENTER", startExpedition);
+    this.input.keyboard?.once("keydown-SPACE", startExpedition);
   }
 
   private toggleCollection() {

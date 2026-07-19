@@ -177,6 +177,7 @@ export class BootScene extends Phaser.Scene {
     this.cropFromSheet("items-rewards-sheet", ITEM_REWARD_UI);
     this.cropFromSheet("node-icons-sheet", NODE_ICONS);
     this.cropExpeditionAssets();
+    this.createRoundPlayerCap();
 
     this.registry.set("wilds:assets-ready", true);
     try {
@@ -223,6 +224,29 @@ export class BootScene extends Phaser.Scene {
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(source, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
     this.removeEdgeMatte(ctx, rect.width, rect.height);
+    texture.refresh();
+  }
+
+  private createRoundPlayerCap() {
+    const source = this.textures.get("wilds-player-cap").getSourceImage() as CanvasImageSource;
+    const size = 256;
+    const texture = this.textures.createCanvas("wilds-player-cap-round", size, size);
+    if (!texture) return;
+    const ctx = texture.context;
+    ctx.clearRect(0, 0, size, size);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, 0, 0, size, size);
+    ctx.restore();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "rgba(8, 24, 44, 0.95)";
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 5, 0, Math.PI * 2);
+    ctx.stroke();
     texture.refresh();
   }
 

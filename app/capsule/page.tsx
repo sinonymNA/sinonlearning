@@ -116,7 +116,7 @@ export default function CapsulePage() {
 
   return (
     <div style={{
-      position: "relative", minHeight: "100dvh", background: "#07183F",
+      position: "fixed", inset: 0, width: "100vw", height: "100dvh", maxHeight: "100dvh", background: "#07183F",
       overflow: "hidden", display: "flex", flexDirection: "column",
     }}>
 
@@ -136,7 +136,7 @@ export default function CapsulePage() {
       <div style={{
         position: "relative", zIndex: 10,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 18px 0",
+        padding: "clamp(8px, 1.5vh, 14px) 18px 0",
       }}>
         {loading ? <div style={{ height: 40 }} /> : !me ? (
           <div style={{ display: "flex", gap: 8 }}>
@@ -179,7 +179,7 @@ export default function CapsulePage() {
       {/* ── Logo: slam down → float ──────────────────────── */}
       <div style={{ position: "relative", zIndex: 10 }}>
         <motion.div
-          style={{ display: "flex", justifyContent: "center", paddingTop: 16, willChange: "transform" }}
+          style={{ display: "flex", justifyContent: "center", paddingTop: "clamp(4px, 1.5vh, 16px)", willChange: "transform" }}
           animate={{ y: [0, -18, 0] }}
           transition={{ repeat: Infinity, duration: 3.8, ease: "easeInOut", delay: 1.9 }}
         >
@@ -189,39 +189,40 @@ export default function CapsulePage() {
             transition={{ type: "spring", damping: 9, stiffness: 95, mass: 1.5, delay: 0.12 }}
             style={{ willChange: "transform, opacity" }}
           >
-            <Link href="/capsule/wilds" aria-label="Play Wilds" style={{ display: "block" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/assets/capsule/logo.png"
-                alt="Capsule - play Wilds"
-                style={{
-                  width: "min(88vw, 500px)", objectFit: "contain", display: "block", cursor: "pointer",
-                  filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.70)) drop-shadow(0 2px 8px rgba(0,0,0,0.90))",
-                }}
-              />
-            </Link>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/capsule/logo.png"
+              alt="Capsule"
+              style={{
+                width: "min(70vw, 430px)", objectFit: "contain", display: "block",
+                filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.70)) drop-shadow(0 2px 8px rgba(0,0,0,0.90))",
+              }}
+            />
           </motion.div>
         </motion.div>
       </div>
 
-      <div style={{ flex: "1 1 auto" }} />
+      <div style={{ flex: "1 1 auto", minHeight: 8 }} />
 
       {/* ── Action buttons ──────────────────────────────── */}
       <div style={{
         position: "relative", zIndex: 10,
         display: "flex", flexDirection: "column", alignItems: "center",
-        gap: 12, padding: "0 20px",
+        gap: "clamp(8px, 1.4vh, 12px)", padding: "0 20px",
       }}>
 
         {/* Logged-out */}
         {!loading && !me && (
           <>
-            <SpriteBtn
-              src="/assets/capsule/ui/btn-join-game.png"
-              alt="Join Game"
-              onClick={() => setShowJoin(v => !v)}
-              style={{ width: "100%", maxWidth: 340 }}
-            />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, width: "100%", maxWidth: 480 }}>
+              <WildsLogoLink />
+              <SpriteBtn
+                src="/assets/capsule/ui/btn-join-game.png"
+                alt="Join Game"
+                onClick={() => setShowJoin(v => !v)}
+                style={{ flex: "1 1 0", maxWidth: 340 }}
+              />
+            </div>
 
             <AnimatePresence>
               {showJoin && (
@@ -259,12 +260,15 @@ export default function CapsulePage() {
           <>
             {me.role === "teacher" && <HostBtn href="/capsule/host" />}
 
-            <SpriteBtn
-              src="/assets/capsule/ui/btn-join-game.png"
-              alt="Join Game"
-              onClick={() => setShowJoin(v => !v)}
-              style={{ width: "100%", maxWidth: 340 }}
-            />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, width: "100%", maxWidth: 480 }}>
+              <WildsLogoLink />
+              <SpriteBtn
+                src="/assets/capsule/ui/btn-join-game.png"
+                alt="Join Game"
+                onClick={() => setShowJoin(v => !v)}
+                style={{ flex: "1 1 0", maxWidth: 340 }}
+              />
+            </div>
 
             <AnimatePresence>
               {showJoin && (
@@ -308,7 +312,7 @@ export default function CapsulePage() {
         )}
       </div>
 
-      <div style={{ flex: "0 0 20px" }} />
+      <div style={{ flex: "0 0 clamp(8px, 2vh, 20px)" }} />
 
       {/* ── Bottom nav — sprite buttons ─────────────────── */}
       <nav style={{
@@ -316,7 +320,7 @@ export default function CapsulePage() {
         background: "rgba(6,16,50,0.90)",
         backdropFilter: "blur(14px)",
         borderTop: "1px solid rgba(255,255,255,0.07)",
-        padding: "20px 14px 18px",
+        padding: "clamp(10px, 2vh, 20px) 14px clamp(8px, 1.8vh, 18px)",
       }}>
         <div style={{ display: "flex", gap: 8, maxWidth: 440, margin: "0 auto", alignItems: "flex-end" }}>
           {[
@@ -341,11 +345,35 @@ export default function CapsulePage() {
         position: "relative", zIndex: 20, margin: 0,
         background: "rgba(6,16,50,0.90)",
         fontSize: 9, color: "rgba(255,255,255,0.09)", whiteSpace: "nowrap",
-        pointerEvents: "none", textAlign: "center", padding: "2px 0 8px",
+        pointerEvents: "none", textAlign: "center", padding: "2px 0 clamp(4px, 1vh, 8px)",
       }}>
         A Sinon Learning product
       </p>
     </div>
+  );
+}
+
+function WildsLogoLink() {
+  return (
+    <Link
+      href="/capsule/wilds"
+      aria-label="Play Wilds"
+      style={{
+        flex: "0 0 clamp(82px, 18vw, 122px)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        filter: "drop-shadow(0 8px 18px rgba(25,205,210,0.38)) drop-shadow(0 2px 5px rgba(0,0,0,0.8))",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/wilds/logos/wilds_logo.png"
+        alt="Wilds"
+        style={{ width: "100%", height: "auto", display: "block", cursor: "pointer", userSelect: "none" }}
+        draggable={false}
+      />
+    </Link>
   );
 }
 

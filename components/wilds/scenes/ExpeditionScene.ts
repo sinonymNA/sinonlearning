@@ -3,7 +3,7 @@ import { appendToCollection, grantCoins, registerBattleWin, registerRunComplete 
 import { wildsText } from "../Presentation";
 
 type ThingKind = "wild" | "coin" | "heal" | "shield" | "power" | "lucky" | "hint" | "gate";
-type WorldThing = { kind: ThingKind; creatureId?: string; sprite: Phaser.GameObjects.Image; label?: Phaser.GameObjects.Text; used: boolean };
+type WorldThing = { kind: ThingKind; creatureId?: string; sprite: Phaser.GameObjects.Image; label?: Phaser.GameObjects.Text; used: boolean; magneting?: boolean };
 
 const EASY_QUESTIONS = [
   { prompt: "What is 2 + 3?", choices: ["4", "5", "6", "7"], answer: 1 },
@@ -34,9 +34,15 @@ const CREATURES = [
 ] as const;
 
 const rarityColor: Record<string, string> = { common: "#d9fff0", rare: "#8ce6ff", epic: "#e1b6ff", boss: "#ffcf79" };
+const WORLD_WIDTH = 12800;
+const FLOOR_Y = 792;
+const PLAYER_RADIUS = 55;
+const STRIP_SPACING = 980;
+const EVENT_LANES = [674, 734, 792];
+const PROP_LANES = [622, 706, 834];
 
 export class ExpeditionScene extends Phaser.Scene {
-  private player!: Phaser.GameObjects.Image;
+  private player!: Phaser.Physics.Arcade.Image;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private things: WorldThing[] = [];
@@ -46,8 +52,14 @@ export class ExpeditionScene extends Phaser.Scene {
   private coins = 0;
   private captures = 0;
   private interactTarget: WorldThing | null = null;
+  private playerShadow!: Phaser.GameObjects.Ellipse;
   private hud!: Phaser.GameObjects.Text;
   private prompt!: Phaser.GameObjects.Text;
+  private promptMessage = "";
+  private promptClearAt = 0;
+  private progressFill!: Phaser.GameObjects.Rectangle;
+  private touchBattleButton!: Phaser.GameObjects.Rectangle;
+  private touchBattleLabel!: Phaser.GameObjects.Text;
   private joystick = { active: false, x: 0, y: 0 };
   private battleOpen = false;
   private questionIndex = 0;
@@ -56,15 +68,24 @@ export class ExpeditionScene extends Phaser.Scene {
   private lucky = 0;
   private hints = 0;
   private targetMarker!: Phaser.GameObjects.Container;
+  private ground!: Phaser.Physics.Arcade.StaticGroup;
+  private gateArmed = false;
 
   constructor() { super({ key: "ExpeditionScene" }); }
 
   create() {
-    this.cameras.main.setBounds(0, 0, 12800, 1080);
-    this.physics.world.setBounds(0, 0, 12800, 1080);
+    this.cameras.main.fadeIn(180, 8, 18, 31);
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, 1080);
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, 1080);
+    this.physics.world.gravity.y = 1800;
     this.addFieldSections();
-    this.player = this.add.image(300, 720, "wilds-player-cap").setDisplaySize(116, 116).setDepth(8);
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08).setFollowOffset(-260, 0);
+    this.createGround();
+    this.playerShadow = this.add.ellipse(300, FLOOR_Y + 6, 108, 26, 0x03121a, 0.34).setDepth(6);
+    this.player = this.physics.add.image(300, FLOOR_Y - PLAYER_RADIUS, "wilds-player-cap-round").setDisplaySize(110, 110).setDepth(8);
+    this.player.setCircle(110).setOffset(73, 73).setBounce(0.08).setDragX(2200).setMaxVelocity(560, 1600).setCollideWorldBounds(true);
+    this.physics.add.collider(this.player, this.ground);
+    this.cameras.main.startFollow(this.player, true, 0.11, 0.08).setFollowOffset(-340, 0);
+    this.cameras.main.setDeadzone(420, 180);
     this.keys = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys("W,A,S,D,E") as Record<string, Phaser.Input.Keyboard.Key>;
     this.input.keyboard!.on("keydown-E", () => this.tryInteract());
@@ -72,60 +93,96 @@ export class ExpeditionScene extends Phaser.Scene {
     this.createTargetMarker();
     this.createTouchControls();
     this.spawnStrip(900);
-    this.spawnStrip(1900);
-    this.spawnStrip(2900);
-    this.showPrompt("Verdant Rift: explore, collect, and catch Wilds. Move with WASD or the touch joystick.");
+    this.spawnStrip(1880);
+    this.spawnStrip(2860);
+    this.showPrompt("Verdant Rift: roll across the field, collect rewards, and catch Wilds.");
   }
 
   update(_: number, delta: number) {
     if (this.battleOpen) return;
-    const speed = 0.42 * delta;
     let dx = 0;
-    let dy = 0;
     if (this.keys.left.isDown || this.wasd.A.isDown) dx -= 1;
     if (this.keys.right.isDown || this.wasd.D.isDown) dx += 1;
-    if (this.keys.up.isDown || this.wasd.W.isDown) dy -= 1;
-    if (this.keys.down.isDown || this.wasd.S.isDown) dy += 1;
-    if (this.joystick.active) { dx += this.joystick.x; dy += this.joystick.y; }
-    const vector = new Phaser.Math.Vector2(dx, dy).normalize();
-    if (dx || dy) {
-      this.player.x = Phaser.Math.Clamp(this.player.x + vector.x * speed, 80, 12400);
-      this.player.y = Phaser.Math.Clamp(this.player.y + vector.y * speed, 510, 875);
-      this.player.setRotation(Phaser.Math.Clamp(vector.x * 0.14, -0.14, 0.14));
-      if (vector.x !== 0) this.player.setFlipX(vector.x < 0);
+    if (this.joystick.active) dx += this.joystick.x;
+    dx = Phaser.Math.Clamp(dx, -1, 1);
+    if (dx) {
+      this.player.setAccelerationX(dx * 3200);
+      this.player.setAngularVelocity(0);
+      this.player.setAngle(Phaser.Math.Linear(this.player.angle, dx * 8, 0.24));
       this.distance = Math.max(this.distance, Math.floor(this.player.x - 300));
-      if (Math.random() < 0.18) this.makeTrail();
+      if (Math.random() < 0.12) this.makeTrail();
     } else {
-      this.player.setRotation(0);
+      this.player.setAccelerationX(0);
+      this.player.setAngularVelocity(0);
+      this.player.setAngle(Phaser.Math.Linear(this.player.angle, 0, 0.18));
     }
-    while (this.player.x + 1500 > this.nextStrip && this.nextStrip < 11000) {
+    this.player.x = Phaser.Math.Clamp(this.player.x, 80, 12400);
+    while (this.player.x + 1500 > this.nextStrip && this.nextStrip < 10600) {
       this.spawnStrip(this.nextStrip);
-      this.nextStrip += 1050;
+      this.nextStrip += STRIP_SPACING;
     }
-    if (this.nextStrip >= 11000 && !this.things.some((thing) => thing.kind === "gate")) this.spawnGate();
+    if (this.nextStrip >= 10600 && !this.things.some((thing) => thing.kind === "gate")) this.spawnGate();
+    this.updatePlayerPresentation();
+    this.updatePickups(delta);
+    this.sortThingDepths();
+    this.cleanupPassedThings();
     this.findInteractTarget();
+    this.checkGateWalkIn();
     this.refreshHud();
+    this.updatePromptState();
   }
 
   private addFieldSections() {
-    const sections = ["expedition-meadow", "expedition-crystal", "expedition-meadow", "expedition-crystal", "expedition-gate", "expedition-gate"];
-    sections.forEach((key, index) => {
-      this.add.image(960 + index * 1920, 540, key).setDisplaySize(1920, 1080).setDepth(-5);
-    });
-    this.add.rectangle(6400, 910, 12800, 180, 0x061a1d, 0.12).setDepth(-4);
+    this.add.image(960, 540, "expedition-meadow").setDisplaySize(1920, 1080).setScrollFactor(0).setDepth(-10);
+    this.add.rectangle(960, 540, 1920, 1080, 0x052035, 0.06).setScrollFactor(0).setDepth(-9);
+    this.add.rectangle(WORLD_WIDTH / 2, FLOOR_Y + 78, WORLD_WIDTH, 170, 0x061a1d, 0.1).setDepth(-4);
+  }
+
+  private createGround() {
+    this.ground = this.physics.add.staticGroup();
+    const floor = this.add.rectangle(WORLD_WIDTH / 2, FLOOR_Y + PLAYER_RADIUS, WORLD_WIDTH, 28, 0x000000, 0);
+    this.physics.add.existing(floor, true);
+    this.ground.add(floor);
+  }
+
+  private updatePlayerPresentation() {
+    const speed = Math.abs(this.player.body?.velocity.x ?? 0);
+    const squash = Phaser.Math.Clamp(speed / 900, 0, 0.1);
+    this.player.setDisplaySize(110 + squash * 90, 110 - squash * 40);
+    this.player.setDepth(8 + this.player.y / 1000);
+    this.playerShadow
+      .setPosition(this.player.x, FLOOR_Y + 9)
+      .setScale(1 + squash * 1.5, 1)
+      .setAlpha(0.24 + squash * 0.34);
+  }
+
+  private sortThingDepths() {
+    for (const thing of this.things) {
+      if (thing.used) continue;
+      const baseDepth = thing.kind === "gate" ? 9 : thing.kind === "wild" ? 8 : 7;
+      thing.sprite.setDepth(baseDepth + thing.sprite.y / 1000);
+      thing.label?.setDepth(baseDepth + 1.5);
+    }
   }
 
   private spawnStrip(x: number) {
     const propKeys = ["prop_grass", "prop_flowers", "prop_mushrooms", "prop_crystal", "prop_rock", "prop_pillar", "prop_ruin", "prop_bush", "prop_log", "prop_rune"];
-    for (let index = 0; index < 4; index += 1) {
-      const prop = this.add.image(x + 80 + index * 220 + Phaser.Math.Between(-45, 45), Phaser.Math.Between(600, 855), Phaser.Utils.Array.GetRandom(propKeys));
-      prop.setDisplaySize(Phaser.Math.Between(100, 165), Phaser.Math.Between(100, 165)).setDepth(2).setAlpha(0.92);
-    }
+    const propSlots = [
+      { x: x + 90, y: Phaser.Utils.Array.GetRandom(PROP_LANES) },
+      { x: x + 500, y: Phaser.Utils.Array.GetRandom(PROP_LANES) },
+      { x: x + 850, y: Phaser.Utils.Array.GetRandom(PROP_LANES) },
+    ];
+    propSlots.forEach((slot, index) => {
+      const prop = this.add.image(slot.x + Phaser.Math.Between(-24, 24), slot.y + Phaser.Math.Between(-12, 14), Phaser.Utils.Array.GetRandom(propKeys));
+      const size = index === 1 ? Phaser.Math.Between(95, 135) : Phaser.Math.Between(118, 170);
+      prop.setDisplaySize(size, size).setDepth(slot.y < FLOOR_Y ? 2 : 9).setAlpha(0.92);
+    });
     const roll = Math.random();
-    const count = roll < 0.25 ? 2 : 1;
+    const count = roll < 0.18 ? 2 : 1;
+    const lanes = Phaser.Utils.Array.Shuffle([...EVENT_LANES]);
     for (let index = 0; index < count; index += 1) {
-      const eventX = x + 260 + index * 390 + Phaser.Math.Between(-50, 50);
-      const eventY = Phaser.Math.Between(610, 790);
+      const eventX = x + 270 + index * 430 + Phaser.Math.Between(-24, 24);
+      const eventY = lanes[index] ?? FLOOR_Y;
       if (Math.random() < 0.58) this.spawnWild(eventX, eventY);
       else this.spawnPickup(eventX, eventY);
     }
@@ -140,45 +197,57 @@ export class ExpeditionScene extends Phaser.Scene {
       return Math.random() < 0.025 + progress * 0.18;
     });
     const creature = Phaser.Utils.Array.GetRandom(pool);
-    const sprite = this.add.image(x, y, `field_${creature.id}`).setDisplaySize(155, 155).setDepth(5);
-    const label = wildsText(this, x, y - 104, creature.rarity.toUpperCase(), 13, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(6);
-    this.tweens.add({ targets: sprite, y: y - 10, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const sprite = this.add.image(x, y, `field_${creature.id}`).setDisplaySize(142, 142).setDepth(6 + y / 1000).setAlpha(0);
+    const label = wildsText(this, x, y - 92, creature.rarity.toUpperCase(), 13, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(8).setAlpha(0);
+    this.tweens.add({ targets: [sprite, label], alpha: 1, duration: 260, ease: "Sine.easeOut" });
+    this.tweens.add({ targets: sprite, y: y - 7, duration: 1050, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: label, y: y - 99, duration: 1050, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.things.push({ kind: "wild", creatureId: creature.id, sprite, label, used: false });
   }
 
   private spawnPickup(x: number, y: number) {
     const kind = Phaser.Utils.Array.GetRandom(["coin", "coin", "heal", "shield", "power", "lucky", "hint"] as ThingKind[]);
-    const sprite = this.add.image(x, y, `pickup_${kind}`).setDisplaySize(100, 112).setDepth(5);
-    this.tweens.add({ targets: sprite, y: y - 12, duration: 850, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const sprite = this.add.image(x, y, `pickup_${kind}`).setDisplaySize(84, 96).setDepth(7).setAlpha(0);
+    this.tweens.add({ targets: sprite, alpha: 1, duration: 220, ease: "Sine.easeOut" });
+    this.tweens.add({ targets: sprite, y: y - 10, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.things.push({ kind, sprite, used: false });
   }
 
   private spawnGate() {
-    const sprite = this.add.image(11200, 670, "field_warden_wisp").setDisplaySize(265, 265).setDepth(6);
-    this.add.image(11200, 735, "prop_ruin").setDisplaySize(330, 330).setDepth(4);
-    const label = wildsText(this, 11200, 515, "RIFT GATE", 18, "#ffdf91").setOrigin(0.5).setDepth(7);
+    const glow = this.add.circle(11200, FLOOR_Y - 52, 132, 0x42f4ff, 0.16).setDepth(4);
+    const sprite = this.add.image(11200, FLOOR_Y - 82, "field_warden_wisp").setDisplaySize(220, 220).setDepth(7);
+    this.add.image(11200, FLOOR_Y - 10, "prop_ruin").setDisplaySize(310, 310).setDepth(5);
+    const label = wildsText(this, 11200, FLOOR_Y - 235, "RIFT GATE", 18, "#ffdf91").setOrigin(0.5).setDepth(8);
+    this.tweens.add({ targets: glow, scale: 1.24, alpha: 0.32, duration: 900, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: sprite, y: FLOOR_Y - 94, duration: 1150, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.things.push({ kind: "gate", creatureId: "warden_wisp", sprite, label, used: false });
-    this.showPrompt("The Rift Gate has opened ahead. Prepare for Warden Wisp.");
+    this.showPrompt("The Rift Gate has opened ahead. Prepare for Warden Wisp.", 2600, true);
   }
 
   private createHud() {
     this.add.rectangle(440, 78, 760, 116, 0x06172a, 0.78).setScrollFactor(0).setDepth(20).setStrokeStyle(2, 0x83f3de, 0.5);
+    this.add.rectangle(440, 128, 690, 12, 0x0b2a3f, 0.92).setScrollFactor(0).setDepth(21);
+    this.progressFill = this.add.rectangle(95, 128, 0, 12, 0x7af6cf, 0.9).setOrigin(0, 0.5).setScrollFactor(0).setDepth(22);
     this.hud = wildsText(this, 92, 47, "", 21, "#f7fffb", { lineSpacing: 8 }).setScrollFactor(0).setDepth(21);
     this.prompt = wildsText(this, 960, 950, "", 20, "#ffffff", { align: "center", wordWrap: { width: 980 } }).setOrigin(0.5).setScrollFactor(0).setDepth(21);
   }
 
   private createTargetMarker() {
-    const ring = this.add.circle(0, 0, 55, 0x8effde, 0.12).setStrokeStyle(3, 0xc9fff0, 0.9);
-    const key = wildsText(this, 0, 0, "E", 22, "#ffffff").setOrigin(0.5);
-    this.targetMarker = this.add.container(0, 0, [ring, key]).setDepth(12).setVisible(false);
-    this.tweens.add({ targets: this.targetMarker, scale: 1.12, duration: 560, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const ring = this.add.circle(0, 0, 42, 0x8effde, 0.1).setStrokeStyle(3, 0xc9fff0, 0.72);
+    const arrow = this.add.triangle(0, -48, 0, 0, 26, 34, -26, 34, 0xc9fff0, 0.88).setStrokeStyle(2, 0x0b2035, 0.7);
+    const label = wildsText(this, 0, 56, "BATTLE", 12, "#ffffff").setOrigin(0.5);
+    this.targetMarker = this.add.container(0, 0, [ring, arrow, label]).setDepth(18).setVisible(false);
+    this.tweens.add({ targets: this.targetMarker, y: "-=10", duration: 620, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   private createTouchControls() {
     const base = this.add.circle(150, 905, 78, 0x071a32, 0.62).setStrokeStyle(3, 0x9addec, 0.6).setScrollFactor(0).setDepth(30).setInteractive();
     const knob = this.add.circle(150, 905, 30, 0x8ff7dd, 0.8).setScrollFactor(0).setDepth(31);
     const interact = this.add.rectangle(1750, 900, 210, 112, 0x1bb687, 0.9).setStrokeStyle(3, 0xd8fff1, 0.75).setScrollFactor(0).setDepth(30).setInteractive({ useHandCursor: true });
-    wildsText(this, 1750, 900, "INTERACT\n[E]", 19, "#ffffff", { align: "center" }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
+    const interactLabel = wildsText(this, 1750, 900, "BATTLE\n[E]", 19, "#ffffff", { align: "center" }).setOrigin(0.5).setScrollFactor(0).setDepth(31);
+    this.touchBattleButton = interact;
+    this.touchBattleLabel = interactLabel;
+    this.setBattleButtonActive(false);
     base.on("pointerdown", (pointer: Phaser.Input.Pointer) => this.updateJoystick(pointer, knob));
     base.on("pointermove", (pointer: Phaser.Input.Pointer) => { if (pointer.isDown) this.updateJoystick(pointer, knob); });
     base.on("pointerup", () => { this.joystick.active = false; knob.setPosition(150, 905); });
@@ -196,14 +265,70 @@ export class ExpeditionScene extends Phaser.Scene {
   }
 
   private findInteractTarget() {
-    const nearest = this.things.filter((thing) => !thing.used).map((thing) => ({ thing, distance: Phaser.Math.Distance.Between(this.player.x, this.player.y, thing.sprite.x, thing.sprite.y) })).sort((a, b) => a.distance - b.distance)[0];
-    this.interactTarget = nearest && nearest.distance < 150 ? nearest.thing : null;
+    const nearest = this.things
+      .filter((thing) => !thing.used && (thing.kind === "wild" || thing.kind === "gate"))
+      .map((thing) => ({ thing, distance: Phaser.Math.Distance.Between(this.player.x, this.player.y, thing.sprite.x, thing.sprite.y) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+    this.interactTarget = nearest && nearest.distance < 124 ? nearest.thing : null;
     if (!this.interactTarget) {
       this.targetMarker.setVisible(false);
+      this.setBattleButtonActive(false);
       return;
     }
-    this.targetMarker.setVisible(true).setPosition(this.interactTarget.sprite.x, this.interactTarget.sprite.y - 100);
-    this.showPrompt(this.interactTarget.kind === "wild" || this.interactTarget.kind === "gate" ? "Wild spotted. Press E or INTERACT to begin a quiz battle." : "Reward nearby. Press E or INTERACT to collect it.");
+    this.setBattleButtonActive(true);
+    this.targetMarker.setVisible(true).setPosition(this.interactTarget.sprite.x, this.interactTarget.sprite.y - 132);
+    if (this.interactTarget.kind === "gate") {
+      this.showPrompt("Rift Gate reached. Press E or BATTLE to challenge Warden Wisp.", 900);
+    } else {
+      this.showPrompt("Wild spotted. Press E or BATTLE to begin a quiz battle.", 900);
+    }
+  }
+
+  private updatePickups(delta: number) {
+    const pull = Phaser.Math.Clamp(delta / 1000 * 8, 0, 0.32);
+    for (const thing of this.things) {
+      if (thing.used || thing.kind === "wild" || thing.kind === "gate") continue;
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, thing.sprite.x, thing.sprite.y);
+      if (distance < 230) {
+        if (!thing.magneting) this.tweens.killTweensOf(thing.sprite);
+        thing.magneting = true;
+        thing.sprite.x = Phaser.Math.Linear(thing.sprite.x, this.player.x, pull);
+        thing.sprite.y = Phaser.Math.Linear(thing.sprite.y, this.player.y - 16, pull);
+        thing.sprite.setScale(Phaser.Math.Linear(thing.sprite.scaleX, 0.86, 0.12));
+      }
+      if (distance < 70) this.collectPickup(thing);
+    }
+  }
+
+  private cleanupPassedThings() {
+    const cutoff = this.player.x - 1500;
+    this.things = this.things.filter((thing) => {
+      if (thing.used) return false;
+      if (thing.kind === "gate" || thing.sprite.x > cutoff) return true;
+      thing.label?.destroy();
+      thing.sprite.destroy();
+      return false;
+    });
+  }
+
+  private checkGateWalkIn() {
+    if (this.gateArmed || this.battleOpen) return;
+    const gate = this.things.find((thing) => thing.kind === "gate" && !thing.used);
+    if (!gate) return;
+    const closeEnough = Phaser.Math.Distance.Between(this.player.x, this.player.y, gate.sprite.x, gate.sprite.y) < 92;
+    if (!closeEnough) return;
+    this.gateArmed = true;
+    this.interactTarget = gate;
+    this.showPrompt("The Rift pulls you in...", 1200, true);
+    this.time.delayedCall(260, () => {
+      if (!this.battleOpen && !gate.used) this.startBattle(gate);
+    });
+  }
+
+  private setBattleButtonActive(active: boolean) {
+    if (!this.touchBattleButton || !this.touchBattleLabel) return;
+    this.touchBattleButton.setAlpha(active ? 0.92 : 0.34);
+    this.touchBattleLabel.setAlpha(active ? 1 : 0.52);
   }
 
   private tryInteract() {
@@ -214,17 +339,20 @@ export class ExpeditionScene extends Phaser.Scene {
   }
 
   private collectPickup(target: WorldThing) {
+    if (target.used) return;
     target.used = true;
     target.label?.destroy();
     this.targetMarker.setVisible(false);
     this.burst(target.sprite.x, target.sprite.y, target.kind === "heal" ? 0xff91a4 : 0x8fffe4);
+    const rewardText = target.kind === "coin" ? "+8" : target.kind.toUpperCase();
+    this.floatText(target.sprite.x, target.sprite.y - 64, rewardText, target.kind === "coin" ? "#ffdf74" : "#bfffee");
     target.sprite.destroy();
-    if (target.kind === "coin") { this.coins += 8; this.showPrompt("Found 8 Wild Coins!"); }
-    if (target.kind === "heal") { this.hp = Math.min(5, this.hp + 1); this.showPrompt("Healing Capsule: restored 1 heart."); }
-    if (target.kind === "shield") { this.shield += 1; this.showPrompt("Shield Capsule: blocks your next wrong answer."); }
-    if (target.kind === "power") { this.power += 1; this.showPrompt("Power Capsule: your next correct answer hits twice."); }
-    if (target.kind === "lucky") { this.lucky += 0.2; this.showPrompt("Lucky Capsule: capture chance increased."); }
-    if (target.kind === "hint") { this.hints += 1; this.showPrompt("Hint Scroll: the next battle removes two wrong answers."); }
+    if (target.kind === "coin") { this.coins += 8; this.showPrompt("+8 Wild Coins", 1200, true); }
+    if (target.kind === "heal") { this.hp = Math.min(5, this.hp + 1); this.showPrompt("Healing Capsule: +1 HP", 1200, true); }
+    if (target.kind === "shield") { this.shield += 1; this.showPrompt("Shield Capsule ready", 1200, true); }
+    if (target.kind === "power") { this.power += 1; this.showPrompt("Power Capsule ready", 1200, true); }
+    if (target.kind === "lucky") { this.lucky += 0.2; this.showPrompt("Lucky Capsule: better capture odds", 1200, true); }
+    if (target.kind === "hint") { this.hints += 1; this.showPrompt("Hint Scroll ready", 1200, true); }
   }
 
   private startBattle(target: WorldThing) {
@@ -232,14 +360,22 @@ export class ExpeditionScene extends Phaser.Scene {
     this.battleOpen = true;
     this.targetMarker.setVisible(false);
     let enemyHp = creature.hp;
-    const overlay = this.add.rectangle(960, 540, 1920, 1080, 0x041224, 0.9).setScrollFactor(0).setDepth(50);
+    const bg = this.add.image(960, 540, "verdant-battle-bg").setDisplaySize(1920, 1080).setScrollFactor(0).setDepth(50);
+    const overlay = this.add.rectangle(960, 540, 1920, 1080, 0x041224, 0.62).setScrollFactor(0).setDepth(51);
     const portrait = this.add.image(960, 245, `field_${creature.id}`).setDisplaySize(260, 260).setScrollFactor(0).setDepth(52);
     const title = wildsText(this, 960, 92, `${creature.name.toUpperCase()}  ${enemyHp}/${creature.hp}`, 32, rarityColor[creature.rarity]).setOrigin(0.5).setScrollFactor(0).setDepth(52);
     const questionText = wildsText(this, 960, 430, "", 27, "#ffffff", { align: "center", wordWrap: { width: 1040 } }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
     const feedback = wildsText(this, 960, 545, "", 22, "#d8fff0", { align: "center", wordWrap: { width: 980 } }).setOrigin(0.5).setScrollFactor(0).setDepth(52);
     const buttons: Phaser.GameObjects.Container[] = [];
-    const close = () => { [overlay, portrait, title, questionText, feedback, ...buttons].forEach((object) => object.destroy()); this.battleOpen = false; };
+    let keyHandler: ((event: KeyboardEvent) => void) | null = null;
+    const clearKeyHandler = () => {
+      if (!keyHandler) return;
+      this.input.keyboard!.off("keydown", keyHandler);
+      keyHandler = null;
+    };
+    const close = () => { clearKeyHandler(); [bg, overlay, portrait, title, questionText, feedback, ...buttons].forEach((object) => object.destroy()); this.battleOpen = false; };
     const showQuestion = () => {
+      clearKeyHandler();
       const question = EASY_QUESTIONS[this.questionIndex++ % EASY_QUESTIONS.length];
       const useHint = this.hints > 0;
       if (useHint) this.hints -= 1;
@@ -247,12 +383,13 @@ export class ExpeditionScene extends Phaser.Scene {
       feedback.setText(useHint ? "Hint active: two wrong answers have faded." : "Choose the right answer to damage the Wild.");
       buttons.forEach((button, index) => {
         const label = button.getData("label") as Phaser.GameObjects.Text;
-        label.setText(question.choices[index]);
+        label.setText(`${index + 1}. ${question.choices[index]}`);
         const wrongChoices = [0, 1, 2, 3].filter((choice) => choice !== question.answer);
         const hiddenByHint = useHint && wrongChoices.slice(0, 2).includes(index);
         button.setVisible(true).setActive(true).setAlpha(hiddenByHint ? 0.22 : 1);
         button.setInteractive({ useHandCursor: true });
         button.once("pointerup", () => {
+          clearKeyHandler();
           buttons.forEach((item) => item.disableInteractive());
           const correct = index === question.answer;
           if (correct) {
@@ -281,6 +418,11 @@ export class ExpeditionScene extends Phaser.Scene {
           }
         });
       });
+      keyHandler = (event: KeyboardEvent) => {
+        const answerIndex = ["1", "2", "3", "4"].indexOf(event.key);
+        if (answerIndex >= 0 && buttons[answerIndex]?.active) buttons[answerIndex].emit("pointerup");
+      };
+      this.input.keyboard!.on("keydown", keyHandler);
     };
     [0, 1, 2, 3].forEach((index) => {
       const x = index % 2 === 0 ? 610 : 1310;
@@ -307,9 +449,9 @@ export class ExpeditionScene extends Phaser.Scene {
       if (Math.random() < chance) {
         appendToCollection(creature.id);
         this.captures += 1;
-        this.showPrompt(`${creature.name} joined your Verdant Rift collection!`);
+        this.showPrompt(`${creature.name} joined your Verdant Rift collection!`, 2200, true);
       } else {
-        this.showPrompt(`${creature.name} escaped, but you earned Wild Coins.`);
+        this.showPrompt(`${creature.name} escaped, but you earned Wild Coins.`, 2200, true);
       }
       if (creature.id === "warden_wisp") this.finishRun(true);
     });
@@ -332,15 +474,42 @@ export class ExpeditionScene extends Phaser.Scene {
   }
 
   private refreshHud() {
-    const hearts = "♥".repeat(this.hp) + "♡".repeat(5 - this.hp);
-    this.hud.setText(`VERDANT RIFT   ${this.distance}m / 10,000m\n${hearts}   Coins ${this.coins}   Catches ${this.captures}   Shield ${this.shield}   Power ${this.power}`);
+    this.hud.setText(`VERDANT RIFT   ${this.distance}m / 10,000m\nHP ${this.hp}/5   Coins ${this.coins}   Catches ${this.captures}   Shield ${this.shield}   Power ${this.power}`);
+    this.progressFill.width = Phaser.Math.Clamp(this.distance / 10000, 0, 1) * 690;
   }
 
-  private showPrompt(message: string) { this.prompt.setText(message); }
+  private showPrompt(message: string, duration = 1800, force = false) {
+    if (!force && this.promptMessage === message) {
+      this.promptClearAt = Math.max(this.promptClearAt, this.time.now + duration);
+      return;
+    }
+    this.promptMessage = message;
+    this.prompt.setText(message).setAlpha(1);
+    this.promptClearAt = this.time.now + duration;
+  }
+
+  private updatePromptState() {
+    if (!this.promptMessage || this.time.now < this.promptClearAt) return;
+    this.promptMessage = "";
+    this.tweens.add({ targets: this.prompt, alpha: 0, duration: 220, onComplete: () => this.prompt.setText("") });
+  }
 
   private makeTrail() {
-    const trail = this.add.circle(this.player.x - 28, this.player.y + 35, Phaser.Math.Between(4, 8), 0xa2fff0, 0.7).setDepth(7);
+    const trail = this.add.circle(this.player.x - 34, this.player.y + 40, Phaser.Math.Between(4, 8), 0xa2fff0, 0.62).setDepth(7);
     this.tweens.add({ targets: trail, alpha: 0, scale: 2.2, duration: 450, onComplete: () => trail.destroy() });
+  }
+
+  private floatText(x: number, y: number, message: string, color = "#ffffff") {
+    const text = wildsText(this, x, y, message, 20, color).setOrigin(0.5).setDepth(42);
+    this.tweens.add({
+      targets: text,
+      y: y - 46,
+      alpha: 0,
+      scale: 1.16,
+      duration: 720,
+      ease: "Cubic.easeOut",
+      onComplete: () => text.destroy(),
+    });
   }
 
   private burst(x: number, y: number, color: number) {
@@ -360,7 +529,7 @@ export class ExpeditionScene extends Phaser.Scene {
 
   private playCaptureMoment(creature: typeof CREATURES[number], chance: number, onDone: () => void) {
     const shade = this.add.rectangle(960, 540, 1920, 1080, 0x031624, 0.48).setScrollFactor(0).setDepth(60);
-    const cap = this.add.image(960, 660, "wilds-player-cap").setDisplaySize(145, 145).setScrollFactor(0).setDepth(62);
+    const cap = this.add.image(960, 660, "wilds-player-cap-round").setDisplaySize(145, 145).setScrollFactor(0).setDepth(62);
     const target = this.add.image(960, 290, `field_${creature.id}`).setDisplaySize(240, 240).setScrollFactor(0).setDepth(62);
     const label = wildsText(this, 960, 820, `CAPTURE CHANCE ${Math.round(chance * 100)}%`, 24, rarityColor[creature.rarity]).setOrigin(0.5).setScrollFactor(0).setDepth(63);
     this.tweens.add({ targets: cap, y: 360, scale: 0.55, duration: 500, ease: "Quad.easeIn" });

@@ -38,16 +38,39 @@ export function imageButton(
   width?: number,
   height?: number,
 ) {
-  const image = scene.add.image(0, 0, key).setInteractive({ useHandCursor: true });
+  const image = scene.add.image(0, 0, key);
   if (width && height) image.setDisplaySize(width, height);
+  const hitWidth = width ?? image.width;
+  const hitHeight = height ?? image.height;
+  image.setInteractive(
+    new Phaser.Geom.Rectangle(-hitWidth / 2, -hitHeight / 2, hitWidth, hitHeight),
+    Phaser.Geom.Rectangle.Contains,
+  );
   const children: Phaser.GameObjects.GameObject[] = [image];
   if (label) {
     children.push(wildsText(scene, 0, 0, label, 24, "#ffffff").setOrigin(0.5));
   }
+  const hitbox = scene.add.rectangle(0, 0, hitWidth, hitHeight, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+  children.push(hitbox);
   const container = scene.add.container(x, y, children);
-  image.on("pointerover", () => container.setScale(1.03));
-  image.on("pointerout", () => container.setScale(1));
-  image.on("pointerdown", () => container.setScale(0.96));
-  image.on("pointerup", () => { container.setScale(1.03); onClick(); });
+  container.setSize(hitWidth, hitHeight);
+  container.setInteractive(
+    new Phaser.Geom.Rectangle(-hitWidth / 2, -hitHeight / 2, hitWidth, hitHeight),
+    Phaser.Geom.Rectangle.Contains,
+  );
+  let locked = false;
+  const press = () => {
+    if (locked) return;
+    locked = true;
+    container.setScale(1.03);
+    onClick();
+    scene.time.delayedCall(160, () => { locked = false; });
+  };
+  [image, hitbox, container].forEach((target) => {
+    target.on("pointerover", () => container.setScale(1.03));
+    target.on("pointerout", () => container.setScale(1));
+    target.on("pointerdown", press);
+    target.on("pointerup", () => container.setScale(1.03));
+  });
   return container;
 }
