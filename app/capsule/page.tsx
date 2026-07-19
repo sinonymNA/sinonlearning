@@ -56,7 +56,7 @@ function HostBtn({ href }: { href: string }) {
       whileTap={{ scale: 0.93, y: 4 }}
       style={{
         display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-        width: "100%", maxWidth: 340, height: 68, borderRadius: 18,
+        width: "100%", maxWidth: 300, height: "clamp(50px, 7vh, 60px)", borderRadius: 18,
         background: "linear-gradient(180deg, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.10) 42%, transparent 42%), #FF5965",
         border: "3px solid #b53040",
         boxShadow: "0 7px 0 #7e1d2a, 0 14px 28px rgba(0,0,0,0.44)",
@@ -177,9 +177,9 @@ export default function CapsulePage() {
       </div>
 
       {/* ── Logo: slam down → float ──────────────────────── */}
-      <div style={{ position: "relative", zIndex: 10 }}>
+      <div style={{ position: "relative", zIndex: 10, minHeight: 0 }}>
         <motion.div
-          style={{ display: "flex", justifyContent: "center", paddingTop: "clamp(4px, 1.5vh, 16px)", willChange: "transform" }}
+          style={{ display: "flex", justifyContent: "center", paddingTop: "clamp(2px, 1vh, 10px)", willChange: "transform" }}
           animate={{ y: [0, -18, 0] }}
           transition={{ repeat: Infinity, duration: 3.8, ease: "easeInOut", delay: 1.9 }}
         >
@@ -194,7 +194,7 @@ export default function CapsulePage() {
               src="/assets/capsule/logo.png"
               alt="Capsule"
               style={{
-                width: "min(70vw, 430px)", objectFit: "contain", display: "block",
+                width: "auto", height: "clamp(120px, 27vh, 230px)", maxWidth: "min(70vw, 430px)", objectFit: "contain", display: "block",
                 filter: "drop-shadow(0 6px 32px rgba(25,205,210,0.70)) drop-shadow(0 2px 8px rgba(0,0,0,0.90))",
               }}
             />
@@ -202,25 +202,25 @@ export default function CapsulePage() {
         </motion.div>
       </div>
 
-      <div style={{ flex: "1 1 auto", minHeight: 8 }} />
+      <div style={{ flex: "1 1 auto", minHeight: 4 }} />
 
       {/* ── Action buttons ──────────────────────────────── */}
       <div style={{
         position: "relative", zIndex: 10,
         display: "flex", flexDirection: "column", alignItems: "center",
-        gap: "clamp(8px, 1.4vh, 12px)", padding: "0 20px",
+        gap: "clamp(5px, 0.9vh, 9px)", padding: "0 16px", flexShrink: 1, minHeight: 0,
       }}>
 
         {/* Logged-out */}
         {!loading && !me && (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, width: "100%", maxWidth: 480 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 420 }}>
               <WildsLogoLink />
               <SpriteBtn
                 src="/assets/capsule/ui/btn-join-game.png"
                 alt="Join Game"
                 onClick={() => setShowJoin(v => !v)}
-                style={{ flex: "1 1 0", maxWidth: 340 }}
+                style={{ flex: "1 1 0", maxWidth: 300 }}
               />
             </div>
 
@@ -248,7 +248,7 @@ export default function CapsulePage() {
               )}
             </AnimatePresence>
 
-            <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 340 }}>
+            <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 300 }}>
               <DemoBtn color="#19CDD2" label={demoLoading === "student" ? "…" : "Demo Student"} onClick={() => loginAsDemo("student")} disabled={demoLoading !== null} />
               <DemoBtn color="#FF5965" label={demoLoading === "teacher" ? "…" : "Demo Teacher"} onClick={() => loginAsDemo("teacher")} disabled={demoLoading !== null} />
             </div>
@@ -260,13 +260,13 @@ export default function CapsulePage() {
           <>
             {me.role === "teacher" && <HostBtn href="/capsule/host" />}
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, width: "100%", maxWidth: 480 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 420 }}>
               <WildsLogoLink />
               <SpriteBtn
                 src="/assets/capsule/ui/btn-join-game.png"
                 alt="Join Game"
                 onClick={() => setShowJoin(v => !v)}
-                style={{ flex: "1 1 0", maxWidth: 340 }}
+                style={{ flex: "1 1 0", maxWidth: 300 }}
               />
             </div>
 
@@ -295,7 +295,7 @@ export default function CapsulePage() {
             </AnimatePresence>
 
             {/* CAPSULE STORE + COLLECTION side by side */}
-            <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 340 }}>
+            <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 300 }}>
               <SpriteLink src="/assets/capsule/ui/btn-capsule-store.png" alt="Capsule Store" href="/capsule/store" style={{ flex: 1 }} />
               <SpriteLink src="/assets/capsule/ui/btn-collection.png" alt="Collection" href="/capsule/collection" style={{ flex: 1 }} />
             </div>
@@ -312,7 +312,7 @@ export default function CapsulePage() {
         )}
       </div>
 
-      <div style={{ flex: "0 0 clamp(8px, 2vh, 20px)" }} />
+      <div style={{ flex: "0 0 clamp(4px, 1vh, 10px)" }} />
 
       {/* ── Bottom nav — sprite buttons ─────────────────── */}
       <nav style={{
@@ -320,9 +320,9 @@ export default function CapsulePage() {
         background: "rgba(6,16,50,0.90)",
         backdropFilter: "blur(14px)",
         borderTop: "1px solid rgba(255,255,255,0.07)",
-        padding: "clamp(10px, 2vh, 20px) 14px clamp(8px, 1.8vh, 18px)",
+        padding: "clamp(5px, 1vh, 10px) 14px clamp(4px, 0.8vh, 8px)",
       }}>
-        <div style={{ display: "flex", gap: 8, maxWidth: 440, margin: "0 auto", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", gap: 7, maxWidth: 390, margin: "0 auto", alignItems: "flex-end" }}>
           {[
             { src: "/assets/capsule/ui/btn-daily.png",        alt: "Daily" },
             { src: "/assets/capsule/ui/btn-leaderboard.png",  alt: "Leaderboard" },
@@ -335,7 +335,7 @@ export default function CapsulePage() {
               style={{ flex: 1, background: "none", border: "none", padding: 0, cursor: "pointer" }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={alt} style={{ width: "100%", height: "auto", display: "block", userSelect: "none" }} draggable={false} />
+              <img src={src} alt={alt} style={{ width: "100%", height: "clamp(48px, 8vh, 72px)", objectFit: "contain", display: "block", userSelect: "none" }} draggable={false} />
             </motion.button>
           ))}
         </div>
@@ -359,7 +359,7 @@ function WildsLogoLink() {
       href="/capsule/wilds"
       aria-label="Play Wilds"
       style={{
-        flex: "0 0 clamp(82px, 18vw, 122px)",
+        flex: "0 0 clamp(76px, 15vw, 104px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -368,7 +368,7 @@ function WildsLogoLink() {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/assets/wilds/logos/wilds_logo.png"
+        src="/assets/wilds/logos/wilds_logo_transparent.png"
         alt="Wilds"
         style={{ width: "100%", height: "auto", display: "block", cursor: "pointer", userSelect: "none" }}
         draggable={false}

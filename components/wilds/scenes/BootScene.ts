@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { EventBus } from "../EventBus";
 import { REGISTRY_KEYS, WILDS_HEIGHT, WILDS_WIDTH } from "../gameState";
 import { WildsAudioManager } from "../WildsAudio";
 
@@ -42,10 +41,10 @@ const CREATURE_B_PORTRAIT: Record<string, CropRect> = {
 };
 
 const TITLE_BUTTONS: Record<string, CropRect> = {
-  btn_primary: { x: 45, y: 165, width: 515, height: 205 },
-  btn_secondary: { x: 655, y: 165, width: 565, height: 205 },
-  btn_purple: { x: 45, y: 560, width: 535, height: 215 },
-  btn_gold: { x: 665, y: 560, width: 530, height: 215 },
+  btn_primary: { x: 34, y: 180, width: 582, height: 272 },
+  btn_secondary: { x: 654, y: 180, width: 590, height: 272 },
+  btn_purple: { x: 34, y: 498, width: 582, height: 272 },
+  btn_gold: { x: 654, y: 498, width: 590, height: 272 },
 };
 
 const BATTLE_UI: Record<string, CropRect> = {
@@ -78,11 +77,11 @@ const MAP_MARKERS: Record<string, CropRect> = {
 };
 
 const RESULTS_UI: Record<string, CropRect> = {
-  results_reward_panel: { x: 90, y: 70, width: 680, height: 390 },
-  results_continue_button: { x: 65, y: 520, width: 340, height: 170 },
+  results_reward_panel: { x: 90, y: 55, width: 680, height: 355 },
+  results_continue_button: { x: 60, y: 530, width: 335, height: 96 },
   results_summary_panel: { x: 405, y: 450, width: 360, height: 360 },
-  results_victory_badge: { x: 75, y: 880, width: 330, height: 250 },
-  results_defeat_badge: { x: 435, y: 875, width: 330, height: 255 },
+  results_victory_badge: { x: 65, y: 825, width: 350, height: 190 },
+  results_defeat_badge: { x: 425, y: 825, width: 350, height: 190 },
 };
 
 const ITEM_REWARD_UI: Record<string, CropRect> = {
@@ -120,7 +119,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image("wilds-logo-sheet", "/assets/wilds/logos/wilds_logo.png");
+    this.load.image("wilds_logo", "/assets/wilds/logos/wilds_logo_transparent.png");
     this.load.image("title-bg", "/assets/wilds/backgrounds/title_bg.png");
     this.load.image("title-buttons-sheet", "/assets/wilds/ui/title_buttons_sheet.png");
     this.load.image("verdant-battle-bg", "/assets/wilds/backgrounds/verdant_battle_bg.png");
@@ -163,8 +162,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    const logoSource = this.textures.get("wilds-logo-sheet").getSourceImage() as CanvasImageSource;
-    this.createFromSource("wilds_logo", logoSource, { x: 0, y: 0, width: 1280, height: 631 });
     this.cropFromSheet("title-buttons-sheet", TITLE_BUTTONS);
     this.cropFromSheet("battle-ui-sheet", BATTLE_UI);
     this.cropFromSheet("creatures-a-battle-sheet", CREATURE_A_BATTLE);
