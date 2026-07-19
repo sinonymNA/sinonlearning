@@ -1,3 +1,38 @@
+declare global {
+  namespace GeoJSON {
+    type Position = number[];
+
+    interface Point {
+      type: "Point";
+      coordinates: Position;
+    }
+
+    interface Polygon {
+      type: "Polygon";
+      coordinates: Position[][];
+    }
+
+    interface MultiPolygon {
+      type: "MultiPolygon";
+      coordinates: Position[][][];
+    }
+
+    type Geometry = Point | Polygon | MultiPolygon;
+
+    interface Feature<G extends Geometry = Geometry, P = unknown> {
+      type: "Feature";
+      geometry: G;
+      properties: P;
+      id?: string | number;
+    }
+
+    interface FeatureCollection<G extends Geometry = Geometry, P = unknown> {
+      type: "FeatureCollection";
+      features: Array<Feature<G, P>>;
+    }
+  }
+}
+
 export type EntityStatus = "independent" | "colonial" | "disputed" | "occupied";
 
 export interface HistoricalFeatureProps {
