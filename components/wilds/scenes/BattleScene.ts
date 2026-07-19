@@ -53,7 +53,7 @@ export class BattleScene extends Phaser.Scene {
     const enemy = creatureById(this, this.sceneData.encounterId);
     this.enemyCurrentHp = enemy.maxHp;
 
-    fitBackground(this, "verdant-battle-bg");
+    fitBackground(this, "region-battle-bg");
     this.add.rectangle(960, 540, 1920, 1080, 0x09131f, 0.18);
 
     this.add.image(360, 96, "battle_hp_player_frame").setDisplaySize(540, 112);

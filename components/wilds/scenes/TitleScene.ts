@@ -1,12 +1,13 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import { fitBackground, imageButton, wildsText } from "../Presentation";
+import { ACTIVE_REGION, type WildsRegionManifest } from "../regions";
 import { clearRunSave, getPermanentSave } from "../save";
 
 export class TitleScene extends Phaser.Scene {
   private collectionOverlay: Phaser.GameObjects.Container | null = null;
 
-  constructor() {
+  constructor(private readonly region: WildsRegionManifest = ACTIVE_REGION) {
     super({ key: "TitleScene" });
   }
 
@@ -20,7 +21,7 @@ export class TitleScene extends Phaser.Scene {
     const logo = this.add.image(960, 220, "wilds_logo").setDisplaySize(760, 380).setAlpha(0);
     this.tweens.add({ targets: logo, alpha: 1, y: 228, duration: 420, ease: "Back.easeOut" });
 
-    wildsText(this, 960, 410, "Explore procedural rooms. Battle with knowledge. Capture every Wild.", 28, "#effffb", {
+    wildsText(this, 960, 410, this.region.copy.titleSubtitle, 28, "#effffb", {
       align: "center",
       wordWrap: { width: 980 },
     }).setOrigin(0.5);
@@ -34,11 +35,11 @@ export class TitleScene extends Phaser.Scene {
     };
 
     const btnNewRun = imageButton(this, 650, 570, "btn_primary", "", startExpedition, 380, 178);
-    const labelNewRun = wildsText(this, 0, 110, "Begin a new room expedition", 20, "#e6fff9").setOrigin(0.5);
+    const labelNewRun = wildsText(this, 0, 110, this.region.copy.startCaption, 20, "#e6fff9").setOrigin(0.5);
     btnNewRun.add(labelNewRun);
 
     const btnQuickStart = imageButton(this, 1270, 570, "btn_secondary", "", replayExpedition, 410, 178);
-    const labelQuickStart = wildsText(this, 0, 110, "Jump directly into Verdant Rift", 20, "#e6fff9").setOrigin(0.5);
+    const labelQuickStart = wildsText(this, 0, 110, `Jump directly into ${this.region.name}`, 20, "#e6fff9").setOrigin(0.5);
     btnQuickStart.add(labelQuickStart);
 
     const btnCollection = imageButton(this, 650, 790, "btn_purple", "", () => this.toggleCollection(), 390, 182);
@@ -48,7 +49,7 @@ export class TitleScene extends Phaser.Scene {
 
     const btnResume = imageButton(this, 1270, 790, "btn_gold", "", replayExpedition, 390, 182);
     btnResume.setAlpha(1);
-    const labelResume = wildsText(this, 0, 112, "Replay Verdant Rift anytime", 20, "#fff2c9").setOrigin(0.5);
+    const labelResume = wildsText(this, 0, 112, this.region.copy.replayCaption, 20, "#fff2c9").setOrigin(0.5);
     btnResume.add(labelResume);
 
     this.input.keyboard?.once("keydown-ENTER", startExpedition);

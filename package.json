@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
     "lint": "eslint",
+    "wilds:validate": "node scripts/wilds-region.mjs validate",
+    "wilds:prompts": "node scripts/wilds-region.mjs prompts",
+    "wilds:scaffold": "node scripts/wilds-region.mjs scaffold",
     "sprites": "node scripts/split-capsule-sprites.mjs",
     "sprites:caps": "node scripts/split-cap-portraits.mjs"
   },

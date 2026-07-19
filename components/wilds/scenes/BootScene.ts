@@ -1,44 +1,9 @@
 import Phaser from "phaser";
 import { REGISTRY_KEYS, WILDS_HEIGHT, WILDS_WIDTH } from "../gameState";
+import { ACTIVE_REGION, type WildsRegionManifest } from "../regions";
 import { WildsAudioManager } from "../WildsAudio";
 
 type CropRect = { x: number; y: number; width: number; height: number };
-
-const CREATURE_A_BATTLE: Record<string, CropRect> = {
-  sparkit: { x: 20, y: 20, width: 370, height: 360 },
-  mossprout: { x: 430, y: 30, width: 360, height: 350 },
-  aquablob: { x: 860, y: 20, width: 360, height: 350 },
-  pebblit: { x: 20, y: 430, width: 360, height: 360 },
-  thornpaw: { x: 420, y: 390, width: 380, height: 420 },
-  galehawk: { x: 860, y: 390, width: 360, height: 390 },
-};
-
-const CREATURE_A_PORTRAIT: Record<string, CropRect> = {
-  sparkit_portrait: { x: 20, y: 20, width: 360, height: 360 },
-  mossprout_portrait: { x: 430, y: 30, width: 360, height: 350 },
-  aquablob_portrait: { x: 860, y: 20, width: 360, height: 350 },
-  pebblit_portrait: { x: 20, y: 430, width: 360, height: 360 },
-  thornpaw_portrait: { x: 420, y: 390, width: 380, height: 420 },
-  galehawk_portrait: { x: 860, y: 390, width: 360, height: 390 },
-};
-
-const CREATURE_B_BATTLE: Record<string, CropRect> = {
-  lumimoth: { x: 0, y: 0, width: 214, height: 214 },
-  brookhorn: { x: 214, y: 0, width: 214, height: 214 },
-  crystal_drake: { x: 428, y: 0, width: 214, height: 214 },
-  nightfang: { x: 642, y: 0, width: 214, height: 214 },
-  sun_stag: { x: 856, y: 0, width: 214, height: 214 },
-  warden_wisp: { x: 1070, y: 0, width: 210, height: 214 },
-};
-
-const CREATURE_B_PORTRAIT: Record<string, CropRect> = {
-  lumimoth_portrait: { x: 0, y: 214, width: 214, height: 212 },
-  brookhorn_portrait: { x: 214, y: 214, width: 214, height: 212 },
-  crystal_drake_portrait: { x: 428, y: 214, width: 214, height: 212 },
-  nightfang_portrait: { x: 642, y: 214, width: 214, height: 212 },
-  sun_stag_portrait: { x: 856, y: 214, width: 214, height: 212 },
-  warden_wisp_portrait: { x: 1070, y: 214, width: 210, height: 212 },
-};
 
 const TITLE_BUTTONS: Record<string, CropRect> = {
   btn_primary: { x: 34, y: 180, width: 582, height: 272 },
@@ -60,22 +25,6 @@ const BATTLE_UI: Record<string, CropRect> = {
   battle_reward_panel: { x: 720, y: 730, width: 480, height: 190 },
 };
 
-const CAPTURE_UI: Record<string, CropRect> = {
-  capture_capsule_closed: { x: 10, y: 20, width: 220, height: 190 },
-  capture_capsule_top: { x: 240, y: 20, width: 220, height: 190 },
-  capture_capsule_bottom: { x: 470, y: 20, width: 220, height: 190 },
-  capture_success_burst: { x: 960, y: 5, width: 280, height: 220 },
-  capture_fail_puff: { x: 0, y: 240, width: 250, height: 240 },
-  capture_rare_glow: { x: 350, y: 250, width: 250, height: 220 },
-  capture_beam: { x: 690, y: 240, width: 250, height: 240 },
-};
-
-const MAP_MARKERS: Record<string, CropRect> = {
-  map_player_marker: { x: 0, y: 0, width: 250, height: 250 },
-  map_current_marker: { x: 420, y: 0, width: 450, height: 320 },
-  map_path_marker: { x: 930, y: 60, width: 300, height: 180 },
-};
-
 const RESULTS_UI: Record<string, CropRect> = {
   results_reward_panel: { x: 90, y: 55, width: 680, height: 355 },
   results_continue_button: { x: 60, y: 530, width: 335, height: 96 },
@@ -84,70 +33,19 @@ const RESULTS_UI: Record<string, CropRect> = {
   results_defeat_badge: { x: 425, y: 825, width: 350, height: 190 },
 };
 
-const ITEM_REWARD_UI: Record<string, CropRect> = {
-  item_heal_capsule: { x: 0, y: 0, width: 250, height: 315 },
-  item_power_capsule: { x: 250, y: 0, width: 250, height: 315 },
-  item_shield_capsule: { x: 500, y: 0, width: 250, height: 315 },
-  item_lucky_capsule: { x: 750, y: 0, width: 250, height: 315 },
-  item_revive_capsule: { x: 1000, y: 0, width: 254, height: 315 },
-  reward_coin: { x: 0, y: 630, width: 250, height: 250 },
-  reward_xp_star: { x: 250, y: 630, width: 250, height: 250 },
-  reward_capture_badge: { x: 500, y: 620, width: 250, height: 260 },
-  reward_boss_badge: { x: 750, y: 620, width: 250, height: 260 },
-  reward_treasure: { x: 1000, y: 620, width: 254, height: 260 },
-};
-
-const NODE_ICONS: Record<string, CropRect> = {
-  node_start: { x: 0, y: 0, width: 314, height: 314 },
-  node_wild: { x: 314, y: 0, width: 314, height: 314 },
-  node_trainer: { x: 628, y: 0, width: 314, height: 314 },
-  node_capture: { x: 942, y: 0, width: 312, height: 314 },
-  node_shop: { x: 0, y: 314, width: 314, height: 314 },
-  node_heal: { x: 314, y: 314, width: 314, height: 314 },
-  node_mystery: { x: 628, y: 314, width: 314, height: 314 },
-  node_treasure: { x: 942, y: 314, width: 312, height: 314 },
-  node_miniboss: { x: 0, y: 628, width: 314, height: 314 },
-  node_boss: { x: 314, y: 628, width: 314, height: 314 },
-  node_completed: { x: 628, y: 628, width: 314, height: 314 },
-  node_current: { x: 942, y: 628, width: 312, height: 314 },
-  node_locked: { x: 0, y: 942, width: 314, height: 312 },
-};
-
 export class BootScene extends Phaser.Scene {
-  constructor(private readonly equippedCapId = "cap-fox") {
+  constructor(private readonly equippedCapId = "cap-fox", private readonly region: WildsRegionManifest = ACTIVE_REGION) {
     super({ key: "BootScene" });
   }
 
   preload() {
     this.load.image("wilds_logo", "/assets/wilds/logos/wilds_logo_transparent.png");
-    this.load.image("title-bg", "/assets/wilds/backgrounds/title_bg.png");
     this.load.image("title-buttons-sheet", "/assets/wilds/ui/title_buttons_sheet.png");
-    this.load.image("verdant-battle-bg", "/assets/wilds/backgrounds/verdant_battle_bg.png");
     this.load.image("battle-ui-sheet", "/assets/wilds/ui/battle_ui_sheet.png");
-    this.load.image("creatures-a-battle-sheet", "/assets/wilds/creatures/verdant_set_a_battle_sheet.png");
-    this.load.image("creatures-a-portrait-sheet", "/assets/wilds/creatures/verdant_set_a_portrait_sheet.png");
-    this.load.image("capture-sheet", "/assets/wilds/capture/capture_system_sheet.png");
-    this.load.image("verdant-map-bg", "/assets/wilds/backgrounds/verdant_map_bg.png");
-    this.load.image("map-markers-sheet", "/assets/wilds/map/map_markers_sheet.png");
-    this.load.image("creatures-b-sheet", "/assets/wilds/creatures/verdant_set_b_combined_sheet.png");
     this.load.image("results-ui-sheet", "/assets/wilds/ui/results_ui_sheet.png");
-    this.load.image("items-rewards-sheet", "/assets/wilds/items/items_rewards_sheet.png");
-    this.load.image("node-icons-sheet", "/assets/wilds/nodes/node_icons_sheet.png");
-    this.load.image("expedition-meadow", "/assets/wilds/expedition/meadow.jpg");
-    this.load.image("expedition-crystal", "/assets/wilds/expedition/crystal_grove.jpg");
-    this.load.image("expedition-gate", "/assets/wilds/expedition/rift_gate.jpg");
-    this.load.image("expedition-creatures-sheet", "/assets/wilds/expedition/creatures_sheet.jpg");
-    this.load.image("expedition-props-sheet", "/assets/wilds/expedition/props_sheet.jpg");
-    this.load.image("expedition-pickups-sheet", "/assets/wilds/expedition/pickups_sheet.jpg");
-    this.load.image("expedition-effects-sheet", "/assets/wilds/expedition/effects_sheet.jpg");
+    for (const image of this.region.assets.images) this.load.image(image.key, image.path);
+    for (const sheet of this.region.assets.sheets) this.load.image(sheet.key, sheet.path);
     this.load.image("wilds-player-cap", `/assets/capsule/caps/${this.equippedCapId}.png`);
-
-    this.load.json("wilds-creatures", "/assets/wilds/data/creatures.json");
-    this.load.json("wilds-abilities", "/assets/wilds/data/abilities.json");
-    this.load.json("wilds-items", "/assets/wilds/data/items.json");
-    this.load.json("wilds-regions", "/assets/wilds/data/regions.json");
-    this.load.json("wilds-nodes", "/assets/wilds/data/nodes.json");
-    this.load.json("wilds-questions", "/assets/wilds/data/questions.json");
 
     const barBg = this.add.rectangle(WILDS_WIDTH / 2, WILDS_HEIGHT / 2, 320, 14, 0x20344a).setOrigin(0.5);
     const bar = this.add.rectangle(WILDS_WIDTH / 2 - 156, WILDS_HEIGHT / 2, 0, 14, 0x6ee7f9).setOrigin(0, 0.5);
@@ -164,16 +62,8 @@ export class BootScene extends Phaser.Scene {
   create() {
     this.cropFromSheet("title-buttons-sheet", TITLE_BUTTONS);
     this.cropFromSheet("battle-ui-sheet", BATTLE_UI);
-    this.cropFromSheet("creatures-a-battle-sheet", CREATURE_A_BATTLE);
-    this.cropFromSheet("creatures-a-portrait-sheet", CREATURE_A_PORTRAIT);
-    this.cropFromSheet("capture-sheet", CAPTURE_UI);
-    this.cropFromSheet("map-markers-sheet", MAP_MARKERS);
-    this.cropFromSheet("creatures-b-sheet", CREATURE_B_BATTLE);
-    this.cropFromSheet("creatures-b-sheet", CREATURE_B_PORTRAIT);
     this.cropFromSheet("results-ui-sheet", RESULTS_UI);
-    this.cropFromSheet("items-rewards-sheet", ITEM_REWARD_UI);
-    this.cropFromSheet("node-icons-sheet", NODE_ICONS);
-    this.cropExpeditionAssets();
+    this.cropRegionAssets();
     this.createRoundPlayerCap();
 
     this.registry.set("wilds:assets-ready", true);
@@ -184,35 +74,29 @@ export class BootScene extends Phaser.Scene {
     this.scene.start("TitleScene");
   }
 
-  private cropExpeditionAssets() {
-    const creatures = ["sparkit", "mossprout", "aquablob", "pebblit", "thornpaw", "galehawk", "lumimoth", "brookhorn", "crystal_drake", "nightfang", "sun_stag", "warden_wisp"];
-    const creatureCrops = Object.fromEntries(creatures.map((id, index) => [
-      `field_${id}`,
-      { x: (index % 4) * 320, y: Math.floor(index / 4) * 320, width: 320, height: 320 },
-    ]));
-    this.cropFromSheet("expedition-creatures-sheet", creatureCrops);
-
-    const propCrops = Object.fromEntries(["grass", "flowers", "mushrooms", "crystal", "rock", "pillar", "ruin", "stump", "bush", "log", "rune", "stream"].map((id, index) => [
-      `prop_${id}`,
-      { x: (index % 4) * 320, y: Math.floor(index / 4) * 320, width: 320, height: 320 },
-    ]));
-    this.cropFromSheet("expedition-props-sheet", propCrops);
-
-    const pickupCrops = Object.fromEntries(["coin", "heal", "shield", "power", "lucky", "hint", "double", "streak"].map((id, index) => [
-      `pickup_${id}`,
-      { x: (index % 4) * 320, y: Math.floor(index / 4) * 360, width: 320, height: 360 },
-    ]));
-    this.cropFromSheet("expedition-pickups-sheet", pickupCrops);
-  }
-
-  private cropFromSheet(sheetKey: string, map: Record<string, CropRect>) {
-    const source = this.textures.get(sheetKey).getSourceImage() as CanvasImageSource;
-    for (const [key, rect] of Object.entries(map)) {
-      this.createFromSource(key, source, rect);
+  private cropRegionAssets() {
+    for (const sheet of this.region.assets.sheets) {
+      const crops = Object.fromEntries(sheet.sprites.map((sprite) => [
+        sprite.key,
+        {
+          x: (sprite.index % sheet.columns) * sheet.cellWidth,
+          y: Math.floor(sprite.index / sheet.columns) * sheet.cellHeight,
+          width: sheet.cellWidth,
+          height: sheet.cellHeight,
+        },
+      ]));
+      this.cropFromSheet(sheet.key, crops, sheet.removeEdgeMatte);
     }
   }
 
-  private createFromSource(key: string, source: CanvasImageSource, rect: CropRect) {
+  private cropFromSheet(sheetKey: string, map: Record<string, CropRect>, removeEdgeMatte = true) {
+    const source = this.textures.get(sheetKey).getSourceImage() as CanvasImageSource;
+    for (const [key, rect] of Object.entries(map)) {
+      this.createFromSource(key, source, rect, removeEdgeMatte);
+    }
+  }
+
+  private createFromSource(key: string, source: CanvasImageSource, rect: CropRect, removeEdgeMatte: boolean) {
     const texture = this.textures.createCanvas(key, rect.width, rect.height);
     if (!texture) return;
     const ctx = texture.context;
@@ -220,7 +104,7 @@ export class BootScene extends Phaser.Scene {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(source, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
-    this.removeEdgeMatte(ctx, rect.width, rect.height);
+    if (removeEdgeMatte) this.removeEdgeMatte(ctx, rect.width, rect.height);
     texture.refresh();
   }
 

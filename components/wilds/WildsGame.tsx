@@ -25,7 +25,8 @@ export default function WildsGame() {
       fetch("/api/capsule/auth/me").then((response) => response.ok ? response.json() : null).catch(() => null),
     ]).then(([{ createPhaserGame }, account]) => {
       if (disposed || !containerRef.current || gameRef.current) return;
-      gameRef.current = createPhaserGame(containerRef.current, account?.user?.equippedCapId ?? "cap-fox");
+      const regionId = new URLSearchParams(window.location.search).get("region") ?? undefined;
+      gameRef.current = createPhaserGame(containerRef.current, account?.user?.equippedCapId ?? "cap-fox", regionId);
     });
 
     return () => {

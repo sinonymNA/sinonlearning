@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "verdant-rift",
+  "name": "Verdant Rift",
+  "shortName": "VERDANT RIFT",
+  "difficulty": 1,
+  "creativeBrief": {
+    "theme": "A bright magical wilderness of overgrown ruins, floating islands, blue crystals, and friendly elemental creatures.",
+    "environment": "Sunny fantasy meadow and cool crystal grove connected by ancient vine-covered stone gates.",
+    "palette": "Leaf green, sky blue, crystal cyan, warm gold, deep navy outlines.",
+    "artStyle": "Polished colorful mobile-game illustration, bold readable silhouettes, soft cel shading, consistent three-quarter view.",
+    "negativePrompt": "No text, no labels, no logos, no borders, no watermarks, no realistic photography, no cropped subjects, no overlapping sprites."
+  },
+  "copy": {
+    "titleSubtitle": "Explore procedural rooms. Battle with knowledge. Capture every Wild.",
+    "startCaption": "Begin a new Verdant Rift expedition",
+    "replayCaption": "Replay Verdant Rift anytime",
+    "victoryHeading": "VERDANT RIFT CLEARED!",
+    "victorySummary": "Warden Wisp has opened the path to future regions."
+  },
+  "assets": {
+    "images": [
+      { "key": "title-bg", "path": "/assets/wilds/backgrounds/title_bg.png", "expectedWidth": 1280, "expectedHeight": 720 },
+      { "key": "region-battle-bg", "path": "/assets/wilds/backgrounds/verdant_battle_bg.png", "expectedWidth": 1280, "expectedHeight": 720 },
+      { "key": "expedition-meadow", "path": "/assets/wilds/expedition/meadow.jpg", "expectedWidth": 1280, "expectedHeight": 720 },
+      { "key": "expedition-crystal", "path": "/assets/wilds/expedition/crystal_grove.jpg", "expectedWidth": 1280, "expectedHeight": 720 },
+      { "key": "expedition-gate", "path": "/assets/wilds/expedition/rift_gate.jpg", "expectedWidth": 1280, "expectedHeight": 720 }
+    ],
+    "sheets": [
+      {
+        "key": "region-creatures-sheet",
+        "path": "/assets/wilds/expedition/creatures_sheet.jpg",
+        "columns": 4,
+        "cellWidth": 320,
+        "cellHeight": 284,
+        "removeEdgeMatte": true,
+        "sprites": [
+          { "key": "field_sparkit", "index": 0 }, { "key": "field_mossprout", "index": 1 },
+          { "key": "field_aquablob", "index": 2 }, { "key": "field_pebblit", "index": 3 },
+          { "key": "field_thornpaw", "index": 4 }, { "key": "field_galehawk", "index": 5 },
+          { "key": "field_lumimoth", "index": 6 }, { "key": "field_brookhorn", "index": 7 },
+          { "key": "field_crystal_drake", "index": 8 }, { "key": "field_nightfang", "index": 9 },
+          { "key": "field_sun_stag", "index": 10 }, { "key": "field_warden_wisp", "index": 11 }
+        ]
+      },
+      {
+        "key": "region-props-sheet",
+        "path": "/assets/wilds/expedition/props_sheet.jpg",
+        "columns": 4,
+        "cellWidth": 320,
+        "cellHeight": 320,
+        "removeEdgeMatte": true,
+        "sprites": [
+          { "key": "prop_grass", "index": 0 }, { "key": "prop_flowers", "index": 1 },
+          { "key": "prop_mushrooms", "index": 2 }, { "key": "prop_crystal", "index": 3 },
+          { "key": "prop_rock", "index": 4 }, { "key": "prop_pillar", "index": 5 },
+          { "key": "prop_ruin", "index": 6 }, { "key": "prop_stump", "index": 7 },
+          { "key": "prop_bush", "index": 8 }, { "key": "prop_log", "index": 9 },
+          { "key": "prop_rune", "index": 10 }, { "key": "prop_stream", "index": 11 }
+        ]
+      },
+      {
+        "key": "region-pickups-sheet",
+        "path": "/assets/wilds/expedition/pickups_sheet.jpg",
+        "columns": 4,
+        "cellWidth": 320,
+        "cellHeight": 320,
+        "removeEdgeMatte": true,
+        "sprites": [
+          { "key": "pickup_coin", "index": 0 }, { "key": "pickup_heal", "index": 1 },
+          { "key": "pickup_shield", "index": 2 }, { "key": "pickup_power", "index": 3 },
+          { "key": "pickup_lucky", "index": 4 }, { "key": "pickup_hint", "index": 5 },
+          { "key": "pickup_double", "index": 6 }, { "key": "pickup_streak", "index": 7 }
+        ]
+      }
+    ]
+  },
+  "presentation": {
+    "rarityColors": { "common": "#d9fff0", "rare": "#8ce6ff", "epic": "#e1b6ff", "boss": "#ffcf79" },
+    "rarityGlows": { "common": "#6dffd1", "rare": "#46cfff", "epic": "#bc77ff", "boss": "#ffc84b" },
+    "raritySizes": { "common": 190, "rare": 210, "epic": 230, "boss": 260 },
+    "sceneryPool": ["prop_grass", "prop_flowers", "prop_mushrooms", "prop_crystal", "prop_rock", "prop_pillar", "prop_ruin", "prop_bush", "prop_log", "prop_rune"],
+    "scenerySlots": [
+      { "x": 390, "y": 760, "size": 122 }, { "x": 700, "y": 705, "size": 102 },
+      { "x": 1040, "y": 745, "size": 116 }, { "x": 1580, "y": 748, "size": 124 }
+    ]
+  },
+  "gameplay": {
+    "startingHp": 5,
+    "floorY": 820,
+    "playerMinY": 690,
+    "playerMaxY": 810,
+    "exitX": 1760,
+    "coinRewards": { "common": 10, "rare": 16, "epic": 25, "boss": 45 }
+  },
+  "creatures": [
+    { "id": "sparkit", "name": "Sparkit", "rarity": "common", "texture": "field_sparkit", "captureRate": 0.82, "hp": 2 },
+    { "id": "mossprout", "name": "Mossprout", "rarity": "common", "texture": "field_mossprout", "captureRate": 0.82, "hp": 2 },
+    { "id": "aquablob", "name": "Aquablob", "rarity": "common", "texture": "field_aquablob", "captureRate": 0.82, "hp": 2 },
+    { "id": "pebblit", "name": "Pebblit", "rarity": "common", "texture": "field_pebblit", "captureRate": 0.78, "hp": 2 },
+    { "id": "thornpaw", "name": "Thornpaw", "rarity": "rare", "texture": "field_thornpaw", "captureRate": 0.55, "hp": 3 },
+    { "id": "galehawk", "name": "Galehawk", "rarity": "rare", "texture": "field_galehawk", "captureRate": 0.55, "hp": 3 },
+    { "id": "lumimoth", "name": "Lumimoth", "rarity": "rare", "texture": "field_lumimoth", "captureRate": 0.55, "hp": 3 },
+    { "id": "brookhorn", "name": "Brookhorn", "rarity": "rare", "texture": "field_brookhorn", "captureRate": 0.5, "hp": 3 },
+    { "id": "crystal_drake", "name": "Crystal Drake", "rarity": "epic", "texture": "field_crystal_drake", "captureRate": 0.3, "hp": 4 },
+    { "id": "nightfang", "name": "Nightfang", "rarity": "epic", "texture": "field_nightfang", "captureRate": 0.3, "hp": 4 },
+    { "id": "sun_stag", "name": "Sun Stag", "rarity": "epic", "texture": "field_sun_stag", "captureRate": 0.3, "hp": 4 },
+    { "id": "warden_wisp", "name": "Warden Wisp", "rarity": "boss", "texture": "field_warden_wisp", "captureRate": 1, "hp": 6 }
+  ],
+  "pickups": [
+    { "id": "coin", "texture": "pickup_coin", "glow": "#ffd34d", "effect": { "type": "coins", "amount": 8 }, "message": "+8 Wild Coins" },
+    { "id": "heal", "texture": "pickup_heal", "glow": "#ff6f91", "effect": { "type": "heal", "amount": 1 }, "message": "Healing Capsule: +1 heart" },
+    { "id": "shield", "texture": "pickup_shield", "glow": "#55c8ff", "effect": { "type": "shield", "amount": 1 }, "message": "Shield Capsule ready" },
+    { "id": "power", "texture": "pickup_power", "glow": "#ff9d3b", "effect": { "type": "power", "amount": 1 }, "message": "Power Capsule ready" },
+    { "id": "lucky", "texture": "pickup_lucky", "glow": "#ff79d9", "effect": { "type": "captureBonus", "amount": 0.2 }, "message": "Lucky Capsule: capture chance increased" },
+    { "id": "hint", "texture": "pickup_hint", "glow": "#9dff76", "effect": { "type": "hint", "amount": 1 }, "message": "Hint Scroll ready" }
+  ],
+  "rooms": [
+    { "id": "landing", "name": "Rift Landing", "background": "expedition-meadow", "prompt": "Move with WASD or the arrow keys. Collect supplies and reach the glowing trail.", "promptDuration": 4200, "pickups": [{ "x": 900, "id": "coin" }, { "x": 1220, "id": "shield" }] },
+    { "id": "mosslight", "name": "Mosslight Path", "background": "expedition-crystal", "prompt": "A Wild is blocking the trail. Approach and press E to battle.", "encounter": { "x": 1260, "rarityWeights": { "common": 82, "rare": 18 } } },
+    { "id": "cache", "name": "Crystal Cache", "background": "expedition-meadow", "prompt": "A crystal cache! Supplies pull toward your cap when you get close.", "pickups": [{ "x": 820, "id": "coin" }, { "x": 1110, "oneOf": ["power", "hint", "shield"] }, { "x": 1390, "id": "coin" }] },
+    { "id": "stones", "name": "Whispering Stones", "background": "expedition-crystal", "prompt": "A Wild is blocking the trail. Approach and press E to battle.", "encounter": { "x": 1260, "rarityWeights": { "common": 72, "rare": 25, "epic": 3 } } },
+    { "id": "sunwell", "name": "Sunwell Rest", "background": "expedition-meadow", "prompt": "The Sunwell is safe. Recover before entering the ancient grove.", "pickups": [{ "x": 1030, "id": "heal" }, { "x": 1320, "id": "lucky" }] },
+    { "id": "grove", "name": "Ancient Grove", "background": "expedition-crystal", "prompt": "A powerful Wild is nearby. Prepare before approaching.", "pickups": [{ "x": 760, "id": "lucky" }], "encounter": { "x": 1260, "rarityWeights": { "rare": 70, "epic": 30 } } },
+    { "id": "crossing", "name": "Ruin Crossing", "background": "expedition-meadow", "prompt": "A Wild is blocking the trail. Approach and press E to battle.", "encounter": { "x": 1260, "rarityWeights": { "common": 55, "rare": 35, "epic": 10 } } },
+    { "id": "hoard", "name": "Warden's Hoard", "background": "expedition-crystal", "prompt": "The Warden's hoard. Gather what you need for the final battle.", "pickups": [{ "x": 760, "id": "coin" }, { "x": 1030, "id": "power" }, { "x": 1290, "id": "coin" }, { "x": 1510, "id": "hint" }] },
+    { "id": "heart", "name": "Rift Heart", "background": "expedition-gate", "prompt": "Warden Wisp guards the Rift Heart. Approach and press E to battle.", "promptDuration": 3200, "encounter": { "x": 1320, "creatureId": "warden_wisp" } }
+  ],
+  "questions": [
+    { "prompt": "What is 2 + 3?", "choices": ["4", "5", "6", "7"], "answer": 1 },
+    { "prompt": "Which color is the sky on a clear day?", "choices": ["Blue", "Green", "Pink", "Orange"], "answer": 0 },
+    { "prompt": "How many legs does a dog have?", "choices": ["2", "3", "4", "5"], "answer": 2 },
+    { "prompt": "What shape has three sides?", "choices": ["Circle", "Triangle", "Square", "Star"], "answer": 1 },
+    { "prompt": "Which animal says meow?", "choices": ["Dog", "Bird", "Cat", "Fish"], "answer": 2 },
+    { "prompt": "What is 10 - 4?", "choices": ["5", "6", "7", "8"], "answer": 1 },
+    { "prompt": "Which season comes after spring?", "choices": ["Winter", "Summer", "Fall", "Night"], "answer": 1 },
+    { "prompt": "How many days are in a week?", "choices": ["5", "6", "7", "8"], "answer": 2 },
+    { "prompt": "What do plants get from sunlight?", "choices": ["Energy", "Snow", "Sound", "Sand"], "answer": 0 },
+    { "prompt": "Which is a fruit?", "choices": ["Carrot", "Apple", "Potato", "Bread"], "answer": 1 },
+    { "prompt": "What is 4 + 4?", "choices": ["6", "7", "8", "9"], "answer": 2 },
+    { "prompt": "Which word means very large?", "choices": ["Tiny", "Huge", "Quiet", "Slow"], "answer": 1 }
+  ]
+}

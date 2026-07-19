@@ -26,7 +26,7 @@ export class CaptureScene extends Phaser.Scene {
     this.cameras.main.fadeIn(220, 8, 18, 31);
 
     const creature = creatureById(this, this.sceneData.encounterId);
-    fitBackground(this, "verdant-battle-bg");
+    fitBackground(this, "region-battle-bg");
     this.add.rectangle(960, 540, 1920, 1080, 0x07111d, 0.28);
 
     const creatureImage = this.add.image(960, 390, creature.sprite).setDisplaySize(320, 320);
