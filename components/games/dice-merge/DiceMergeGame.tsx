@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   ArrowLeft,
   Hammer,
@@ -8,8 +8,6 @@ import {
   History,
   Pause,
   Play,
-  RotateCw,
-  ShieldCheck,
   Shuffle,
   Sparkles,
   Trophy,
@@ -131,6 +129,9 @@ export default function DiceMergeGame() {
   const [showHelp, setShowHelp] = useState(false);
   const [levelToast, setLevelToast] = useState<number | null>(null);
   const previousLevel = useRef(1);
+  const dragState = useRef({ pressed: false, moved: false, startX: 0, startY: 0, pointerType: "mouse" });
+  const [dragging, setDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0, pointerType: "mouse" });
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -288,6 +289,61 @@ export default function DiceMergeGame() {
     previousLevel.current = 1;
   };
 
+  const targetAtPoint = (x: number, y: number, pointerType: string): CellPosition | null => {
+    const visibilityOffset = pointerType === "touch" ? -72 : 0;
+    const element = document.elementFromPoint(x, y + visibilityOffset)?.closest<HTMLElement>("[data-board-cell]");
+    if (!element) return null;
+    return { row: Number(element.dataset.row), col: Number(element.dataset.col) };
+  };
+
+  const handlePiecePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (status !== "playing" || mode !== "place") return;
+    dragState.current = {
+      pressed: true,
+      moved: false,
+      startX: event.clientX,
+      startY: event.clientY,
+      pointerType: event.pointerType,
+    };
+    setDragPosition({ x: event.clientX, y: event.clientY, pointerType: event.pointerType });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePiecePointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!dragState.current.pressed) return;
+    const distance = Math.hypot(event.clientX - dragState.current.startX, event.clientY - dragState.current.startY);
+    if (distance > 6) {
+      dragState.current.moved = true;
+      setDragging(true);
+      setDragPosition({ x: event.clientX, y: event.clientY, pointerType: event.pointerType });
+      setHovered(targetAtPoint(event.clientX, event.clientY, event.pointerType));
+    }
+  };
+
+  const handlePiecePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (!dragState.current.pressed) return;
+    const wasDragging = dragState.current.moved;
+    dragState.current.pressed = false;
+    dragState.current.moved = false;
+    setDragging(false);
+    if (wasDragging) {
+      const target = targetAtPoint(event.clientX, event.clientY, event.pointerType);
+      if (target && canPlace(board, current, target)) handleCell(target.row, target.col);
+      else setFeedback("Drop the piece on open board cells.");
+      setHovered(null);
+    } else {
+      setCurrent((piece) => rotatePiece(piece));
+      playTone(310);
+    }
+  };
+
+  const handlePiecePointerCancel = () => {
+    dragState.current.pressed = false;
+    dragState.current.moved = false;
+    setDragging(false);
+    setHovered(null);
+  };
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "r") setCurrent((piece) => rotatePiece(piece));
@@ -307,98 +363,100 @@ export default function DiceMergeGame() {
 
   return (
     <main className={styles.shell}>
-      <div className={styles.auroraOne} />
-      <div className={styles.auroraTwo} />
-      <header className={styles.topbar}>
-        <Link href="/simulations" className={styles.backLink}><ArrowLeft size={17} /> Games</Link>
-        <div className={styles.brand}><span className={styles.brandDie}>6</span><span>DICE//MERGE</span></div>
-        <div className={styles.headerActions}>
-          <button onClick={() => setSound((value) => !value)} aria-label={sound ? "Mute sound" : "Turn on sound"}>{sound ? <Volume2 /> : <VolumeX />}</button>
-          <button onClick={() => setShowHelp(true)} aria-label="How to play"><HelpCircle /></button>
-          <button onClick={() => setStatus("paused")} aria-label="Pause game"><Pause /></button>
+      <div className={styles.ambient} />
+      <div className={styles.app}>
+        <header className={styles.header}>
+          <Link href="/simulations" className={styles.backLink}><ArrowLeft size={16} /> Games</Link>
+          <div>
+            <h1>DICE <span>MERGE</span></h1>
+            <p>BEST: <strong>{best.toLocaleString()}</strong>{combo > 1 && <b>STREAK x{combo}</b>}</p>
+          </div>
+          <div className={styles.score}><span>Score</span><strong>{score.toLocaleString()}</strong></div>
+          <div className={styles.headerButtons}>
+            <button onClick={() => setSound((value) => !value)} aria-label={sound ? "Mute sound" : "Turn on sound"}>{sound ? <Volume2 /> : <VolumeX />}</button>
+            <button onClick={() => setShowHelp(true)} aria-label="How to play"><HelpCircle /></button>
+            <button onClick={() => setStatus("paused")} aria-label="Pause game"><Pause /></button>
+          </div>
+        </header>
+
+        <div className={styles.levelLine}>
+          <span>LEVEL {goal.level}</span>
+          <div><i style={{ width: `${goal.progress * 100}%` }} /></div>
+          <span>{goal.target.toLocaleString()}</span>
         </div>
-      </header>
 
-      <section className={styles.gameLayout}>
-        <aside className={styles.leftRail}>
-          <div className={styles.scoreCard}>
-            <span className={styles.eyebrow}>Current run</span>
-            <strong>{score.toLocaleString()}</strong>
-            <div><Trophy size={14} /> Best {best.toLocaleString()}</div>
+        <section className={styles.boardWrap}>
+          <div className={styles.board} role="grid" aria-label="Dice Merge board" onPointerLeave={() => !dragging && setHovered(null)}>
+            {board.map((row, rowIndex) => row.map((tier, colIndex) => {
+              const key = `${rowIndex}:${colIndex}`;
+              return (
+                <button
+                  key={key}
+                  data-board-cell
+                  data-row={rowIndex}
+                  data-col={colIndex}
+                  className={`${styles.cell} ${preview.has(key) ? styles.preview : ""} ${burstCells.has(key) ? styles.burst : ""} ${mode === "hammer" && tier ? styles.breakable : ""}`}
+                  onPointerEnter={() => !dragging && setHovered({ row: rowIndex, col: colIndex })}
+                  onFocus={() => setHovered({ row: rowIndex, col: colIndex })}
+                  onClick={() => handleCell(rowIndex, colIndex)}
+                  aria-label={tier ? `Row ${rowIndex + 1}, column ${colIndex + 1}, ${TIER_NAMES[tier - 1]} die` : `Empty row ${rowIndex + 1}, column ${colIndex + 1}`}
+                  role="gridcell"
+                >
+                  {tier && <Die tier={tier} />}
+                </button>
+              );
+            }))}
           </div>
-          <div className={styles.missionCard}>
-            <div className={styles.missionTitle}><span>Level {goal.level}</span><span>{goal.target.toLocaleString()}</span></div>
-            <div className={styles.progressTrack}><span style={{ width: `${goal.progress * 100}%` }} /></div>
-            <p>Reach the target to earn a free reroll.</p>
-          </div>
-          <button className={`${styles.toolCard} ${mode === "hammer" ? styles.activeTool : ""}`} disabled={hammerCharge < 100} onClick={() => setMode((value) => value === "hammer" ? "place" : "hammer")}>
-            <span className={styles.toolIcon}><Hammer size={22} /></span>
-            <span><strong>Breaker</strong><small>{hammerCharge >= 100 ? "Choose one die" : `${hammerCharge}% charged`}</small></span>
-            <span className={styles.radialCharge} style={{ "--charge": `${hammerCharge * 3.6}deg` } as React.CSSProperties} />
-          </button>
-          <button className={styles.toolCard} disabled={rerolls <= 0} onClick={handleReroll}>
-            <span className={styles.toolIcon}><Shuffle size={22} /></span>
-            <span><strong>Reroll</strong><small>Draw a new piece</small></span>
-            <b>{rerolls}</b>
-          </button>
-        </aside>
-
-        <section className={styles.centerStage}>
-          <div className={styles.stageHeading}>
-            <span>{mode === "hammer" ? "Breaker ready: choose a filled cell" : feedback}</span>
-            {combo > 1 && <b><Sparkles size={14} /> {combo}x cascade</b>}
-          </div>
-          <div className={styles.boardWrap}>
-            <div className={styles.board} role="grid" aria-label="Dice Merge board" onPointerLeave={() => setHovered(null)}>
-              {board.map((row, rowIndex) => row.map((tier, colIndex) => {
-                const key = `${rowIndex}:${colIndex}`;
-                const validPreview = preview.has(key);
-                return (
-                  <button
-                    key={key}
-                    className={`${styles.cell} ${validPreview ? styles.preview : ""} ${burstCells.has(key) ? styles.burst : ""} ${mode === "hammer" && tier ? styles.breakable : ""}`}
-                    onPointerEnter={() => setHovered({ row: rowIndex, col: colIndex })}
-                    onFocus={() => setHovered({ row: rowIndex, col: colIndex })}
-                    onClick={() => handleCell(rowIndex, colIndex)}
-                    aria-label={tier ? `Row ${rowIndex + 1}, column ${colIndex + 1}, ${TIER_NAMES[tier - 1]} die` : `Empty row ${rowIndex + 1}, column ${colIndex + 1}`}
-                    role="gridcell"
-                  >
-                    {tier && <Die tier={tier} />}
-                  </button>
-                );
-              }))}
-            </div>
-            <span className={styles.boardGlow} />
-          </div>
-          <div className={styles.mobileScore}><strong>{score.toLocaleString()}</strong><span>Best {best.toLocaleString()}</span></div>
         </section>
 
-        <aside className={styles.pieceRail}>
-          <div className={styles.queueLabel}>Now playing</div>
-          <button className={styles.currentPiece} onClick={() => setCurrent((piece) => rotatePiece(piece))} aria-label="Rotate current piece">
-            <PieceView piece={current} />
-            <span><RotateCw size={15} /> Tap to rotate</span>
-          </button>
-          <div className={styles.queueRow}>
-            <button className={styles.holdSlot} onClick={handleHold} disabled={holdUsed}>
-              <span>Hold</span>
-              {hold ? <PieceView piece={hold} compact /> : <ShieldCheck size={24} />}
-              <small>{holdUsed ? "Used" : "Free swap"}</small>
-            </button>
-            <div className={styles.nextSlot}>
-              <span>Next</span>
-              <PieceView piece={next} compact />
-              <small>Up next</small>
-            </div>
-          </div>
-          <button className={styles.undoButton} disabled={!snapshot} onClick={handleUndo}><History size={16} /> Undo last move</button>
-          <p className={styles.tip}>Tap an empty cell to place. Connect 3 or more matching dice. Cascades multiply your score.</p>
-        </aside>
-      </section>
+        <p className={styles.instruction}>{mode === "hammer" ? "Tap one die to smash it" : dragging ? "Drop on highlighted cells" : "Tap to rotate - drag to place"}</p>
 
-      <footer className={styles.legend}>
-        {TIER_NAMES.map((name, index) => <span key={name}><i className={styles[`legend${index + 1}`]} />{name}</span>)}
-      </footer>
+        <section className={styles.controls}>
+          <button className={`${styles.sideSlot} ${!holdUsed ? styles.slotReady : ""}`} onClick={handleHold} disabled={holdUsed}>
+            <span>Hold</span>
+            <div>{hold ? <PieceView piece={hold} compact /> : <small>FREE</small>}</div>
+          </button>
+          <button
+            className={`${styles.spawner} ${dragging ? styles.spawnerDragging : ""}`}
+            onPointerDown={handlePiecePointerDown}
+            onPointerMove={handlePiecePointerMove}
+            onPointerUp={handlePiecePointerUp}
+            onPointerCancel={handlePiecePointerCancel}
+            aria-label="Current piece. Tap to rotate or drag to place."
+          >
+            <PieceView piece={current} />
+          </button>
+          <div className={styles.sideSlot}>
+            <span>Next</span>
+            <div><PieceView piece={next} compact /></div>
+          </div>
+        </section>
+
+        <div className={styles.utilityRow}>
+          <button onClick={handleUndo} disabled={!snapshot}><History /> Undo</button>
+          <span>{feedback}</span>
+          <button onClick={handleReroll} disabled={rerolls <= 0}><Shuffle /> Reroll {rerolls}</button>
+        </div>
+      </div>
+
+      <button
+        className={`${styles.hammerButton} ${hammerCharge >= 100 ? styles.hammerReady : ""} ${mode === "hammer" ? styles.hammerActive : ""}`}
+        disabled={hammerCharge < 100}
+        onClick={() => setMode((value) => value === "hammer" ? "place" : "hammer")}
+        aria-label={`Breaker tool ${hammerCharge}% charged`}
+      >
+        <span style={{ height: `${hammerCharge}%` }} />
+        <Hammer />
+      </button>
+
+      {dragging && (
+        <div
+          className={styles.dragGhost}
+          style={{ left: dragPosition.x, top: dragPosition.y + (dragPosition.pointerType === "touch" ? -72 : 0) }}
+        >
+          <PieceView piece={current} />
+        </div>
+      )}
 
       {levelToast && <div className={styles.levelToast}><Sparkles /> Level {levelToast}<small>+1 reroll earned</small></div>}
 
