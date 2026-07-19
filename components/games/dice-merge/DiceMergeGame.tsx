@@ -3,14 +3,18 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   ArrowLeft,
+  Check,
+  Lock,
   Hammer,
   HelpCircle,
   History,
   Pause,
   Play,
+  ShoppingBag,
   Shuffle,
   Sparkles,
   Trophy,
+  User,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -34,6 +38,14 @@ import styles from "./DiceMergeGame.module.css";
 
 const LEVEL_TARGETS = [900, 2200, 4200, 7000, 10500, 15000];
 const TIER_NAMES = ["Spark", "Tide", "Grove", "Sun", "Nova", "Rift", "Prism"];
+const DEFAULT_PROFILE = "Guest";
+const DICE_PROFILE_KEY = "sinon-dice-merge-profile";
+const DICE_SAVE_KEY = "sinon-dice-merge-save-v2";
+const THEME_PACKS = [
+  { id: "classic", name: "Classic", price: 0, className: "themeClassic" },
+  { id: "candy", name: "Candy Pop", price: 120, className: "themeCandy" },
+  { id: "nebula", name: "Nebula", price: 260, className: "themeNebula" },
+] as const;
 const DOTS: Record<Tier, number[]> = {
   1: [4],
   2: [0, 8],
@@ -43,6 +55,14 @@ const DOTS: Record<Tier, number[]> = {
   6: [0, 2, 3, 5, 6, 8],
   7: [],
 };
+type ThemeId = (typeof THEME_PACKS)[number]["id"];
+interface DiceSave {
+  profile: string;
+  best: number;
+  coins: number;
+  theme: ThemeId;
+  unlocked: ThemeId[];
+}
 
 interface Snapshot {
   board: Board;
@@ -61,8 +81,8 @@ function initialPieces(board: Board) {
 
 function openingSession() {
   const board = createEmptyBoard();
-  const current: Piece = { id: "opening-current", dice: [1, 2], orientation: "horizontal" };
-  const next: Piece = { id: "opening-next", dice: [2, 2], orientation: "horizontal" };
+  const current: Piece = { id: "opening-current", dice: [1, 2], orientation: "right" };
+  const next: Piece = { id: "opening-next", dice: [2, 2], orientation: "right" };
   return { board, current, next };
 }
 
@@ -93,6 +113,22 @@ function PieceView({ piece, compact = false }: { piece: Piece; compact?: boolean
       {piece.dice.map((tier, index) => <Die key={`${piece.id}-${index}`} tier={tier} compact={compact} />)}
     </span>
   );
+}
+
+function createDefaultSave(profile = DEFAULT_PROFILE): DiceSave {
+  return { profile, best: 0, coins: 0, theme: "classic", unlocked: ["classic"] };
+}
+
+function normalizeSave(value: Partial<DiceSave> | null, profile = DEFAULT_PROFILE): DiceSave {
+  const unlocked = value?.unlocked?.filter((theme): theme is ThemeId => THEME_PACKS.some((pack) => pack.id === theme)) ?? ["classic"];
+  const theme = value?.theme && unlocked.includes(value.theme) ? value.theme : "classic";
+  return {
+    profile: value?.profile?.trim() || profile,
+    best: Number(value?.best ?? 0),
+    coins: Number(value?.coins ?? 0),
+    theme,
+    unlocked: unlocked.includes("classic") ? unlocked : ["classic", ...unlocked],
+  };
 }
 
 function getLevel(score: number) {
@@ -127,6 +163,10 @@ export default function DiceMergeGame() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [sound, setSound] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  const [showStore, setShowStore] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [profileInput, setProfileInput] = useState("");
+  const [save, setSave] = useState<DiceSave>(() => createDefaultSave());
   const [levelToast, setLevelToast] = useState<number | null>(null);
   const previousLevel = useRef(1);
   const dragState = useRef({ pressed: false, moved: false, startX: 0, startY: 0, pointerType: "mouse" });
@@ -135,10 +175,22 @@ export default function DiceMergeGame() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setBest(Number(window.localStorage.getItem("sinon-dice-merge-best") ?? 0));
+      const profile = window.localStorage.getItem(DICE_PROFILE_KEY) || DEFAULT_PROFILE;
+      const stored = window.localStorage.getItem(`${DICE_SAVE_KEY}:${profile}`);
+      const parsed = stored ? JSON.parse(stored) as Partial<DiceSave> : null;
+      const nextSave = normalizeSave(parsed, profile);
+      setSave(nextSave);
+      setBest(nextSave.best);
+      setProfileInput(nextSave.profile === DEFAULT_PROFILE ? "" : nextSave.profile);
     });
     return () => window.cancelAnimationFrame(frame);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(DICE_PROFILE_KEY, save.profile);
+    window.localStorage.setItem(`${DICE_SAVE_KEY}:${save.profile}`, JSON.stringify(save));
+  }, [save]);
 
   const playTone = (frequency: number, duration = 0.08) => {
     if (!sound) return;
@@ -163,9 +215,12 @@ export default function DiceMergeGame() {
   const updateScore = (points: number) => {
     const newScore = score + points;
     setScore(newScore);
+    if (points > 0) {
+      setSave((value) => ({ ...value, coins: value.coins + Math.max(1, Math.floor(points / 10)) }));
+    }
     if (newScore > best) {
       setBest(newScore);
-      window.localStorage.setItem("sinon-dice-merge-best", String(newScore));
+      setSave((value) => ({ ...value, best: newScore }));
     }
     const newLevel = getLevel(newScore);
     if (newLevel > previousLevel.current) {
@@ -241,8 +296,8 @@ export default function DiceMergeGame() {
       setCurrent(next);
       setNext(generatePiece(board));
     } else {
-      setCurrent({ ...hold, orientation: "horizontal" });
-      setHold({ ...current, orientation: "horizontal" });
+      setCurrent({ ...hold, orientation: "right" });
+      setHold({ ...current, orientation: "right" });
     }
     setHoldUsed(true);
     setFeedback("Piece held. You can swap again next turn.");
@@ -287,6 +342,35 @@ export default function DiceMergeGame() {
     setSnapshot(null);
     setFeedback("New run. Build groups of three matching dice.");
     previousLevel.current = 1;
+  };
+
+  const handleLogin = () => {
+    const profile = profileInput.trim() || DEFAULT_PROFILE;
+    const stored = window.localStorage.getItem(`${DICE_SAVE_KEY}:${profile}`);
+    const nextSave = normalizeSave(stored ? JSON.parse(stored) as Partial<DiceSave> : null, profile);
+    setSave(nextSave);
+    setBest(nextSave.best);
+    setProfileInput(profile === DEFAULT_PROFILE ? "" : profile);
+    setShowLogin(false);
+    setFeedback(`Playing as ${nextSave.profile}.`);
+  };
+
+  const handleTheme = (theme: ThemeId) => {
+    const pack = THEME_PACKS.find((item) => item.id === theme)!;
+    if (save.unlocked.includes(theme)) {
+      setSave((value) => ({ ...value, theme }));
+      return;
+    }
+    if (save.coins < pack.price) {
+      setFeedback(`${pack.name} needs ${pack.price} coins.`);
+      return;
+    }
+    setSave((value) => ({
+      ...value,
+      coins: value.coins - pack.price,
+      theme,
+      unlocked: [...value.unlocked, theme],
+    }));
   };
 
   const targetAtPoint = (x: number, y: number, pointerType: string): CellPosition | null => {
@@ -360,9 +444,10 @@ export default function DiceMergeGame() {
       : [],
   );
   const goal = getGoal(score);
+  const activeTheme = THEME_PACKS.find((theme) => theme.id === save.theme) ?? THEME_PACKS[0];
 
   return (
-    <main className={styles.shell}>
+    <main className={`${styles.shell} ${styles[activeTheme.className]}`}>
       <div className={styles.ambient} />
       <div className={styles.app}>
         <header className={styles.header}>
@@ -373,11 +458,19 @@ export default function DiceMergeGame() {
           </div>
           <div className={styles.score}><span>Score</span><strong>{score.toLocaleString()}</strong></div>
           <div className={styles.headerButtons}>
+            <button onClick={() => setShowLogin(true)} aria-label="Dice Merge profile"><User /></button>
+            <button onClick={() => setShowStore(true)} aria-label="Open theme store"><ShoppingBag /></button>
             <button onClick={() => setSound((value) => !value)} aria-label={sound ? "Mute sound" : "Turn on sound"}>{sound ? <Volume2 /> : <VolumeX />}</button>
             <button onClick={() => setShowHelp(true)} aria-label="How to play"><HelpCircle /></button>
             <button onClick={() => setStatus("paused")} aria-label="Pause game"><Pause /></button>
           </div>
         </header>
+
+        <div className={styles.profileLine}>
+          <button onClick={() => setShowLogin(true)}><User size={12} /> {save.profile}</button>
+          <button onClick={() => setShowStore(true)}><ShoppingBag size={12} /> {save.coins.toLocaleString()} coins</button>
+          <span>{activeTheme.name}</span>
+        </div>
 
         <div className={styles.levelLine}>
           <span>LEVEL {goal.level}</span>
@@ -460,10 +553,45 @@ export default function DiceMergeGame() {
 
       {levelToast && <div className={styles.levelToast}><Sparkles /> Level {levelToast}<small>+1 reroll earned</small></div>}
 
-      {(status === "paused" || status === "over" || showHelp) && (
+      {(status === "paused" || status === "over" || showHelp || showLogin || showStore) && (
         <div className={styles.modalBackdrop}>
           <div className={styles.modal}>
-            {showHelp ? (
+            {showLogin ? (
+              <>
+                <span className={styles.modalIcon}><User /></span>
+                <p className={styles.modalKicker}>Dice ID</p>
+                <h2>Save your run.</h2>
+                <input
+                  className={styles.nameInput}
+                  value={profileInput}
+                  onChange={(event) => setProfileInput(event.target.value)}
+                  placeholder="Player name"
+                  maxLength={18}
+                />
+                <button className={styles.primaryButton} onClick={handleLogin}><Check size={18} /> Continue</button>
+                <button className={styles.secondaryButton} onClick={() => setShowLogin(false)}>Close</button>
+              </>
+            ) : showStore ? (
+              <>
+                <span className={styles.modalIcon}><ShoppingBag /></span>
+                <p className={styles.modalKicker}>{save.coins.toLocaleString()} coins</p>
+                <h2>Theme packs</h2>
+                <div className={styles.themeGrid}>
+                  {THEME_PACKS.map((pack) => {
+                    const unlocked = save.unlocked.includes(pack.id);
+                    const active = save.theme === pack.id;
+                    return (
+                      <button key={pack.id} className={`${styles.themeCard} ${styles[pack.className]} ${active ? styles.themeActive : ""}`} onClick={() => handleTheme(pack.id)}>
+                        <span>{active ? <Check /> : unlocked ? <Sparkles /> : <Lock />}</span>
+                        <strong>{pack.name}</strong>
+                        <small>{unlocked ? "Equip" : `${pack.price} coins`}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                <button className={styles.secondaryButton} onClick={() => setShowStore(false)}>Close</button>
+              </>
+            ) : showHelp ? (
               <>
                 <span className={styles.modalIcon}><HelpCircle /></span>
                 <p className={styles.modalKicker}>Quick rules</p>

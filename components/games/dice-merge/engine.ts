@@ -3,7 +3,7 @@ export const MAX_TIER = 7;
 
 export type Tier = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type Board = Array<Array<Tier | null>>;
-export type Orientation = "horizontal" | "vertical";
+export type Orientation = "right" | "down" | "left" | "up";
 
 export interface Piece {
   id: string;
@@ -34,18 +34,25 @@ export function cloneBoard(board: Board): Board {
 
 export function rotatePiece(piece: Piece): Piece {
   if (piece.dice.length === 1) return piece;
+  const order: Orientation[] = ["right", "down", "left", "up"];
   return {
     ...piece,
-    orientation: piece.orientation === "horizontal" ? "vertical" : "horizontal",
+    orientation: order[(order.indexOf(piece.orientation) + 1) % order.length],
   };
 }
 
 export function pieceCells(piece: Piece, anchor: CellPosition): CellPosition[] {
   const cells = [anchor];
   if (piece.dice.length === 2) {
+    const offset = {
+      right: { row: 0, col: 1 },
+      down: { row: 1, col: 0 },
+      left: { row: 0, col: -1 },
+      up: { row: -1, col: 0 },
+    }[piece.orientation];
     cells.push({
-      row: anchor.row + (piece.orientation === "vertical" ? 1 : 0),
-      col: anchor.col + (piece.orientation === "horizontal" ? 1 : 0),
+      row: anchor.row + offset.row,
+      col: anchor.col + offset.col,
     });
   }
   return cells;
@@ -72,7 +79,7 @@ export function placePiece(board: Board, piece: Piece, anchor: CellPosition): Bo
 }
 
 export function canFitAnywhere(board: Board, piece: Piece): boolean {
-  const orientations: Orientation[] = piece.dice.length === 1 ? ["horizontal"] : ["horizontal", "vertical"];
+  const orientations: Orientation[] = piece.dice.length === 1 ? ["right"] : ["right", "down", "left", "up"];
   return orientations.some((orientation) => {
     const candidate = { ...piece, orientation };
     for (let row = 0; row < BOARD_SIZE; row += 1) {
@@ -221,16 +228,15 @@ export function generatePiece(board: Board): Piece {
     const piece: Piece = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       dice: single ? [randomTier(board)] : [randomTier(board), randomTier(board)],
-      orientation: "horizontal",
+      orientation: "right",
     };
     if (canFitAnywhere(board, piece)) return piece;
   }
 
   for (let tier = 1; tier <= 4; tier += 1) {
-    const rescue: Piece = { id: `rescue-${Date.now()}-${tier}`, dice: [tier as Tier], orientation: "horizontal" };
+    const rescue: Piece = { id: `rescue-${Date.now()}-${tier}`, dice: [tier as Tier], orientation: "right" };
     if (canFitAnywhere(board, rescue)) return rescue;
   }
 
-  return { id: `final-${Date.now()}`, dice: [1], orientation: "horizontal" };
+  return { id: `final-${Date.now()}`, dice: [1], orientation: "right" };
 }
-
