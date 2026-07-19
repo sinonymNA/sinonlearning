@@ -11,6 +11,7 @@ type WorldThing = {
   creatureId?: string;
   sprite: Phaser.GameObjects.Image;
   label?: Phaser.GameObjects.Text;
+  glow?: Phaser.GameObjects.Arc;
   used: boolean;
   magneting?: boolean;
 };
@@ -48,14 +49,16 @@ const CREATURES = [
 const ROOM_PLAN: RoomKind[] = ["arrival", "encounter", "reward", "encounter", "rest", "rare", "encounter", "treasure", "boss"];
 const ROOM_NAMES = ["Rift Landing", "Mosslight Path", "Crystal Cache", "Whispering Stones", "Sunwell Rest", "Ancient Grove", "Ruin Crossing", "Warden's Hoard", "Rift Heart"];
 const rarityColor: Record<string, string> = { common: "#d9fff0", rare: "#8ce6ff", epic: "#e1b6ff", boss: "#ffcf79" };
+const rarityGlow: Record<string, number> = { common: 0x6dffd1, rare: 0x46cfff, epic: 0xbc77ff, boss: 0xffc84b };
 const FLOOR_Y = 820;
+const PLAYER_MIN_Y = 690;
+const PLAYER_MAX_Y = 810;
 const PLAYER_SIZE = 112;
 const EXIT_X = 1760;
 
 export class ExpeditionScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Image;
   private playerShadow!: Phaser.GameObjects.Ellipse;
-  private ground!: Phaser.Physics.Arcade.StaticGroup;
   private keys!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: Record<string, Phaser.Input.Keyboard.Key>;
   private eHandler = () => this.tryInteract();
@@ -70,7 +73,7 @@ export class ExpeditionScene extends Phaser.Scene {
   private progressFill!: Phaser.GameObjects.Rectangle;
   private touchBattleButton!: Phaser.GameObjects.Rectangle;
   private touchBattleLabel!: Phaser.GameObjects.Text;
-  private joystick = { active: false, x: 0 };
+  private joystick = { active: false, x: 0, y: 0 };
   private interactTarget: WorldThing | null = null;
   private promptMessage = "";
   private promptClearAt = 0;
@@ -96,15 +99,14 @@ export class ExpeditionScene extends Phaser.Scene {
   create() {
     this.cameras.main.fadeIn(280, 4, 18, 28);
     this.physics.world.setBounds(0, 0, 1920, 1080);
-    this.physics.world.gravity.y = 1900;
+    this.physics.world.gravity.y = 0;
     this.createBackground(this.backgroundKeyFor(0));
-    this.createGround();
     this.createPlayer();
     this.createHud();
     this.createTargetMarker();
     this.createTouchControls();
     this.keys = this.input.keyboard!.createCursorKeys();
-    this.wasd = this.input.keyboard!.addKeys("A,D,E") as Record<string, Phaser.Input.Keyboard.Key>;
+    this.wasd = this.input.keyboard!.addKeys("W,A,S,D,E") as Record<string, Phaser.Input.Keyboard.Key>;
     this.input.keyboard!.on("keydown-E", this.eHandler);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off("keydown-E", this.eHandler));
     this.buildRoom(0);
@@ -114,30 +116,42 @@ export class ExpeditionScene extends Phaser.Scene {
     this.updatePromptState();
     if (this.battleOpen || this.transitioning) return;
 
-    let direction = 0;
-    if (this.keys.left.isDown || this.wasd.A.isDown) direction -= 1;
-    if (this.keys.right.isDown || this.wasd.D.isDown) direction += 1;
-    if (this.joystick.active) direction += this.joystick.x;
-    direction = Phaser.Math.Clamp(direction, -1, 1);
+    let directionX = 0;
+    let directionY = 0;
+    if (this.keys.left.isDown || this.wasd.A.isDown) directionX -= 1;
+    if (this.keys.right.isDown || this.wasd.D.isDown) directionX += 1;
+    if (this.keys.up.isDown || this.wasd.W.isDown) directionY -= 1;
+    if (this.keys.down.isDown || this.wasd.S.isDown) directionY += 1;
+    if (this.joystick.active) {
+      directionX += this.joystick.x;
+      directionY += this.joystick.y;
+    }
+    const vector = new Phaser.Math.Vector2(directionX, directionY);
+    if (vector.lengthSq() > 1) vector.normalize();
 
-    if (direction !== 0) {
-      this.player.setAccelerationX(direction * 3000);
-      this.player.setAngle(Phaser.Math.Linear(this.player.angle, direction * 7, 0.2));
+    if (vector.x !== 0 || vector.y !== 0) {
+      this.player.setAcceleration(vector.x * 3000, vector.y * 2300);
+      this.player.setAngle(Phaser.Math.Linear(this.player.angle, vector.x * 7, 0.2));
       this.trailCooldown -= delta;
       if (this.trailCooldown <= 0 && Math.abs(this.player.body!.velocity.x) > 120) {
         this.makeTrail();
         this.trailCooldown = 95;
       }
     } else {
-      this.player.setAccelerationX(0);
+      this.player.setAcceleration(0, 0);
       this.player.setAngle(Phaser.Math.Linear(this.player.angle, 0, 0.18));
+    }
+
+    this.player.y = Phaser.Math.Clamp(this.player.y, PLAYER_MIN_Y, PLAYER_MAX_Y);
+    if ((this.player.y <= PLAYER_MIN_Y && this.player.body!.velocity.y < 0) || (this.player.y >= PLAYER_MAX_Y && this.player.body!.velocity.y > 0)) {
+      this.player.setVelocityY(0);
     }
 
     const speed = Math.abs(this.player.body!.velocity.x);
     const stretch = Phaser.Math.Clamp(speed / 550, 0, 1);
     this.player.setDisplaySize(PLAYER_SIZE + stretch * 8, PLAYER_SIZE - stretch * 4);
-    this.playerShadow.setPosition(this.player.x, FLOOR_Y + 3).setScale(1 + stretch * 0.18, 1).setAlpha(0.22 + stretch * 0.1);
-    this.background.x = 960 + (960 - this.player.x) * 0.025;
+    this.player.setDepth(10 + this.player.y / 1000);
+    this.playerShadow.setPosition(this.player.x, this.player.y + 57).setDepth(9 + this.player.y / 1000).setScale(1 + stretch * 0.18, 1).setAlpha(0.22 + stretch * 0.1);
 
     this.updatePickups(delta);
     this.findInteractTarget();
@@ -160,33 +174,25 @@ export class ExpeditionScene extends Phaser.Scene {
     this.add.rectangle(960, 994, 1920, 172, 0x03151a, 0.18).setDepth(1);
   }
 
-  private createGround() {
-    this.ground = this.physics.add.staticGroup();
-    const floor = this.add.rectangle(960, FLOOR_Y + 64, 1920, 36, 0x000000, 0);
-    this.physics.add.existing(floor, true);
-    this.ground.add(floor);
-  }
-
   private createPlayer() {
-    this.playerShadow = this.add.ellipse(240, FLOOR_Y + 4, 104, 24, 0x03121a, 0.28).setDepth(7);
+    this.playerShadow = this.add.ellipse(240, FLOOR_Y, 104, 24, 0x03121a, 0.28).setDepth(9);
     this.player = this.physics.add.image(240, FLOOR_Y - 58, "wilds-player-cap-round").setDisplaySize(PLAYER_SIZE, PLAYER_SIZE).setDepth(10);
-    this.player.setCircle(104, 24, 24).setDragX(2350).setMaxVelocity(490, 1200).setBounce(0.03).setCollideWorldBounds(true);
-    this.physics.add.collider(this.player, this.ground);
+    this.player.setCircle(104, 24, 24).setDrag(2350, 1900).setMaxVelocity(490, 300).setBounce(0.03).setCollideWorldBounds(true);
   }
 
   private createHud() {
-    this.add.rectangle(330, 74, 570, 104, 0x06182a, 0.82).setDepth(30).setStrokeStyle(2, 0x8cf8dd, 0.4);
-    this.add.rectangle(330, 112, 500, 10, 0x0a3042, 0.95).setDepth(31);
-    this.progressFill = this.add.rectangle(80, 112, 0, 10, 0x79f5c9, 1).setOrigin(0, 0.5).setDepth(32);
-    this.hud = wildsText(this, 80, 35, "", 18, "#f5fffb", { lineSpacing: 6 }).setDepth(32);
-    this.roomLabel = wildsText(this, 960, 48, "", 24, "#f1fff8", { align: "center" }).setOrigin(0.5).setDepth(31);
-    this.prompt = wildsText(this, 960, 958, "", 20, "#ffffff", { align: "center", wordWrap: { width: 900 } }).setOrigin(0.5).setDepth(40);
+    this.add.rectangle(360, 82, 640, 128, 0x06182a, 0.82).setDepth(30).setStrokeStyle(2, 0x8cf8dd, 0.4);
+    this.add.rectangle(360, 128, 560, 12, 0x0a3042, 0.95).setDepth(31);
+    this.progressFill = this.add.rectangle(80, 128, 0, 12, 0x79f5c9, 1).setOrigin(0, 0.5).setDepth(32);
+    this.hud = wildsText(this, 80, 35, "", 23, "#f5fffb", { lineSpacing: 8 }).setDepth(32);
+    this.roomLabel = wildsText(this, 960, 50, "", 29, "#f1fff8", { align: "center" }).setOrigin(0.5).setDepth(31);
+    this.prompt = wildsText(this, 960, 958, "", 26, "#ffffff", { align: "center", wordWrap: { width: 1160 } }).setOrigin(0.5).setDepth(40);
   }
 
   private createTargetMarker() {
     const glow = this.add.circle(0, 0, 54, 0x65ffd4, 0.08).setStrokeStyle(3, 0xcaffed, 0.8);
     const arrow = this.add.triangle(0, -72, 0, 0, 25, 32, -25, 32, 0xcaffed, 0.95).setStrokeStyle(2, 0x06182a, 0.8);
-    const label = wildsText(this, 0, 66, "BATTLE", 12, "#ffffff").setOrigin(0.5);
+    const label = wildsText(this, 0, 66, "BATTLE", 16, "#ffffff").setOrigin(0.5);
     this.targetMarker = this.add.container(0, 0, [glow, arrow, label]).setDepth(25).setVisible(false);
     this.tweens.add({ targets: this.targetMarker, y: "-=8", duration: 600, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
@@ -196,17 +202,18 @@ export class ExpeditionScene extends Phaser.Scene {
     const base = this.add.circle(140, 910, 72, 0x06182a, 0.68).setStrokeStyle(3, 0xa6f8e3, 0.58).setDepth(45).setInteractive().setVisible(isTouch);
     const knob = this.add.circle(140, 910, 28, 0x8ff7dd, 0.88).setDepth(46).setVisible(isTouch);
     this.touchBattleButton = this.add.rectangle(1740, 910, 210, 104, 0x16ac80, 0.92).setStrokeStyle(3, 0xdcfff4, 0.8).setDepth(45).setInteractive({ useHandCursor: true }).setVisible(isTouch);
-    this.touchBattleLabel = wildsText(this, 1740, 910, "BATTLE", 19).setOrigin(0.5).setDepth(46).setVisible(isTouch);
+    this.touchBattleLabel = wildsText(this, 1740, 910, "BATTLE", 24).setOrigin(0.5).setDepth(46).setVisible(isTouch);
     this.setBattleButtonActive(false);
 
     const updateStick = (pointer: Phaser.Input.Pointer) => {
-      const dx = Phaser.Math.Clamp(pointer.x - 140, -54, 54);
-      knob.x = 140 + dx;
-      this.joystick = { active: true, x: dx / 54 };
+      const delta = new Phaser.Math.Vector2(pointer.x - 140, pointer.y - 910);
+      if (delta.length() > 54) delta.setLength(54);
+      knob.setPosition(140 + delta.x, 910 + delta.y);
+      this.joystick = { active: true, x: delta.x / 54, y: delta.y / 54 };
     };
     base.on("pointerdown", updateStick);
     base.on("pointermove", (pointer: Phaser.Input.Pointer) => { if (pointer.isDown) updateStick(pointer); });
-    this.input.on("pointerup", () => { this.joystick = { active: false, x: 0 }; knob.x = 140; });
+    this.input.on("pointerup", () => { this.joystick = { active: false, x: 0, y: 0 }; knob.setPosition(140, 910); });
     this.touchBattleButton.on("pointerup", () => this.tryInteract());
   }
 
@@ -267,34 +274,42 @@ export class ExpeditionScene extends Phaser.Scene {
       if ((roomIndex + index) % 4 === 0 && index === 2) return;
       const prop = this.add.image(slot.x, slot.y, shuffled[index]).setDisplaySize(slot.size, slot.size).setDepth(slot.y > 730 ? 8 : 3).setAlpha(0);
       this.roomVisuals.push(prop);
-      this.tweens.add({ targets: prop, alpha: 0.94, y: slot.y - 5, duration: 380, delay: index * 55, ease: "Back.easeOut" });
+      this.tweens.add({ targets: prop, alpha: 0.94, duration: 320, delay: index * 55, ease: "Sine.easeOut" });
     });
   }
 
   private spawnWild(x: number, creatureId: string) {
     const creature = CREATURES.find((entry) => entry.id === creatureId)!;
-    const y = FLOOR_Y - 68;
-    const sprite = this.add.image(x, y, `field_${creature.id}`).setDisplaySize(creature.rarity === "boss" ? 190 : 150, creature.rarity === "boss" ? 190 : 150).setDepth(11).setAlpha(0);
-    const label = wildsText(this, x, y - 112, `${creature.rarity.toUpperCase()}  •  ${creature.name}`, 14, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(13).setAlpha(0);
-    this.roomVisuals.push(sprite, label);
-    this.things.push({ kind: creature.rarity === "boss" ? "gate" : "wild", creatureId: creature.id, sprite, label, used: false });
-    this.tweens.add({ targets: [sprite, label], alpha: 1, duration: 360, ease: "Sine.easeOut" });
+    const y = this.roomIndex % 2 === 0 ? 725 : 775;
+    const size = creature.rarity === "boss" ? 260 : creature.rarity === "epic" ? 230 : creature.rarity === "rare" ? 210 : 190;
+    const glow = this.add.circle(x, y, size * 0.49, rarityGlow[creature.rarity], 0.13).setStrokeStyle(5, rarityGlow[creature.rarity], 0.7).setDepth(9 + y / 1000).setAlpha(0);
+    const sprite = this.add.image(x, y, `field_${creature.id}`).setDisplaySize(size, size).setDepth(11 + y / 1000).setAlpha(0);
+    const label = wildsText(this, x, y - size * 0.65, `${creature.rarity.toUpperCase()}  •  ${creature.name}`, 22, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(14).setAlpha(0);
+    this.roomVisuals.push(glow, sprite, label);
+    this.things.push({ kind: creature.rarity === "boss" ? "gate" : "wild", creatureId: creature.id, sprite, label, glow, used: false });
+    this.tweens.add({ targets: [glow, sprite, label], alpha: 1, duration: 360, ease: "Sine.easeOut" });
+    this.tweens.add({ targets: glow, scale: 1.1, alpha: 0.23, duration: 920, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
     this.tweens.add({ targets: sprite, y: y - 8, duration: 980, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   private spawnPickup(x: number, kind: ThingKind) {
-    const sprite = this.add.image(x, FLOOR_Y - 82, `pickup_${kind}`).setDisplaySize(78, 90).setDepth(12).setAlpha(0);
-    this.roomVisuals.push(sprite);
-    this.things.push({ kind, sprite, used: false });
-    this.tweens.add({ targets: sprite, alpha: 1, duration: 260 });
-    this.tweens.add({ targets: sprite, y: FLOOR_Y - 94, duration: 820, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    const y = this.roomIndex % 2 === 0 ? 735 : 785;
+    const pickupColors: Partial<Record<ThingKind, number>> = { coin: 0xffd34d, heal: 0xff6f91, shield: 0x55c8ff, power: 0xff9d3b, lucky: 0xff79d9, hint: 0x9dff76 };
+    const color = pickupColors[kind] ?? 0x8fffe4;
+    const glow = this.add.circle(x, y, 74, color, 0.18).setStrokeStyle(5, color, 0.78).setDepth(10 + y / 1000).setAlpha(0);
+    const sprite = this.add.image(x, y, `pickup_${kind}`).setDisplaySize(124, 138).setDepth(12 + y / 1000).setAlpha(0);
+    this.roomVisuals.push(glow, sprite);
+    this.things.push({ kind, sprite, glow, used: false });
+    this.tweens.add({ targets: [glow, sprite], alpha: 1, duration: 260 });
+    this.tweens.add({ targets: glow, scale: 1.12, alpha: 0.34, duration: 760, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.tweens.add({ targets: sprite, y: y - 12, duration: 820, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
   }
 
   private createExitPortal() {
     const glow = this.add.ellipse(0, 0, 110, 210, 0x5bf3cd, 0.08).setStrokeStyle(4, 0xb9ffed, 0.65);
     const arrowOne = this.add.triangle(-12, -24, 0, 0, 34, 28, 0, 56, 0xb9ffed, 0.82);
     const arrowTwo = this.add.triangle(20, -24, 0, 0, 34, 28, 0, 56, 0x53d9c5, 0.72);
-    const text = wildsText(this, 0, 126, "NEXT", 13, "#dffff7").setOrigin(0.5);
+    const text = wildsText(this, 0, 126, "NEXT", 18, "#dffff7").setOrigin(0.5);
     this.exitPortal = this.add.container(1790, FLOOR_Y - 105, [glow, arrowOne, arrowTwo, text]).setDepth(15).setAlpha(this.roomResolved ? 1 : 0.2);
     this.roomVisuals.push(this.exitPortal);
     this.tweens.add({ targets: glow, scaleX: 1.2, alpha: 0.2, duration: 760, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
@@ -309,7 +324,7 @@ export class ExpeditionScene extends Phaser.Scene {
   private advanceRoom() {
     if (this.transitioning || this.roomIndex >= ROOM_PLAN.length - 1) return;
     this.transitioning = true;
-    this.player.setAccelerationX(0).setVelocityX(0);
+    this.player.setAcceleration(0, 0).setVelocity(0, 0);
     this.targetMarker.setVisible(false);
     const nextIndex = this.roomIndex + 1;
     const oldBackground = this.background;
@@ -326,7 +341,7 @@ export class ExpeditionScene extends Phaser.Scene {
       oldBackground.destroy();
       this.background = nextBackground;
       this.player.setPosition(220, FLOOR_Y - 58).setAlpha(1);
-      this.playerShadow.setPosition(220, FLOOR_Y + 4).setAlpha(0.28);
+      this.playerShadow.setPosition(220, FLOOR_Y - 1).setAlpha(0.28);
       this.buildRoom(nextIndex);
     });
     this.time.delayedCall(680, () => {
@@ -348,9 +363,9 @@ export class ExpeditionScene extends Phaser.Scene {
   private findInteractTarget() {
     const nearest = this.things
       .filter((thing) => !thing.used && (thing.kind === "wild" || thing.kind === "gate"))
-      .map((thing) => ({ thing, distance: Math.abs(this.player.x - thing.sprite.x) }))
+      .map((thing) => ({ thing, distance: Phaser.Math.Distance.Between(this.player.x, this.player.y, thing.sprite.x, thing.sprite.y) }))
       .sort((a, b) => a.distance - b.distance)[0];
-    this.interactTarget = nearest && nearest.distance < 175 ? nearest.thing : null;
+    this.interactTarget = nearest && nearest.distance < 190 ? nearest.thing : null;
     if (!this.interactTarget) {
       this.targetMarker.setVisible(false);
       this.setBattleButtonActive(false);
@@ -367,10 +382,17 @@ export class ExpeditionScene extends Phaser.Scene {
       if (thing.used || thing.kind === "wild" || thing.kind === "gate") continue;
       const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, thing.sprite.x, thing.sprite.y);
       if (distance < 210) {
-        if (!thing.magneting) this.tweens.killTweensOf(thing.sprite);
+        if (!thing.magneting) {
+          this.tweens.killTweensOf(thing.sprite);
+          if (thing.glow) this.tweens.killTweensOf(thing.glow);
+        }
         thing.magneting = true;
         thing.sprite.x = Phaser.Math.Linear(thing.sprite.x, this.player.x, pull);
         thing.sprite.y = Phaser.Math.Linear(thing.sprite.y, this.player.y, pull);
+        if (thing.glow) {
+          thing.glow.x = thing.sprite.x;
+          thing.glow.y = thing.sprite.y;
+        }
       }
       if (distance < 68) this.collectPickup(thing);
     }
@@ -391,9 +413,11 @@ export class ExpeditionScene extends Phaser.Scene {
     if (target.used) return;
     target.used = true;
     this.tweens.killTweensOf(target.sprite);
+    if (target.glow) this.tweens.killTweensOf(target.glow);
     this.burst(target.sprite.x, target.sprite.y, target.kind === "heal" ? 0xff91a4 : 0x8fffe4);
     this.floatText(target.sprite.x, target.sprite.y - 54, target.kind === "coin" ? "+8" : target.kind.toUpperCase(), target.kind === "coin" ? "#ffdf74" : "#bfffee");
     target.sprite.destroy();
+    target.glow?.destroy();
     this.playAudio("item-use");
     if (target.kind === "coin") { this.coins += 8; this.showPrompt("+8 Wild Coins", 1000, true); }
     if (target.kind === "heal") { this.hp = Math.min(5, this.hp + 1); this.showPrompt("Healing Capsule: +1 heart", 1000, true); }
@@ -406,7 +430,7 @@ export class ExpeditionScene extends Phaser.Scene {
   private startBattle(target: WorldThing) {
     const creature = CREATURES.find((entry) => entry.id === target.creatureId)!;
     this.battleOpen = true;
-    this.player.setAccelerationX(0).setVelocityX(0);
+    this.player.setAcceleration(0, 0).setVelocity(0, 0);
     this.targetMarker.setVisible(false);
     let enemyHp: number = creature.hp;
     const maxEnemyHp = creature.hp;
@@ -420,11 +444,11 @@ export class ExpeditionScene extends Phaser.Scene {
     add(this.add.image(1510, 120, "battle_hp_enemy_frame").setDisplaySize(620, 132).setDepth(63));
     const playerBar = add(this.add.rectangle(205, 138, 410 * (this.hp / 5), 18, 0x4ee29b, 1).setOrigin(0, 0.5).setDepth(64));
     const enemyBar = add(this.add.rectangle(1305, 138, 410, 18, 0xff796f, 1).setOrigin(0, 0.5).setDepth(64));
-    const playerHpText = add(wildsText(this, 410, 105, `YOUR CAP  •  ${this.hp}/5`, 19, "#eafff7").setOrigin(0.5).setDepth(65));
-    const enemyHpText = add(wildsText(this, 1510, 105, `${creature.name.toUpperCase()}  •  ${enemyHp}/${maxEnemyHp}`, 19, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(65));
+    const playerHpText = add(wildsText(this, 410, 105, `YOUR CAP  •  ${this.hp}/5`, 23, "#eafff7").setOrigin(0.5).setDepth(65));
+    const enemyHpText = add(wildsText(this, 1510, 105, `${creature.name.toUpperCase()}  •  ${enemyHp}/${maxEnemyHp}`, 23, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(65));
     add(this.add.image(960, 500, "battle_question_panel").setDisplaySize(1120, 240).setDepth(63));
     const questionText = add(wildsText(this, 960, 470, "", 29, "#ffffff", { align: "center", wordWrap: { width: 900 } }).setOrigin(0.5).setDepth(65));
-    const feedback = add(wildsText(this, 960, 550, "Choose the right answer to attack.", 20, "#d9fff5", { align: "center" }).setOrigin(0.5).setDepth(65));
+    const feedback = add(wildsText(this, 960, 550, "Tap an answer or use keys 1-4.", 24, "#d9fff5", { align: "center" }).setOrigin(0.5).setDepth(65));
     const buttons: Phaser.GameObjects.Container[] = [];
     const textures = ["battle_answer_button_green", "battle_answer_button_blue", "battle_answer_button_purple", "battle_answer_button_gold"];
     let keyHandler: ((event: KeyboardEvent) => void) | null = null;
@@ -441,13 +465,13 @@ export class ExpeditionScene extends Phaser.Scene {
       const useHint = this.hints > 0;
       if (useHint) this.hints -= 1;
       questionText.setText(question.prompt);
-      feedback.setColor("#d9fff5").setText(useHint ? "Hint active: two choices have faded." : "Choose the right answer to attack.");
+      feedback.setColor("#d9fff5").setText(useHint ? "Hint active: two choices have faded." : "Tap an answer or use keys 1-4.");
       const wrong = [0, 1, 2, 3].filter((choice) => choice !== question.answer);
       buttons.forEach((button, index) => {
         button.removeAllListeners("pointerup");
         const label = button.getData("label") as Phaser.GameObjects.Text;
         const hidden = useHint && wrong.slice(0, 2).includes(index);
-        label.setText(`${index + 1}. ${question.choices[index]}`);
+        label.setText(question.choices[index]);
         button.setAlpha(hidden ? 0.2 : 1).setActive(!hidden);
         if (hidden) button.disableInteractive();
         else button.setInteractive({ useHandCursor: true });
@@ -495,11 +519,11 @@ export class ExpeditionScene extends Phaser.Scene {
 
     [0, 1, 2, 3].forEach((index) => {
       const x = index % 2 === 0 ? 650 : 1270;
-      const y = index < 2 ? 755 : 905;
-      const image = this.add.image(0, 0, textures[index]).setDisplaySize(530, 126);
-      const label = wildsText(this, 0, 0, "", 21, "#ffffff", { align: "center", wordWrap: { width: 420 } }).setOrigin(0.5);
-      const hitbox = this.add.rectangle(0, 0, 530, 126, 0xffffff, 0.001);
-      const button = this.add.container(x, y, [image, label, hitbox]).setSize(530, 126).setDepth(65);
+      const y = index < 2 ? 750 : 925;
+      const image = this.add.image(0, 0, textures[index]).setDisplaySize(540, 170);
+      const label = wildsText(this, 0, 0, "", 29, "#ffffff", { align: "center", wordWrap: { width: 450 } }).setOrigin(0.5);
+      const hitbox = this.add.rectangle(0, 0, 540, 170, 0xffffff, 0.001);
+      const button = this.add.container(x, y, [image, label, hitbox]).setSize(540, 170).setDepth(65);
       button.setData("label", label);
       button.on("pointerover", () => this.tweens.add({ targets: button, scale: 1.025, duration: 90 }));
       button.on("pointerout", () => button.setScale(1));
@@ -515,6 +539,7 @@ export class ExpeditionScene extends Phaser.Scene {
     target.used = true;
     target.label?.destroy();
     target.sprite.destroy();
+    target.glow?.destroy();
     const chance = Math.min(0.95, creature.rate + this.lucky);
     const success = Math.random() < chance;
     this.lucky = 0;
@@ -544,8 +569,8 @@ export class ExpeditionScene extends Phaser.Scene {
     this.add.rectangle(960, 540, 1920, 1080, 0x03101a, 0.9).setDepth(90);
     const panel = this.add.image(960, 535, "results_reward_panel").setDisplaySize(940, 491).setDepth(91);
     const badge = this.add.image(960, 240, victory ? "results_victory_badge" : "results_defeat_badge").setDisplaySize(300, 163).setDepth(93);
-    const heading = wildsText(this, 960, 440, victory ? "VERDANT RIFT CLEARED!" : "EXPEDITION OVER", 36, victory ? "#b7ffe7" : "#ffd1d1").setOrigin(0.5).setDepth(94);
-    const stats = wildsText(this, 960, 580, `Rooms explored: ${this.roomIndex + 1}/${ROOM_PLAN.length}\nWilds captured: ${this.captures}\nCoins earned: ${this.coins}\n${victory ? "Warden Wisp has opened the path to future regions." : "Your captures and coins are safely kept."}`, 23, "#ffffff", { align: "center", lineSpacing: 10, wordWrap: { width: 700 } }).setOrigin(0.5).setDepth(94);
+    const heading = wildsText(this, 960, 440, victory ? "VERDANT RIFT CLEARED!" : "EXPEDITION OVER", 40, victory ? "#b7ffe7" : "#ffd1d1").setOrigin(0.5).setDepth(94);
+    const stats = wildsText(this, 960, 580, `Rooms explored: ${this.roomIndex + 1}/${ROOM_PLAN.length}\nWilds captured: ${this.captures}\nCoins earned: ${this.coins}\n${victory ? "Warden Wisp has opened the path to future regions." : "Your captures and coins are safely kept."}`, 26, "#ffffff", { align: "center", lineSpacing: 10, wordWrap: { width: 760 } }).setOrigin(0.5).setDepth(94);
     const replay = this.add.image(790, 815, "results_continue_button").setDisplaySize(340, 98).setDepth(94).setInteractive({ useHandCursor: true });
     const titleButton = this.add.graphics().setDepth(94);
     titleButton.fillStyle(0x237fc2, 1).lineStyle(4, 0xc9f4ff, 0.88).fillRoundedRect(980, 753, 320, 124, 38).strokeRoundedRect(980, 753, 320, 124, 38);
@@ -562,7 +587,7 @@ export class ExpeditionScene extends Phaser.Scene {
 
   private refreshHud() {
     this.hud.setText(`VERDANT RIFT  •  HP ${this.hp}/5\nCoins ${this.coins}   Catches ${this.captures}   Shield ${this.shield}   Power ${this.power}`);
-    this.progressFill.width = ((this.roomIndex + (this.roomResolved ? 1 : 0.45)) / ROOM_PLAN.length) * 500;
+    this.progressFill.width = ((this.roomIndex + (this.roomResolved ? 1 : 0.45)) / ROOM_PLAN.length) * 560;
   }
 
   private showPrompt(message: string, duration = 1600, force = false) {
@@ -602,7 +627,7 @@ export class ExpeditionScene extends Phaser.Scene {
   }
 
   private floatText(x: number, y: number, message: string, color = "#ffffff") {
-    const text = wildsText(this, x, y, message, 20, color).setOrigin(0.5).setDepth(50);
+    const text = wildsText(this, x, y, message, 26, color).setOrigin(0.5).setDepth(50);
     this.tweens.add({ targets: text, y: y - 48, alpha: 0, scale: 1.15, duration: 700, ease: "Cubic.easeOut", onComplete: () => text.destroy() });
   }
 
@@ -617,7 +642,7 @@ export class ExpeditionScene extends Phaser.Scene {
     const shade = this.add.rectangle(960, 540, 1920, 1080, 0x031624, 0.72).setDepth(70);
     const cap = this.add.image(960, 700, "wilds-player-cap-round").setDisplaySize(150, 150).setDepth(72);
     const target = this.add.image(960, 300, `field_${creature.id}`).setDisplaySize(250, 250).setDepth(72);
-    const label = wildsText(this, 960, 850, `CAPTURE CHANCE ${Math.round(chance * 100)}%`, 25, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(73);
+    const label = wildsText(this, 960, 850, `CAPTURE CHANCE ${Math.round(chance * 100)}%`, 29, rarityColor[creature.rarity]).setOrigin(0.5).setDepth(73);
     this.tweens.add({ targets: cap, y: 390, scale: 0.58, duration: 520, ease: "Quad.easeIn" });
     this.tweens.add({ targets: target, y: 390, scale: 0.08, alpha: 0, duration: 620, delay: 170, ease: "Quad.easeIn" });
     this.time.delayedCall(760, () => {

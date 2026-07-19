@@ -20,7 +20,7 @@ export class TitleScene extends Phaser.Scene {
     const logo = this.add.image(960, 220, "wilds_logo").setDisplaySize(760, 380).setAlpha(0);
     this.tweens.add({ targets: logo, alpha: 1, y: 228, duration: 420, ease: "Back.easeOut" });
 
-    wildsText(this, 960, 410, "Explore procedural rooms. Battle with knowledge. Capture every Wild.", 23, "#effffb", {
+    wildsText(this, 960, 410, "Explore procedural rooms. Battle with knowledge. Capture every Wild.", 28, "#effffb", {
       align: "center",
       wordWrap: { width: 980 },
     }).setOrigin(0.5);
@@ -34,21 +34,21 @@ export class TitleScene extends Phaser.Scene {
     };
 
     const btnNewRun = imageButton(this, 650, 570, "btn_primary", "", startExpedition, 380, 178);
-    const labelNewRun = wildsText(this, 0, 110, "Begin a new room expedition", 16, "#e6fff9").setOrigin(0.5);
+    const labelNewRun = wildsText(this, 0, 110, "Begin a new room expedition", 20, "#e6fff9").setOrigin(0.5);
     btnNewRun.add(labelNewRun);
 
     const btnQuickStart = imageButton(this, 1270, 570, "btn_secondary", "", replayExpedition, 410, 178);
-    const labelQuickStart = wildsText(this, 0, 110, "Jump directly into Verdant Rift", 16, "#e6fff9").setOrigin(0.5);
+    const labelQuickStart = wildsText(this, 0, 110, "Jump directly into Verdant Rift", 20, "#e6fff9").setOrigin(0.5);
     btnQuickStart.add(labelQuickStart);
 
     const btnCollection = imageButton(this, 650, 790, "btn_purple", "", () => this.toggleCollection(), 390, 182);
     btnCollection.setAlpha(0.96);
-    const labelCollection = wildsText(this, 0, 112, "View your captured Wilds", 16, "#eadbff").setOrigin(0.5);
+    const labelCollection = wildsText(this, 0, 112, "View your captured Wilds", 20, "#eadbff").setOrigin(0.5);
     btnCollection.add(labelCollection);
 
     const btnResume = imageButton(this, 1270, 790, "btn_gold", "", replayExpedition, 390, 182);
     btnResume.setAlpha(1);
-    const labelResume = wildsText(this, 0, 112, "Replay Verdant Rift anytime", 16, "#fff2c9").setOrigin(0.5);
+    const labelResume = wildsText(this, 0, 112, "Replay Verdant Rift anytime", 20, "#fff2c9").setOrigin(0.5);
     btnResume.add(labelResume);
 
     this.input.keyboard?.once("keydown-ENTER", startExpedition);
@@ -71,7 +71,7 @@ export class TitleScene extends Phaser.Scene {
       960,
       330,
       `Captured: ${save.wildsCollection.length}   Battles Won: ${save.stats.battlesWon}   Runs Completed: ${save.stats.runsCompleted}`,
-      20,
+      24,
       "#cfeff8",
       { align: "center", wordWrap: { width: 820 } },
     ).setOrigin(0.5);
@@ -79,11 +79,11 @@ export class TitleScene extends Phaser.Scene {
     const names = save.wildsCollection.length > 0
       ? save.wildsCollection.map((id) => id.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase())).join("   •   ")
       : "No Wilds captured yet. Your collection will grow after successful capsule catches.";
-    const body = wildsText(this, 960, 470, names, 22, "#f8fafc", {
+    const body = wildsText(this, 960, 470, names, 26, "#f8fafc", {
       align: "center",
       wordWrap: { width: 820 },
     }).setOrigin(0.5);
-    const close = wildsText(this, 960, 740, "Tap anywhere to close", 18, "#9dd8e8").setOrigin(0.5);
+    const close = wildsText(this, 960, 740, "Tap anywhere to close", 22, "#9dd8e8").setOrigin(0.5);
 
     scrim.on("pointerup", () => this.toggleCollection());
     this.collectionOverlay = this.add.container(0, 0, [scrim, panel, title, stats, body, close]);

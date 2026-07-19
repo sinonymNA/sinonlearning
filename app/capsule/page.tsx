@@ -214,13 +214,13 @@ export default function CapsulePage() {
         {/* Logged-out */}
         {!loading && !me && (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 420 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 620 }}>
               <WildsLogoLink />
               <SpriteBtn
                 src="/assets/capsule/ui/btn-join-game.png"
                 alt="Join Game"
                 onClick={() => setShowJoin(v => !v)}
-                style={{ flex: "1 1 0", maxWidth: 300 }}
+                style={{ flex: "1 1 0", minWidth: 0, maxWidth: "none" }}
               />
             </div>
 
@@ -260,13 +260,13 @@ export default function CapsulePage() {
           <>
             {me.role === "teacher" && <HostBtn href="/capsule/host" />}
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 420 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", maxWidth: 620 }}>
               <WildsLogoLink />
               <SpriteBtn
                 src="/assets/capsule/ui/btn-join-game.png"
                 alt="Join Game"
                 onClick={() => setShowJoin(v => !v)}
-                style={{ flex: "1 1 0", maxWidth: 300 }}
+                style={{ flex: "1 1 0", minWidth: 0, maxWidth: "none" }}
               />
             </div>
 
@@ -359,7 +359,8 @@ function WildsLogoLink() {
       href="/capsule/wilds"
       aria-label="Play Wilds"
       style={{
-        flex: "0 0 clamp(76px, 15vw, 104px)",
+        flex: "1 1 0",
+        minWidth: 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",

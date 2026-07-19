@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import type { Feature, FeatureCollection, Geometry, MultiPolygon, Polygon } from "geojson";
 import type { HistoricalCollection, HistoricalFeatureProps } from "@/types/historicalGeo";
 import { filterByYear } from "@/lib/filterByYear";
 
@@ -33,15 +34,15 @@ function mergeCollections(...collections: (HistoricalCollection | null)[]): Hist
   };
 }
 
-function computeLabelSource(yearData: HistoricalCollection): GeoJSON.FeatureCollection {
-  const features: GeoJSON.Feature[] = [];
+function computeLabelSource(yearData: HistoricalCollection): FeatureCollection {
+  const features: Feature[] = [];
   for (const f of yearData.features) {
-    const geom = f.geometry as GeoJSON.Geometry;
+    const geom = f.geometry as Geometry;
     const allCoords: number[][] = [];
     if (geom.type === "Polygon") {
-      allCoords.push(...(geom as GeoJSON.Polygon).coordinates[0]);
+      allCoords.push(...(geom as Polygon).coordinates[0]);
     } else if (geom.type === "MultiPolygon") {
-      for (const poly of (geom as GeoJSON.MultiPolygon).coordinates) {
+      for (const poly of (geom as MultiPolygon).coordinates) {
         allCoords.push(...poly[0]);
       }
     }
@@ -143,7 +144,7 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
 
         map.addSource("borders", {
           type: "geojson",
-          data: yearData as GeoJSON.FeatureCollection,
+          data: yearData as FeatureCollection,
           generateId: true,
         });
 
@@ -253,7 +254,7 @@ export default function GlobeMap({ year, onEntityClick }: GlobeMapProps) {
     if (!bordersSrc) return;
     const combined = mergeCollections(ancientRef.current, modernRef.current);
     const yearData = filterByYear(combined, year);
-    bordersSrc.setData(yearData as GeoJSON.FeatureCollection);
+    bordersSrc.setData(yearData as FeatureCollection);
     const labelSrc = map.getSource("borders-labels") as maplibregl.GeoJSONSource | undefined;
     if (labelSrc) labelSrc.setData(computeLabelSource(yearData));
   }, [year]);

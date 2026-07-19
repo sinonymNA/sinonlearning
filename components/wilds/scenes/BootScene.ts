@@ -48,13 +48,13 @@ const TITLE_BUTTONS: Record<string, CropRect> = {
 };
 
 const BATTLE_UI: Record<string, CropRect> = {
-  battle_hp_player_frame: { x: 20, y: 20, width: 560, height: 120 },
-  battle_hp_enemy_frame: { x: 700, y: 20, width: 560, height: 120 },
-  battle_question_panel: { x: 110, y: 180, width: 1060, height: 300 },
-  battle_answer_button_green: { x: 20, y: 520, width: 290, height: 150 },
-  battle_answer_button_blue: { x: 330, y: 520, width: 290, height: 150 },
-  battle_answer_button_purple: { x: 640, y: 520, width: 290, height: 150 },
-  battle_answer_button_gold: { x: 950, y: 520, width: 290, height: 150 },
+  battle_hp_player_frame: { x: 30, y: 30, width: 605, height: 200 },
+  battle_hp_enemy_frame: { x: 650, y: 30, width: 600, height: 200 },
+  battle_question_panel: { x: 70, y: 230, width: 1140, height: 280 },
+  battle_answer_button_green: { x: 30, y: 525, width: 300, height: 145 },
+  battle_answer_button_blue: { x: 340, y: 525, width: 295, height: 145 },
+  battle_answer_button_purple: { x: 645, y: 525, width: 295, height: 145 },
+  battle_answer_button_gold: { x: 940, y: 525, width: 300, height: 145 },
   battle_backpack_icon: { x: 20, y: 730, width: 150, height: 150 },
   battle_item_panel: { x: 250, y: 730, width: 420, height: 190 },
   battle_reward_panel: { x: 720, y: 730, width: 480, height: 190 },
