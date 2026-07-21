@@ -11,6 +11,7 @@ const links = [
   { href: "/curriculum", label: "Curriculum" },
   { href: "/teachers", label: "Teachers" },
   { href: "/students", label: "Students" },
+  { href: "/scholarships", label: "Scholarships" },
   { href: "/research", label: "Research" },
   { href: "/mission", label: "Mission" },
   { href: "/shop-fundraisers", label: "Shop & Fundraisers" },
