@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, BookOpen } from "lucide-react";
+import { BookOpen, Sparkles } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
+
+const DEMO_ASSIGNMENT = {
+  sourceText: `"I found very many islands filled with people without number, and of them all I have taken possession for Their Highnesses, with proclamation and the royal standard displayed, and nobody objected. To the first which I found I gave the name San Salvador... The people of this island, and of all the other islands which I have found and seen, or have not seen, all go naked, men and women, as their mothers bore them... They have no iron or steel or weapons, nor are they fitted to use them, not because they are not well-built men and of handsome stature, but because they are very marvellously timorous... They are so artless and so free with all they possess, that no one would believe it without having seen it."`,
+  sourceLabel: "Document 1",
+  sourceCitation: "Christopher Columbus, Letter to Luis de Santángel, 1493",
+};
 
 const DEFAULT_QUESTIONS = [
   { id: "historical-context", prompt: "Historical Context — What was happening that influenced this source's creation?" },
@@ -33,6 +39,16 @@ export default function SourceRoomPage() {
   const [timerSeconds, setTimerSeconds] = useState(180);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+
+  function loadDemo() {
+    setSourceText(DEMO_ASSIGNMENT.sourceText);
+    setSourceLabel(DEMO_ASSIGNMENT.sourceLabel);
+    setSourceCitation(DEMO_ASSIGNMENT.sourceCitation);
+    setSourceImageUrl("");
+    setEnabledQuestions(new Set(DEFAULT_QUESTIONS.map((q) => q.id)));
+    setTimerSeconds(180);
+    setError("");
+  }
 
   function toggleQuestion(id: string) {
     setEnabledQuestions((prev) => {
@@ -88,12 +104,19 @@ export default function SourceRoomPage() {
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white">
               <BookOpen size={22} />
             </div>
-            <div>
+            <div className="flex-1">
               <h1 className="font-display text-2xl font-semibold text-navy-900">Source Room</h1>
               <p className="mt-1 text-sm text-navy-800/60">
                 Display a primary source for students to analyze together in real time.
               </p>
             </div>
+            <button
+              onClick={loadDemo}
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-teal-400/50 bg-teal-50 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-100"
+            >
+              <Sparkles size={12} />
+              Load Demo
+            </button>
           </div>
         </FadeIn>
 

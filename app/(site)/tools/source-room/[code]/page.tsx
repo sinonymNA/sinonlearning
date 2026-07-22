@@ -16,11 +16,37 @@ interface SessionData {
   started_at: string | null;
 }
 
+interface QuestionGrade {
+  question_id: string;
+  score: number;
+  label: "Strong" | "Developing" | "Needs Work" | "No Response";
+  feedback: string;
+}
+
+interface GradeResult {
+  grades: QuestionGrade[];
+  overall_feedback: string;
+}
+
 function formatTime(seconds: number): string {
   const m = Math.floor(Math.max(0, seconds) / 60);
   const s = Math.max(0, seconds) % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
+
+const SCORE_COLORS: Record<string, string> = {
+  Strong: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  Developing: "bg-amber-100 text-amber-800 border-amber-200",
+  "Needs Work": "bg-rose-100 text-rose-800 border-rose-200",
+  "No Response": "bg-navy-900/5 text-navy-800/50 border-navy-900/10",
+};
+
+const SCORE_DOTS: Record<string, string[]> = {
+  Strong: ["bg-emerald-500", "bg-emerald-500", "bg-emerald-500"],
+  Developing: ["bg-amber-400", "bg-amber-400", "bg-navy-900/10"],
+  "Needs Work": ["bg-rose-400", "bg-navy-900/10", "bg-navy-900/10"],
+  "No Response": ["bg-navy-900/10", "bg-navy-900/10", "bg-navy-900/10"],
+};
 
 export default function StudentPage() {
   const params = useParams<{ code: string }>();
@@ -33,6 +59,8 @@ export default function StudentPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [savedAt, setSavedAt] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [gradeResult, setGradeResult] = useState<GradeResult | null>(null);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -49,7 +77,6 @@ export default function StudentPage() {
       return;
     }
 
-    // Fallback: check localStorage
     try {
       const stored = localStorage.getItem(`source-room-student-${code}`);
       if (stored) {
@@ -128,6 +155,26 @@ export default function StudentPage() {
       setSavedAt((prev) => ({ ...prev, ...newSaved }));
     } catch {}
     setSaving(false);
+
+    // Request KORA grading after save
+    requestGrade();
+  }
+
+  async function requestGrade() {
+    if (!studentToken) return;
+    setGrading(true);
+    try {
+      const res = await fetch(`/api/source-room/sessions/${code}/grade`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentToken }),
+      });
+      if (res.ok) {
+        const data = await res.json() as GradeResult;
+        setGradeResult(data);
+      }
+    } catch {}
+    setGrading(false);
   }
 
   async function handleSave() {
@@ -162,20 +209,87 @@ export default function StudentPage() {
     );
   }
 
-  // ─── Ended phase ────────────────────────────────────────────────────────────
+  // ─── Ended / auto-submitted phase ───────────────────────────────────────────
   if (session.status === "ended" || autoSubmitted) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-cream-50 px-6 text-center">
-        <div className="text-4xl">✓</div>
-        <p className="font-display text-xl font-semibold text-navy-900">
-          {autoSubmitted ? "Time&apos;s up!" : "Session ended"}
-        </p>
-        <p className="max-w-xs text-sm text-navy-800/60">
-          Your responses were saved. Your teacher will review them.
-        </p>
-        <Link href="/tools/source-room/join" className="mt-4 text-sm text-teal-700 hover:underline">
-          Join another session
-        </Link>
+      <div className="min-h-screen bg-cream-50 px-6 py-12">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-6 text-center">
+            <div className="mb-3 text-4xl">✓</div>
+            <p className="font-display text-xl font-semibold text-navy-900">
+              {autoSubmitted ? "Time's up — responses saved!" : "Session ended"}
+            </p>
+            <p className="mt-1 text-sm text-navy-800/55">
+              Your teacher will review your responses.
+            </p>
+          </div>
+
+          {/* Grade results */}
+          {grading && (
+            <div className="mb-6 flex items-center justify-center gap-2 rounded-2xl border border-navy-900/8 bg-white py-6 text-sm text-navy-800/50">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+              KORA is grading your responses…
+            </div>
+          )}
+
+          {gradeResult && !grading && (
+            <div className="flex flex-col gap-4">
+              <div className="rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">
+                  Overall Feedback
+                </p>
+                <p className="mt-1 text-sm text-teal-900">{gradeResult.overall_feedback}</p>
+              </div>
+
+              {gradeResult.grades.map((g) => {
+                const q = session.questions.find((x) => x.id === g.question_id);
+                const dots = SCORE_DOTS[g.label] ?? SCORE_DOTS["No Response"];
+                return (
+                  <div
+                    key={g.question_id}
+                    className="rounded-2xl border border-navy-900/8 bg-white p-4"
+                  >
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <p className="text-xs font-semibold text-navy-900">
+                        {q?.prompt ?? g.question_id}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex gap-1">
+                          {dots.map((dot, i) => (
+                            <span key={i} className={`h-2 w-2 rounded-full ${dot}`} />
+                          ))}
+                        </div>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${SCORE_COLORS[g.label]}`}
+                        >
+                          {g.label}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-navy-800/70">{g.feedback}</p>
+                    {answers[g.question_id] && (
+                      <p className="mt-2 rounded-lg bg-cream-50 px-3 py-2 text-xs italic text-navy-900/40">
+                        Your response: {answers[g.question_id]}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!grading && !gradeResult && (
+            <p className="text-center text-sm text-navy-800/40">
+              Grading unavailable — your responses were still saved.
+            </p>
+          )}
+
+          <div className="mt-8 text-center">
+            <Link href="/tools/source-room/join" className="text-sm text-teal-700 hover:underline">
+              Join another session
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -233,6 +347,7 @@ export default function StudentPage() {
             {/* Questions */}
             {session.questions.map((q) => {
               const wasSaved = savedAt[q.id] !== undefined;
+              const grade = gradeResult?.grades.find((g) => g.question_id === q.id);
               return (
                 <div
                   key={q.id}
@@ -255,24 +370,46 @@ export default function StudentPage() {
                     <span className="text-[11px] text-navy-900/30">
                       {(answers[q.id] ?? "").length}/500
                     </span>
-                    {wasSaved && (
+                    {wasSaved && !grade && (
                       <span className="text-[11px] text-teal-600">✓ Saved</span>
                     )}
+                    {grade && (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${SCORE_COLORS[grade.label]}`}
+                      >
+                        {grade.label}
+                      </span>
+                    )}
                   </div>
+                  {grade && (
+                    <p className="mt-2 rounded-lg border border-navy-900/6 bg-cream-50 px-3 py-2 text-xs text-navy-800/70">
+                      {grade.feedback}
+                    </p>
+                  )}
                 </div>
               );
             })}
 
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || grading}
               className={`w-full rounded-xl py-3.5 text-sm font-semibold transition-colors ${
-                allSaved
-                  ? "border border-teal-500 bg-teal-50 text-teal-700"
-                  : "bg-teal-600 text-white hover:bg-teal-700"
+                grading
+                  ? "border border-teal-400/50 bg-teal-50 text-teal-600"
+                  : allSaved && gradeResult
+                    ? "border border-teal-500 bg-teal-50 text-teal-700"
+                    : "bg-teal-600 text-white hover:bg-teal-700"
               } disabled:opacity-60`}
             >
-              {saving ? "Saving…" : allSaved ? "✓ All Saved" : "Submit Responses"}
+              {saving
+                ? "Saving…"
+                : grading
+                  ? "KORA is grading…"
+                  : allSaved && gradeResult
+                    ? "✓ Submitted & Graded"
+                    : allSaved
+                      ? "✓ Saved — Resubmit to re-grade"
+                      : "Submit for Feedback"}
             </button>
 
             <p className="text-center text-xs text-navy-900/30">
