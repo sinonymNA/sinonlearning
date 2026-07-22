@@ -5,9 +5,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { code: string } },
+  { params }: { params: Promise<{ code: string }> },
 ) {
-  const session = await getSession(params.code);
+  const { code } = await params;
+  const session = await getSession(code);
   if (!session) {
     return NextResponse.json({ error: "Session not found." }, { status: 404 });
   }
@@ -15,7 +16,7 @@ export async function GET(
   // Strip host_token from public response
   const { host_token: _ht, ...publicSession } = session;
 
-  const studentCount = await getResponseStudentCount(params.code);
+  const studentCount = await getResponseStudentCount(code);
 
   return NextResponse.json({ session: publicSession, studentCount });
 }

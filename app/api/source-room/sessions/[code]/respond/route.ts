@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { code: string } },
+  { params }: { params: Promise<{ code: string }> },
 ) {
+  const { code } = await params;
   const body = await request.json().catch(() => null);
   if (
     !body ||
@@ -21,7 +22,7 @@ export async function POST(
     );
   }
 
-  const session = await getSession(params.code);
+  const session = await getSession(code);
   if (!session) {
     return NextResponse.json({ error: "Session not found." }, { status: 404 });
   }
@@ -30,7 +31,7 @@ export async function POST(
   }
 
   await upsertResponse(
-    params.code,
+    code,
     body.studentToken,
     body.studentName,
     body.questionId,

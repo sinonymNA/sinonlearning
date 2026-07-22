@@ -5,14 +5,15 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } },
+  { params }: { params: Promise<{ code: string }> },
 ) {
+  const { code } = await params;
   const hostToken = request.nextUrl.searchParams.get("hostToken");
   if (!hostToken) {
     return NextResponse.json({ error: "hostToken query param required." }, { status: 400 });
   }
 
-  const session = await getSession(params.code);
+  const session = await getSession(code);
   if (!session) {
     return NextResponse.json({ error: "Session not found." }, { status: 404 });
   }
@@ -20,6 +21,6 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
-  const responses = await getResponses(params.code);
+  const responses = await getResponses(code);
   return NextResponse.json({ responses });
 }
