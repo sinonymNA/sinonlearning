@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Apps built for you, not just your classroom — Margins writing practice, digital textbooks, simulations, and AI literacy.",
   alternates: { canonical: `${SITE_URL}/students` },
 };
-import { ArrowUpRight, BookOpen, Sparkles, NotebookPen, ListChecks, Lightbulb, HardHat } from "lucide-react";
+import { ArrowUpRight, BookOpen, Sparkles, NotebookPen, ListChecks, Lightbulb, HardHat, Globe } from "lucide-react";
 import FadeIn from "@/components/FadeIn";
 import MarginsLogo from "@/components/MarginsLogo";
 import DashLogo from "@/components/DashLogo";
@@ -33,6 +33,22 @@ type Tool = {
 };
 
 const featuredTools: Tool[] = [
+  {
+    slug: "ap-world-history",
+    href: "/ap-world-history",
+    status: "live",
+    bgClass: "bg-navy-900",
+    logo: (
+      <div className="flex flex-col items-center gap-2">
+        <Globe size={44} strokeWidth={1.5} className="text-teal-400" />
+        <span className="font-display text-lg font-semibold text-cream-50 tracking-tight">AP World History</span>
+      </div>
+    ),
+    logoSub: "Essays · Source Analysis · KORA Grading",
+    logoSubClass: "text-cream-50/40",
+    name: "AP World History Hub",
+    tagline: "Write and get AI feedback on DBQ, LEQ, and SAQ essays in Margins — and practice timed HAPP primary source analysis in Source Room.",
+  },
   {
     slug: "margins",
     href: "/margins",
