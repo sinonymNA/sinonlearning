@@ -11,7 +11,15 @@ export type NotesheetSectionType =
   | "structured_concept_box"
   | "graph_box"
   | "acronym_scaffold"
-  | "labeled_comparison_table";
+  | "labeled_comparison_table"
+  | "frayer_model"
+  | "t_chart"
+  | "sequence_box"
+  | "cause_effect_box"
+  | "timeline_box"
+  | "exit_ticket"
+  | "spectrum_bar"
+  | "mind_map_box";
 
 const booleanFromAny = z.preprocess(
   (val) => (typeof val === "string" ? val === "true" : val),
@@ -38,6 +46,14 @@ export const NotesheetSectionSchema = z.object({
     "graph_box",
     "acronym_scaffold",
     "labeled_comparison_table",
+    "frayer_model",
+    "t_chart",
+    "sequence_box",
+    "cause_effect_box",
+    "timeline_box",
+    "exit_ticket",
+    "spectrum_bar",
+    "mind_map_box",
   ]),
   heading: z.string().optional(),
   content: z.string(),
@@ -49,6 +65,7 @@ export const NotesheetSectionSchema = z.object({
   acronym: z.string().optional(),
   row_labels: z.array(z.string()).optional(),
   col_labels: z.array(z.string()).optional(),
+  direction: z.string().optional(),
 });
 
 export const NotesheetPlanSchema = z.object({

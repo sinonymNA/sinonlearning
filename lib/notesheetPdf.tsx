@@ -40,6 +40,14 @@ const TYPE_ACCENT: Record<string, string> = {
   graph_box:               "#b45309",
   acronym_scaffold:        "#7c3aed",
   labeled_comparison_table:"#1d4ed8",
+  frayer_model:            "#0891b2",
+  t_chart:                 "#16a34a",
+  sequence_box:            "#9333ea",
+  cause_effect_box:        "#dc2626",
+  timeline_box:            "#0369a1",
+  exit_ticket:             "#d97706",
+  spectrum_bar:            "#0284c7",
+  mind_map_box:            "#7c3aed",
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -687,6 +695,367 @@ function SectionBody({
             ))}
           </View>
           {isTeacher && <AnswerKey notes={section.answer_key_notes} />}
+        </View>
+      );
+    }
+
+    case "frayer_model": {
+      const term = section.content || section.heading || "Term";
+      const quadrants = ["Definition", "Characteristics", "Examples", "Non-Examples"];
+      const cellStyle = {
+        flex: 1,
+        borderWidth: 0.75,
+        borderColor: BORDER,
+        borderStyle: "solid" as const,
+        padding: 8,
+        minHeight: 60,
+      };
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 5 }}>
+              {/* Top two quadrants */}
+              <View style={{ flexDirection: "row", gap: 0 }}>
+                {quadrants.slice(0, 2).map((q, i) => (
+                  <View key={i} style={[cellStyle, i === 0 ? { marginRight: 0, borderRightWidth: 0 } : {}]}>
+                    <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: MUTED, marginBottom: 5, letterSpacing: 0.3 }}>
+                      {q.toUpperCase()}
+                    </Text>
+                    <View style={S.blankLine} />
+                    <View style={S.blankLine} />
+                  </View>
+                ))}
+              </View>
+              {/* Center term */}
+              <View style={{ backgroundColor: NAVY, paddingTop: 6, paddingBottom: 6, alignItems: "center", borderTopWidth: 0, borderBottomWidth: 0 }}>
+                <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 11, color: "#ffffff", letterSpacing: 0.3 }}>
+                  {term}
+                </Text>
+              </View>
+              {/* Bottom two quadrants */}
+              <View style={{ flexDirection: "row" }}>
+                {quadrants.slice(2).map((q, i) => (
+                  <View key={i} style={[cellStyle, i === 0 ? { marginRight: 0, borderRightWidth: 0, borderTopWidth: 0 } : { borderTopWidth: 0 }]}>
+                    <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: MUTED, marginBottom: 5, letterSpacing: 0.3 }}>
+                      {q.toUpperCase()}
+                    </Text>
+                    <View style={S.blankLine} />
+                    <View style={S.blankLine} />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "t_chart": {
+      const cols = section.col_labels ?? ["Side A", "Side B"];
+      const ROWS = Math.max(2, section.num_lines ?? 4);
+      const colWidthPct = 50;
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={[S.tableWrap, { marginTop: 5 }]}>
+              <View style={S.tableHeadRow}>
+                {cols.slice(0, 2).map((label, i) => (
+                  <TCell key={i} widthPct={colWidthPct} isLast={i === 1} isHeader>
+                    <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 8.5, color: NAVY, letterSpacing: 0.2 }}>
+                      {label.toUpperCase()}
+                    </Text>
+                  </TCell>
+                ))}
+              </View>
+              {Array.from({ length: ROWS }).map((_, row) => (
+                <View
+                  key={row}
+                  style={[
+                    S.tableBodyRow,
+                    row < ROWS - 1
+                      ? { borderBottomWidth: 0.5, borderBottomColor: BORDER, borderBottomStyle: "solid" }
+                      : {},
+                  ]}
+                >
+                  <TCell widthPct={colWidthPct} isLast={false} isHeader={false} />
+                  <TCell widthPct={colWidthPct} isLast isHeader={false} />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "sequence_box": {
+      const steps = Math.max(2, Math.min(6, section.num_lines ?? 4));
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 6 }}>
+              {Array.from({ length: steps }).map((_, i) => (
+                <View key={i}>
+                  <View
+                    style={{
+                      borderWidth: 0.75,
+                      borderColor: BORDER,
+                      borderStyle: "solid",
+                      padding: 8,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <View style={{ width: 20, height: 20, backgroundColor: NAVY, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 9, color: "#fff" }}>{i + 1}</Text>
+                    </View>
+                    <View style={{ flex: 1, borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 22 }} />
+                  </View>
+                  {i < steps - 1 && (
+                    <View style={{ alignItems: "center", paddingTop: 2, paddingBottom: 2 }}>
+                      <Text style={{ fontSize: 10, color: MUTED }}>↓</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "cause_effect_box": {
+      const dir = section.direction ?? "one_to_many";
+      const knownLabel = section.content || (dir === "one_to_many" ? "Cause" : "Effect");
+      const blanks = Math.max(2, Math.min(4, section.num_lines ?? 3));
+      const blankHeading = dir === "one_to_many" ? "Effect" : "Cause";
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
+              {/* Known side */}
+              <View
+                style={{
+                  flex: 2,
+                  borderWidth: 0.75,
+                  borderColor: BORDER,
+                  borderStyle: "solid",
+                  padding: 8,
+                  backgroundColor: BG_TINT,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: blanks * 28,
+                }}
+              >
+                <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: MUTED, marginBottom: 5, letterSpacing: 0.3 }}>
+                  {dir === "one_to_many" ? "CAUSE" : "EFFECT"}
+                </Text>
+                <Text style={{ fontFamily: "Nunito", fontWeight: 600, fontSize: 9, color: BODY, textAlign: "center", lineHeight: 1.4 }}>
+                  {knownLabel}
+                </Text>
+              </View>
+              {/* Arrow */}
+              <Text style={{ fontSize: 14, color: MUTED }}>→</Text>
+              {/* Blank side */}
+              <View style={{ flex: 3, gap: 5 }}>
+                {Array.from({ length: blanks }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 0.75,
+                      borderColor: BORDER,
+                      borderStyle: "solid",
+                      padding: 6,
+                    }}
+                  >
+                    <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7, color: MUTED, marginBottom: 3 }}>
+                      {blankHeading.toUpperCase()} {i + 1}
+                    </Text>
+                    <View style={{ borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 16 }} />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "timeline_box": {
+      const events = Math.max(2, Math.min(6, section.num_lines ?? 4));
+      const widthPct = Math.floor(100 / events);
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 10 }}>
+              {/* The horizontal line with tick marks */}
+              <View style={{ flexDirection: "row", alignItems: "flex-end", marginBottom: 0, paddingLeft: 4, paddingRight: 4 }}>
+                {Array.from({ length: events }).map((_, i) => (
+                  <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                    <View style={{ width: 1, height: 10, backgroundColor: BODY }} />
+                  </View>
+                ))}
+              </View>
+              {/* The timeline bar */}
+              <View style={{ height: 3, backgroundColor: NAVY, marginLeft: 4, marginRight: 4 }} />
+              {/* Date blanks below the line */}
+              <View style={{ flexDirection: "row", paddingLeft: 4, paddingRight: 4, marginTop: 4, marginBottom: 6 }}>
+                {Array.from({ length: events }).map((_, i) => (
+                  <View key={i} style={{ flex: 1, alignItems: "center" }}>
+                    <View style={{ width: "80%", borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 16 }} />
+                    <Text style={{ fontFamily: "Nunito", fontSize: 6.5, color: MUTED, marginTop: 2 }}>date</Text>
+                  </View>
+                ))}
+              </View>
+              {/* Event blanks */}
+              <View style={{ flexDirection: "row", paddingLeft: 4, paddingRight: 4, gap: 4 }}>
+                {Array.from({ length: events }).map((_, i) => (
+                  <View key={i} style={{ flex: 1, borderWidth: 0.75, borderColor: BORDER, borderStyle: "solid", minHeight: 36, padding: 4 }} />
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "exit_ticket": {
+      const questions = section.student_prompt.split(/\n/).filter(Boolean);
+      return (
+        <View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+            <View style={{ flex: 1, height: 0.75, backgroundColor: BORDER }} />
+            <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7.5, color: "#d97706", letterSpacing: 0.8 }}>
+              EXIT TICKET
+            </Text>
+            <View style={{ flex: 1, height: 0.75, backgroundColor: BORDER }} />
+          </View>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            questions.map((q, i) => (
+              <View key={i} style={{ marginBottom: 10 }}>
+                <Text style={{ fontFamily: "Nunito", fontSize: 9.5, color: BODY, lineHeight: 1.4, marginBottom: 5 }}>
+                  {i + 1}. {q.trim()}
+                </Text>
+                <View style={S.blankLine} />
+                <View style={S.blankLine} />
+              </View>
+            ))
+          )}
+        </View>
+      );
+    }
+
+    case "spectrum_bar": {
+      const ends = section.col_labels ?? ["←", "→"];
+      const slots = Math.max(2, Math.min(5, section.num_lines ?? 3));
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 8 }}>
+              {/* End labels + arrow bar */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 8, color: NAVY }}>{ends[0]}</Text>
+                <View style={{ flex: 1, height: 3, backgroundColor: NAVY }} />
+                <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 8, color: NAVY }}>{ends[1]}</Text>
+              </View>
+              {/* Slot boxes evenly spaced */}
+              <View style={{ flexDirection: "row", gap: 5 }}>
+                {Array.from({ length: slots }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      flex: 1,
+                      borderWidth: 0.75,
+                      borderColor: BORDER,
+                      borderStyle: "solid",
+                      minHeight: 34,
+                      padding: 5,
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "mind_map_box": {
+      const central = section.content || section.heading || "Central Concept";
+      const n = Math.max(4, Math.min(8, section.num_lines ?? 6));
+      const top = Math.ceil(n / 2);
+      const bottom = Math.floor(n / 2);
+      const branchStyle = {
+        flex: 1,
+        borderWidth: 0.75,
+        borderColor: BORDER,
+        borderStyle: "solid" as const,
+        padding: 6,
+        minHeight: 32,
+      };
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 6 }}>
+              {/* Top branches — no bottom border so they flow into center */}
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                {Array.from({ length: top }).map((_, i) => (
+                  <View key={i} style={[branchStyle, { borderBottomWidth: 0 }]}>
+                    <View style={{ borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 20 }} />
+                  </View>
+                ))}
+              </View>
+              {/* Center row: line — TERM — line */}
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <View style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
+                <View
+                  style={{
+                    backgroundColor: NAVY,
+                    paddingTop: 5,
+                    paddingBottom: 5,
+                    paddingLeft: 14,
+                    paddingRight: 14,
+                  }}
+                >
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 9, color: "#ffffff" }}>
+                    {central}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, height: 1, backgroundColor: BORDER }} />
+              </View>
+              {/* Bottom branches — no top border */}
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                {Array.from({ length: bottom }).map((_, i) => (
+                  <View key={i} style={[branchStyle, { borderTopWidth: 0 }]}>
+                    <View style={{ borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 20 }} />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       );
     }
