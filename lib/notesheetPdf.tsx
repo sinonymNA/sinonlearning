@@ -29,13 +29,17 @@ const BG_TINT = "#f8fafc";
 
 // Per-section-type top accent color
 const TYPE_ACCENT: Record<string, string> = {
-  warmup_box:        "#7c3aed",
-  fill_blank:        "#2563eb",
-  numbered_response: "#059669",
-  content_box:       "#d97706",
-  two_column_box:    "#db2777",
-  drawing_box:       "#ea580c",
-  three_column_box:  "#0284c7",
+  warmup_box:              "#7c3aed",
+  fill_blank:              "#2563eb",
+  numbered_response:       "#059669",
+  content_box:             "#d97706",
+  two_column_box:          "#db2777",
+  drawing_box:             "#ea580c",
+  three_column_box:        "#0284c7",
+  structured_concept_box:  "#0f766e",
+  graph_box:               "#b45309",
+  acronym_scaffold:        "#7c3aed",
+  labeled_comparison_table:"#1d4ed8",
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -512,6 +516,172 @@ function SectionBody({
               >
                 {cols.map((col, ci) => (
                   <TCell key={ci} widthPct={col.width_pct} isLast={ci === cols.length - 1} isHeader={false} />
+                ))}
+              </View>
+            ))}
+          </View>
+          {isTeacher && <AnswerKey notes={section.answer_key_notes} />}
+        </View>
+      );
+    }
+
+    case "structured_concept_box": {
+      const fields = section.fields ?? ["Definition:", "Key Relationship:", "Example:"];
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 5, borderWidth: 0.75, borderColor: BORDER, borderStyle: "solid" }}>
+              <View style={{ backgroundColor: NAVY, paddingTop: 6, paddingBottom: 6, alignItems: "center" }}>
+                <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 10, color: "#ffffff", letterSpacing: 0.3 }}>
+                  {section.heading ?? section.content ?? "Key Concept"}
+                </Text>
+              </View>
+              {fields.map((field, i) => (
+                <View
+                  key={i}
+                  style={[
+                    { paddingTop: 7, paddingBottom: 7, paddingLeft: 10, paddingRight: 10 },
+                    i > 0 ? { borderTopWidth: 0.5, borderTopColor: BORDER, borderTopStyle: "solid" } : {},
+                  ]}
+                >
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 8, color: MUTED, marginBottom: 4 }}>
+                    {field}
+                  </Text>
+                  <View style={{ borderBottomWidth: 0.75, borderBottomColor: BORDER, borderBottomStyle: "solid", height: 22 }} />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "graph_box":
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 6, height: 140 }}>
+              {/* Y-axis label */}
+              <View style={{ position: "absolute", left: 0, top: 0, bottom: 20, width: 18, alignItems: "center", justifyContent: "center" }}>
+                <Text style={{ fontFamily: "Nunito", fontSize: 7, color: MUTED }}>P{"\n"}r{"\n"}i{"\n"}c{"\n"}e</Text>
+              </View>
+              {/* L-shaped graph area */}
+              <View
+                style={{
+                  position: "absolute",
+                  left: 18,
+                  right: 8,
+                  top: 6,
+                  bottom: 20,
+                  borderLeftWidth: 1,
+                  borderBottomWidth: 1,
+                  borderLeftColor: BODY,
+                  borderBottomColor: BODY,
+                  borderLeftStyle: "solid",
+                  borderBottomStyle: "solid",
+                }}
+              >
+                <Text style={{ position: "absolute", top: -7, left: -3, fontSize: 8, color: BODY }}>↑</Text>
+              </View>
+              {/* X-axis label */}
+              <View style={{ position: "absolute", right: 0, bottom: 0, height: 18 }}>
+                <Text style={{ fontFamily: "Nunito", fontSize: 7, color: MUTED }}>Quantity →</Text>
+              </View>
+            </View>
+          )}
+        </View>
+      );
+
+    case "acronym_scaffold": {
+      const letters = (section.acronym ?? "").toUpperCase().split("");
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          {isTeacher ? (
+            <AnswerKey notes={section.answer_key_notes} />
+          ) : (
+            <View style={{ marginTop: 6 }}>
+              {letters.map((letter, i) => (
+                <View key={i} style={{ flexDirection: "row", alignItems: "center", marginBottom: 7 }}>
+                  <View
+                    style={{
+                      width: 26,
+                      height: 26,
+                      backgroundColor: NAVY,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 10,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 12, color: "#ffffff" }}>
+                      {letter}
+                    </Text>
+                  </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      borderBottomWidth: 0.75,
+                      borderBottomColor: BORDER,
+                      borderBottomStyle: "solid",
+                      height: 22,
+                    }}
+                  />
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    case "labeled_comparison_table": {
+      const colLabels = section.col_labels ?? [];
+      const rowLabels = section.row_labels ?? [];
+      if (colLabels.length === 0 || rowLabels.length === 0) return null;
+      const rowLabelWidthPct = 20;
+      const dataCellWidthPct = (100 - rowLabelWidthPct) / colLabels.length;
+      return (
+        <View>
+          <Text style={S.bodyText}>{section.student_prompt}</Text>
+          <View style={[S.tableWrap, { marginTop: 5 }]}>
+            {/* Header row */}
+            <View style={S.tableHeadRow}>
+              <TCell widthPct={rowLabelWidthPct} isLast={false} isHeader>
+                <Text style={{ fontSize: 7 }}> </Text>
+              </TCell>
+              {colLabels.map((label, i) => (
+                <TCell key={i} widthPct={dataCellWidthPct} isLast={i === colLabels.length - 1} isHeader>
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 7, color: NAVY, letterSpacing: 0.2 }}>
+                    {label.toUpperCase()}
+                  </Text>
+                </TCell>
+              ))}
+            </View>
+            {/* Data rows */}
+            {rowLabels.map((rowLabel, row) => (
+              <View
+                key={row}
+                style={[
+                  { flexDirection: "row", minHeight: 32 },
+                  row < rowLabels.length - 1
+                    ? { borderBottomWidth: 0.5, borderBottomColor: BORDER, borderBottomStyle: "solid" }
+                    : {},
+                ]}
+              >
+                <TCell widthPct={rowLabelWidthPct} isLast={false} isHeader={false}>
+                  <Text style={{ fontFamily: "Nunito", fontWeight: 700, fontSize: 8, color: NAVY }}>
+                    {rowLabel}
+                  </Text>
+                </TCell>
+                {colLabels.map((_, ci) => (
+                  <TCell key={ci} widthPct={dataCellWidthPct} isLast={ci === colLabels.length - 1} isHeader={false} />
                 ))}
               </View>
             ))}

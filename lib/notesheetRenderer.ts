@@ -118,6 +118,86 @@ function renderSection(section: NotesheetSection, mode: "student" | "teacher_key
         </div>`;
     }
 
+    case "structured_concept_box": {
+      const fields = section.fields ?? ["Definition:", "Key Relationship:", "Example:"];
+      const conceptTitle = esc(section.heading ?? section.content ?? "Key Concept");
+      return `
+        <div class="section structured-concept-box">
+          ${heading}
+          <p class="prompt">${esc(section.student_prompt)}</p>
+          ${mode === "teacher_key"
+            ? `<div class="answer-key"><span class="key-label">Key:</span> ${esc(section.answer_key_notes)}</div>`
+            : `<div class="concept-box">
+                <div class="concept-box-title">${conceptTitle}</div>
+                ${fields.map(f => `
+                  <div class="concept-field">
+                    <div class="concept-field-label">${esc(f)}</div>
+                    <div class="blank-line"></div>
+                  </div>`).join("")}
+              </div>`
+          }
+        </div>`;
+    }
+
+    case "graph_box":
+      return `
+        <div class="section graph-box">
+          ${heading}
+          <p class="prompt">${esc(section.student_prompt)}</p>
+          ${mode === "teacher_key"
+            ? `<div class="answer-key"><span class="key-label">Expected:</span> ${esc(section.answer_key_notes)}</div>`
+            : `<div class="graph-area">
+                <div class="graph-y-label">Price (P)</div>
+                <div class="graph-plot">
+                  <div class="graph-axes"></div>
+                  <div class="graph-arrow-y">↑</div>
+                  <div class="graph-arrow-x">→</div>
+                </div>
+                <div class="graph-x-label">Quantity (Q)</div>
+              </div>`
+          }
+        </div>`;
+
+    case "acronym_scaffold": {
+      const letters = (section.acronym ?? "").toUpperCase().split("");
+      return `
+        <div class="section acronym-scaffold">
+          ${heading}
+          <p class="prompt">${esc(section.student_prompt)}</p>
+          ${mode === "teacher_key"
+            ? `<div class="answer-key"><span class="key-label">Key:</span> ${esc(section.answer_key_notes)}</div>`
+            : `<div class="acronym-rows">
+                ${letters.map(l => `
+                  <div class="acronym-row">
+                    <div class="acronym-letter">${esc(l)}</div>
+                    <div class="blank-line" style="flex:1; margin-left:10px;"></div>
+                  </div>`).join("")}
+              </div>`
+          }
+        </div>`;
+    }
+
+    case "labeled_comparison_table": {
+      const colLabels = section.col_labels ?? [];
+      const rowLabels = section.row_labels ?? [];
+      if (colLabels.length === 0 || rowLabels.length === 0) return "";
+      const headerRow = `<tr><th class="row-label-th"></th>${colLabels.map(c => `<th>${esc(c)}</th>`).join("")}</tr>`;
+      const dataRows = rowLabels.map(rl =>
+        `<tr><td class="row-label-cell">${esc(rl)}</td>${colLabels.map(() =>
+          mode === "teacher_key" ? `<td></td>` : `<td class="blank-cell"></td>`
+        ).join("")}</tr>`
+      ).join("");
+      return `
+        <div class="section labeled-comparison-table">
+          ${heading}
+          <p class="prompt">${esc(section.student_prompt)}</p>
+          <table class="notesheet-table">${headerRow}${dataRows}</table>
+          ${mode === "teacher_key"
+            ? `<div class="answer-key"><span class="key-label">Key:</span> ${esc(section.answer_key_notes)}</div>`
+            : ""}
+        </div>`;
+    }
+
     default:
       return "";
   }
@@ -253,6 +333,111 @@ export function renderNotesheetHtml(plan: NotesheetPlan, mode: "student" | "teac
     margin-right: 4px;
   }
   .key-text { font-size: 10.5pt; line-height: 1.4; margin-top: 4px; }
+  /* Structured concept box */
+  .concept-box {
+    border: 1px solid #ccc;
+    margin-top: 6px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .concept-box-title {
+    background: #1e3a5f;
+    color: #fff;
+    text-align: center;
+    font-weight: bold;
+    font-size: 11pt;
+    padding: 6px 12px;
+    letter-spacing: 0.01em;
+  }
+  .concept-field {
+    padding: 7px 12px;
+    border-top: 1px solid #e2e8f0;
+  }
+  .concept-field-label {
+    font-size: 8pt;
+    font-weight: bold;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+  /* Graph box */
+  .graph-area {
+    margin-top: 8px;
+    height: 180px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .graph-y-label {
+    font-size: 8pt;
+    color: #64748b;
+    margin-left: 4px;
+    margin-bottom: 2px;
+  }
+  .graph-plot {
+    flex: 1;
+    position: relative;
+    margin-left: 28px;
+    margin-bottom: 4px;
+  }
+  .graph-axes {
+    position: absolute;
+    inset: 0;
+    border-left: 2px solid #334155;
+    border-bottom: 2px solid #334155;
+  }
+  .graph-arrow-y {
+    position: absolute;
+    top: -10px;
+    left: -6px;
+    font-size: 12pt;
+    color: #334155;
+  }
+  .graph-arrow-x {
+    position: absolute;
+    bottom: -12px;
+    right: -10px;
+    font-size: 12pt;
+    color: #334155;
+  }
+  .graph-x-label {
+    font-size: 8pt;
+    color: #64748b;
+    text-align: right;
+    margin-right: 4px;
+  }
+  /* Acronym scaffold */
+  .acronym-rows { margin-top: 6px; }
+  .acronym-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .acronym-letter {
+    width: 28px;
+    height: 28px;
+    background: #1e3a5f;
+    color: #fff;
+    font-weight: bold;
+    font-size: 14pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 2px;
+  }
+  /* Labeled comparison table */
+  .row-label-th { width: 20%; }
+  .row-label-cell {
+    font-weight: bold;
+    font-size: 9pt;
+    color: #1e3a5f;
+    background: #f8fafc;
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    vertical-align: middle;
+  }
   .mode-badge {
     display: inline-block;
     font-size: 8pt;
