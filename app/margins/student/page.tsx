@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { NotebookPen, Search } from "lucide-react";
+import { NotebookPen, Search, GraduationCap } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByStudent, getAssignmentsForStudent } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import JoinClassButton from "@/components/margins/JoinClassButton";
 import RevealGroup from "@/components/margins/RevealGroup";
 import RelayLaunchCard from "@/components/margins/RelayLaunchCard";
+import EmptyState from "@/components/margins/EmptyState";
+import { accentForKey } from "@/components/margins/moduleThemes";
 
 const TYPE_COLORS: Record<string, string> = {
   DBQ: "bg-violet-50 text-violet-600",
@@ -69,10 +71,25 @@ export default async function StudentDashboardPage() {
 
         <h2 className="text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3">Your assignments</h2>
         {assignments.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center flex flex-col items-center gap-3">
-            <NotebookPen size={26} className="text-stone-300" strokeWidth={1.5} />
-            <p className="text-stone-400 text-sm">No assignments yet.</p>
-          </div>
+          classes.length === 0 ? (
+            <EmptyState
+              icon={GraduationCap}
+              accent={accentForKey("students")}
+              title="Join your class first"
+              body="Your teacher has a join code — enter it and any essays they've set will show up here, along with feedback on every draft you write."
+              action={<JoinClassButton />}
+              hints={["You only need the code once"]}
+            />
+          ) : (
+            <EmptyState
+              icon={NotebookPen}
+              accent={accentForKey("assignments")}
+              title="Nothing set yet"
+              body="When your teacher posts a DBQ, LEQ, or SAQ it lands here. In the meantime the practice course below is open — it's not graded and it doesn't need an assignment."
+              href="/margins/student/practice"
+              cta="Try the practice course"
+            />
+          )
         ) : (
           <RevealGroup className="flex flex-col gap-2.5" stagger={60} translateY={14}>
             {assignments.map((a) => {

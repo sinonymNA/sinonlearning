@@ -1086,3 +1086,92 @@ export async function getWritingMechanicsForStudent(studentId: string): Promise<
   );
   return rows;
 }
+
+// ─── Teacher dashboard ────────────────────────────────────────────────────────
+// The dashboard was a bare class list with no sense of what needed attention.
+// These two queries give it a state: what's waiting on the teacher, and what
+// students have been doing since they last looked.
+
+export interface TeacherClassSummary extends MarginsClass {
+  student_count: number;
+  assignment_count: number;
+  /** Submitted but not yet graded — the number that should pull a teacher in. */
+  awaiting_count: number;
+}
+
+export async function getClassSummariesByTeacher(teacherId: string): Promise<TeacherClassSummary[]> {
+  await ensureMarginsSchema();
+  // Aggregated in subqueries rather than joined-and-grouped: a class with 30
+  // students and 8 assignments would otherwise fan out to 240 rows before the
+  // GROUP BY collapses it, and the two counts would multiply each other.
+  const { rows } = await query<TeacherClassSummary>(
+    `SELECT c.id, c.teacher_id, c.name, c.join_code, c.created_at,
+            (SELECT COUNT(*)::int FROM margins_class_memberships m WHERE m.class_id = c.id) AS student_count,
+            (SELECT COUNT(*)::int FROM margins_assignments a WHERE a.class_id = c.id) AS assignment_count,
+            (SELECT COUNT(*)::int
+               FROM margins_submissions s
+               JOIN margins_assignments a2 ON a2.id = s.assignment_id
+              WHERE a2.class_id = c.id AND s.status = 'submitted') AS awaiting_count
+       FROM margins_classes c
+      WHERE c.teacher_id = $1
+      ORDER BY c.created_at DESC`,
+    [teacherId]
+  );
+  return rows;
+}
+
+export interface TeacherActivityRow {
+  submission_id: string;
+  student_name: string;
+  assignment_id: string;
+  assignment_title: string;
+  essay_type: string;
+  class_name: string;
+  status: string;
+  happened_at: string;
+}
+
+/** Most recent student submissions across all of a teacher's classes. */
+export async function getRecentActivityForTeacher(
+  teacherId: string,
+  limit = 6
+): Promise<TeacherActivityRow[]> {
+  await ensureMarginsSchema();
+  const { rows } = await query<TeacherActivityRow>(
+    `SELECT s.id AS submission_id,
+            u.name AS student_name,
+            a.id AS assignment_id,
+            a.title AS assignment_title,
+            a.essay_type,
+            c.name AS class_name,
+            s.status,
+            COALESCE(s.submitted_at, s.updated_at) AS happened_at
+       FROM margins_submissions s
+       JOIN margins_assignments a ON a.id = s.assignment_id
+       JOIN margins_classes c ON c.id = a.class_id
+       JOIN margins_users u ON u.id = s.student_id
+      WHERE c.teacher_id = $1 AND s.status <> 'draft'
+      ORDER BY COALESCE(s.submitted_at, s.updated_at) DESC
+      LIMIT $2`,
+    [teacherId, limit]
+  );
+  return rows;
+}
+
+/**
+ * Distinct students a teacher actually teaches.
+ *
+ * Not the sum of per-class counts: a student enrolled in two of the same
+ * teacher's classes is one student, and summing reports them twice.
+ */
+export async function getDistinctStudentCountForTeacher(teacherId: string): Promise<number> {
+  await ensureMarginsSchema();
+  const { rows } = await query<{ n: number }>(
+    `SELECT COUNT(DISTINCT m.student_id)::int AS n
+       FROM margins_class_memberships m
+       JOIN margins_classes c ON c.id = m.class_id
+      WHERE c.teacher_id = $1`,
+    [teacherId]
+  );
+  return rows[0]?.n ?? 0;
+}
