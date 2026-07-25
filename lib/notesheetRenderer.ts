@@ -334,12 +334,16 @@ function renderSection(section: NotesheetSection, mode: "student" | "teacher_key
           </div>
           ${mode === "teacher_key"
             ? `<div class="answer-key"><span class="key-label">Key:</span> ${esc(section.answer_key_notes)}</div>`
-            : questions.map((q, i) => `
+            : questions.map((q, i) => {
+                // Strip any leading number KORA already added (e.g. "1. ") so we don't double up
+                const stripped = q.trim().replace(/^\d+\.\s*/, "");
+                return `
                 <div class="exit-question">
-                  <p class="prompt">${i + 1}. ${esc(q.trim())}</p>
+                  <p class="prompt">${i + 1}. ${esc(stripped)}</p>
                   <div class="blank-line"></div>
                   <div class="blank-line"></div>
-                </div>`).join("")
+                </div>`;
+              }).join("")
           }
         </div>`;
     }

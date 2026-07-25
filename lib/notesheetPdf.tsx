@@ -948,15 +948,19 @@ function SectionBody({
           {isTeacher ? (
             <AnswerKey notes={section.answer_key_notes} />
           ) : (
-            questions.map((q, i) => (
-              <View key={i} style={{ marginBottom: 10 }}>
-                <Text style={{ fontFamily: "Nunito", fontSize: 9.5, color: BODY, lineHeight: 1.4, marginBottom: 5 }}>
-                  {i + 1}. {q.trim()}
-                </Text>
-                <View style={S.blankLine} />
-                <View style={S.blankLine} />
-              </View>
-            ))
+            questions.map((q, i) => {
+              // Strip any leading number KORA already added (e.g. "1. ") so we don't double up
+              const stripped = q.trim().replace(/^\d+\.\s*/, "");
+              return (
+                <View key={i} style={{ marginBottom: 10 }}>
+                  <Text style={{ fontFamily: "Nunito", fontSize: 9.5, color: BODY, lineHeight: 1.4, marginBottom: 5 }}>
+                    {i + 1}. {stripped}
+                  </Text>
+                  <View style={S.blankLine} />
+                  <View style={S.blankLine} />
+                </View>
+              );
+            })
           )}
         </View>
       );
