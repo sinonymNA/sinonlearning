@@ -6,6 +6,7 @@ import { getClassesByTeacher } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import NewClassButton from "@/components/margins/NewClassButton";
 import RevealGroup from "@/components/margins/RevealGroup";
+import RelayLaunchCard from "@/components/margins/RelayLaunchCard";
 
 export default async function TeacherDashboardPage() {
   const user = await getCurrentUser();
@@ -55,6 +56,15 @@ export default async function TeacherDashboardPage() {
             ))}
           </RevealGroup>
         )}
+
+        <RevealGroup className="mt-10" stagger={0} translateY={16}>
+          <div className="reveal-item" style={{ opacity: 0 }}>
+            <h2 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-stone-400">
+              Run it live
+            </h2>
+            <RelayLaunchCard role="teacher" />
+          </div>
+        </RevealGroup>
       </main>
     </div>
   );

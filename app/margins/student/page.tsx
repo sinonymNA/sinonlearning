@@ -6,6 +6,7 @@ import { getClassesByStudent, getAssignmentsForStudent } from "@/lib/marginsDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import JoinClassButton from "@/components/margins/JoinClassButton";
 import RevealGroup from "@/components/margins/RevealGroup";
+import RelayLaunchCard from "@/components/margins/RelayLaunchCard";
 
 const TYPE_COLORS: Record<string, string> = {
   DBQ: "bg-violet-50 text-violet-600",
@@ -101,7 +102,10 @@ export default async function StudentDashboardPage() {
           </RevealGroup>
         )}
 
-        <RevealGroup className="mt-10" stagger={0}>
+        <RevealGroup className="mt-10 flex flex-col gap-3" stagger={70} translateY={16}>
+          <div className="reveal-item" style={{ opacity: 0 }}>
+            <RelayLaunchCard role="student" />
+          </div>
           <Link
             href="/margins/student/practice"
             className="reveal-item group relative flex items-center gap-5 overflow-hidden rounded-2xl border border-teal-700/20 bg-gradient-to-br from-teal-600 via-teal-700 to-violet-700 px-6 py-6 shadow-md shadow-teal-900/10 hover:shadow-lg hover:-translate-y-0.5 transition-all"
