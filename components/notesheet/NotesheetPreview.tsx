@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { animate, stagger } from "animejs";
-import { Pencil, Download, FileText, RotateCcw } from "lucide-react";
-import type { NotesheetPlan, NotesheetSection } from "@/lib/notesheetTypes";
+import { Pencil, Download, FileText, RotateCcw, Lightbulb, ChevronDown } from "lucide-react";
+import type { NotesheetPlan, NotesheetSection, WorksheetDesignBrief } from "@/lib/notesheetTypes";
 import NotesheetSectionEditor from "./NotesheetSectionEditor";
 import PrintAnimation from "./PrintAnimation";
 
@@ -15,25 +15,52 @@ const TYPE_LABELS: Record<string, string> = {
   two_column_box: "Two-Column",
   drawing_box: "Drawing",
   three_column_box: "Three-Column",
+  structured_concept_box: "Concept Box",
+  graph_box: "Graph",
+  acronym_scaffold: "Acronym",
+  labeled_comparison_table: "Comparison Table",
+  frayer_model: "Frayer Model",
+  t_chart: "T-Chart",
+  sequence_box: "Sequence",
+  cause_effect_box: "Cause & Effect",
+  timeline_box: "Timeline",
+  exit_ticket: "Exit Ticket",
+  spectrum_bar: "Spectrum",
+  mind_map_box: "Mind Map",
 };
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  warmup_box:        { bg: "bg-violet-50",  text: "text-violet-600", dot: "bg-violet-400" },
-  fill_blank:        { bg: "bg-blue-50",    text: "text-blue-600",   dot: "bg-blue-400" },
-  numbered_response: { bg: "bg-emerald-50", text: "text-emerald-600",dot: "bg-emerald-400" },
-  content_box:       { bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400" },
-  two_column_box:    { bg: "bg-pink-50",    text: "text-pink-600",   dot: "bg-pink-400" },
-  drawing_box:       { bg: "bg-orange-50",  text: "text-orange-600", dot: "bg-orange-400" },
-  three_column_box:  { bg: "bg-sky-50",     text: "text-sky-600",    dot: "bg-sky-400" },
+  warmup_box:               { bg: "bg-violet-50",  text: "text-violet-600", dot: "bg-violet-400" },
+  fill_blank:               { bg: "bg-blue-50",    text: "text-blue-600",   dot: "bg-blue-400" },
+  numbered_response:        { bg: "bg-emerald-50", text: "text-emerald-600",dot: "bg-emerald-400" },
+  content_box:              { bg: "bg-amber-50",   text: "text-amber-600",  dot: "bg-amber-400" },
+  two_column_box:           { bg: "bg-pink-50",    text: "text-pink-600",   dot: "bg-pink-400" },
+  drawing_box:              { bg: "bg-orange-50",  text: "text-orange-600", dot: "bg-orange-400" },
+  three_column_box:         { bg: "bg-sky-50",     text: "text-sky-600",    dot: "bg-sky-400" },
+  structured_concept_box:   { bg: "bg-indigo-50",  text: "text-indigo-600", dot: "bg-indigo-400" },
+  graph_box:                { bg: "bg-teal-50",    text: "text-teal-600",   dot: "bg-teal-400" },
+  acronym_scaffold:         { bg: "bg-fuchsia-50", text: "text-fuchsia-600",dot: "bg-fuchsia-400" },
+  labeled_comparison_table: { bg: "bg-rose-50",    text: "text-rose-600",   dot: "bg-rose-400" },
+  frayer_model:             { bg: "bg-cyan-50",    text: "text-cyan-600",   dot: "bg-cyan-400" },
+  t_chart:                  { bg: "bg-green-50",   text: "text-green-600",  dot: "bg-green-400" },
+  sequence_box:             { bg: "bg-purple-50",  text: "text-purple-600", dot: "bg-purple-400" },
+  cause_effect_box:         { bg: "bg-red-50",     text: "text-red-600",    dot: "bg-red-400" },
+  timeline_box:             { bg: "bg-sky-50",     text: "text-sky-700",    dot: "bg-sky-500" },
+  exit_ticket:              { bg: "bg-amber-50",   text: "text-amber-700",  dot: "bg-amber-500" },
+  spectrum_bar:             { bg: "bg-blue-50",    text: "text-blue-700",   dot: "bg-blue-500" },
+  mind_map_box:             { bg: "bg-violet-50",  text: "text-violet-700", dot: "bg-violet-500" },
 };
 
 interface Props {
   plan: NotesheetPlan;
   onPlanChange: (updated: NotesheetPlan) => void;
   onReset: () => void;
+  /** Present only on the describe-a-worksheet path — KORA's design reasoning. */
+  designBrief?: WorksheetDesignBrief | null;
 }
 
-export default function NotesheetPreview({ plan, onPlanChange, onReset }: Props) {
+export default function NotesheetPreview({ plan, onPlanChange, onReset, designBrief }: Props) {
+  const [briefOpen, setBriefOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"student" | "teacher_key" | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -114,6 +141,67 @@ export default function NotesheetPreview({ plan, onPlanChange, onReset }: Props)
         <p className="text-[10px] font-bold uppercase tracking-widest text-violet-400 mb-1">Essential Question</p>
         <p className="text-[13px] text-stone-700 italic leading-relaxed">{plan.essential_question}</p>
       </div>
+
+      {/* KORA's design reasoning — describe-a-worksheet path only */}
+      {designBrief && (
+        <div className="rounded-xl border border-stone-200 bg-stone-50/60 overflow-hidden">
+          <button
+            onClick={() => setBriefOpen((o) => !o)}
+            className="w-full flex items-center gap-2.5 px-4 py-3 text-left hover:bg-stone-100/60 transition-colors"
+          >
+            <Lightbulb size={14} className="shrink-0 text-amber-500" strokeWidth={2} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-semibold text-stone-700">
+                KORA built this as a {designBrief.worksheet_type.toLowerCase()}
+              </p>
+              {!briefOpen && (
+                <p className="text-[12px] text-stone-400 truncate">{designBrief.design_rationale}</p>
+              )}
+            </div>
+            <ChevronDown
+              size={14}
+              className={[
+                "shrink-0 text-stone-400 transition-transform",
+                briefOpen ? "rotate-180" : "",
+              ].join(" ")}
+            />
+          </button>
+
+          {briefOpen && (
+            <div className="px-4 pb-4 pt-1 flex flex-col gap-3 border-t border-stone-200/70">
+              {[
+                { label: "Why this format", value: designBrief.design_rationale },
+                { label: "Learning goal", value: designBrief.learning_goal },
+                { label: "What students do", value: designBrief.student_experience },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1">{label}</p>
+                  <p className="text-[12.5px] text-stone-600 leading-relaxed">{value}</p>
+                </div>
+              ))}
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-1.5">
+                  Section decisions
+                </p>
+                <ol className="flex flex-col gap-1.5">
+                  {designBrief.section_plan.map((s, i) => (
+                    <li key={i} className="flex gap-2.5 text-[12px] leading-relaxed">
+                      <span className="shrink-0 text-stone-300 tabular-nums">{i + 1}.</span>
+                      <span className="text-stone-600">
+                        <span className="font-semibold text-stone-700">{s.heading}</span>
+                        <span className="text-stone-400"> · {TYPE_LABELS[s.type] ?? s.type}</span>
+                        <br />
+                        {s.rationale}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section cards */}
       <div ref={listRef} className="flex flex-col gap-2">

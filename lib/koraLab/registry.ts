@@ -9,7 +9,12 @@ import {
   generateRevisionPlan,
   RevisionCoachInputSchema,
 } from "../marginsKoraGenerate";
-import { generateNotesheetPlan, NotesheetGenerateInputSchema } from "../notesheetKoraGenerate";
+import {
+  generateNotesheetPlan,
+  NotesheetGenerateInputSchema,
+  generateWorksheetFromDescription,
+  WorksheetDescribeInputSchema,
+} from "../notesheetKoraGenerate";
 import { generateGameShow, GameShowGenerateInputSchema } from "../gameShowKoraGenerate";
 import {
   generateSliderDeck,
@@ -73,6 +78,20 @@ export const KORA_LAB_TASKS: Record<string, KoraLabTaskDef> = {
     defaultMaxTokens: 2048,
     defaultThinking: false,
     generate: generateNotesheetPlan,
+  },
+  worksheet_describe: {
+    label: "Scaffold — Worksheet from description",
+    description:
+      "Builds a worksheet from a teacher's prose description instead of a slideshow, via a 2-phase " +
+      "pipeline (Design Brief → Build). The Design Brief phase decides what KIND of worksheet the " +
+      "request calls for — guided notes, practice set, lab, station rotation — and justifies each " +
+      "section before anything is written. defaultModel/defaultThinking describe the Design Brief " +
+      "phase; systemPromptOverride targets the Build phase only.",
+    inputSchema: WorksheetDescribeInputSchema,
+    defaultModel: "claude-sonnet-4-6",
+    defaultMaxTokens: 4096,
+    defaultThinking: true,
+    generate: generateWorksheetFromDescription,
   },
   game_show_generate: {
     label: "Game Shows — content generation",

@@ -81,3 +81,41 @@ export const NotesheetPlanSchema = z.object({
 export type NotesheetColumn = z.infer<typeof NotesheetColumnSchema>;
 export type NotesheetSection = z.infer<typeof NotesheetSectionSchema>;
 export type NotesheetPlan = z.infer<typeof NotesheetPlanSchema>;
+
+// ── Worksheet design brief ────────────────────────────────────────────────────
+// Emitted by the reasoning pass of the description-driven generator. The teacher
+// describes what they want in prose; KORA first decides WHAT KIND of worksheet
+// that is and WHY each section earns its place, then a second pass builds the
+// actual sections from this brief. Surfaced to the teacher so the design
+// decisions are visible and arguable, not hidden inside one opaque call.
+
+export const WorksheetSectionPlanSchema = z.object({
+  /** Section type id from the supported list (warmup_box, t_chart, …). */
+  type: z.string(),
+  /** Short label for what this section is (2-5 words). */
+  heading: z.string(),
+  /** Why this section type — the design decision, in one sentence. */
+  rationale: z.string(),
+});
+
+export const WorksheetDesignBriefSchema = z.object({
+  /** What kind of worksheet this is: guided notes, practice set, lab, station activity, review, etc. */
+  worksheet_type: z.string(),
+  /** What students will be able to do when finished. */
+  learning_goal: z.string(),
+  /** Inferred or stated subject. */
+  subject: z.string(),
+  /** Inferred or stated grade band. */
+  grade_band: z.string(),
+  /** The single question the worksheet drives at. */
+  essential_question: z.string(),
+  /** The overall design reasoning: why this shape of worksheet fits this request. */
+  design_rationale: z.string(),
+  /** What a student physically does, start to finish, in 1-3 sentences. */
+  student_experience: z.string(),
+  /** Planned sections in order, each with its justification. */
+  section_plan: z.array(WorksheetSectionPlanSchema).min(3).max(14),
+});
+
+export type WorksheetSectionPlan = z.infer<typeof WorksheetSectionPlanSchema>;
+export type WorksheetDesignBrief = z.infer<typeof WorksheetDesignBriefSchema>;

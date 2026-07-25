@@ -10,7 +10,17 @@ const MAX_REFERENCE_EXAMPLES = 3;
 const MAX_OUTPUT_CHARS = 2000;
 
 export async function buildReferenceExamplesBlock(taskType: string): Promise<string> {
-  const examples = await getReferenceExamplesForTask(taskType, MAX_REFERENCE_EXAMPLES);
+  // Reference examples only sharpen the prompt — they are never required for a
+  // correct generation. If the Lab DB is unreachable or the table isn't there
+  // yet, fall back to an empty block rather than failing the teacher's request:
+  // a slightly less calibrated worksheet beats a 502.
+  let examples: Awaited<ReturnType<typeof getReferenceExamplesForTask>>;
+  try {
+    examples = await getReferenceExamplesForTask(taskType, MAX_REFERENCE_EXAMPLES);
+  } catch (err) {
+    console.warn(`[koraLabReference] Reference examples unavailable for "${taskType}"; continuing without them.`, err);
+    return "";
+  }
   if (examples.length === 0) return "";
 
   const parts = examples.map((ex, i) => {

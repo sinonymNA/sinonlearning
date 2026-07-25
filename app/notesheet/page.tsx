@@ -7,9 +7,12 @@ import { Upload, Sparkles, Printer, ArrowRight } from "lucide-react";
 import NotesheetUpload from "@/components/notesheet/NotesheetUpload";
 import NotesheetConfirm from "@/components/notesheet/NotesheetConfirm";
 import NotesheetPreview from "@/components/notesheet/NotesheetPreview";
-import type { NotesheetPlan } from "@/lib/notesheetTypes";
+import WorksheetDescribe from "@/components/notesheet/WorksheetDescribe";
+import type { NotesheetPlan, WorksheetDesignBrief } from "@/lib/notesheetTypes";
 
 type Step = "intro" | "upload" | "confirm" | "preview";
+/** Which input the teacher is building from on the "upload" step. */
+type Mode = "slides" | "describe";
 
 interface UploadResult {
   slides: string[];
@@ -25,8 +28,8 @@ const STEP_PROGRESS: Record<Step, number> = {
 };
 
 const introSteps = [
-  { icon: Upload, title: "Upload", description: "Drop in a PowerPoint or PDF of your lesson slides." },
-  { icon: Sparkles, title: "KORA structures it", description: "KORA decides what students should write, section by section." },
+  { icon: Upload, title: "Upload or describe", description: "Drop in your lesson slides — or just say what you want students to do." },
+  { icon: Sparkles, title: "KORA designs it", description: "KORA picks the format and decides what students write, section by section." },
   { icon: Printer, title: "Print & teach", description: "Download a student PDF and a teacher answer key, ready to go." },
 ];
 
@@ -48,8 +51,10 @@ export function ScaffoldLogo({ className = "" }: { className?: string }) {
 
 export default function ScaffoldPage() {
   const [step, setStep] = useState<Step>("intro");
+  const [mode, setMode] = useState<Mode>("slides");
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [plan, setPlan] = useState<NotesheetPlan | null>(null);
+  const [designBrief, setDesignBrief] = useState<WorksheetDesignBrief | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
 
@@ -101,12 +106,20 @@ export default function ScaffoldPage() {
 
   function handleGenerate(generatedPlan: NotesheetPlan) {
     setPlan(generatedPlan);
+    setDesignBrief(null);
+    goToStep("preview");
+  }
+
+  function handleDescribeGenerate(generatedPlan: NotesheetPlan, brief: WorksheetDesignBrief) {
+    setPlan(generatedPlan);
+    setDesignBrief(brief);
     goToStep("preview");
   }
 
   function reset() {
     setUploadResult(null);
     setPlan(null);
+    setDesignBrief(null);
     goToStep("upload");
   }
 
@@ -167,7 +180,7 @@ export default function ScaffoldPage() {
               <div className="text-center">
                 <ScaffoldLogo className="text-3xl" />
                 <h1 className="mt-4 text-[28px] font-bold text-stone-900 leading-tight tracking-tight">
-                  Turn any slideshow into a{" "}
+                  Any lesson into a{" "}
                   <span
                     style={{
                       background: "linear-gradient(90deg, #9061F9, #5B21B6)",
@@ -176,12 +189,13 @@ export default function ScaffoldPage() {
                       backgroundClip: "text",
                     }}
                   >
-                    ready-to-teach notesheet.
+                    ready-to-teach worksheet.
                   </span>
                 </h1>
                 <p className="mt-2.5 text-[14px] text-stone-400 leading-relaxed max-w-sm mx-auto">
-                  Upload your lesson slides — KORA reads them, decides what students should
-                  write, and builds a print-ready student notesheet with a teacher answer key.
+                  Upload your slides, or just describe what you want students to do. KORA picks
+                  the right format — guided notes, practice set, lab, station activity — and
+                  builds it with a teacher answer key.
                 </p>
               </div>
 
@@ -211,10 +225,10 @@ export default function ScaffoldPage() {
           )}
 
           {step === "upload" && (
-            <div className="flex flex-col gap-9">
+            <div className="flex flex-col gap-7">
               <div className="text-center">
                 <h1 className="text-[28px] font-bold text-stone-900 leading-tight tracking-tight">
-                  Upload a lesson.{" "}
+                  {mode === "slides" ? "Upload a lesson. " : "Describe it. "}
                   <span
                     style={{
                       background: "linear-gradient(90deg, #9061F9, #5B21B6)",
@@ -223,14 +237,57 @@ export default function ScaffoldPage() {
                       backgroundClip: "text",
                     }}
                   >
-                    Get a notesheet.
+                    {mode === "slides" ? "Get a notesheet." : "Get a worksheet."}
                   </span>
                 </h1>
                 <p className="mt-2.5 text-[14px] text-stone-400 leading-relaxed max-w-sm mx-auto">
-                  KORA reads your slides, decides what students should write, and builds a print-ready PDF in seconds.
+                  {mode === "slides"
+                    ? "KORA reads your slides, decides what students should write, and builds a print-ready PDF in seconds."
+                    : "No slideshow needed. Tell KORA what students should do and it designs the worksheet around it."}
                 </p>
               </div>
-              <NotesheetUpload onUpload={handleUpload} />
+
+              {/* Mode toggle */}
+              <div className="grid grid-cols-2 gap-1.5 rounded-2xl bg-stone-100 p-1.5">
+                {([
+                  { id: "slides" as Mode, label: "From a slideshow", sub: "Upload .pptx" },
+                  { id: "describe" as Mode, label: "From a description", sub: "Notes or activity" },
+                ]).map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setMode(t.id)}
+                    className={[
+                      "rounded-xl px-3 py-2.5 text-center transition-all",
+                      mode === t.id
+                        ? "bg-white shadow-sm"
+                        : "hover:bg-white/50",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={[
+                        "block text-[13px] font-semibold",
+                        mode === t.id ? "text-violet-700" : "text-stone-500",
+                      ].join(" ")}
+                    >
+                      {t.label}
+                    </span>
+                    <span
+                      className={[
+                        "block text-[11px] mt-0.5",
+                        mode === t.id ? "text-violet-400" : "text-stone-400",
+                      ].join(" ")}
+                    >
+                      {t.sub}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {mode === "slides" ? (
+                <NotesheetUpload onUpload={handleUpload} />
+              ) : (
+                <WorksheetDescribe onGenerate={handleDescribeGenerate} />
+              )}
             </div>
           )}
 
@@ -248,6 +305,7 @@ export default function ScaffoldPage() {
               plan={plan}
               onPlanChange={setPlan}
               onReset={reset}
+              designBrief={designBrief}
             />
           )}
 
