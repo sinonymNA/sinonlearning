@@ -23,6 +23,7 @@ import {
   SliderContentFillInputSchema,
 } from "../sliderKoraGenerate";
 import { generateReelScript, ReelBuildInputSchema } from "../reelKoraGenerate";
+import { gradeRelayEssay, RelayGradeInputSchema } from "../relayKoraGenerate";
 
 // KORA Lab task registry — the single place that maps a task id to the exact
 // generation logic its production route uses. Both the production route AND
@@ -144,6 +145,20 @@ export const KORA_LAB_TASKS: Record<string, KoraLabTaskDef> = {
     defaultMaxTokens: 8192,
     defaultThinking: true,
     generate: generateReelScript,
+  },
+  relay_grade: {
+    label: "Relay — Essay scoring",
+    description:
+      "Scores one relay-written essay against the AP rubric. Deliberately lighter than margins_grade: " +
+      "a whole room is graded at once (32 essays in a 32-student class) while a projector waits, so this " +
+      "is Sonnet with no thinking and ~900 tokens, returning a verdict and one sentence per rubric " +
+      "category instead of inline annotations. Per-category totals are re-derived and clamped to the " +
+      "rubric ceiling after the call, so a bad number can't corrupt the leaderboard.",
+    inputSchema: RelayGradeInputSchema,
+    defaultModel: "claude-sonnet-4-6",
+    defaultMaxTokens: 900,
+    defaultThinking: false,
+    generate: gradeRelayEssay,
   },
   margins_grade: {
     label: "Margins — Essay grading (text-only)",
