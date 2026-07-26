@@ -24,6 +24,12 @@ import {
 } from "../sliderKoraGenerate";
 import { generateReelScript, ReelBuildInputSchema } from "../reelKoraGenerate";
 import { gradeRelayEssay, RelayGradeInputSchema } from "../relayKoraGenerate";
+import {
+  generateDeckGlossary,
+  LenguaGlossaryInputSchema,
+  glossTerm,
+  LenguaTermInputSchema,
+} from "../lenguaKoraGenerate";
 
 // KORA Lab task registry — the single place that maps a task id to the exact
 // generation logic its production route uses. Both the production route AND
@@ -159,6 +165,30 @@ export const KORA_LAB_TASKS: Record<string, KoraLabTaskDef> = {
     defaultMaxTokens: 900,
     defaultThinking: false,
     generate: gradeRelayEssay,
+  },
+  lengua_glossary: {
+    label: "Lengua — Deck glossary",
+    description:
+      "Extracts the 12-24 terms an English learner would stumble on in a deck and glosses each in " +
+      "simplified English plus the target language. Run once per (deck, language) and cached, so a " +
+      "lesson costs nothing to re-run. The simple-English definition is the one students see first.",
+    inputSchema: LenguaGlossaryInputSchema,
+    defaultModel: "claude-sonnet-4-6",
+    defaultMaxTokens: 3000,
+    defaultThinking: false,
+    generate: generateDeckGlossary,
+  },
+  lengua_term: {
+    label: "Lengua — Single term gloss",
+    description:
+      "Glosses one word a student tapped mid-lesson, in the sense used in its sentence. Haiku and ~300 " +
+      "tokens because it runs while a class waits, and the result is cached globally in lengua_lexicon " +
+      "so any given word is only ever paid for once across all schools.",
+    inputSchema: LenguaTermInputSchema,
+    defaultModel: "claude-haiku-4-5-20251001",
+    defaultMaxTokens: 300,
+    defaultThinking: false,
+    generate: glossTerm,
   },
   margins_grade: {
     label: "Margins — Essay grading (text-only)",
