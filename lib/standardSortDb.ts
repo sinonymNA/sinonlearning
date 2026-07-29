@@ -147,6 +147,14 @@ export async function getSession(code: string): Promise<StandardSortSession | nu
  *
  * Idempotent under concurrent first-visitors: the insert is a no-op on
  * conflict, and either request simply re-selects the winning row.
+ *
+ * Once created, a seeded session stays in sync with its seed definition —
+ * editing the data (fixing a typo, dropping items) takes effect on the next
+ * request rather than needing the DB row touched by hand. Only title/units/
+ * standards are resynced; host_token, participants, and every response are
+ * left alone. A response referencing a standard_id the edit removed simply
+ * stops appearing in the tally (getSessionResults only iterates the current
+ * standards list) — no orphaned-row error, it just quietly drops out.
  */
 export async function getOrCreateSeededSession(
   code: string,
@@ -154,7 +162,19 @@ export async function getOrCreateSeededSession(
 ): Promise<StandardSortSession> {
   await ensureSchema();
   const existing = await getSession(code);
-  if (existing) return existing;
+  if (existing) {
+    const inSync =
+      existing.title === seed.title &&
+      JSON.stringify(existing.units) === JSON.stringify(seed.units) &&
+      JSON.stringify(existing.standards) === JSON.stringify(seed.standards);
+    if (inSync) return existing;
+
+    const { rows } = await query<StandardSortSession>(
+      `UPDATE standard_sort_sessions SET title=$2, units=$3, standards=$4 WHERE code=$1 RETURNING *`,
+      [code, seed.title.slice(0, 200), seed.units, JSON.stringify(seed.standards)]
+    );
+    return rows[0];
+  }
 
   await query(
     `INSERT INTO standard_sort_sessions (code, host_token, title, units, standards)
