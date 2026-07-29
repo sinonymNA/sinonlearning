@@ -23,20 +23,25 @@ export default function StandardSortPage() {
   const initialisedRef = useRef(false);
   const tokenRef = useRef<string | null>(null);
 
+  // Visiting the link is the whole flow: no separate join page, no code
+  // re-entry — just a name, right here, then straight into the sort. A token
+  // already in localStorage (rejoining after a refresh) skips this entirely.
+  const [hasToken, setHasToken] = useState(false);
+  const [name, setName] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+
   if (tokenRef.current === null && typeof window !== "undefined") {
     tokenRef.current = localStorage.getItem(`standard-sort-participant-${code}`);
   }
-
   useEffect(() => {
-    if (!tokenRef.current) {
-      router.replace(`/tools/standard-sort/join?code=${code}`);
-    }
-  }, [code, router]);
+    if (tokenRef.current) setHasToken(true);
+  }, []);
 
   const fetchState = useCallback(async () => {
-    if (!tokenRef.current) return;
     try {
-      const res = await fetch(`/api/standard-sort/sessions/${code}?participantToken=${tokenRef.current}`);
+      const qs = tokenRef.current ? `?participantToken=${tokenRef.current}` : "";
+      const res = await fetch(`/api/standard-sort/sessions/${code}${qs}`);
       if (!res.ok) return;
       const data: State = await res.json();
       setState(data);
@@ -58,11 +63,42 @@ export default function StandardSortPage() {
     } catch { /* transient — next poll retries */ }
   }, [code, router]);
 
+  // Runs regardless of hasToken — fetching without a participantToken still
+  // loads the session's title (shown above the name prompt) and, for a
+  // seeded session, is what makes it spring into existence on a cold visit.
   useEffect(() => {
     fetchState();
     const id = setInterval(fetchState, 4000);
     return () => clearInterval(id);
   }, [fetchState]);
+
+  async function submitName() {
+    if (!name.trim()) return;
+    setJoining(true);
+    setJoinError(null);
+    try {
+      let token = localStorage.getItem(`standard-sort-participant-${code}`);
+      if (!token) {
+        token = crypto.randomUUID().replace(/-/g, "");
+        localStorage.setItem(`standard-sort-participant-${code}`, token);
+      }
+      const res = await fetch(`/api/standard-sort/sessions/${code}/join`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), participantToken: token }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setJoinError(data.error ?? "Could not join."); return; }
+      tokenRef.current = token;
+      setHasToken(true);
+      initialisedRef.current = false; // let the next fetch set the resume index
+      await fetchState();
+    } catch {
+      setJoinError("Network error. Please try again.");
+    } finally {
+      setJoining(false);
+    }
+  }
 
   function toggleUnit(unit: string) {
     setPicked((prev) => {
@@ -111,6 +147,51 @@ export default function StandardSortPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="animate-spin text-indigo-400" />
+      </div>
+    );
+  }
+
+  if (!hasToken) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white px-5">
+        <div className="w-full max-w-sm">
+          <div className="flex items-center justify-center gap-2">
+            <ListChecks className="text-indigo-600" size={22} />
+            <span className="text-[18px] font-bold text-slate-900">{state.title}</span>
+          </div>
+          <p className="mt-2 text-center text-[13px] text-slate-400">
+            {state.standards.length} standards to sort into {state.units.length} units.
+          </p>
+
+          <label className="mt-8 block">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Your name
+            </span>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) submitName(); }}
+              maxLength={60}
+              placeholder="Jordan"
+              className="mt-1.5 w-full rounded-xl border border-slate-200 px-4 py-3 text-[16px] text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+            />
+          </label>
+
+          {joinError && (
+            <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-[13px] text-red-600">
+              {joinError}
+            </div>
+          )}
+
+          <button
+            onClick={submitName}
+            disabled={!name.trim() || joining}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 py-3.5 text-[15px] font-semibold text-white shadow-md shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+          >
+            {joining ? "Starting…" : "Start sorting"} {!joining && <ArrowRight size={15} />}
+          </button>
+        </div>
       </div>
     );
   }

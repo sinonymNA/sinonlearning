@@ -5,6 +5,14 @@
 // anything from the same module — even just this constant — drags `pg` into
 // the browser bundle and fails to build ("Module not found: util/types").
 // Anything the create page needs client-side lives here instead.
+//
+// ECON_PF_STANDARDS is imported as a value below (not just a type), so this
+// creates a module cycle with data/econPersonalFinanceStandards.ts, which
+// imports StandardItem back from here. That's fine — its import is
+// `import type`, erased entirely at compile time, so there is no runtime
+// cycle for the bundler to resolve.
+
+import { ECON_PF_STANDARDS } from "@/data/econPersonalFinanceStandards";
 
 export interface StandardItem {
   id: string;
@@ -46,3 +54,30 @@ export function parseStandardsText(raw: string): StandardItem[] {
     return { id: String(i), code: null, text: line.slice(0, 500) };
   });
 }
+
+// ─── Pre-provisioned sessions ─────────────────────────────────────────────────
+//
+// A seed is a session that springs into existence the first time its fixed
+// code is visited, rather than requiring someone to run the create form.
+// That's what makes "just go to the route and it asks for your name" work —
+// there's no separate creation step for a list that's already decided.
+//
+// Keep the code short, memorable, and exact-case: the lookup in the API route
+// is a plain string match against the URL segment, so whoever gets the link
+// needs the casing as given here.
+
+export interface StandardSortSeed {
+  code: string;
+  title: string;
+  units: string[];
+  standards: StandardItem[];
+}
+
+export const STANDARD_SORT_SEEDS: Record<string, StandardSortSeed> = {
+  ECONPF: {
+    code: "ECONPF",
+    title: "Economics & Personal Finance — Unit Realignment",
+    units: DEFAULT_UNITS,
+    standards: ECON_PF_STANDARDS,
+  },
+};

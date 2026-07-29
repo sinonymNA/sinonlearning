@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getSession,
+  getOrCreateSeededSession,
   getParticipants,
   getParticipantResponses,
   getSessionResults,
 } from "@/lib/standardSortDb";
+import { STANDARD_SORT_SEEDS } from "@/lib/standardSort";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +16,11 @@ export const dynamic = "force-dynamic";
 //    resuming a sort after a refresh
 //  - ?results=1 adds the full tally — kept behind a flag because the sort
 //    screen polls too and has no use for the aggregate on every request
+//
+// If the code matches a known seed (STANDARD_SORT_SEEDS) and no session
+// exists yet, one is created here on the first request — the route that
+// would otherwise 404 is exactly the one moment a seeded session needs to
+// spring into being.
 
 export async function GET(
   request: NextRequest,
@@ -23,7 +30,8 @@ export async function GET(
   const participantToken = request.nextUrl.searchParams.get("participantToken");
   const wantResults = request.nextUrl.searchParams.get("results") === "1";
 
-  const session = await getSession(code);
+  const seed = STANDARD_SORT_SEEDS[code];
+  const session = seed ? await getOrCreateSeededSession(code, seed) : await getSession(code);
   if (!session) return NextResponse.json({ error: "Session not found." }, { status: 404 });
 
   const base = {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { joinSession } from "@/lib/standardSortDb";
+import { joinSession, getOrCreateSeededSession } from "@/lib/standardSortDb";
+import { STANDARD_SORT_SEEDS } from "@/lib/standardSort";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,13 @@ export async function POST(
   const participantToken = (body.participantToken ?? "").trim();
   if (!name) return NextResponse.json({ error: "Enter your name." }, { status: 400 });
   if (!participantToken) return NextResponse.json({ error: "Missing token." }, { status: 400 });
+
+  // A seeded session springs into existence on first contact regardless of
+  // whether the caller hit the state route first — join shouldn't be fragile
+  // to call order, since the inline name prompt on the sort page fires it
+  // directly.
+  const seed = STANDARD_SORT_SEEDS[code];
+  if (seed) await getOrCreateSeededSession(code, seed);
 
   const participant = await joinSession(code, name, participantToken);
   if (!participant) {

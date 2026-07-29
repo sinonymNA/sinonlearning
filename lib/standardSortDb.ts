@@ -140,6 +140,30 @@ export async function getSession(code: string): Promise<StandardSortSession | nu
   return rows[0] ?? null;
 }
 
+/**
+ * Get a session, or create it from a seed if this is the first time anyone
+ * has visited its fixed code. This is what lets a pre-decided standards list
+ * work as "just visit the link" — nobody has to run the create form first.
+ *
+ * Idempotent under concurrent first-visitors: the insert is a no-op on
+ * conflict, and either request simply re-selects the winning row.
+ */
+export async function getOrCreateSeededSession(
+  code: string,
+  seed: { title: string; units: string[]; standards: StandardItem[] }
+): Promise<StandardSortSession> {
+  await ensureSchema();
+  const existing = await getSession(code);
+  if (existing) return existing;
+
+  await query(
+    `INSERT INTO standard_sort_sessions (code, host_token, title, units, standards)
+     VALUES ($1,$2,$3,$4,$5) ON CONFLICT (code) DO NOTHING`,
+    [code, randomBytes(24).toString("hex"), seed.title.slice(0, 200), seed.units, JSON.stringify(seed.standards)]
+  );
+  return (await getSession(code))!;
+}
+
 /** Wipes participants and responses so the same code/link can be reused for a real run after a trial. */
 export async function resetSession(code: string, hostToken: string): Promise<boolean> {
   await ensureSchema();
