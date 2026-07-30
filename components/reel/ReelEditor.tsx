@@ -48,6 +48,8 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
   const [previewElapsed, setPreviewElapsed] = useState(0);
   const [finalElapsed, setFinalElapsed] = useState(0);
   const [showProduceWarn, setShowProduceWarn] = useState(false);
+  const [previewErrorDetail, setPreviewErrorDetail] = useState<string | null>(null);
+  const [finalErrorDetail, setFinalErrorDetail] = useState<string | null>(null);
 
   const isFirstRender = useRef(true);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -132,15 +134,15 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
   }
 
   // ── Render polling ──
-  async function pollJob(kind: "render" | "mux"): Promise<boolean> {
+  async function pollJob(kind: "render" | "mux"): Promise<{ ok: boolean; error?: string }> {
     for (let i = 0; i < 120; i++) {
       await new Promise((r) => setTimeout(r, 2000));
       const res = await fetch(`/api/reel/projects/${project.id}/render?kind=${kind}`);
       const data = await res.json();
-      if (data.status === "done") return true;
-      if (data.status === "failed") return false;
+      if (data.status === "done") return { ok: true };
+      if (data.status === "failed") return { ok: false, error: data.error };
     }
-    return false;
+    return { ok: false, error: "Timed out waiting for the render worker." };
   }
 
   // Tick an elapsed-seconds counter while a job runs so a slow worker shows
@@ -160,17 +162,19 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
 
   async function renderPreview() {
     setPreview("working");
+    setPreviewErrorDetail(null);
     await fetch(`/api/reel/projects/${project.id}/render`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind: "render" }),
     });
-    const ok = await pollJob("render");
+    const { ok, error } = await pollJob("render");
     if (ok) {
       setPreview("done");
       setPreviewNonce((n) => n + 1);
     } else {
       setPreview("failed");
+      setPreviewErrorDetail(error ?? null);
     }
   }
 
@@ -190,17 +194,19 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
 
   async function produceFinal() {
     setFinalPhase("working");
+    setFinalErrorDetail(null);
     await fetch(`/api/reel/projects/${project.id}/render`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kind: "mux" }),
     });
-    const ok = await pollJob("mux");
+    const { ok, error } = await pollJob("mux");
     if (ok) {
       setFinalPhase("done");
       setFinalNonce((n) => n + 1);
     } else {
       setFinalPhase("failed");
+      setFinalErrorDetail(error ?? null);
     }
   }
 
@@ -399,9 +405,14 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
           )}
 
           {preview === "failed" && (
-            <p className="text-sm text-red-600">
-              Preview render failed — check that the worker service is running, then try again.
-            </p>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+              <p className="text-sm text-red-600">
+                Preview render failed — check that the worker service is running, then try again.
+              </p>
+              {previewErrorDetail && (
+                <p className="mt-1.5 break-words font-mono text-[11px] text-red-500">{previewErrorDetail}</p>
+              )}
+            </div>
           )}
           {preview === "done" && (
             <div>
@@ -415,9 +426,14 @@ export default function ReelEditor({ project, role = "teacher" }: { project: Ree
             </div>
           )}
           {finalPhase === "failed" && (
-            <p className="text-sm text-red-600">
-              Final render failed — check that the worker service is running, then try again.
-            </p>
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+              <p className="text-sm text-red-600">
+                Final render failed — check that the worker service is running, then try again.
+              </p>
+              {finalErrorDetail && (
+                <p className="mt-1.5 break-words font-mono text-[11px] text-red-500">{finalErrorDetail}</p>
+              )}
+            </div>
           )}
           {finalPhase === "done" && (
             <div>

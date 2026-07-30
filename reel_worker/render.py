@@ -90,6 +90,11 @@ def _normalize(src: str, out: str, audio_path: Optional[str]) -> None:
         a_dur = _ffprobe_duration(audio_path)
         pad = max(0.0, a_dur - v_dur)
         vf = f"tpad=stop_mode=clone:stop_duration={pad:.3f}" if pad > 0.05 else "null"
+        # Always cap at max(video, audio), never "-shortest" (which caps at
+        # the SHORTER stream) — when narration reads faster than the beat's
+        # baseline animation, the video must still play out in full, not get
+        # cut short at the point the narration happens to end.
+        extra = ["-t", f"{max(v_dur, a_dur):.3f}"]
         _run(
             [
                 "ffmpeg", "-y",
@@ -99,7 +104,7 @@ def _normalize(src: str, out: str, audio_path: Optional[str]) -> None:
                 "-map", "[v]", "-map", "1:a",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
                 "-c:a", "aac", "-b:a", "160k",
-                "-shortest" if a_dur < v_dur else "-t", f"{max(v_dur, a_dur):.3f}",
+                *extra,
                 out,
             ]
         )
@@ -119,16 +124,65 @@ def _normalize(src: str, out: str, audio_path: Optional[str]) -> None:
         )
 
 
-def _concat(clips: list[str], out: str, tmpdir: str) -> None:
-    listfile = os.path.join(tmpdir, "concat.txt")
-    with open(listfile, "w") as fh:
-        for c in clips:
-            fh.write(f"file '{c}'\n")
-    # +faststart moves the moov atom to the front of the file (a second, fast
-    # remux pass — works fine with `-c copy`, no re-encode). Without it the
-    # index sits at the end, which combined with byte-range serving makes
-    # Safari/iOS refuse to play the video at all instead of just seeking slowly.
-    _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile, "-c", "copy", "-movflags", "+faststart", out])
+# Short cross-dissolve between beats — long enough to read as a deliberate
+# transition, short enough not to blur the content on either side. xfade
+# can't use -c copy (it has to actually blend frames), so this is a real
+# re-encode pass, same preset as the per-beat normalize step.
+TRANSITION_DURATION = 0.28
+
+
+def _xfade_duration(durations: list[float]) -> float:
+    if not durations:
+        return TRANSITION_DURATION
+    # Never let the crossfade eat more than 40% of the shortest clip —
+    # guards the offset math below from going negative on a very short beat.
+    return max(0.05, min(TRANSITION_DURATION, min(durations) * 0.4))
+
+
+def _concat(clips: list[str], out: str) -> None:
+    """Join per-beat clips into one video. A single beat has nothing to
+    transition between and is just remuxed as-is (lossless, -c copy); 2+
+    beats cross-dissolve via a chained xfade/acrossfade filter instead of
+    the hard cut a plain concat demuxer would produce."""
+    if len(clips) == 1:
+        _run(["ffmpeg", "-y", "-i", clips[0], "-c", "copy", "-movflags", "+faststart", out])
+        return
+
+    durations = [_ffprobe_duration(c) for c in clips]
+    d = _xfade_duration(durations)
+
+    inputs: list[str] = []
+    for c in clips:
+        inputs += ["-i", c]
+
+    v_label, a_label = "0:v", "0:a"
+    filters: list[str] = []
+    # offset for transition i is where, on the *merged-so-far* timeline, the
+    # next clip starts crossing in — cumulative sum of real clip durations
+    # minus one transition-width per merge already applied.
+    cum = durations[0] - d
+    for i in range(1, len(clips)):
+        next_v, next_a = f"v{i}", f"a{i}"
+        filters.append(f"[{v_label}][{i}:v]xfade=transition=fade:duration={d:.3f}:offset={cum:.3f}[{next_v}]")
+        filters.append(f"[{a_label}][{i}:a]acrossfade=d={d:.3f}[{next_a}]")
+        v_label, a_label = next_v, next_a
+        if i < len(clips) - 1:
+            cum += durations[i] - d
+
+    _run(
+        [
+            "ffmpeg", "-y",
+            *inputs,
+            "-filter_complex", ";".join(filters),
+            "-map", f"[{v_label}]", "-map", f"[{a_label}]",
+            "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+            "-c:a", "aac", "-b:a", "160k",
+            # +faststart moves the moov atom to the front so Safari/iOS can
+            # play the file instead of refusing it outright.
+            "-movflags", "+faststart",
+            out,
+        ]
+    )
 
 
 def _prepare_image(conn, beat: dict[str, Any], tmpdir: str, index: int) -> Optional[str]:
@@ -173,6 +227,6 @@ def build_video(conn, project: dict[str, Any], kind: str) -> bytes:
             normalized.append(norm)
 
         out = os.path.join(tmpdir, "final.mp4")
-        _concat(normalized, out, tmpdir)
+        _concat(normalized, out)
         with open(out, "rb") as fh:
             return fh.read()

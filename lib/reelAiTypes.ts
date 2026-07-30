@@ -5,7 +5,7 @@ import { z } from "zod";
 // subset — mirrors how Slider's KoraSlideSchema uses flat optional fields that
 // the route maps into a Slide. The route maps these into each Beat's `params`.
 //
-// text1-text5 and items are GENERIC slots reused across the 7 templates (a beat
+// text1-text5 and items are GENERIC slots reused across every template (a beat
 // only ever uses one template, so the same slot never means two things at
 // once), rather than one uniquely-named optional field per template purpose.
 // Anthropic's structured outputs enforce an (undocumented-threshold) grammar
@@ -28,6 +28,10 @@ export const ReelBeatSchema = z.object({
     "beforeAfter",
     "timeline",
     "simpleGraph",
+    "statCallout",
+    "quote",
+    "comparisonList",
+    "numberedSteps",
   ]),
   text1: z.string().optional(),
   text2: z.string().optional(),

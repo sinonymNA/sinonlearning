@@ -85,12 +85,14 @@ export default function BeatPreview({ beat, themeId }: { beat: Beat; themeId?: s
       {beat.templateId === "imageCaption" && (
         <div className="flex flex-col items-center gap-3 px-8">
           {beat.imageId ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/api/reel/images/${beat.imageId}`}
-              alt={asText(p.caption)}
-              className="max-h-[55%] max-w-[70%] rounded-md object-contain"
-            />
+            <div className="flex h-[55%] w-[70%] items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/api/reel/images/${beat.imageId}`}
+                alt={asText(p.caption)}
+                className="h-full w-full rounded-md object-contain"
+              />
+            </div>
           ) : (
             <div
               className="flex h-32 w-56 items-center justify-center rounded-md border border-dashed text-xs"
@@ -210,6 +212,101 @@ export default function BeatPreview({ beat, themeId }: { beat: Beat; themeId?: s
               {asText(p.caption)}
             </div>
           )}
+        </div>
+      )}
+
+      {beat.templateId === "statCallout" && (
+        <div className="flex flex-col items-center px-8 text-center">
+          <div className={`text-4xl font-bold sm:text-6xl ${headingFont}`} style={{ color: accent }}>
+            {asText(p.stat) || "42%"}
+          </div>
+          {asText(p.label) && (
+            <div className={`mt-2 text-base font-semibold sm:text-xl ${bodyFont}`} style={{ color: heading }}>
+              {asText(p.label)}
+            </div>
+          )}
+          {asText(p.context) && (
+            <div className={`mt-1.5 text-xs sm:text-sm ${bodyFont}`} style={{ color: bodyColor }}>
+              {asText(p.context)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {beat.templateId === "quote" && (
+        <div className="flex items-center gap-4 px-10">
+          {beat.imageId && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/reel/images/${beat.imageId}`}
+              alt=""
+              className="h-20 w-20 shrink-0 rounded-full object-cover sm:h-28 sm:w-28"
+            />
+          )}
+          <div>
+            <div className="text-3xl leading-none sm:text-5xl" style={{ color: accent, opacity: 0.35 }}>
+              &ldquo;
+            </div>
+            <div className={`text-base italic sm:text-xl ${bodyFont}`} style={{ color: heading }}>
+              {asText(p.quote) || "A short, memorable quote."}
+            </div>
+            {asText(p.attribution) && (
+              <div className={`mt-2 text-right text-xs font-semibold sm:text-sm ${headingFont}`} style={{ color: accent }}>
+                — {asText(p.attribution)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {beat.templateId === "comparisonList" && (
+        <div className="flex w-full gap-3 px-6">
+          {(["L", "R"] as const).map((side) => {
+            const title = side === "L" ? asText(p.leftTitle) || "Left" : asText(p.rightTitle) || "Right";
+            const prefix = `${side}:`;
+            const points = asList(p.items)
+              .filter((it) => it.trim().toUpperCase().startsWith(prefix))
+              .map((it) => it.trim().slice(prefix.length).trim());
+            return (
+              <div key={side} className="flex-1 rounded-lg border p-3" style={{ borderColor: accent, background: panel }}>
+                <div className={`mb-1.5 text-sm font-bold sm:text-base ${headingFont}`} style={{ color: accent }}>
+                  {title}
+                </div>
+                <ul className="space-y-1">
+                  {(points.length ? points : ["Point"]).slice(0, 5).map((pt, i) => (
+                    <li key={i} className={`text-[11px] sm:text-xs ${bodyFont}`} style={{ color: bodyColor }}>
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {beat.templateId === "numberedSteps" && (
+        <div className="w-full px-10">
+          {asText(p.heading) && (
+            <div className={`mb-3 text-lg font-bold sm:text-2xl ${headingFont}`} style={{ color: accent }}>
+              {asText(p.heading)}
+            </div>
+          )}
+          <ol className="space-y-2">
+            {(asList(p.steps).length ? asList(p.steps) : ["First step"]).slice(0, 6).map((s, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  style={{ background: accent }}
+                >
+                  {i + 1}
+                </span>
+                <span className={`text-sm sm:text-base ${bodyFont}`} style={{ color: bodyColor }}>
+                  {s}
+                </span>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
     </div>

@@ -27,7 +27,15 @@ const REEL_SYSTEM_PROMPT =
   "beforeAfter → text1 (left title), text2 (left detail), text3 (right title), text4 (right detail), text5 " +
   "(arrow label, e.g. 'leads to'); " +
   "timeline → items (events, each formatted as 'label: detail'); " +
-  "simpleGraph → text1 (x-axis label), text2 (y-axis label), text3 (trend: 'up'|'down'|'flat'), text4 (caption). " +
+  "simpleGraph → text1 (x-axis label), text2 (y-axis label), text3 (trend: 'up'|'down'|'flat'), text4 (caption); " +
+  "statCallout → text1 (one striking number/figure), text2 (short label for it), text3 (optional short context " +
+  "line); use for a single memorable statistic, not a general fact; " +
+  "quote → text1 (the quotation), text2 (attribution), optional image_query for a small portrait of the speaker; " +
+  "comparisonList → text1 (left column title), text2 (right column title), items (2-5 short points, each " +
+  "PREFIXED with 'L:' for a left-column point or 'R:' for a right-column point, e.g. 'L: Emphasizes social " +
+  "order'); use when a script names several distinct points of contrast, not just one line per side (use " +
+  "beforeAfter instead for a single-point contrast); " +
+  "numberedSteps → text1 (heading), items (2-6 short sequential steps, no numbers needed in the text itself). " +
   "(2) For any beat that references a concrete real-world thing (a place, a person, a book, a chart, an object), " +
   "prefer the imageCaption template and set image_query to a short web-image search phrase for it (e.g. 'New York " +
   "Stock Exchange trading floor', 'cover of the book Educated by Tara Westover'). Do NOT invent image URLs or " +

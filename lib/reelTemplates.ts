@@ -104,6 +104,52 @@ export const REEL_TEMPLATES: ReelTemplate[] = [
     usesImage: false,
     defaultSeconds: 7,
   },
+  {
+    id: "statCallout",
+    label: "Stat Callout",
+    description: "One striking number takes over the screen with a label and short context — great for a single memorable figure.",
+    params: [
+      { key: "stat", label: "The number", kind: "text", placeholder: "$1.2 trillion" },
+      { key: "label", label: "Label", kind: "text", placeholder: "U.S. student loan debt" },
+      { key: "context", label: "Context", kind: "text", placeholder: "More than credit cards and auto loans combined" },
+    ],
+    usesImage: false,
+    defaultSeconds: 6,
+  },
+  {
+    id: "quote",
+    label: "Quote",
+    description: "A wrapped quotation with attribution and a decorative quotation mark — optionally paired with a small portrait.",
+    params: [
+      { key: "quote", label: "Quote", kind: "text", placeholder: "The unexamined life is not worth living." },
+      { key: "attribution", label: "Attribution", kind: "text", placeholder: "Socrates" },
+    ],
+    usesImage: true,
+    defaultSeconds: 7,
+  },
+  {
+    id: "comparisonList",
+    label: "Comparison List",
+    description: "Two columns of several points each, fading in on their own side — for a real multi-point comparison, not just one line per side.",
+    params: [
+      { key: "leftTitle", label: "Left title", kind: "text", placeholder: "Confucianism" },
+      { key: "rightTitle", label: "Right title", kind: "text", placeholder: "Buddhism" },
+      { key: "items", label: "Points (prefix each with L: or R:)", kind: "list", placeholder: "L: Emphasizes social order" },
+    ],
+    usesImage: false,
+    defaultSeconds: 10,
+  },
+  {
+    id: "numberedSteps",
+    label: "Numbered Steps",
+    description: "A vertical line draws down as numbered steps pop in one at a time — great for a process or sequence.",
+    params: [
+      { key: "heading", label: "Heading", kind: "text", placeholder: "How a bill becomes a law" },
+      { key: "steps", label: "Steps", kind: "list", placeholder: "One short step per line" },
+    ],
+    usesImage: false,
+    defaultSeconds: 9,
+  },
 ];
 
 const TEMPLATE_BY_ID: Record<ReelTemplateId, ReelTemplate> = REEL_TEMPLATES.reduce(

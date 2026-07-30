@@ -13,7 +13,11 @@ export type ReelTemplateId =
   | "labeledDiagram"
   | "beforeAfter"
   | "timeline"
-  | "simpleGraph";
+  | "simpleGraph"
+  | "statCallout"
+  | "quote"
+  | "comparisonList"
+  | "numberedSteps";
 
 export interface Beat {
   id: string;

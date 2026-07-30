@@ -19,6 +19,10 @@ export const REEL_SLOT_MAP: Record<string, Record<string, ReelSlotKey>> = {
   beforeAfter: { leftTitle: "text1", leftBody: "text2", rightTitle: "text3", rightBody: "text4", arrowLabel: "text5" },
   timeline: { events: "items" },
   simpleGraph: { xLabel: "text1", yLabel: "text2", trend: "text3", caption: "text4" },
+  statCallout: { stat: "text1", label: "text2", context: "text3" },
+  quote: { quote: "text1", attribution: "text2" },
+  comparisonList: { leftTitle: "text1", rightTitle: "text2", items: "items" },
+  numberedSteps: { heading: "text1", steps: "items" },
 };
 
 export interface ReelSlotSource {
