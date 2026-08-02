@@ -160,6 +160,7 @@ function GradePreview({ output, essayText }: { output: EssayEvalOutput; essayTex
         strengths={output.strengths}
         nextSteps={output.next_steps}
         essayType={output.essay_type}
+        viewerRole="teacher"
       />
       <AnnotatedEssay essayText={essayText} annotations={output.annotations} />
     </div>

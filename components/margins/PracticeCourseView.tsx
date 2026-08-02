@@ -629,6 +629,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
                   strengths={reviewAttempt.feedback.strengths}
                   nextSteps={reviewAttempt.feedback.next_steps}
                   essayType="SAQ"
+                  viewerRole="student"
                 />
               ) : (
                 <PracticeFeedbackCard
@@ -813,6 +814,7 @@ export default function PracticeCourseView({ courseId, course, initialCurrentMod
               strengths={checkResult.result.strengths}
               nextSteps={checkResult.result.next_steps}
               essayType="SAQ"
+              viewerRole="student"
             />
           ) : (
             <PracticeFeedbackCard

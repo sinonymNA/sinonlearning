@@ -140,6 +140,15 @@ export function ensureMarginsSchema(): Promise<void> {
         query(`ALTER TABLE margins_essay_gradings ADD COLUMN IF NOT EXISTS next_steps JSONB NOT NULL DEFAULT '[]'`)
       )
       .then(() =>
+        query(`ALTER TABLE margins_essay_gradings ADD COLUMN IF NOT EXISTS teacher_rubric_breakdown JSONB`)
+      )
+      .then(() =>
+        // Null until a teacher actively finalizes every rubric row — the single
+        // source of truth for "is this an official grade yet," independent of
+        // whether KORA has already produced a draft evaluation.
+        query(`ALTER TABLE margins_essay_gradings ADD COLUMN IF NOT EXISTS teacher_finalized_at TIMESTAMPTZ`)
+      )
+      .then(() =>
         query(`ALTER TABLE margins_assignments ADD COLUMN IF NOT EXISTS max_revisions INTEGER NOT NULL DEFAULT 1`)
       )
       .then(() =>
@@ -459,7 +468,10 @@ export async function getAssignmentById(id: string): Promise<MarginsAssignment |
 
 // ── Submissions ──
 
-export type SubmissionStatus = "draft" | "submitted" | "graded";
+// "evaluated" = KORA has produced a draft evaluation; "graded" = a teacher has
+// actively finalized every rubric point and assigned the official score. AI
+// completion alone must never advance a submission straight to "graded".
+export type SubmissionStatus = "draft" | "submitted" | "evaluated" | "graded";
 
 export interface MarginsSubmission {
   id: string;
@@ -527,6 +539,19 @@ export async function markSubmissionSubmitted(submissionId: string): Promise<Mar
   return rows[0];
 }
 
+// Fires the moment KORA finishes its analysis — never the moment an official
+// grade exists. Guarded against a submission that a teacher already finalized
+// (e.g. re-running KORA's analysis afterward must not silently un-grade it).
+export async function markSubmissionEvaluated(submissionId: string): Promise<void> {
+  await ensureMarginsSchema();
+  await query(
+    `UPDATE margins_submissions SET status = 'evaluated', updated_at = now() WHERE id = $1 AND status != 'graded'`,
+    [submissionId]
+  );
+}
+
+// Only ever called once a teacher has actively finalized every rubric point —
+// this is what makes a grade official, never KORA's evaluation alone.
 export async function markSubmissionGraded(submissionId: string): Promise<void> {
   await ensureMarginsSchema();
   await query(`UPDATE margins_submissions SET status = 'graded', updated_at = now() WHERE id = $1`, [submissionId]);
@@ -561,14 +586,19 @@ export async function getAttemptChain(assignmentId: string, studentId: string): 
   return rows;
 }
 
-// Creates a new attempt chained to a graded submission, pre-filled with the
-// parent's essay text so the student edits forward rather than from blank.
-// The graded parent submission is never mutated.
+// Creates a new attempt chained to an already-evaluated submission, pre-filled
+// with the parent's essay text so the student edits forward rather than from
+// blank. The parent submission is never mutated. Revising against KORA's
+// feedback doesn't require a teacher to have finalized a grade first — that's
+// a separate, teacher-only gate (see finalizeGrading) — only that some
+// feedback (KORA's evaluation or, later, an official grade) actually exists.
 export async function createRevisionSubmission(parentSubmissionId: string): Promise<MarginsSubmission> {
   await ensureMarginsSchema();
   const parent = await getSubmissionById(parentSubmissionId);
   if (!parent) throw new Error("Parent submission not found.");
-  if (parent.status !== "graded") throw new Error("Only a graded submission can be revised.");
+  if (parent.status !== "evaluated" && parent.status !== "graded") {
+    throw new Error("This submission doesn't have feedback yet.");
+  }
 
   const id = randomUUID();
   const { rows } = await query<MarginsSubmission>(
@@ -665,14 +695,20 @@ export interface MarginsGrading {
   overall_feedback: string;
   strengths: string[];
   next_steps: NextStepRow[];
+  // This is the teacher's own official per-row scoring, not an "override" of
+  // something already official — KORA's rubric_breakdown above is only ever a
+  // suggestion, and no score is real until a teacher actively picks every row.
   teacher_override_score: number | null;
+  teacher_rubric_breakdown: RubricBreakdownRow[] | null;
   teacher_notes: string | null;
+  teacher_finalized_at: string | null;
   graded_at: string;
 }
 
 const GRADING_COLUMNS =
   "id, submission_id, overall_score, max_score, rubric_breakdown, annotations, " +
-  "overall_feedback, strengths, next_steps, teacher_override_score, teacher_notes, graded_at";
+  "overall_feedback, strengths, next_steps, teacher_override_score, teacher_rubric_breakdown, " +
+  "teacher_notes, teacher_finalized_at, graded_at";
 
 export async function createGrading(params: {
   submissionId: string;
@@ -712,7 +748,7 @@ export async function createGrading(params: {
       JSON.stringify(params.nextSteps),
     ]
   );
-  await markSubmissionGraded(params.submissionId);
+  await markSubmissionEvaluated(params.submissionId);
   return rows[0];
 }
 
@@ -725,18 +761,28 @@ export async function getGradingBySubmission(submissionId: string): Promise<Marg
   return rows[0];
 }
 
-export async function overrideGrading(
+// The only path that produces an official grade. Requires the teacher's own
+// per-row rubric scoring (never just a single aggregate number standing in
+// for it) so every point reflects an active teacher decision, not a rubber
+// stamp of KORA's suggestion.
+export async function finalizeGrading(
   submissionId: string,
-  overrideScore: number,
+  rubricBreakdown: RubricBreakdownRow[],
   notes: string
 ): Promise<MarginsGrading | undefined> {
   await ensureMarginsSchema();
+  const overallScore = rubricBreakdown.reduce((sum, row) => sum + row.points_earned, 0);
   const { rows } = await query<MarginsGrading>(
-    `UPDATE margins_essay_gradings SET teacher_override_score = $2, teacher_notes = $3
+    `UPDATE margins_essay_gradings SET
+       teacher_override_score = $2,
+       teacher_rubric_breakdown = $3,
+       teacher_notes = $4,
+       teacher_finalized_at = now()
      WHERE submission_id = $1
      RETURNING ${GRADING_COLUMNS}`,
-    [submissionId, overrideScore, notes]
+    [submissionId, overallScore, JSON.stringify(rubricBreakdown), notes]
   );
+  if (rows[0]) await markSubmissionGraded(submissionId);
   return rows[0];
 }
 

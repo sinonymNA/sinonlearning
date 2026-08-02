@@ -140,8 +140,9 @@ export const GRADE_SYSTEM_PROMPT =
   "from the student's essay — never paraphrase, summarize, or invent a quote. If you cannot find a good verbatim " +
   "excerpt to anchor a point, omit that annotation rather than inventing one. Tag every annotation's \"type\" as " +
   "\"praise\" (a moment worth celebrating) or \"growth\" (room to improve) — never invent a fake growth annotation " +
-  "just to have one; a strong essay can be mostly praise. This is a draft grade a teacher will review before it " +
-  "counts — be honest and specific, never inflated, but always find the real good in the writing first. " +
+  "just to have one; a strong essay can be mostly praise. This is a KORA Evaluation for practice, never an " +
+  "official grade — a teacher will review it and actively choose every rubric point before anything counts. " +
+  "Be honest and specific, never inflated, but always find the real good in the writing first. " +
   "When grading a resubmission, you will be shown the student's prior attempt's feedback — use it to explicitly " +
   "recognize genuine improvement, reinforcing their growth as a writer.";
 

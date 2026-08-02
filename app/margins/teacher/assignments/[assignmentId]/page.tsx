@@ -6,13 +6,15 @@ import MarginsHeader from "@/components/margins/MarginsHeader";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Drafting",
-  submitted: "Submitted — awaiting grade",
+  submitted: "Submitted — needs your review",
+  evaluated: "KORA feedback ready — needs your review",
   graded: "Graded",
 };
 
 const STATUS_COLOR: Record<string, string> = {
   draft: "bg-stone-100 text-stone-500",
   submitted: "bg-amber-50 text-amber-600",
+  evaluated: "bg-violet-50 text-violet-600",
   graded: "bg-emerald-50 text-emerald-600",
 };
 
@@ -35,7 +37,11 @@ export default async function TeacherAssignmentPage({
   const withScores = await Promise.all(
     submissions.map(async (s) => ({
       ...s,
-      grading: s.status === "graded" ? await getGradingBySubmission(s.id) : undefined,
+      // Fetched for "evaluated" too, since a teacher can open an evaluated
+      // submission to review KORA's draft and finalize a grade from the
+      // roster — but only a "graded" row's number is ever shown here.
+      grading:
+        s.status === "evaluated" || s.status === "graded" ? await getGradingBySubmission(s.id) : undefined,
     }))
   );
 
@@ -60,9 +66,10 @@ export default async function TeacherAssignmentPage({
         ) : (
           <div className="flex flex-col gap-2.5">
             {withScores.map((s) => {
-              const score = s.grading
-                ? s.grading.teacher_override_score ?? s.grading.overall_score
-                : null;
+              // Only ever a teacher-finalized score — an unreviewed KORA
+              // number never appears here, so a fast scan of the roster can't
+              // be mistaken for a scan of official grades.
+              const officialScore = s.grading?.teacher_override_score ?? null;
               return (
                 <Link
                   key={s.id}
@@ -78,9 +85,9 @@ export default async function TeacherAssignmentPage({
                     )}
                   </p>
                   <div className="flex items-center gap-3">
-                    {score !== null && s.grading && (
+                    {officialScore !== null && s.grading && (
                       <span className="text-sm font-semibold text-stone-700">
-                        {score}/{s.grading.max_score}
+                        {officialScore}/{s.grading.max_score}
                       </span>
                     )}
                     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATUS_COLOR[s.status]}`}>

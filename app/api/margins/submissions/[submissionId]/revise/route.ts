@@ -20,8 +20,8 @@ export async function POST(
   if (submission.student_id !== user.id) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
-  if (submission.status !== "graded") {
-    return NextResponse.json({ error: "This essay hasn't been graded yet." }, { status: 400 });
+  if (submission.status !== "evaluated" && submission.status !== "graded") {
+    return NextResponse.json({ error: "This essay doesn't have feedback yet." }, { status: 400 });
   }
 
   const assignment = await getAssignmentById(submission.assignment_id);

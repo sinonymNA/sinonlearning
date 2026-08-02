@@ -28,9 +28,15 @@ interface Props {
   // Gradings created before next_steps became structured objects still have
   // plain strings in the database — accept both shapes rather than crash.
   nextSteps: (NextStep | string)[];
-  teacherOverrideScore?: number | null;
+  // Null until a teacher has actively chosen every rubric row — this is what
+  // makes a grade official, never KORA's own numbers on their own.
+  teacherScore?: number | null;
+  teacherRubricBreakdown?: RubricRow[] | null;
   teacherNotes?: string | null;
   essayType?: string;
+  // Copy and disclaimers differ by audience: a student must never read this
+  // as their real grade; a teacher must never read it as a completed task.
+  viewerRole: "student" | "teacher";
 }
 
 // Small alternating tilt per row so the handwritten marks don't look
@@ -49,11 +55,16 @@ export default function GradingReport({
   overallFeedback,
   strengths,
   nextSteps,
-  teacherOverrideScore,
+  teacherScore,
+  teacherRubricBreakdown,
   teacherNotes,
   essayType,
+  viewerRole,
 }: Props) {
-  const displayScore = teacherOverrideScore ?? overallScore;
+  const isFinalized = teacherScore != null && !!teacherRubricBreakdown;
+  const displayScore = isFinalized ? teacherScore! : overallScore;
+  const teacherByCategory = new Map((teacherRubricBreakdown ?? []).map((r) => [r.category, r]));
+
   const scoreCardRef = useRef<HTMLDivElement>(null);
   const scoreNumRef = useRef<HTMLSpanElement>(null);
   const rubricRef = useRef<HTMLDivElement>(null);
@@ -112,24 +123,59 @@ export default function GradingReport({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Status card: an official grade and a KORA draft must never look alike. */}
       <div
         ref={scoreCardRef}
         style={{ opacity: 0 }}
-        className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-6 flex items-center justify-between"
+        className={
+          isFinalized
+            ? "rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-6"
+            : "rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-6"
+        }
       >
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500 mb-1">
-            {teacherOverrideScore != null ? "Teacher score" : "KORA draft score"}
-          </p>
-          <p className="text-3xl font-bold text-stone-900">
-            <span ref={scoreNumRef}>0</span>
-            <span className="text-lg text-stone-400 font-medium">/{maxScore}</span>
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p
+              className={
+                isFinalized
+                  ? "text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-1"
+                  : "text-[11px] font-bold uppercase tracking-widest text-violet-500 mb-1"
+              }
+            >
+              {isFinalized ? "Official grade" : "KORA Evaluation — draft"}
+            </p>
+            <p className="text-3xl font-bold text-stone-900">
+              <span ref={scoreNumRef}>0</span>
+              <span className="text-lg text-stone-400 font-medium">/{maxScore}</span>
+            </p>
+          </div>
+          {!isFinalized && (
+            <span className="rounded-full bg-white border border-violet-200 px-3 py-1 text-[11px] font-semibold text-violet-600">
+              {viewerRole === "teacher" ? "Not yet finalized" : "Not your official grade"}
+            </span>
+          )}
+          {isFinalized && (
+            <span className="rounded-full bg-white border border-emerald-200 px-3 py-1 text-[11px] font-semibold text-emerald-600">
+              Assigned by your teacher
+            </span>
+          )}
         </div>
-        {teacherOverrideScore == null && (
-          <span className="rounded-full bg-white border border-violet-200 px-3 py-1 text-[11px] font-semibold text-violet-600">
-            Draft — awaiting teacher review
-          </span>
+
+        <p className="mt-3 text-[12.5px] leading-relaxed text-stone-500 border-t border-stone-200/70 pt-3">
+          {isFinalized
+            ? viewerRole === "student"
+              ? "This score was reviewed and assigned by your teacher. KORA's own draft evaluation is shown below for reference."
+              : "You finalized this grade. KORA's original suggestions are shown below for reference."
+            : viewerRole === "student"
+              ? "This is an AI-generated practice evaluation and is NOT your official grade. Your teacher determines all official rubric scores."
+              : "These are KORA's suggested rubric points, for reference only. Nothing here is official until you choose a score for every row and finalize it below."}
+        </p>
+
+        {isFinalized && teacherNotes && (
+          <div className="mt-3 rounded-xl bg-white/70 border border-emerald-100 p-3">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-600 mb-1">Note from your teacher</p>
+            <p className="text-[13px] text-stone-700 leading-relaxed">{teacherNotes}</p>
+          </div>
         )}
       </div>
 
@@ -146,7 +192,7 @@ export default function GradingReport({
         </div>
         <div ref={rubricRef} className="px-5 pb-5">
           {rubricBreakdown.map((row, i) => {
-            const full = row.points_earned >= row.points_possible;
+            const teacherRow = teacherByCategory.get(row.category);
             const tilt = ROW_TILTS[i % ROW_TILTS.length];
             return (
               <div
@@ -165,21 +211,51 @@ export default function GradingReport({
                     {row.points_possible} point{row.points_possible === 1 ? "" : "s"}
                   </span>
                 </div>
-                <p className="mt-1.5 ml-9 text-[13px] text-stone-500 leading-relaxed">{row.justification}</p>
+                <p className="mt-1.5 ml-9 text-[13px] text-stone-500 leading-relaxed">
+                  <span className="font-semibold text-violet-500">KORA:</span> {row.justification}
+                </p>
+                {teacherRow && (
+                  <p className="mt-1 ml-9 text-[12px] text-emerald-600">
+                    <span className="font-semibold">KORA suggested {row.points_earned}</span> — your teacher chose {teacherRow.points_earned}.
+                  </p>
+                )}
 
-                {/* Handwritten "reader's pen" mark: circled score in red ink. */}
-                <div
-                  className={`rubric-ink ${handwriting.className} absolute top-3 right-4 flex items-center gap-1 text-red-600`}
-                  style={{ opacity: 0, transform: `rotate(${tilt}deg)` }}
-                >
-                  <span className="relative inline-flex items-center justify-center w-8 h-8 text-xl">
+                {teacherRow ? (
+                  // The real reader's-pen mark — only ever a teacher's own choice.
+                  <div
+                    className={`rubric-ink ${handwriting.className} absolute top-3 right-4 flex items-center gap-1 text-red-600`}
+                    style={{ opacity: 0, transform: `rotate(${tilt}deg)` }}
+                  >
+                    <span className="relative inline-flex items-center justify-center w-8 h-8 text-xl">
+                      <svg viewBox="0 0 40 40" className="absolute inset-0 w-full h-full">
+                        <ellipse cx="20" cy="20" rx="17" ry="15" fill="none" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      <span className="relative">{teacherRow.points_earned}</span>
+                    </span>
+                    {teacherRow.points_earned >= teacherRow.points_possible && <span className="text-2xl leading-none">✓</span>}
+                  </div>
+                ) : (
+                  // KORA's suggestion — deliberately not the red teacher's-pen
+                  // mark, so it never reads as an official score at a glance.
+                  <div
+                    className="rubric-ink absolute top-3 right-4 flex items-center justify-center w-8 h-8 text-sm font-bold text-violet-500"
+                    style={{ opacity: 0 }}
+                  >
                     <svg viewBox="0 0 40 40" className="absolute inset-0 w-full h-full">
-                      <ellipse cx="20" cy="20" rx="17" ry="15" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <ellipse
+                        cx="20"
+                        cy="20"
+                        rx="17"
+                        ry="15"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeDasharray="4 3"
+                      />
                     </svg>
                     <span className="relative">{row.points_earned}</span>
-                  </span>
-                  {full && <span className="text-2xl leading-none">✓</span>}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -223,13 +299,6 @@ export default function GradingReport({
           </div>
         </div>
       </div>
-
-      {teacherNotes && (
-        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-stone-500 mb-2">Note from your teacher</p>
-          <p className="text-[14px] text-stone-700 leading-relaxed">{teacherNotes}</p>
-        </div>
-      )}
     </div>
   );
 }

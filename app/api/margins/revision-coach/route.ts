@@ -35,15 +35,15 @@ export async function POST(request: NextRequest) {
   if (user.id !== submission.student_id) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
-  if (submission.status !== "graded") {
-    return NextResponse.json({ error: "This submission hasn't been graded yet." }, { status: 400 });
+  if (submission.status !== "evaluated" && submission.status !== "graded") {
+    return NextResponse.json({ error: "This submission doesn't have feedback yet." }, { status: 400 });
   }
 
   const assignment = await getAssignmentById(submission.assignment_id);
   if (!assignment) return NextResponse.json({ error: "Assignment not found." }, { status: 404 });
 
   const grading = await getGradingBySubmission(submissionId);
-  if (!grading) return NextResponse.json({ error: "This submission hasn't been graded yet." }, { status: 400 });
+  if (!grading) return NextResponse.json({ error: "This submission doesn't have feedback yet." }, { status: 400 });
 
   // Idempotent: return the existing plan rather than regenerating it, so
   // refreshing the wizard's entry page doesn't burn another LLM call.

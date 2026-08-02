@@ -14,13 +14,13 @@ const steps = [
   },
   {
     icon: Sparkles,
-    title: "KORA grades",
-    description: "KORA scores your essay against your teacher's exact rubric, point by point.",
+    title: "KORA evaluates",
+    description: "KORA gives you a color-coded, annotated practice evaluation against the rubric — never your official grade.",
   },
   {
     icon: Highlighter,
-    title: "Get annotated feedback",
-    description: "See a color-coded, highlighted version of your own essay with notes on every line.",
+    title: "Your teacher grades",
+    description: "Your teacher reviews KORA's evaluation and chooses every rubric point. Only they assign the real score.",
   },
 ];
 
@@ -48,8 +48,9 @@ export default function LandingHero() {
         </h1>
         <p className="hero-item text-stone-500 text-[15px] leading-relaxed max-w-md" style={{ opacity: 0 }}>
           Teachers build classes and assignments with real College Board rubrics.
-          Students write their essays right here. KORA grades against the rubric and
-          hands back a color-coded, annotated essay — a draft grade, always reviewed by your teacher.
+          Students write their essays right here. KORA hands back a color-coded, annotated
+          practice evaluation — never the official grade. Your teacher reviews everything and
+          decides every rubric point.
         </p>
 
         <div className="hero-item flex flex-col sm:flex-row gap-3 w-full max-w-sm mt-2" style={{ opacity: 0 }}>

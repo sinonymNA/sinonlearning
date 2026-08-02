@@ -13,7 +13,7 @@ import {
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import AnnotatedEssay from "@/components/margins/AnnotatedEssay";
 import GradingReport from "@/components/margins/GradingReport";
-import OverrideScoreForm from "@/components/margins/OverrideScoreForm";
+import TeacherRubricScorer from "@/components/margins/TeacherRubricScorer";
 import TriggerGradeButton from "@/components/margins/TriggerGradeButton";
 
 export default async function TeacherSubmissionPage({
@@ -55,7 +55,7 @@ export default async function TeacherSubmissionPage({
         </h1>
 
         {!grading ? (
-          <TriggerGradeButton submissionId={submissionId} />
+          <TriggerGradeButton submissionId={submissionId} role="teacher" />
         ) : (
           <div className="flex flex-col gap-6">
             <AnnotatedEssay essayText={submission.essay_text} annotations={grading.annotations} />
@@ -66,15 +66,18 @@ export default async function TeacherSubmissionPage({
               overallFeedback={grading.overall_feedback}
               strengths={grading.strengths}
               nextSteps={grading.next_steps}
-              teacherOverrideScore={grading.teacher_override_score}
+              teacherScore={grading.teacher_override_score}
+              teacherRubricBreakdown={grading.teacher_rubric_breakdown}
               teacherNotes={grading.teacher_notes}
               essayType={assignment.essay_type}
+              viewerRole="teacher"
             />
-            <OverrideScoreForm
+            <TeacherRubricScorer
               submissionId={submissionId}
-              currentScore={grading.teacher_override_score ?? grading.overall_score}
-              maxScore={grading.max_score}
-              currentNotes={grading.teacher_notes}
+              aiSuggested={grading.rubric_breakdown}
+              existingTeacherBreakdown={grading.teacher_rubric_breakdown}
+              existingNotes={grading.teacher_notes}
+              isFinalized={grading.teacher_override_score != null}
             />
           </div>
         )}

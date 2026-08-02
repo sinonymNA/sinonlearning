@@ -55,7 +55,7 @@ export default async function StudentSubmissionPage({
         )}
 
         {!grading ? (
-          <TriggerGradeButton submissionId={submissionId} />
+          <TriggerGradeButton submissionId={submissionId} role="student" />
         ) : (
           <div className="flex flex-col gap-6">
             <AnnotatedEssay essayText={submission.essay_text} annotations={grading.annotations} />
@@ -66,9 +66,11 @@ export default async function StudentSubmissionPage({
               overallFeedback={grading.overall_feedback}
               strengths={grading.strengths}
               nextSteps={grading.next_steps}
-              teacherOverrideScore={grading.teacher_override_score}
+              teacherScore={grading.teacher_override_score}
+              teacherRubricBreakdown={grading.teacher_rubric_breakdown}
               teacherNotes={grading.teacher_notes}
               essayType={assignment.essay_type}
+              viewerRole="student"
             />
             {isLatestAttempt && <RevisionCTA submissionId={submissionId} remaining={remainingRevisions} />}
           </div>

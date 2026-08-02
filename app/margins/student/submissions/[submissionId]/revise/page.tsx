@@ -28,7 +28,9 @@ export default async function ReviseSubmissionPage({
   const assignment = await getAssignmentById(submission.assignment_id);
   if (!assignment) notFound();
 
-  if (submission.status !== "graded") redirect(`/margins/student/submissions/${submissionId}`);
+  if (submission.status !== "evaluated" && submission.status !== "graded") {
+    redirect(`/margins/student/submissions/${submissionId}`);
+  }
 
   const attemptsUsed = (await getAttemptCount(assignment.id, user.id)) - 1;
   if (attemptsUsed >= assignment.max_revisions) redirect(`/margins/student/submissions/${submissionId}`);

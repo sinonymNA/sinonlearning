@@ -85,7 +85,7 @@ const CAPABILITY_EDGES: KoraEdge[] = [
   {
     source: "c-grading",
     target: "p-teacher-evaluates",
-    grounding: "A teacher can override any KORA score before it's recorded — the grading route stores a separate teacher_override_score field for exactly this.",
+    grounding: "No score is ever official on its own — a teacher must actively choose a point value for every rubric row before a grade is finalized and recorded.",
   },
   {
     source: "c-assignments",

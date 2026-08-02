@@ -16,7 +16,8 @@ const TYPE_COLORS: Record<string, string> = {
 const STATUS_LABEL: Record<string, string> = {
   not_started: "Not started",
   draft: "In progress",
-  submitted: "Grading…",
+  submitted: "Submitted",
+  evaluated: "Feedback ready",
   graded: "Graded",
 };
 
@@ -24,6 +25,7 @@ const STATUS_COLOR: Record<string, string> = {
   not_started: "bg-stone-100 text-stone-500",
   draft: "bg-amber-50 text-amber-600",
   submitted: "bg-sky-50 text-sky-600",
+  evaluated: "bg-violet-50 text-violet-600",
   graded: "bg-emerald-50 text-emerald-600",
 };
 
