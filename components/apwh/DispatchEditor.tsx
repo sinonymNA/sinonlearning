@@ -66,7 +66,7 @@ export default function DispatchEditor({
       <div className="apwh-editor-toolbar">
         <div><span>DAILY DISPATCH EDITOR</span><h1>Build tomorrow&apos;s front page.</h1></div>
         <div>
-          <Link href={`/apwh/classes/${classId}`} className="apwh-secondary-button"><Eye size={16} /> Student preview</Link>
+          <Link href={`/apwh/classes/${classId}?preview=student`} className="apwh-secondary-button"><Eye size={16} /> Student demo</Link>
           <button className="apwh-primary-button" disabled={state === "saving"}>
             {state === "saved" ? <Check size={18} /> : <Save size={18} />}
             {state === "saving" ? "Saving…" : state === "saved" ? "Saved" : "Publish dispatch"}

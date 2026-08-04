@@ -21,7 +21,7 @@ export default async function ApwhTeacherPage() {
           <div><span>TEACHER COMMAND CENTER</span><h1>Good morning, {user.name.split(" ")[0]}.</h1><p>Shape the day once. Every student sees the route.</p></div>
           <Link href="/margins/teacher" className="apwh-secondary-button"><Plus size={16} /> Manage classes in Margins</Link>
         </header>
-        <section className="apwh-teacher-note"><ShieldCheck /><div><strong>Local development mode</strong><p>Use fictional student accounts for testing. GCPS vendor approval and its FERPA/Data Privacy and Security Addendum remain required before real student use.</p></div><Link href="/apwh/privacy">Read readiness notes</Link></section>
+        <section className="apwh-teacher-note"><ShieldCheck /><div><strong>Classroom pilot ready</strong><p>Privacy-minimized student accounts, class-scoped access, and the APWH audit trail are active. Follow the conditions provided by your county contact.</p></div><Link href="/apwh/privacy">Read privacy notes</Link></section>
         <section className="apwh-teacher-classes">
           <div className="apwh-section-heading"><span>YOUR CLASSROOMS</span><h2>Choose a dispatch to edit.</h2></div>
           {classes.length ? <div className="apwh-class-cards">{classes.map((cls, index) => (

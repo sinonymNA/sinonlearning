@@ -15,7 +15,7 @@ export default function ApwhPrivacyPage() {
 
       <section className="apwh-readiness-banner">
         <TriangleAlert />
-        <div><strong>Local testing only until GCPS approval.</strong><p>Use fictional names and test work locally. GCPS requires third-party vendor approval, a FERPA/Data Privacy and Security Addendum, and cybersecurity review for technology that hosts student data.</p></div>
+        <div><strong>Limited APWH classroom pilot.</strong><p>This instance is intended for the five locally managed classes covered by the teacher&apos;s county confirmation. Keep the approval conditions documented and request another review before expanding the audience, hosting model, or data providers.</p></div>
       </section>
 
       <div className="apwh-privacy-grid">

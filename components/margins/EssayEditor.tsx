@@ -23,6 +23,7 @@ interface Props {
   promptText: string;
   documents: DocumentEntry[] | null;
   revisionChecklist?: RevisionChecklistItem[];
+  returnBase?: string;
 }
 
 export default function EssayEditor({
@@ -31,6 +32,7 @@ export default function EssayEditor({
   promptText,
   documents,
   revisionChecklist,
+  returnBase = "/margins/student",
 }: Props) {
   const router = useRouter();
   const [text, setText] = useState(initialText);
@@ -105,7 +107,7 @@ export default function EssayEditor({
         // Submission succeeded even if grading failed — the teacher can re-trigger grading.
         console.error("Grading failed after submission.");
       }
-      router.push(`/margins/student/submissions/${submissionId}`);
+      router.push(`${returnBase}/submissions/${submissionId}`);
       router.refresh();
     } catch {
       setError("Network error. Please try again.");

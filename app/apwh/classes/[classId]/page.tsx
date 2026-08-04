@@ -7,20 +7,28 @@ import {
 import { getCurrentUser } from "@/lib/marginsAuth";
 import {
   getAssignmentsForStudent, getClassById, getClassesByStudent,
-  isStudentInClass,
+  getAssignmentsByClass, isStudentInClass,
 } from "@/lib/marginsDb";
 import { ensureApwhProfile, getDispatch, getLatestDispatch } from "@/lib/apwhDb";
 import { daysUntil, displaySchoolDate, easternDateString } from "@/lib/apwhDate";
 import ApwhHeader from "@/components/apwh/ApwhHeader";
+import ApwhClassNav from "@/components/apwh/ApwhClassNav";
 
 const statusLabel: Record<string, string> = {
   draft: "In progress", submitted: "Submitted", graded: "Feedback ready",
 };
 
-export default async function ApwhClassPage({ params }: { params: Promise<{ classId: string }> }) {
+export default async function ApwhClassPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ classId: string }>;
+  searchParams: Promise<{ preview?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/apwh/login");
   const { classId } = await params;
+  const preview = user.role === "teacher" && (await searchParams).preview === "student";
   const cls = await getClassById(classId);
   if (!cls) notFound();
 
@@ -34,7 +42,11 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
   const [profile, todaysDispatch, assignments, studentClasses] = await Promise.all([
     ensureApwhProfile(classId),
     getDispatch(classId, today),
-    user.role === "student" ? getAssignmentsForStudent(user.id) : Promise.resolve([]),
+    user.role === "student"
+      ? getAssignmentsForStudent(user.id)
+      : preview
+        ? getAssignmentsByClass(classId)
+        : Promise.resolve([]),
     user.role === "student" ? getClassesByStudent(user.id) : Promise.resolve([]),
   ]);
   const dispatch = todaysDispatch ?? await getLatestDispatch(classId);
@@ -46,6 +58,7 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
     <div className="apwh-dashboard-page">
       <ApwhHeader name={user.name} role={user.role} />
       <main className="apwh-dashboard">
+        {preview && <div className="apwh-preview-mode"><strong>Student demo</strong><span>You are seeing this class as a student would. Student work is read-only in preview.</span><Link href={`/apwh/teacher/classes/${classId}`}>Exit demo</Link></div>}
         <div className="apwh-dashboard-topline">
           <div>
             <span className="apwh-class-label">{profile.course_title}</span>
@@ -64,6 +77,8 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
           </nav>
         )}
 
+        <ApwhClassNav classId={classId} active="overview" preview={preview} />
+
         <section className="apwh-dispatch-grid">
           <article className="apwh-daily-dispatch">
             <div className="apwh-dispatch-watermark" aria-hidden="true">{today.slice(5).replace("-", ".")}</div>
@@ -77,7 +92,7 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
               <p>THE ROUTE</p>
               <ol>{(dispatch?.agenda?.length ? dispatch.agenda : fallbackAgenda).map((item, index) => <li key={`${item}-${index}`}><span>{String(index + 1).padStart(2, "0")}</span>{item}</li>)}</ol>
             </div>
-            <Link href={dispatch?.start_href ?? "/margins/student"} className="apwh-dispatch-cta">
+            <Link href={dispatch?.start_href ?? `/apwh/classes/${classId}/margins`} className="apwh-dispatch-cta">
               <span><small>START HERE</small><strong>{dispatch?.start_label ?? "Open today's work"}</strong></span>
               <ArrowRight size={24} />
             </Link>
@@ -92,7 +107,7 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
             <article className="apwh-field-kit">
               <header><span>THE FIELD KIT</span><small>Tools for today</small></header>
               <div>
-                <Link href="/margins/student/practice"><FilePenLine /><span><strong>SAQ Studio</strong><small>Build the next sentence</small></span><ArrowRight /></Link>
+                <Link href={`/apwh/classes/${classId}/margins${preview ? "?preview=student" : ""}`}><FilePenLine /><span><strong>Margins</strong><small>Write without leaving class</small></span><ArrowRight /></Link>
                 <Link href="/tools/source-room/join"><LibraryBig /><span><strong>Source Room</strong><small>Analyze evidence live</small></span><ArrowRight /></Link>
                 <Link href="/margins/relay/join"><Radio /><span><strong>Essay Relay</strong><small>Write as a team</small></span><ArrowRight /></Link>
                 <Link href="/capsule"><Gamepad2 /><span><strong>Capsule</strong><small>Review through play</small></span><ArrowRight /></Link>
@@ -106,19 +121,22 @@ export default async function ApwhClassPage({ params }: { params: Promise<{ clas
         </section>
 
         <section className="apwh-work-section">
-          <header><div><span>YOUR WORK</span><h2>Writing in progress</h2></div><Link href="/margins/student">Open Margins <ArrowRight size={15} /></Link></header>
+          <header><div><span>YOUR WORK</span><h2>Writing in progress</h2></div><Link href={`/apwh/classes/${classId}/margins${preview ? "?preview=student" : ""}`}>Open class Margins <ArrowRight size={15} /></Link></header>
           {classAssignments.length ? (
             <div className="apwh-assignment-list">
-              {classAssignments.map((assignment) => (
-                <Link href={`/margins/student/assignments/${assignment.id}`} key={assignment.id}>
+              {classAssignments.map((assignment) => {
+                const submissionStatus = (assignment as { submission_status?: string | null }).submission_status ?? null;
+                return (
+                <Link href={preview ? `/apwh/classes/${classId}/margins?preview=student` : `/apwh/classes/${classId}/margins/assignments/${assignment.id}`} key={assignment.id}>
                   <span className={`apwh-type-tag type-${assignment.essay_type.toLowerCase()}`}>{assignment.essay_type}</span>
-                  <div><strong>{assignment.title}</strong><small>{assignment.submission_status ? statusLabel[assignment.submission_status] : "Not started"}</small></div>
-                  {assignment.submission_status === "graded" ? <Sparkles /> : assignment.submission_status === "submitted" ? <Clock3 /> : <CheckCircle2 />}
+                  <div><strong>{assignment.title}</strong><small>{submissionStatus ? statusLabel[submissionStatus] : "Not started"}</small></div>
+                  {submissionStatus === "graded" ? <Sparkles /> : submissionStatus === "submitted" ? <Clock3 /> : <CheckCircle2 />}
                 </Link>
-              ))}
+                );
+              })}
             </div>
           ) : (
-            <div className="apwh-empty-work"><BookOpen /><div><strong>No writing assignment is waiting.</strong><p>Use SAQ Studio for low-stakes practice whenever you want.</p></div><Link href="/margins/student/practice">Practice now</Link></div>
+            <div className="apwh-empty-work"><BookOpen /><div><strong>No writing assignment is waiting.</strong><p>Use SAQ Studio for low-stakes practice whenever you want.</p></div><Link href={`/apwh/classes/${classId}/margins`}>Practice now</Link></div>
           )}
         </section>
       </main>

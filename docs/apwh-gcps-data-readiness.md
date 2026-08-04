@@ -3,9 +3,10 @@
 Last reviewed: August 4, 2026
 
 This document is an engineering readiness record, not legal advice or a claim of
-FERPA certification. APWH Headquarters may be tested locally with fictional data.
-Use with real Gwinnett County Public Schools student information remains subject
-to GCPS approval.
+FERPA certification. The project owner reports county confirmation for a limited,
+locally managed pilot covering five AP World History classes. Retain the written
+scope and conditions of that confirmation with this record, and request another
+review before expanding the audience, hosting model, or data providers.
 
 ## Controlling GCPS requirements
 
