@@ -4,9 +4,10 @@ import { PenLine } from "lucide-react";
 interface Props {
   submissionId: string;
   remaining: number;
+  returnBase?: string;
 }
 
-export default function RevisionCTA({ submissionId, remaining }: Props) {
+export default function RevisionCTA({ submissionId, remaining, returnBase = "/margins/student" }: Props) {
   if (remaining <= 0) {
     return (
       <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 p-6 text-center">
@@ -24,7 +25,7 @@ export default function RevisionCTA({ submissionId, remaining }: Props) {
         Ready to make it even stronger? KORA will walk you through your growth areas one at a time.
       </p>
       <Link
-        href={`/margins/student/submissions/${submissionId}/revise`}
+        href={`${returnBase}/submissions/${submissionId}/revise`}
         className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-violet-200 hover:shadow-md transition-all"
       >
         Revise this essay

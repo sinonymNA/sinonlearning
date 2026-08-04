@@ -19,6 +19,7 @@ interface Props {
   steps: RevisionStep[];
   initialCurrentStep: number;
   initialResponses: string[];
+  returnBase?: string;
 }
 
 const MIN_RESPONSE_LENGTH = 10;
@@ -28,6 +29,7 @@ export default function RevisionWizard({
   steps,
   initialCurrentStep,
   initialResponses,
+  returnBase = "/margins/student",
 }: Props) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(Math.min(initialCurrentStep, steps.length));
@@ -53,7 +55,6 @@ export default function RevisionWizard({
     if (wrapperRef.current) {
       revealStagger(wrapperRef.current, ".wizard-panel", { stagger: 90, translateY: 16, duration: 420 });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDone]);
 
   const step = !isDone ? steps[currentStep] : null;
@@ -61,7 +62,6 @@ export default function RevisionWizard({
   const canAdvance = response.trim().length >= MIN_RESPONSE_LENGTH;
 
   useEffect(() => {
-    setHintLevel(0);
     if (stepCardRef.current) {
       animate(stepCardRef.current, { opacity: [0, 1], translateY: [12, 0], duration: 360, easing: "outQuart" });
     }
@@ -86,6 +86,7 @@ export default function RevisionWizard({
   function handleNext() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const nextStep = currentStep + 1;
+    setHintLevel(0);
     setCurrentStep(nextStep);
     persistProgress(nextStep, responses, nextStep >= steps.length);
   }
@@ -93,6 +94,7 @@ export default function RevisionWizard({
   function handleBack() {
     if (currentStep === 0) return;
     const prevStep = currentStep - 1;
+    setHintLevel(0);
     setCurrentStep(prevStep);
     persistProgress(prevStep, responses);
   }
@@ -108,7 +110,7 @@ export default function RevisionWizard({
         setStarting(false);
         return;
       }
-      router.push(`/margins/student/submissions/${data.submission.id}/edit`);
+      router.push(`${returnBase}/submissions/${data.submission.id}/edit`);
     } catch {
       setError("Network error. Please try again.");
       setStarting(false);
