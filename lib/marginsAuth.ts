@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import { createSession, deleteSession, getSessionUser, type MarginsUser } from "./marginsDb";
 
 const COOKIE_NAME = "margins_session";
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+// A school device may be shared. Keep persistence convenient without leaving a
+// month-long bearer credential behind on a classroom computer.
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SCRYPT_KEYLEN = 64;
 
 export function hashPassword(password: string): string {

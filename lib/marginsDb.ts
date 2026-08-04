@@ -1,4 +1,4 @@
-import { randomUUID, randomBytes } from "crypto";
+import { createHash, randomUUID, randomBytes } from "crypto";
 import { query } from "./db";
 import { AP_SKILL_IDS, WRITING_MECHANICS_SKILL_IDS } from "./marginsPracticeCourses";
 
@@ -266,21 +266,23 @@ export async function getUserById(id: string): Promise<MarginsUser | undefined> 
 export async function createSession(userId: string, expiresAt: Date): Promise<string> {
   await ensureMarginsSchema();
   const token = randomBytes(32).toString("hex");
+  const storedToken = `sha256:${createHash("sha256").update(token).digest("hex")}`;
   await query(
     `INSERT INTO margins_sessions (token, user_id, expires_at) VALUES ($1, $2, $3)`,
-    [token, userId, expiresAt.toISOString()]
+    [storedToken, userId, expiresAt.toISOString()]
   );
   return token;
 }
 
 export async function getSessionUser(token: string): Promise<MarginsUser | undefined> {
   await ensureMarginsSchema();
+  const storedToken = `sha256:${createHash("sha256").update(token).digest("hex")}`;
   const { rows } = await query<MarginsUser & { expires_at: string }>(
     `SELECT u.id, u.email, u.password_hash, u.role, u.name, u.created_at, s.expires_at
      FROM margins_sessions s
      JOIN margins_users u ON u.id = s.user_id
-     WHERE s.token = $1`,
-    [token]
+     WHERE s.token = $1 OR s.token = $2`,
+    [storedToken, token]
   );
   const row = rows[0];
   if (!row) return undefined;
@@ -293,7 +295,8 @@ export async function getSessionUser(token: string): Promise<MarginsUser | undef
 
 export async function deleteSession(token: string): Promise<void> {
   await ensureMarginsSchema();
-  await query(`DELETE FROM margins_sessions WHERE token = $1`, [token]);
+  const storedToken = `sha256:${createHash("sha256").update(token).digest("hex")}`;
+  await query(`DELETE FROM margins_sessions WHERE token = $1 OR token = $2`, [storedToken, token]);
 }
 
 // ── Classes ──
