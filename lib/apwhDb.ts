@@ -176,6 +176,24 @@ export async function getApwhStudentForLogin(
   return rows[0];
 }
 
+export interface ApwhStudentLoginCandidate extends MarginsUser {
+  home_class_id: string;
+}
+
+export async function getApwhStudentsForLogin(username: string): Promise<ApwhStudentLoginCandidate[]> {
+  await ensureApwhSchema();
+  const { rows } = await query<ApwhStudentLoginCandidate>(
+    `SELECT u.id, u.email, u.password_hash, u.role, u.name, u.created_at,
+       c.home_class_id
+     FROM apwh_student_credentials c
+     JOIN margins_users u ON u.id = c.user_id
+     WHERE c.username_normalized = $1
+     ORDER BY c.created_at ASC`,
+    [normalizeApwhUsername(username)]
+  );
+  return rows;
+}
+
 export async function ensureApwhProfile(classId: string): Promise<ApwhClassProfile> {
   await ensureApwhSchema();
   const { rows } = await query<ApwhClassProfile>(

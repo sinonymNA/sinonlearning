@@ -8,7 +8,7 @@ import DispatchEditor from "@/components/apwh/DispatchEditor";
 
 export default async function ApwhDispatchEditorPage({ params }: { params: Promise<{ classId: string }> }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/margins/login?next=/apwh/teacher");
+  if (!user) redirect("/apwh/login");
   if (user.role !== "teacher") redirect("/apwh");
   const { classId } = await params;
   const cls = await getClassById(classId);

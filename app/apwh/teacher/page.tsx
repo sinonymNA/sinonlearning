@@ -8,7 +8,7 @@ import ApwhHeader from "@/components/apwh/ApwhHeader";
 
 export default async function ApwhTeacherPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/margins/login?next=/apwh/teacher");
+  if (!user) redirect("/apwh/login");
   if (user.role !== "teacher") redirect("/apwh");
   const classes = await getClassesByTeacher(user.id);
   const profiles = await Promise.all(classes.map((item) => ensureApwhProfile(item.id)));

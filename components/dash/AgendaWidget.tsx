@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, GripVertical } from "lucide-react";
+import { Plus, X, GripVertical, Pencil } from "lucide-react";
 import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 
 interface AgendaItem {
@@ -17,12 +17,14 @@ const defaultAgenda: AgendaItem[] = [
   { id: "4", text: "Exit ticket", done: false },
 ];
 
-export default function AgendaWidget() {
+export default function AgendaWidget({ storageKey = "classboard:agenda" }: { storageKey?: string }) {
   const [items, setItems] = useLocalStorageState<AgendaItem[]>(
-    "classboard:agenda",
+    storageKey,
     defaultAgenda
   );
   const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
 
   const addItem = () => {
     const text = draft.trim();
@@ -39,6 +41,20 @@ export default function AgendaWidget() {
 
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const startEditing = (item: AgendaItem) => {
+    setEditingId(item.id);
+    setEditingText(item.text);
+  };
+
+  const saveEdit = (id: string) => {
+    const text = editingText.trim();
+    if (text) {
+      setItems((prev) => prev.map((item) => (item.id === id ? { ...item, text } : item)));
+    }
+    setEditingId(null);
+    setEditingText("");
   };
 
   return (
@@ -59,13 +75,39 @@ export default function AgendaWidget() {
               }`}
               aria-label={item.done ? "Mark incomplete" : "Mark complete"}
             />
-            <span
-              className={`flex-1 text-sm ${
-                item.done ? "text-navy-700/35 line-through" : "text-navy-900/90"
-              }`}
+            {editingId === item.id ? (
+              <input
+                autoFocus
+                value={editingText}
+                onChange={(event) => setEditingText(event.target.value)}
+                onBlur={() => saveEdit(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") saveEdit(item.id);
+                  if (event.key === "Escape") setEditingId(null);
+                }}
+                aria-label="Edit agenda item"
+                className="min-w-0 flex-1 rounded-md border border-green-500/40 bg-white px-2 py-1 text-sm text-navy-900 outline-none ring-2 ring-green-500/10"
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => startEditing(item)}
+                title="Edit agenda item"
+                className={`min-w-0 flex-1 text-left text-sm ${
+                  item.done ? "text-navy-700/35 line-through" : "text-navy-900/90"
+                }`}
+              >
+                {item.text}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => startEditing(item)}
+              aria-label={`Edit ${item.text}`}
+              className="shrink-0 rounded p-0.5 text-navy-700/0 transition-colors group-hover:text-green-700/60 hover:!text-green-700"
             >
-              {item.text}
-            </span>
+              <Pencil size={11} />
+            </button>
             <button
               onClick={() => removeItem(item.id)}
               aria-label="Remove item"

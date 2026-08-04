@@ -14,5 +14,5 @@ export default async function DashPage({
   searchParams: Promise<{ board?: string }>;
 }) {
   const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
-  return <Dash isTeacher={user?.role === "teacher"} resumeBoardId={params.board} role={user?.role} />;
+  return <Dash key={params.board ?? "scratch"} isTeacher={user?.role === "teacher"} resumeBoardId={params.board} role={user?.role} />;
 }

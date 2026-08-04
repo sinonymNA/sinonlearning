@@ -12,12 +12,12 @@ import {
   Film,
   Maximize,
   Minimize,
-  ArrowLeft,
   ImageOff,
   Copy,
   Check,
   LayoutDashboard,
   LayoutGrid,
+  BookOpenCheck,
 } from "lucide-react";
 import VideoMenu from "./VideoMenu";
 import DashLogo from "@/components/DashLogo";
@@ -28,6 +28,7 @@ export interface WidgetState {
   randomizer: boolean;
   poll: boolean;
   exitTicket: boolean;
+  standards: boolean;
 }
 
 export type DashMode = "dash" | "jamboard";
@@ -38,6 +39,7 @@ const widgetButtons: { key: keyof WidgetState; label: string; icon: typeof ListC
   { key: "randomizer", label: "Randomizer", icon: Shuffle },
   { key: "poll", label: "Poll", icon: BarChart3 },
   { key: "exitTicket", label: "Exit Ticket", icon: ClipboardCheck },
+  { key: "standards", label: "Standards", icon: BookOpenCheck },
 ];
 
 export default function Toolbar({

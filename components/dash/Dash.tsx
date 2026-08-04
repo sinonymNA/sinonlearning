@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { ListChecks, TimerIcon, Shuffle, BarChart3, ClipboardCheck } from "lucide-react";
+import { ListChecks, TimerIcon, Shuffle, BarChart3, ClipboardCheck, BookOpenCheck } from "lucide-react";
 import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 import Toolbar, { type WidgetState, type DashMode } from "./Toolbar";
 import Panel from "./Panel";
@@ -14,6 +14,7 @@ import ExitTicketWidget from "./ExitTicketWidget";
 import VideoBackground from "./VideoBackground";
 import VideoPip from "./VideoPip";
 import JamboardHost, { type JamSession } from "./JamboardHost";
+import StandardsObjectivesWidget from "./StandardsObjectivesWidget";
 
 const defaultWidgets: WidgetState = {
   agenda: true,
@@ -21,6 +22,7 @@ const defaultWidgets: WidgetState = {
   randomizer: false,
   poll: false,
   exitTicket: false,
+  standards: false,
 };
 
 const panelConfig: Record<
@@ -32,6 +34,7 @@ const panelConfig: Record<
   randomizer: { title: "Randomizer", icon: Shuffle, x: 40, y: 420, width: 280 },
   poll: { title: "Poll", icon: BarChart3, x: 420, y: 420, width: 280 },
   exitTicket: { title: "Exit Ticket", icon: ClipboardCheck, x: 760, y: 90, width: 280 },
+  standards: { title: "Standards & Objectives", icon: BookOpenCheck, x: 740, y: 110, width: 430 },
 };
 
 interface PipVideo {
@@ -105,11 +108,16 @@ export default function Dash({
   }
 
   const widgetContent: Record<keyof WidgetState, React.ReactNode> = {
-    agenda: <AgendaWidget />,
+    agenda: <AgendaWidget storageKey={resumeBoardId ? `classboard:agenda:${resumeBoardId}` : undefined} />,
     timer: <TimerWidget />,
     randomizer: <RandomizerWidget />,
     poll: <PollWidget />,
     exitTicket: <ExitTicketWidget />,
+    standards: (
+      <StandardsObjectivesWidget
+        storageKey={resumeBoardId ? `classboard:standards-objectives:${resumeBoardId}` : undefined}
+      />
+    ),
   };
 
   return (

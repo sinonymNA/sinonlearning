@@ -20,7 +20,7 @@ export default async function ApwhHomePage() {
         <ApwhMark />
         <div>
           <Link href="/apwh/privacy" className="apwh-nav-text">Privacy</Link>
-          <Link href="/apwh/login" className="apwh-nav-button">Student sign in</Link>
+          <Link href="/apwh/login" className="apwh-nav-button">Sign in</Link>
         </div>
       </nav>
 
@@ -34,7 +34,7 @@ export default async function ApwhHomePage() {
           </p>
           <div className="apwh-hero-actions">
             <Link href="/apwh/join" className="apwh-primary-button">Join your class <ArrowRight size={18} /></Link>
-            <Link href="/margins/login?next=/apwh" className="apwh-secondary-button">Teacher access</Link>
+            <Link href="/apwh/login" className="apwh-secondary-button">Teacher access</Link>
           </div>
           <p className="apwh-hero-privacy"><ShieldCheck size={15} /> No student email or student ID required.</p>
         </div>
