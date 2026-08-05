@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSessionCookie, hashPassword } from "@/lib/marginsAuth";
-import { getClassByJoinCode } from "@/lib/marginsDb";
+import { getClassById } from "@/lib/marginsDb";
 import {
+  APWH_PILOT_CLASS_NAMES,
   consumeApwhRateLimit,
   createApwhStudent,
   normalizeApwhUsername,
@@ -11,7 +12,7 @@ import {
 import { requestIsSameOrigin } from "@/lib/apwhSecurity";
 
 const inputSchema = z.object({
-  code: z.string().trim().min(4).max(12),
+  classId: z.string().uuid(),
   name: z.string().trim().min(2).max(80),
   username: z.string().trim().min(3).max(30),
   password: z.string().min(10).max(128),
@@ -33,10 +34,10 @@ export async function POST(request: NextRequest) {
 
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Check your name, username, password, and class code." }, { status: 400 });
+    return NextResponse.json({ error: "Check your name, username, password, and class selection." }, { status: 400 });
   }
 
-  const { code, name, username, password } = parsed.data;
+  const { classId, name, username, password } = parsed.data;
   const normalizedUsername = normalizeApwhUsername(username);
   if (normalizedUsername.length < 3 || normalizedUsername !== username.toLowerCase()) {
     return NextResponse.json(
@@ -45,9 +46,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const cls = await getClassByJoinCode(code);
-  if (!cls) {
-    return NextResponse.json({ error: "That class code was not found." }, { status: 404 });
+  const cls = await getClassById(classId);
+  if (!cls || !APWH_PILOT_CLASS_NAMES.includes(cls.name as (typeof APWH_PILOT_CLASS_NAMES)[number])) {
+    return NextResponse.json({ error: "Choose one of the APWH pilot classes." }, { status: 404 });
   }
 
   try {

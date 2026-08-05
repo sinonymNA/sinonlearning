@@ -32,6 +32,34 @@ export interface ApwhClassContext {
   dispatch: ApwhDispatch | null;
 }
 
+export const APWH_PILOT_CLASS_NAMES = [
+  "Sinon APWH 2nd Period",
+  "Sinon APWH 3rd Period",
+  "Nelson APWH 2nd Period",
+  "Nelson APWH 4th Period",
+  "Nelson APWH 6th Period",
+] as const;
+
+const PAUL_NELSON_EMAIL = "paul.nelson@sinonlearning.local";
+const PAUL_NELSON_PASSWORD_HASH =
+  "35faa34538234fbaeb8f685eb3e3aff0:7300c10aaee230040cfcf624cebf05945354015d5508d308ed21a1c810bab1e1e9ecf02a440d67149f0ab5d4ccf314c325164a761c0e84e510fe57e47fe40c2e";
+
+const PILOT_CLASS_CODES: Record<(typeof APWH_PILOT_CLASS_NAMES)[number], string> = {
+  "Sinon APWH 2nd Period": "SIN2ND",
+  "Sinon APWH 3rd Period": "SIN3RD",
+  "Nelson APWH 2nd Period": "NEL2ND",
+  "Nelson APWH 4th Period": "NEL4TH",
+  "Nelson APWH 6th Period": "NEL6TH",
+};
+
+const PILOT_CLASS_PERIODS: Record<(typeof APWH_PILOT_CLASS_NAMES)[number], string> = {
+  "Sinon APWH 2nd Period": "2nd Period",
+  "Sinon APWH 3rd Period": "3rd Period",
+  "Nelson APWH 2nd Period": "2nd Period",
+  "Nelson APWH 4th Period": "4th Period",
+  "Nelson APWH 6th Period": "6th Period",
+};
+
 let schemaReady: Promise<void> | null = null;
 
 export function ensureApwhSchema(): Promise<void> {
@@ -85,9 +113,63 @@ export function ensureApwhSchema(): Promise<void> {
         window_started_at TIMESTAMPTZ NOT NULL,
         attempts INTEGER NOT NULL DEFAULT 1
       )`))
+      .then(() => provisionApwhPilot())
       .then(() => undefined);
   }
   return schemaReady;
+}
+
+async function provisionApwhPilot(): Promise<void> {
+  const { rows: paulRows } = await query<{ id: string }>(
+    `INSERT INTO margins_users (id, email, password_hash, role, name)
+     VALUES ($1, $2, $3, 'teacher', 'Paul Nelson')
+     ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, role = 'teacher'
+     RETURNING id`,
+    [randomUUID(), PAUL_NELSON_EMAIL, PAUL_NELSON_PASSWORD_HASH]
+  );
+  const paulId = paulRows[0].id;
+
+  const { rows: primaryRows } = await query<{ id: string }>(
+    `SELECT id FROM margins_users
+     WHERE role = 'teacher' AND id <> $1
+     ORDER BY CASE
+       WHEN lower(name) LIKE '%sinon%' OR lower(email) LIKE '%sinon%' THEN 0
+       ELSE 1
+     END, created_at ASC
+     LIMIT 1`,
+    [paulId]
+  );
+  const sinonTeacherId = primaryRows[0]?.id ?? paulId;
+
+  for (const className of APWH_PILOT_CLASS_NAMES) {
+    const teacherId = className.startsWith("Nelson") ? paulId : sinonTeacherId;
+    await query(
+      `INSERT INTO margins_classes (id, teacher_id, name, join_code)
+       SELECT $1, $2, $3, $4
+       WHERE NOT EXISTS (SELECT 1 FROM margins_classes WHERE name = $3)
+       ON CONFLICT (join_code) DO NOTHING`,
+      [randomUUID(), teacherId, className, PILOT_CLASS_CODES[className]]
+    );
+    await query(
+      `INSERT INTO apwh_class_profiles (class_id, course_title, period_label)
+       SELECT id, 'AP World History: Modern', $2
+       FROM margins_classes WHERE name = $1
+       ON CONFLICT (class_id) DO NOTHING`,
+      [className, PILOT_CLASS_PERIODS[className]]
+    );
+  }
+}
+
+export async function getApwhPilotClasses(): Promise<MarginsClass[]> {
+  await ensureApwhSchema();
+  const { rows } = await query<MarginsClass>(
+    `SELECT id, teacher_id, name, join_code, created_at
+     FROM margins_classes
+     WHERE name = ANY($1::text[])
+     ORDER BY array_position($1::text[], name)`,
+    [[...APWH_PILOT_CLASS_NAMES]]
+  );
+  return rows;
 }
 
 export function normalizeApwhUsername(username: string): string {

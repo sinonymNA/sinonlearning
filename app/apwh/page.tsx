@@ -4,6 +4,7 @@ import { ArrowRight, BookOpenText, Compass, Landmark, PenLine, ShieldCheck } fro
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByStudent } from "@/lib/marginsDb";
 import ApwhMark from "@/components/apwh/ApwhMark";
+import ApwhRoleGate from "@/components/apwh/ApwhRoleGate";
 
 export default async function ApwhHomePage() {
   const user = await getCurrentUser();
@@ -15,6 +16,7 @@ export default async function ApwhHomePage() {
 
   return (
     <main className="apwh-landing">
+      <ApwhRoleGate />
       <div className="apwh-landing-grid" aria-hidden="true" />
       <nav className="apwh-landing-nav">
         <ApwhMark />

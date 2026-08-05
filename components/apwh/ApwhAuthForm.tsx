@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   GraduationCap,
-  KeyRound,
   LockKeyhole,
   Mail,
   ShieldCheck,
@@ -15,11 +14,20 @@ import {
 import ApwhMark from "./ApwhMark";
 
 type AccountRole = "student" | "teacher";
+interface ClassOption { id: string; name: string }
 
-export default function ApwhAuthForm({ mode }: { mode: "join" | "login" }) {
+export default function ApwhAuthForm({
+  mode,
+  classes = [],
+  initialRole = "student",
+}: {
+  mode: "join" | "login";
+  classes?: ClassOption[];
+  initialRole?: AccountRole;
+}) {
   const router = useRouter();
-  const [role, setRole] = useState<AccountRole>("student");
-  const [code, setCode] = useState("");
+  const [role, setRole] = useState<AccountRole>(initialRole);
+  const [classId, setClassId] = useState("");
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -33,7 +41,7 @@ export default function ApwhAuthForm({ mode }: { mode: "join" | "login" }) {
     setError("");
     try {
       const payload = mode === "join"
-        ? { code, name, username, password }
+        ? { classId, name, username, password }
         : { role, identifier: role === "teacher" ? email : username, password };
       const response = await fetch(`/api/apwh/auth/${mode}`, {
         method: "POST",
@@ -98,16 +106,10 @@ export default function ApwhAuthForm({ mode }: { mode: "join" | "login" }) {
           </p>
 
           {mode === "join" && (
-            <>
-              <label className="apwh-field">
-                <span>Class code</span>
-                <div><KeyRound size={17} /><input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} maxLength={12} autoCapitalize="characters" required placeholder="ABC123" /></div>
-              </label>
-              <label className="apwh-field">
-                <span>Your name</span>
-                <div><UserRound size={17} /><input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required placeholder="Name your teacher knows" autoComplete="name" /></div>
-              </label>
-            </>
+            <label className="apwh-field">
+              <span>Your name</span>
+              <div><UserRound size={17} /><input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} required placeholder="Name your teacher knows" autoComplete="name" /></div>
+            </label>
           )}
 
           {isTeacherLogin ? (
@@ -127,8 +129,30 @@ export default function ApwhAuthForm({ mode }: { mode: "join" | "login" }) {
             <div><LockKeyhole size={17} /><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={mode === "join" ? 10 : 1} maxLength={128} required placeholder={mode === "join" ? "10+ characters" : "Your password"} autoComplete={mode === "join" ? "new-password" : "current-password"} /></div>
           </label>
 
+          {mode === "join" && (
+            <fieldset className="apwh-class-picker">
+              <legend>Choose your class</legend>
+              <div>
+                {classes.map((classOption) => (
+                  <label key={classOption.id} className={classId === classOption.id ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="classId"
+                      value={classOption.id}
+                      checked={classId === classOption.id}
+                      onChange={() => setClassId(classOption.id)}
+                      required
+                    />
+                    <span>{classOption.name}</span>
+                  </label>
+                ))}
+              </div>
+              {classes.length === 0 && <p>No APWH classes are available yet. Ask your teacher to refresh the page.</p>}
+            </fieldset>
+          )}
+
           {error && <p className="apwh-form-error" role="alert">{error}</p>}
-          <button className="apwh-primary-button" disabled={loading}>
+          <button className="apwh-primary-button" disabled={loading || (mode === "join" && !classId)}>
             {loading ? "Opening the archive..." : mode === "join" ? "Create my account" : "Enter headquarters"}
             {!loading && <ArrowRight size={18} />}
           </button>
