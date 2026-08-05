@@ -40,7 +40,7 @@ Primary sources:
 
 Student onboarding requests only:
 
-- class join code;
+- selected APWH class;
 - display name;
 - class-scoped username; and
 - password.
@@ -61,6 +61,8 @@ and deletion.
 - HTTP-only, secure-in-production, SameSite cookies;
 - seven-day session expiration;
 - persistent database-backed rate limits for APWH login and join attempts;
+- owner-only password recovery protected by an environment-held recovery key;
+- password recovery invalidates existing sessions and creates an audit event;
 - class-scoped usernames;
 - server-side teacher ownership and student membership authorization;
 - same-origin checks on APWH mutations;
@@ -69,6 +71,14 @@ and deletion.
 - audit events containing action metadata rather than student work;
 - student-facing routes excluded from search indexing; and
 - no public student profiles or leaderboards in APWH.
+
+## Owner recovery configuration
+
+Production must define `APWH_RECOVERY_KEY` as a unique secret of at least 20
+characters. Keep it in the hosting provider's encrypted environment settings;
+do not commit it, email it, or store it in a classroom document. The recovery
+console at `/apwh/recovery` is deliberately unusable when this variable is
+missing. Rotate the key immediately if it is disclosed.
 
 ## AI processing boundary
 

@@ -172,6 +172,51 @@ export async function getApwhPilotClasses(): Promise<MarginsClass[]> {
   return rows;
 }
 
+export async function resetApwhTeacherPassword(
+  email: string,
+  passwordHash: string
+): Promise<{ id: string; name: string } | undefined> {
+  await ensureApwhSchema();
+  const { rows } = await query<{ id: string; name: string }>(
+    `UPDATE margins_users
+     SET password_hash = $2
+     WHERE id = (
+       SELECT id FROM margins_users
+       WHERE role = 'teacher'
+         AND (lower(email) = lower($1) OR lower(name) = lower($1))
+       ORDER BY CASE WHEN lower(email) = lower($1) THEN 0 ELSE 1 END, created_at ASC
+       LIMIT 1
+     )
+     RETURNING id, name`,
+    [email.trim(), passwordHash]
+  );
+  const user = rows[0];
+  if (user) await query(`DELETE FROM margins_sessions WHERE user_id = $1`, [user.id]);
+  return user;
+}
+
+export async function resetApwhStudentPassword(
+  classId: string,
+  username: string,
+  passwordHash: string
+): Promise<{ id: string; name: string } | undefined> {
+  await ensureApwhSchema();
+  const { rows } = await query<{ id: string; name: string }>(
+    `UPDATE margins_users u
+     SET password_hash = $3
+     FROM apwh_student_credentials c
+     WHERE u.id = c.user_id
+       AND u.role = 'student'
+       AND c.home_class_id = $1
+       AND c.username_normalized = $2
+     RETURNING u.id, u.name`,
+    [classId, normalizeApwhUsername(username), passwordHash]
+  );
+  const user = rows[0];
+  if (user) await query(`DELETE FROM margins_sessions WHERE user_id = $1`, [user.id]);
+  return user;
+}
+
 export function normalizeApwhUsername(username: string): string {
   return username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
 }

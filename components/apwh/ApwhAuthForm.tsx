@@ -162,6 +162,7 @@ export default function ApwhAuthForm({
             <Link href={mode === "join" ? "/apwh/login" : "/apwh/join"}>{mode === "join" ? "Sign in" : "Join with a code"}</Link>
           </p>
           {isTeacherLogin && <p className="apwh-auth-switch">Need a teacher account? <Link href="/margins/signup?next=/apwh">Create one in Margins</Link></p>}
+          <p className="apwh-auth-switch">Locked out? <Link href="/apwh/recovery">Owner password recovery</Link></p>
           <Link href="/apwh" className="apwh-back-link">&larr; Back to AP World Headquarters</Link>
         </form>
       </div>
