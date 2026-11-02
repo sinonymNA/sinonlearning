@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "node suspect-server/index.mjs",
     "lint": "eslint"
   },
   "dependencies": {
@@ -44,5 +44,7 @@
     "topojson-client": "^3.1.0",
     "typescript": "^5",
     "world-atlas": "^2.0.2"
+    ,"ws": "^8.18.3"
   }
 }
+
