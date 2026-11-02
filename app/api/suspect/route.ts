@@ -54,6 +54,15 @@ export async function POST(request: Request) {
       const id = crypto.randomUUID(); runtimeState.sessions.set(id, { room, isHost: true });
       return NextResponse.json({ sessionId: id, messages: [{ type: "created", code: room.code, hostToken: token }, room.publicState()] });
     }
+    if (message.type === "solo") {
+      const { room } = runtimeState.service.create({ devMode: true, killCooldown: 9, discussion: 5, voting: 12, taskCount: 3, mode: message.mode === "classic" ? "classic" : "questions" });
+      const player = room.addPlayer({ nickname: message.nickname, color: message.color });
+      player.ready = true;
+      ["ORION", "LYRA", "COMET", "VEGA", "PIXEL"].forEach(name => room.addBot(name));
+      room.start();
+      const id = crypto.randomUUID(); const session = { room, playerId: player.id, isHost: true }; runtimeState.sessions.set(id, session);
+      return NextResponse.json({ sessionId: id, messages: [{ type: "joined", id: player.id, reconnectToken: player.reconnectToken, code: room.code, solo: true }, ...payload(room, session)] });
+    }
     if (message.type === "host") {
       const room = runtimeState.service.get(message.code);
       if (!room || !room.host(message.hostToken)) throw Error("Teacher credential invalid");
