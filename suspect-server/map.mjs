@@ -1,19 +1,32 @@
-export const WORLD={width:2200,height:1450,spawn:{x:1100,y:720},walls:[
-  {x:0,y:0,w:2200,h:40},{x:0,y:1410,w:2200,h:40},{x:0,y:0,w:40,h:1450},{x:2160,y:0,w:40,h:1450},
-  {x:420,y:40,w:24,h:390},{x:420,y:560,w:24,h:330},{x:420,y:1020,w:24,h:390},
-  {x:820,y:40,w:24,h:310},{x:820,y:480,w:24,h:310},{x:820,y:920,w:24,h:490},
-  {x:1360,y:40,w:24,h:310},{x:1360,y:480,w:24,h:310},{x:1360,y:920,w:24,h:490},
-  {x:1760,y:40,w:24,h:390},{x:1760,y:560,w:24,h:330},{x:1760,y:1020,w:24,h:390}
-],rooms:[
-  ['Bridge',60,60,340,350],['Communications',460,60,340,290],['Observation Deck',860,60,480,290],['Laboratory',1400,60,340,350],['Medical Bay',1800,60,340,350],
-  ['Cargo Bay',60,1040,340,340],['Engine Room',460,940,340,440],['Central Hub',860,400,480,600],['Reactor',1400,940,340,440]
-],stations:[
-  {id:'t1',x:230,y:210,type:'multiple-choice'},{id:'t2',x:620,y:190,type:'matchmaker'},{id:'t3',x:1090,y:190,type:'chronology'},{id:'t4',x:1570,y:210,type:'classification'},{id:'t5',x:1980,y:210,type:'systems'},
-  {id:'emergency',x:1100,y:700,type:'meeting'},{id:'lights',x:620,y:1160,type:'repair'},{id:'comms',x:620,y:250,type:'repair'},{id:'reactorA',x:1500,y:1130,type:'repair'},{id:'reactorB',x:1650,y:1240,type:'repair'}
+const rooms=[
+  ['Communications',60,50,360,230],['Bridge',520,50,360,180],['Observation Deck',980,50,360,230],
+  ['Engine Room',60,335,360,230],['Central Hub',520,300,360,300],['Laboratory',980,335,360,230],
+  ['Cargo Bay',60,620,360,230],['Reactor',520,660,360,190],['Medical Bay',980,620,360,230]
+];
+const corridors=[
+  {x:390,y:85,w:160,h:160},{x:850,y:85,w:160,h:160},{x:390,y:370,w:160,h:160},{x:850,y:370,w:160,h:160},{x:390,y:680,w:160,h:160},{x:850,y:680,w:160,h:160},
+  {x:160,y:250,w:160,h:115},{x:160,y:535,w:160,h:115},{x:620,y:200,w:160,h:130},{x:620,y:570,w:160,h:120},{x:1080,y:250,w:160,h:115},{x:1080,y:535,w:160,h:115}
+];
+const floors=[...rooms.map(([,x,y,w,h])=>({x,y,w,h})),...corridors];
+export const WORLD={width:1400,height:900,spawn:{x:700,y:455},rooms,corridors,stations:[
+  {id:'t1',x:700,y:130,type:'multiple-choice'},{id:'t2',x:240,y:150,type:'matchmaker'},{id:'t3',x:1160,y:150,type:'chronology'},{id:'t4',x:1160,y:445,type:'classification'},{id:'t5',x:1160,y:740,type:'systems'},
+  {id:'emergency',x:700,y:450,type:'meeting'},{id:'lights',x:240,y:445,type:'repair'},{id:'comms',x:340,y:150,type:'repair'},{id:'reactorA',x:635,y:750,type:'repair'},{id:'reactorB',x:765,y:750,type:'repair'}
 ]};
-export function collides(x,y,r=22){return x-r<40||y-r<40||x+r>2160||y+r>1410||WORLD.walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h)}
+const inside=(x,y,r=0)=>floors.some(q=>x-r>=q.x&&x+r<=q.x+q.w&&y-r>=q.y&&y+r<=q.y+q.h);
+export function collides(x,y,r=20){
+ if(x-r<20||y-r<20||x+r>WORLD.width-20||y+r>WORLD.height-20)return true;
+ const pts=[[x-r,y],[x+r,y],[x,y-r],[x,y+r],[x-r*.7,y-r*.7],[x+r*.7,y-r*.7],[x-r*.7,y+r*.7],[x+r*.7,y+r*.7]];
+ return pts.some(([px,py])=>!inside(px,py));
+}
 export function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-export function lineBlocked(a,b){const steps=Math.ceil(distance(a,b)/15);for(let i=1;i<steps;i++){const t=i/steps;if(collides(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,5))return true}return false}
-
-
-
+export function lineBlocked(a,b){const steps=Math.ceil(distance(a,b)/12);for(let i=1;i<steps;i++){const t=i/steps;if(collides(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,5))return true}return false}
+export function nextStep(a,b){
+ const cell=35,key=(x,y)=>`${x},${y}`,toCell=p=>({x:Math.round(p.x/cell),y:Math.round(p.y/cell)}),start=toCell(a),goal=toCell(b),open=[start],came=new Map(),seen=new Set([key(start.x,start.y)]),dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+ while(open.length){
+  open.sort((p,q)=>(Math.abs(p.x-goal.x)+Math.abs(p.y-goal.y))-(Math.abs(q.x-goal.x)+Math.abs(q.y-goal.y)));
+  const cur=open.shift();
+  if(Math.abs(cur.x-goal.x)+Math.abs(cur.y-goal.y)<=1){let step=cur,k=key(cur.x,cur.y),parent=came.get(k);while(parent&&key(parent.x,parent.y)!==key(start.x,start.y)){step=parent;k=key(parent.x,parent.y);parent=came.get(k)}return {x:step.x*cell,y:step.y*cell}}
+  for(const [dx,dy] of dirs){const n={x:cur.x+dx,y:cur.y+dy},nk=key(n.x,n.y);if(seen.has(nk)||collides(n.x*cell,n.y*cell,8))continue;seen.add(nk);came.set(nk,cur);open.push(n)}
+ }
+ return b;
+}
