@@ -5,19 +5,18 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
     "@react-pdf/renderer": "^4.5.1",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/d3-force": "^3.0.10",
+    "@types/d3-force": "^3.0.0",
     "@xmldom/xmldom": "^0.9.10",
     "animejs": "^4.5.0",
     "canvas-confetti": "^1.9.4",
     "d3-force": "^3.0.0",
-    "framer-motion": "^12.40.0",
     "googleapis": "^173.0.0",
     "jszip": "^3.10.1",
     "lucide-react": "^1.21.0",
@@ -25,7 +24,7 @@
     "next": "16.2.9",
     "pg": "^8.22.0",
     "playwright": "^1.61.1",
-    "pptxgenjs": "^4.0.1",
+    "pptxgenjs": "^4.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-markdown": "^10.1.0",
@@ -43,7 +42,6 @@
     "tailwindcss": "^4",
     "topojson-client": "^3.1.0",
     "typescript": "^5",
-    "world-atlas": "^2.0.2"
+    "world-atlas": "^2.0.0"
   }
 }
-
