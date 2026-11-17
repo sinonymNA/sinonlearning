@@ -18,9 +18,10 @@ export default async function LearningLabTeacherPage() {
         {classes.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-stone-200 bg-white p-10 text-center text-sm text-stone-500">Create a class first.</div>
         ) : (
-          <LearningLabAuthor classId={classes[0].id} />
+          <LearningLabAuthor classes={classes.map((cls) => ({ id: cls.id, name: cls.name }))} />
         )}
       </main>
     </div>
   );
 }
+
