@@ -7,13 +7,20 @@ type Assignment = {
   title: string;
   questions: Array<{ id: string; questionText: string; choices: string[]; correctAnswer: string; skill: string }>;
 };
+type Attempt = { id: string; answers: Record<string, string>; status: string };
+type Remediation = { state: { currentQuestionId: string | null; stage: string } };
+type Submitted = {
+  attempt: Attempt;
+  remediation: Remediation;
+  originalScore: { score: number; maxScore: number };
+};
 type Props = { assignmentId: string };
 
 export default function LearningLabStudent({ assignmentId }: Props) {
   const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [attempt, setAttempt] = useState<any>(null);
+  const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState<any>(null);
+  const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [reason, setReason] = useState("");
   const [coach, setCoach] = useState("");
   const [error, setError] = useState("");
@@ -59,7 +66,7 @@ export default function LearningLabStudent({ assignmentId }: Props) {
     });
     const data = await response.json();
     if (!response.ok) return setError(data.error ?? "Could not save your reasoning.");
-    setSubmitted((current: any) => ({ ...current, remediation: data.remediation }));
+    setSubmitted((current) => current ? ({ ...current, remediation: data.remediation }) : current);
     setCoach(data.evidence?.evidence?.tutorMessage ?? "Your reasoning was saved.");
     setReason("");
   }
@@ -109,3 +116,4 @@ export default function LearningLabStudent({ assignmentId }: Props) {
     </section>
   );
 }
+
