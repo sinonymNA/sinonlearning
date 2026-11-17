@@ -14,7 +14,7 @@ homepage, an Everyday Curriculum page, and a Classroom Tools page.
 - Framer Motion
 - Lucide React icons
 
-No database, no authentication, and no payment integration are used.
+Margins includes authenticated classes, assignments, submissions, and Learning Lab progress backed by PostgreSQL. Set `DATABASE_URL` in the deployment environment before using `/margins`; without it, authenticated Margins routes cannot initialize.
 
 ## Project structure
 
@@ -81,6 +81,10 @@ git push -u origin <branch-name>
    out of the box, so no extra configuration is required.
 5. Deploy. Railway will give you a public URL once the build finishes.
 
+### Margins database configuration
+
+Create a PostgreSQL service and expose its connection string as `DATABASE_URL` to the web service. The Margins schema is created lazily on the first authenticated request. For a production deployment, use a managed PostgreSQL database with backups and restrict access to the web service; do not commit credentials to the repository.
+
 ### Reel render worker (second Railway service)
 
 **Reel** (`/reel`) lets teachers script a short explainer video with KORA, add
@@ -93,3 +97,4 @@ be deployed as a **second service** in the same Railway project, sharing the sam
 step-by-step deploy (set the service root to `reel_worker`, share `DATABASE_URL`,
 no public port, one instance). Until that service is running, the rest of Reel
 works but the **Render preview** / **Produce** steps stay queued.
+
