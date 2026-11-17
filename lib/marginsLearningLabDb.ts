@@ -114,6 +114,41 @@ export async function getPublishedLearningAssignment(
   return rows[0]?.snapshot;
 }
 
+export async function publishLearningAssignmentVersion(params: {
+  assignment: PublishedAssignmentSnapshot;
+  title: string;
+  questions: LearningLabQuestion[];
+  context: PublishedAssignmentSnapshot["context"];
+}): Promise<PublishedAssignmentSnapshot> {
+  await ensureLearningLabSchema();
+  const snapshot: PublishedAssignmentSnapshot = {
+    ...params.assignment,
+    version: params.assignment.version + 1,
+    title: params.title,
+    questions: params.questions,
+    context: params.context,
+    publishedAt: new Date().toISOString(),
+  };
+  const { rows } = await query<{ snapshot: PublishedAssignmentSnapshot }>(
+    `WITH locked AS (
+       SELECT current_version FROM margins_learning_assignments
+       WHERE id = $1 FOR UPDATE
+     ), inserted AS (
+       INSERT INTO margins_learning_assignment_versions (id, assignment_id, version, snapshot)
+       SELECT $2, $1, current_version + 1, $3 FROM locked
+       RETURNING version
+     )
+     UPDATE margins_learning_assignments a
+     SET title = $4, current_version = inserted.version, status = 'published'
+     FROM inserted
+     WHERE a.id = $1
+     RETURNING $3::jsonb AS snapshot`,
+    [params.assignment.assignmentId, randomUUID(), JSON.stringify(snapshot), params.title]
+  );
+  if (!rows[0]) throw new Error("Assignment version could not be published.");
+  return rows[0].snapshot;
+}
+
 export async function getOrCreateAssessmentAttempt(
   assignment: PublishedAssignmentSnapshot,
   studentId: string
@@ -248,3 +283,4 @@ export async function getLearningEvidenceForClass(classId: string) {
 }
 
 export type { LearningStatus };
+
