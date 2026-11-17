@@ -20,12 +20,8 @@ function parseCsvLine(line: string): string[] {
   return cells;
 }
 
-export function parseLearningLabCsv(csv: string): {
-  questions: LearningLabQuestion[];
-  errors: string[];
-} {
-  const lines = csv.replace(/^﻿/, "").split(/?
-/).filter((line) => line.trim());
+export function parseLearningLabCsv(csv: string): { questions: LearningLabQuestion[]; errors: string[] } {
+  const lines = csv.replace(/^\uFEFF/, "").split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) return { questions: [], errors: ["Add a header row and at least one question."] };
   const headers = parseCsvLine(lines[0]).map((header) => header.toLowerCase().trim());
   const missing = REQUIRED.filter((header) => !headers.includes(header));
@@ -39,11 +35,11 @@ export function parseLearningLabCsv(csv: string): {
     const choices = (row.choices ?? "").split("|").map((choice) => choice.trim()).filter(Boolean);
     const pointValue = Number(row.point_value);
     if (!row.question || choices.length < 2 || !row.correct_answer || !Number.isFinite(pointValue) || pointValue <= 0 || !row.skill) {
-      errors.push(`Row ${index + 1}: question, at least two choices, correct_answer, positive point_value, and skill are required.`);
+      errors.push(`Row ${index + 1}: required question fields are missing.`);
       continue;
     }
     if (!choices.includes(row.correct_answer)) {
-      errors.push(`Row ${index + 1}: correct_answer must match one of the pipe-separated choices.`);
+      errors.push(`Row ${index + 1}: correct_answer must match one of the choices.`);
       continue;
     }
     questions.push({
