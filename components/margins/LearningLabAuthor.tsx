@@ -16,6 +16,11 @@ const example = JSON.stringify([{
   distractorExplanations: {},
   prerequisiteSkills: [],
   materialRefs: []
+  ,freshPractice: {
+    questionText: "A café stays open one extra hour instead of closing. What should the owner compare first?",
+    choices: ["The next-best use of the café's resources", "Every possible future business", "Only the money already spent", "The number of customers from yesterday"],
+    correctAnswer: "The next-best use of the café's resources"
+  }
 }], null, 2);
 
 export default function LearningLabAuthor({ classId }: Props) {
@@ -69,3 +74,4 @@ export default function LearningLabAuthor({ classId }: Props) {
     </section>
   );
 }
+
