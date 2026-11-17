@@ -29,7 +29,7 @@ export function ensureLearningLabSchema(): Promise<void> {
         snapshot JSONB NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         UNIQUE (assignment_id, version)
-      `))
+      )`))
       .then(() => query(`CREATE TABLE IF NOT EXISTS margins_learning_assessment_attempts (
         id UUID PRIMARY KEY,
         assignment_id UUID NOT NULL REFERENCES margins_learning_assignments(id) ON DELETE CASCADE,
@@ -43,14 +43,14 @@ export function ensureLearningLabSchema(): Promise<void> {
         started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         submitted_at TIMESTAMPTZ,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      `))
+      )`))
       .then(() => query(`CREATE TABLE IF NOT EXISTS margins_learning_remediation (
         id UUID PRIMARY KEY,
         assessment_attempt_id UUID NOT NULL UNIQUE REFERENCES margins_learning_assessment_attempts(id) ON DELETE CASCADE,
         state JSONB NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      `))
+      )`))
       .then(() => query(`CREATE TABLE IF NOT EXISTS margins_learning_evidence (
         id UUID PRIMARY KEY,
         remediation_id UUID NOT NULL REFERENCES margins_learning_remediation(id) ON DELETE CASCADE,
@@ -58,7 +58,7 @@ export function ensureLearningLabSchema(): Promise<void> {
         stage TEXT NOT NULL,
         evidence JSONB NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      `))
+      )`))
       .then(() => undefined);
   }
   return ready;
@@ -303,4 +303,5 @@ export async function getLearningEvidenceForClass(classId: string) {
 }
 
 export type { LearningStatus };
+
 
