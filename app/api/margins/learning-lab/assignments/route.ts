@@ -82,11 +82,18 @@ export async function GET(
     return NextResponse.json({
       assignment: {
         ...assignment,
-        questions: assignment.questions.map(({ correctAnswer: _answer, explanation: _explanation, distractorExplanations: _distractors, freshPractice, ...question }) => ({
-          ...question,
-          freshPractice: freshPractice ? {
-            questionText: freshPractice.questionText,
-            choices: freshPractice.choices,
+        questions: assignment.questions.map((question) => ({
+          id: question.id,
+          questionText: question.questionText,
+          choices: question.choices,
+          pointValue: question.pointValue,
+          standard: question.standard,
+          skill: question.skill,
+          prerequisiteSkills: question.prerequisiteSkills,
+          materialRefs: question.materialRefs,
+          freshPractice: question.freshPractice ? {
+            questionText: question.freshPractice.questionText,
+            choices: question.freshPractice.choices,
           } : undefined,
         })),
       },
