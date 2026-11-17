@@ -78,6 +78,20 @@ export async function GET(
     ? cls?.teacher_id === user.id
     : !!cls && await isStudentInClass(cls.id, user.id);
   if (!allowed) return NextResponse.json({ error: "Not authorized." }, { status: 403 });
+  if (user.role === "student") {
+    return NextResponse.json({
+      assignment: {
+        ...assignment,
+        questions: assignment.questions.map(({ correctAnswer: _answer, explanation: _explanation, distractorExplanations: _distractors, freshPractice, ...question }) => ({
+          ...question,
+          freshPractice: freshPractice ? {
+            questionText: freshPractice.questionText,
+            choices: freshPractice.choices,
+          } : undefined,
+        })),
+      },
+    });
+  }
   return NextResponse.json({ assignment });
 }
 
