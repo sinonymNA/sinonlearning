@@ -29,6 +29,20 @@ export default function LearningLabAuthor({ classes }: Props) {
   const [questions, setQuestions] = useState(example);
   const [message, setMessage] = useState("");
   const [createdId, setCreatedId] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+
+  async function previewCsv(file: File) {
+    setImportMessage("Checking spreadsheet…");
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch("/api/margins/learning-lab/import", { method: "POST", body: form });
+    const data = await response.json();
+    if (!response.ok) return setImportMessage(data.error ?? "Could not read spreadsheet.");
+    if (data.preview?.questions?.length) setQuestions(JSON.stringify(data.preview.questions, null, 2));
+    setImportMessage(data.publishable
+      ? `Imported ${data.preview.questions.length} question${data.preview.questions.length === 1 ? "" : "s"}. Review the JSON before publishing.`
+      : data.preview.errors?.join(" ") ?? "Review the imported questions before publishing.");
+  }
 
   async function publish() {
     setMessage("");
@@ -69,6 +83,9 @@ export default function LearningLabAuthor({ classes }: Props) {
       <select value={classId} onChange={(e) => setClassId(e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm">
         {classes.map((cls) => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
       </select>
+      <label className="mt-4 block text-xs font-semibold text-stone-600">Import question bank CSV</label>
+      <input type="file" accept=".csv,text/csv" onChange={(e) => e.target.files?.[0] && previewCsv(e.target.files[0])} className="mt-1 block w-full text-sm text-stone-500" />
+      {importMessage && <p className="mt-2 text-xs text-stone-500">{importMessage}</p>}
       <label className="mt-5 block text-xs font-semibold text-stone-600">Assignment title</label>
       <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
       <label className="mt-4 block text-xs font-semibold text-stone-600">Question bank JSON</label>
