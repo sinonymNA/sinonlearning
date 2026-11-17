@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, PenLine, Sparkles, Highlighter } from "lucide-react";
+import { ArrowRight, PenLine, Sparkles, Highlighter, FlaskConical } from "lucide-react";
 import DemoButtons from "./DemoButtons";
 import { useMountReveal, useScrollReveal } from "@/lib/marginsMotion";
 
@@ -74,6 +74,24 @@ export default function LandingHero() {
         </div>
       </div>
 
+      <div className="mt-16 w-full max-w-3xl rounded-3xl border border-teal-100 bg-gradient-to-br from-teal-50 via-white to-violet-50 p-7 sm:p-9">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2 text-teal-700">
+              <FlaskConical size={18} />
+              <p className="text-[11px] font-bold uppercase tracking-widest">New · Learning Lab</p>
+            </div>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-stone-900">Practice, relearn, and try again.</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-stone-600">
+              Teachers can publish guided Practice &amp; Relearn assignments. Students revisit missed ideas, explain their reasoning, and demonstrate understanding on fresh questions.
+            </p>
+          </div>
+          <Link href="/margins/signup" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
+            Try Learning Lab <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+
       {/* How it works */}
       <div ref={stepsRef} className="w-full max-w-3xl mt-20">
         <p className="text-center text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-8">
@@ -101,3 +119,4 @@ export default function LandingHero() {
     </main>
   );
 }
+
