@@ -114,6 +114,26 @@ export async function getPublishedLearningAssignment(
   return rows[0]?.snapshot;
 }
 
+export async function getLearningAssignmentsForStudent(studentId: string) {
+  await ensureLearningLabSchema();
+  const { rows } = await query<{ snapshot: PublishedAssignmentSnapshot; class_name: string; attempt_status: string | null }>(
+    `SELECT v.snapshot, c.name AS class_name, at.status AS attempt_status
+     FROM margins_learning_assignment_versions v
+     JOIN margins_learning_assignments a ON a.id = v.assignment_id AND a.current_version = v.version
+     JOIN margins_classes c ON c.id = a.class_id
+     JOIN margins_class_memberships m ON m.class_id = a.class_id AND m.student_id = $1
+     LEFT JOIN LATERAL (
+       SELECT status FROM margins_learning_assessment_attempts
+       WHERE assignment_id = a.id AND assignment_version = a.current_version AND student_id = $1
+       ORDER BY started_at DESC LIMIT 1
+     ) at ON true
+     WHERE a.status = 'published'
+     ORDER BY v.created_at DESC`,
+    [studentId]
+  );
+  return rows;
+}
+
 export async function publishLearningAssignmentVersion(params: {
   assignment: PublishedAssignmentSnapshot;
   title: string;
