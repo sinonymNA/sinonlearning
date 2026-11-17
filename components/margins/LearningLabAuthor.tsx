@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Props = { classId: string };
+type Props = { classes: Array<{ id: string; name: string }> };
 
 const example = JSON.stringify([{
   id: "opportunity-cost-1",
@@ -23,7 +23,8 @@ const example = JSON.stringify([{
   }
 }], null, 2);
 
-export default function LearningLabAuthor({ classId }: Props) {
+export default function LearningLabAuthor({ classes }: Props) {
+  const [classId, setClassId] = useState(classes[0]?.id ?? "");
   const [title, setTitle] = useState("Opportunity Cost: Practice & Relearn");
   const [questions, setQuestions] = useState(example);
   const [message, setMessage] = useState("");
@@ -64,6 +65,10 @@ export default function LearningLabAuthor({ classId }: Props) {
       <p className="text-[11px] font-bold uppercase tracking-widest text-violet-500">Practice &amp; Relearn</p>
       <h2 className="mt-2 text-lg font-bold text-stone-900">Publish a first learning loop</h2>
       <p className="mt-1 text-sm text-stone-500">This starter fixture is editable JSON so the review contract is visible before spreadsheet import.</p>
+      <label className="mt-4 block text-xs font-semibold text-stone-600">Class</label>
+      <select value={classId} onChange={(e) => setClassId(e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm">
+        {classes.map((cls) => <option key={cls.id} value={cls.id}>{cls.name}</option>)}
+      </select>
       <label className="mt-5 block text-xs font-semibold text-stone-600">Assignment title</label>
       <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-stone-200 px-3 py-2 text-sm" />
       <label className="mt-4 block text-xs font-semibold text-stone-600">Question bank JSON</label>
