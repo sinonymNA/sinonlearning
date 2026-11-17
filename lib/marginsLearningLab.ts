@@ -41,6 +41,11 @@ export interface LearningLabQuestion {
   distractorExplanations: Record<string, string>;
   prerequisiteSkills: string[];
   materialRefs: string[];
+  freshPractice?: {
+    questionText: string;
+    choices: string[];
+    correctAnswer: string;
+  };
 }
 
 export interface PublishedAssignmentSnapshot {
@@ -210,3 +215,4 @@ export function buildTutorContext(params: {
 export function getStageNumber(stage: RemediationStage): number {
   return STAGE_ORDER.indexOf(stage) + 1;
 }
+
