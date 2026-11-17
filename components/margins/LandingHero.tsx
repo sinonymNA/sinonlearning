@@ -86,8 +86,8 @@ export default function LandingHero() {
               Teachers can publish guided Practice &amp; Relearn assignments. Students revisit missed ideas, explain their reasoning, and demonstrate understanding on fresh questions.
             </p>
           </div>
-          <Link href="/margins/signup" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
-            Try Learning Lab <ArrowRight size={14} />
+          <Link href="/margins/learning-lab/demo" className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-teal-800">
+            Try the demo <ArrowRight size={14} />
           </Link>
         </div>
       </div>
