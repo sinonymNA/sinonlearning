@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Assignment = {
   assignmentId: string;
   title: string;
-  questions: Array<{ id: string; questionText: string; choices: string[]; correctAnswer: string; skill: string }>;
+  questions: Array<{ id: string; questionText: string; choices: string[]; correctAnswer: string; skill: string; freshPractice?: { questionText: string; choices: string[]; correctAnswer: string } }>;
 };
 type Attempt = { id: string; answers: Record<string, string>; status: string };
 type Remediation = { state: { currentQuestionId: string | null; stage: string } };
@@ -23,6 +23,7 @@ export default function LearningLabStudent({ assignmentId }: Props) {
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [reason, setReason] = useState("");
   const [coach, setCoach] = useState("");
+  const [practiceAnswer, setPracticeAnswer] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -71,6 +72,20 @@ export default function LearningLabStudent({ assignmentId }: Props) {
     setReason("");
   }
 
+  async function submitFreshPractice() {
+    if (!submitted?.remediation?.state?.currentQuestionId || !practiceAnswer) return;
+    const response = await fetch(`/api/margins/learning-lab/assessments/${submitted.attempt.id}/practice`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ answer: practiceAnswer })
+    });
+    const data = await response.json();
+    if (!response.ok) return setError(data.error ?? "Could not score fresh practice.");
+    setSubmitted((current) => current ? ({ ...current, remediation: data.remediation }) : current);
+    setCoach(data.correct ? "You applied the idea to a new situation." : "That answer is still developing. Let’s try another explanation.");
+    setPracticeAnswer("");
+  }
+
   if (error) return <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p>;
   if (!assignment) return <p className="text-sm text-stone-500">Loading assignment…</p>;
 
@@ -105,9 +120,21 @@ export default function LearningLabStudent({ assignmentId }: Props) {
           {submitted.remediation.state.currentQuestionId ? (
             <div className="mt-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-stone-400">Stage: {submitted.remediation.state.stage.replace("_", " ")}</p>
-              <p className="mt-2 text-sm text-stone-700">Tell the tutor what made your answer seem right. “I guessed” is a useful answer.</p>
-              <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} className="mt-3 w-full rounded-lg border border-stone-200 p-3 text-sm" />
-              <button onClick={sendReason} className="mt-3 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white">Continue with tutor</button>
+              {submitted.remediation.state.stage === "practice" && assignment.questions.find((q) => q.id === submitted.remediation.state.currentQuestionId)?.freshPractice ? (
+                (() => {
+                  const fresh = assignment.questions.find((q) => q.id === submitted.remediation.state.currentQuestionId)?.freshPractice;
+                  if (!fresh) return null;
+                  return <>
+                    <p className="mt-2 text-sm text-stone-700">Fresh practice: {fresh.questionText}</p>
+                    <div className="mt-3 flex flex-col gap-2">{fresh.choices.map((choice) => <label key={choice} className="flex gap-2 rounded-lg border border-stone-200 p-3 text-sm"><input type="radio" name="fresh-practice" checked={practiceAnswer === choice} onChange={() => setPracticeAnswer(choice)} />{choice}</label>)}</div>
+                    <button onClick={submitFreshPractice} className="mt-3 rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white">Check fresh practice</button>
+                  </>;
+                })()
+              ) : <>
+                <p className="mt-2 text-sm text-stone-700">Tell the tutor what made your answer seem right. “I guessed” is a useful answer.</p>
+                <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={4} className="mt-3 w-full rounded-lg border border-stone-200 p-3 text-sm" />
+                <button onClick={sendReason} className="mt-3 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white">Continue with tutor</button>
+              </>}
               {coach && <p className="mt-4 rounded-xl bg-violet-50 p-4 text-sm text-violet-900">{coach}</p>}
             </div>
           ) : <p className="mt-5 text-sm text-emerald-700">No missed questions. You demonstrated the skill independently.</p>}
