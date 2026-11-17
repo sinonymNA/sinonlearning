@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassById, isStudentInClass } from "@/lib/marginsDb";
-import { createLearningAssignment, getPublishedLearningAssignment } from "@/lib/marginsLearningLabDb";
-import type { LearningLabAssignmentType, LearningLabQuestion } from "@/lib/marginsLearningLab";
+import { createLearningAssignment, getPublishedLearningAssignment, publishLearningAssignmentVersion } from "@/lib/marginsLearningLabDb";
+import type { LearningLabAssignmentType, LearningLabQuestion, PublishedAssignmentSnapshot } from "@/lib/marginsLearningLab";
 
 function validQuestion(value: unknown): value is LearningLabQuestion {
   if (!value || typeof value !== "object") return false;
@@ -62,6 +62,29 @@ export async function POST(request: NextRequest) {
     },
   });
   return NextResponse.json({ assignment: snapshot }, { status: 201 });
+}
+
+export async function PUT(request: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "teacher") return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+  let body: { assignmentId?: string; title?: string; questions?: unknown[]; context?: PublishedAssignmentSnapshot["context"] };
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  if (!body.assignmentId || !body.title?.trim() || !body.questions?.length || !body.questions.every(validQuestion)) {
+    return NextResponse.json({ error: "An assignment ID, title, and valid questions are required." }, { status: 400 });
+  }
+  const current = await getPublishedLearningAssignment(body.assignmentId);
+  if (!current) return NextResponse.json({ error: "Assignment not found." }, { status: 404 });
+  const cls = await getClassById(current.classId);
+  if (!cls || cls.teacher_id !== user.id) return NextResponse.json({ error: "Not authorized for this class." }, { status: 403 });
+  const assignment = await publishLearningAssignmentVersion({
+    assignment: current,
+    title: body.title.trim(),
+    questions: body.questions as LearningLabQuestion[],
+    context: body.context ?? current.context,
+  });
+  return NextResponse.json({ assignment });
 }
 
 export async function GET(
