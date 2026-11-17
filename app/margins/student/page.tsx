@@ -3,6 +3,7 @@ import Link from "next/link";
 import { NotebookPen, Search } from "lucide-react";
 import { getCurrentUser } from "@/lib/marginsAuth";
 import { getClassesByStudent, getAssignmentsForStudent } from "@/lib/marginsDb";
+import { getLearningAssignmentsForStudent } from "@/lib/marginsLearningLabDb";
 import MarginsHeader from "@/components/margins/MarginsHeader";
 import JoinClassButton from "@/components/margins/JoinClassButton";
 import RevealGroup from "@/components/margins/RevealGroup";
@@ -34,9 +35,10 @@ export default async function StudentDashboardPage() {
   if (!user) redirect("/margins/login");
   if (user.role !== "student") redirect("/margins/teacher");
 
-  const [classes, assignments] = await Promise.all([
+  const [classes, assignments, learningAssignments] = await Promise.all([
     getClassesByStudent(user.id),
     getAssignmentsForStudent(user.id),
+    getLearningAssignmentsForStudent(user.id),
   ]);
 
   return (
@@ -103,6 +105,29 @@ export default async function StudentDashboardPage() {
           </RevealGroup>
         )}
 
+        {learningAssignments.length > 0 && (
+          <>
+            <h2 className="mt-10 text-[11px] font-bold uppercase tracking-widest text-stone-400 mb-3">Learning Lab</h2>
+            <div className="flex flex-col gap-2.5">
+              {learningAssignments.map(({ snapshot, class_name, attempt_status }) => (
+                <Link
+                  key={snapshot.assignmentId}
+                  href={`/margins/student/learning-lab/${snapshot.assignmentId}`}
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-teal-100 bg-white px-4 py-3.5 hover:border-teal-300 hover:shadow-sm transition-all"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-stone-800 truncate">{snapshot.title}</p>
+                    <p className="text-xs text-stone-400">{class_name} · Practice &amp; Relearn</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700">
+                    {attempt_status === "submitted" ? "Continue review" : attempt_status === "in_progress" ? "Resume" : "Start"}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+
         <RevealGroup className="mt-10" stagger={0}>
           <Link
             href="/margins/student/practice"
@@ -132,3 +157,4 @@ export default async function StudentDashboardPage() {
     </div>
   );
 }
+
