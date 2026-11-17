@@ -24,7 +24,10 @@ export default async function TeacherDashboardPage() {
             <h1 className="text-xl font-bold text-stone-900">Your classes</h1>
             <p className="text-sm text-stone-400 mt-0.5">Create a class, share the code, and build assignments.</p>
           </div>
-          <NewClassButton />
+          <div className="flex items-center gap-2">
+            <Link href="/margins/teacher/learning-lab" className="rounded-lg border border-violet-200 px-3 py-2 text-xs font-semibold text-violet-600 hover:bg-violet-50">Learning Lab</Link>
+            <NewClassButton />
+          </div>
         </div>
 
         {classes.length === 0 ? (
@@ -59,3 +62,4 @@ export default async function TeacherDashboardPage() {
     </div>
   );
 }
+
