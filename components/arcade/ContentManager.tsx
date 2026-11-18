@@ -43,6 +43,12 @@ export default function ContentManager() {
   const [aiGrade, setAiGrade] = useState("");
   const [aiAmount, setAiAmount] = useState("medium");
   const [aiBusy, setAiBusy] = useState(false);
+  const [variantBusy, setVariantBusy] = useState(false);
+  async function makeVariants() {
+    if (!id) return;
+    setVariantBusy(true); setMsg("Writing sibling questions… this can take a minute.");
+    try { const d = await api("/api/arcade/content", { type: "ai_variants", id }); await open(id); setMsg(d.added ? `Added ${d.added} variants.${d.remaining ? ` ${d.remaining} questions still have none - run it again.` : ""}` : "Every question already has variants."); } catch (e: any) { setMsg(e.message); } finally { setVariantBusy(false); }
+  }
   async function aiBuild() {
     setAiBusy(true); setMsg("The AI is reading your material… this can take up to a minute.");
     try {
@@ -113,6 +119,15 @@ export default function ContentManager() {
           {area("telephonePrompts", "☎️ Telephone prompts", "Short silly or topic phrases, one per line.")}
           {area("imposterWords", "🕵️ Secret words (Imposter)", "WORD | related; concepts; used by bots. One per line.")}
         </div>
+        {id && (
+          <div className="ar-panel grid gap-2"><h2 className="ar-h2">⛰️ Mastery Peak</h2>
+            <p className="ar-muted text-sm">Students climb this set at their own pace: wrong answers get explained and re-asked in a different form until the idea sticks. Save the set first, then share the link.</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input className="ar-input" readOnly value={typeof window !== "undefined" ? `${window.location.origin}/arcade/peak?set=${id}` : ""} aria-label="Mastery Peak link" onFocus={(e) => e.currentTarget.select()} />
+              <button className="ar-btn sm mint" disabled={variantBusy} onClick={makeVariants}>{variantBusy ? "Working…" : "✨ Make question variants with AI"}</button>
+              <a className="ar-btn sm paper" href={`/arcade/peak?set=${id}`}>Open</a></div>
+            <p className="ar-muted text-xs">Variants are extra sibling questions on the same idea (different wording or numbers) so students can&apos;t just memorise one answer. Questions without a concept label are lumped into generic camps, so sets built with the AI builder (which labels concepts) work much better. Anyone signed in who has the link can climb.</p>
+          </div>)}
         <div className="flex flex-wrap items-center gap-3"><button className="ar-btn coral xl" onClick={save} disabled={title.trim().length < 2}>Save set</button><span role="status" className="font-bold text-[var(--sun)]">{msg}</span></div>
       </div>
     </div>

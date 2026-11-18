@@ -35,4 +35,11 @@ Progress is stored against the existing username/password account id only (no na
 4. UI: mountain map, slip/explain flow, Summit screen.
 5. Teacher heat map + "pull from Wobbly" for class games.
 
-Status: **planned, not built.** Foundations done: concept/explain fields, AI set builder.
+## Status: v1 built (solo Peak + teacher report + AI variants)
+- Engine `arcade-server/mastery.mjs` (pure, tested): camps, secured = 3 *different* correct in a row, spaced re-check (gap = up to 3 other answers), fall-back on a failed re-check, catch-up question after a slip, summit when all camps are stamped.
+- API `handleMastery` (`/api/arcade/mastery`): start / next / answer / reset / report. Sign-in required (progress saved per account). The correct answer and the shuffle live only in the saved server state until the student answers. Per-student lock stops double-submits. One-time 100-coin summit reward per set.
+- Persistence: `store.getMastery/saveMastery/listMastery` (MemoryStore + Postgres table `arcade_mastery`).
+- AI: `ai_variants` content action + `generateVariants` (teacher-only, pre-generated and saved on the set as `variants`; rate-limited with the set builder).
+- UI: `/arcade/peak` (`?set=<id>`; `builtin` = starter set), mountain map, explain-and-catch-up flow, summit screen, teacher class report; content manager shows the share link + variants button.
+- Honest limits: unlabelled sets get generic "Camp N" groups; teachers should use the AI builder (labels concepts). Variants are AI-written and only sanity-checked (shape/moderation), so teachers should skim them. "Secured + re-checked" is evidence, not proof of understanding. Not built: free-response checks, per-wrong-answer misconception hints, class-game integration ("pull from wobbly"), spaced re-checks across days.
+- Not run against the live AI model here (no key in this environment).

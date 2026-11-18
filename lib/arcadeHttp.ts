@@ -18,6 +18,7 @@ export async function respond(request: Request, run: (ctx: any, body: any, arcad
       user, ip: getClientIp(request), store: arcade.store,
       // reuse of the existing Game Show question banks (lib/gameShows.ts)
       generate: async (input: any) => (await import("@/lib/arcadeAi")).generateArcadeContent(input),
+      generateVariants: async (input: any) => (await import("@/lib/arcadeAi")).generateVariants(input),
       gameShows: { getById: async (id: string) => (await import("@/lib/gameShows")).getGameShowById(id) },
     };
     const data = await run(ctx, body, arcade);

@@ -1,11 +1,12 @@
 import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
-import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems, sanitizeLoose } from "./content.mjs";
+import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems, sanitizeLoose, sanitizeQuestion } from "./content.mjs";
 import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
 import { DAILY_BONUS, dailyShop, dayKey, dealFor } from "./shop.mjs";
 import { GameError, RateLimiter, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
 import { login, signup, startSession } from "./accounts.mjs";
+import { buildPool, classReport, mapView, newState, nextQuestion, reconcile, submitAnswer } from "./mastery.mjs";
 
 /** The test lab is open to any signed-in teacher account (no env configuration); guests and students are refused. */
 export function isDeveloper(user) {
@@ -243,6 +244,26 @@ export async function handleContent(ctx, body) {
       if (!total) fail("The AI couldn't make anything usable from that. Try pasting clearer notes.");
       return { items, dropped, compatibility: compatibility({ items }) };
     }
+    case "ai_variants": {
+      // Mastery Peak: pre-generate sibling questions (same concept, different form) and save them on the set.
+      if (typeof ctx.generateVariants !== "function") fail("AI set-building isn't switched on for this server yet.", "unavailable");
+      const set = await store.getSet(String(body.id ?? ""));
+      if (!set || set.ownerId !== user.id) fail("Content set not found.", "not_found");
+      const targets = set.items.questions.map((q, i) => ({ i, q })).filter((x) => !x.q.variants?.length).slice(0, 40);
+      if (!targets.length) return { added: 0, remaining: 0 };
+      if (aiLimiter.limited(`ai:${user.id}`, AI_LIMIT.windowMs, AI_LIMIT.max)) fail("You've used the AI builder a lot this hour. Try again a bit later.", "rate");
+      const raw = await ctx.generateVariants(targets.map(({ i, q }) => ({ i, q: q.q, choices: q.choices, answer: q.answer, concept: q.concept ?? null })));
+      let added = 0;
+      const questions = set.items.questions.map((q, i) => {
+        const got = (Array.isArray(raw) ? raw : []).find((r) => r?.i === i);
+        if (!got || !targets.some((t) => t.i === i)) return q;
+        try { const clean = sanitizeQuestion({ ...q, variants: got.variants }); if (clean.variants?.length) { added += clean.variants.length; return { ...q, variants: clean.variants }; } } catch { /* keep original */ }
+        return q;
+      });
+      if (!added) fail("The AI couldn't make usable variants. Try again.");
+      await store.saveSet({ id: set.id, ownerId: set.ownerId, title: set.title, items: { ...set.items, questions } });
+      return { added, remaining: Math.max(0, set.items.questions.filter((q) => !q.variants?.length).length - targets.length) };
+    }
     case "compat": return { compatibility: compatibility({ items: sanitizeItems(body.items) }) };
     default: fail("Unknown request.");
   }
@@ -360,3 +381,73 @@ export async function handleSolo(service, ctx, body) {
   }
 }
 export { GameError, GAME_CATALOG };
+
+
+// ---------- Mastery Peak ----------
+export const PEAK = { reward: 100, perMinute: 90 };
+const peakLimiter = new RateLimiter();
+const peakLocks = new Map();
+/** Serialise one student's requests so double-clicks can't answer the same question twice. */
+async function withLock(key, fn) {
+  const prev = peakLocks.get(key) ?? Promise.resolve();
+  let release; const gate = new Promise((r) => { release = r; });
+  const mine = prev.then(() => gate);
+  peakLocks.set(key, mine);
+  await prev;
+  try { return await fn(); } finally { release(); if (peakLocks.get(key) === mine) peakLocks.delete(key); }
+}
+
+async function peakSet(store, id) {
+  const setId = String(id ?? "");
+  if (!setId) fail("Pick a set to climb.");
+  const set = setId === "builtin" ? DEFAULT_SET : await store.getSet(setId);
+  if (!set) fail("That Mastery Peak set wasn't found. Check the link your teacher gave you.", "not_found");
+  const pool = buildPool(set);
+  if (!pool.concepts.length) fail("This set has no multiple-choice questions to climb.");
+  return { set, setId, pool };
+}
+
+export async function handleMastery(ctx, body) {
+  const { store, user } = ctx;
+  if (!user) fail("Sign in to climb Mastery Peak - your progress is saved to your account.", "forbidden");
+  if (peakLimiter.limited(`peak:${user.id}`, 60_000, PEAK.perMinute)) fail("Slow down a little.", "rate");
+  const { set, setId, pool } = await peakSet(store, body.setId);
+  const header = { setId, title: set.title ?? "Mastery Peak", truncated: pool.truncated };
+
+  if (body.type === "report") {
+    if (!isTeacher(user) || (setId !== "builtin" && set.ownerId !== user.id)) fail("Only the teacher who owns this set can see its report.", "forbidden");
+    return { ...header, ...classReport(pool, (await store.listMastery(setId)).map((s) => reconcile(pool, s))) };
+  }
+
+  return withLock(`${user.id}|${setId}`, async () => {
+    const state = reconcile(pool, await store.getMastery(user.id, setId));
+    const view = (extra = {}) => ({ ...header, summit: state.summit, step: state.step, concepts: mapView(pool, state), ...extra });
+    switch (body.type) {
+      case "start": return view();
+      case "next": {
+        const q = nextQuestion(pool, state);
+        await store.saveMastery(user.id, setId, state);
+        return view({ question: q.done ? null : q });
+      }
+      case "answer": {
+        const r = submitAnswer(pool, state, body.choice);
+        if (r.error) { await store.saveMastery(user.id, setId, state); fail(r.error); }
+        let reward = null;
+        if (state.summit && !state.rewarded) {
+          state.rewarded = true;
+          const a = await store.award({ userId: user.id, coins: PEAK.reward, key: `peak:${setId}`, reason: "mastery peak summit" });
+          reward = a.awarded ? PEAK.reward : 0;
+        }
+        await store.saveMastery(user.id, setId, state);
+        return view({ result: r, reward });
+      }
+      case "reset": {
+        const fresh = newState(pool); fresh.rewarded = state.rewarded;
+        await store.saveMastery(user.id, setId, fresh);
+        state.concepts = fresh.concepts; state.summit = false; state.step = 0;
+        return view();
+      }
+      default: fail("Unknown request.");
+    }
+  });
+}

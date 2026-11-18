@@ -196,6 +196,12 @@ export function sanitizeQuestion(raw) {
   // optional remediation metadata (used by Mastery Peak): why the answer is right + which concept it tests
   if (raw?.explain) { try { out.explain = cleanText(raw.explain, { min: 3, max: 300, label: "Explanation" }); } catch { /* drop */ } }
   if (raw?.concept) { try { out.concept = cleanText(raw.concept, { min: 2, max: 60, label: "Concept" }); } catch { /* drop */ } }
+  // Mastery Peak sibling questions (same concept, different wording/numbers). One level deep only.
+  if (Array.isArray(raw?.variants) && !raw.__variant) {
+    const vs = [];
+    for (const v of raw.variants.slice(0, 4)) { try { const x = sanitizeQuestion({ ...v, __variant: true }); delete x.concept; vs.push(x); } catch { /* drop bad variant */ } }
+    if (vs.length) out.variants = vs;
+  }
   return out;
 }
 const cleanWord = (w, max = 40) => cleanText(w, { min: 1, max, label: "Word" });

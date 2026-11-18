@@ -18,6 +18,7 @@ export default async function ArcadePage() {
         <Link href="/" className="font-bold underline">← Sinon Learning</Link>
         <nav className="flex flex-wrap gap-2" aria-label="Arcade">
           <Link className="ar-btn sm mint" href="/arcade/solo">🎮 Solo</Link>
+          <Link className="ar-btn sm sky" href="/arcade/peak">⛰️ Mastery Peak</Link>
           <Link className="ar-btn sm paper" href="/arcade/account">👤 Account</Link>
           <Link className="ar-btn sm paper" href="/arcade/characters">🧸 Characters</Link>
           <Link className="ar-btn sm paper" href="/arcade/shop">🪙 Shop</Link>

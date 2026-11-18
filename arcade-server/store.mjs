@@ -4,7 +4,7 @@ import { GameError } from "./util.mjs";
 
 /** In-memory store with the same interface as lib/arcadeDb.ts (used by tests and when no DATABASE_URL is set). */
 export class MemoryStore {
-  constructor() { this.accounts = new Map(); this.sessions = new Map(); this.awardLog = []; this.wallets = new Map(); this.awards = new Set(); this.collections = new Map(); this.packs = new Map(); this.sets = new Map(); }
+  constructor() { this.accounts = new Map(); this.sessions = new Map(); this.awardLog = []; this.wallets = new Map(); this.awards = new Set(); this.collections = new Map(); this.packs = new Map(); this.sets = new Map(); this.mastery = new Map(); }
 
   // ----- username/password accounts -----
   async createAccount({ username, passwordHash }) {
@@ -80,6 +80,11 @@ export class MemoryStore {
     return result;
   }
 
+  // ----- Mastery Peak progress (one JSON blob per account + set) -----
+  async getMastery(userId, setId) { const v = this.mastery.get(`${userId}|${setId}`); return v ? structuredClone(v) : null; }
+  async saveMastery(userId, setId, state) { this.mastery.set(`${userId}|${setId}`, structuredClone(state)); }
+  async listMastery(setId) { return [...this.mastery.entries()].filter(([k]) => k.endsWith(`|${setId}`)).map(([, v]) => structuredClone(v)); }
+
   async listSets(ownerId) { return [...this.sets.values()].filter((s) => s.ownerId === ownerId).map(({ ...s }) => s); }
   async getSet(id) { return this.sets.get(id) ?? null; }
   async saveSet(set) {
@@ -93,6 +98,7 @@ export class MemoryStore {
   async deleteSet(id, ownerId) { const s = this.sets.get(id); if (s && s.ownerId === ownerId) this.sets.delete(id); }
   async deleteUserData(userId) {
     this.wallets.delete(userId); this.collections.delete(userId);
+    for (const k of [...this.mastery.keys()]) if (k.startsWith(userId + "|")) this.mastery.delete(k);
     for (const [id, s] of this.sets) if (s.ownerId === userId) this.sets.delete(id);
     for (const k of [...this.packs.keys()]) if (k.startsWith(userId + ":")) this.packs.delete(k);
   }

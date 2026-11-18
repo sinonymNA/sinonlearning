@@ -27,6 +27,8 @@ export function ensureArcadeSchema(): Promise<void> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
       await query(`CREATE TABLE IF NOT EXISTS arcade_sessions (
         token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`);
+      await query(`CREATE TABLE IF NOT EXISTS arcade_mastery (
+        user_id TEXT NOT NULL, set_id TEXT NOT NULL, state JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (user_id, set_id))`);
       await query(`CREATE INDEX IF NOT EXISTS arcade_content_owner_idx ON arcade_content_sets (owner_id)`);
     })();
   }
@@ -134,6 +136,22 @@ export class PgStore {
     });
   }
 
+  async getMastery(userId: string, setId: string) {
+    await ensureArcadeSchema();
+    const { rows } = await query(`SELECT state FROM arcade_mastery WHERE user_id = $1 AND set_id = $2`, [userId, setId]);
+    return rows[0]?.state ?? null;
+  }
+  async saveMastery(userId: string, setId: string, state: unknown) {
+    await ensureArcadeSchema();
+    await query(`INSERT INTO arcade_mastery (user_id, set_id, state) VALUES ($1,$2,$3)
+      ON CONFLICT (user_id, set_id) DO UPDATE SET state = EXCLUDED.state, updated_at = now()`, [userId, setId, JSON.stringify(state)]);
+  }
+  async listMastery(setId: string) {
+    await ensureArcadeSchema();
+    const { rows } = await query(`SELECT state FROM arcade_mastery WHERE set_id = $1`, [setId]);
+    return rows.map((r) => r.state);
+  }
+
   async listSets(ownerId: string) {
     await ensureArcadeSchema();
     const { rows } = await query(`SELECT id, owner_id, title, items FROM arcade_content_sets WHERE owner_id = $1 ORDER BY updated_at DESC`, [ownerId]);
@@ -160,7 +178,7 @@ export class PgStore {
   async deleteUserData(userId: string) {
     await ensureArcadeSchema();
     await transaction(async (run) => {
-      for (const t of ["arcade_wallets", "arcade_awards", "arcade_collection", "arcade_pack_opens"]) await run(`DELETE FROM ${t} WHERE user_id = $1`, [userId]);
+      for (const t of ["arcade_wallets", "arcade_awards", "arcade_collection", "arcade_pack_opens", "arcade_mastery"]) await run(`DELETE FROM ${t} WHERE user_id = $1`, [userId]);
       await run(`DELETE FROM arcade_content_sets WHERE owner_id = $1`, [userId]);
     });
   }

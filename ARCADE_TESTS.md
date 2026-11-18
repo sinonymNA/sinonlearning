@@ -85,3 +85,5 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 
 - Added: aiContent.test.mjs (AI plumbing with a fake generator), Quick Draw "everybody draws" for sizes 3..40, Hot Potato brain pass / starts-with / surprise toss (`HotPotato.forceKind` test hook), shop tests (deterministic daily shop, spotlight statistics, server-side deal price, daily claim once). Suite: 133 passing. `npm run build` passes.
 - Not verified in a real browser: Brain Pass UI, spotlight/deal shop interactions while signed in, AI builder against the live model.
+
+- Added mastery.test.mjs (9 tests). Suite: 142 passing.

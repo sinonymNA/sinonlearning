@@ -45,3 +45,6 @@ None for development. Needs from the owner: production `DATABASE_URL` (already r
 - Hot Potato: every pass gets a random challenge (letters / starts-with / class quiz "Brain Pass"), mid-round surprise toss, longer fuse (18-30 s) and hold limit (12 s), wrong quiz answer = -2 pts and -1.5 s fuse. Quiz answer index never leaves the server.
 - Shop: `arcade-server/shop.mjs` daily shop (pure function of UTC date): deal of the day (20-40% off, never Starter), spotlight character (3x inside its tier, odds table reflects it), daily check-in +15 coins. Server charges the deal price (client cannot choose a price). New "Classroom Crew" set (16 procedural characters) + Crew Pack (130).
 - Mastery Peak: brainstorm + plan in `ARCADE_MASTERY_PEAK.md` (not built).
+
+## Mastery Peak v1
+See ARCADE_MASTERY_PEAK.md ("Status"). Tests: `arcade-server/tests/mastery.test.mjs` (engine, API, rewards, double-submit, report, AI variants with a fake generator). Browser-checked (dev auth): start, answer, slip + explanation, map. Not browser-checked: summit screen, teacher report, variants button, phone layout.

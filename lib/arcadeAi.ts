@@ -54,3 +54,32 @@ export async function generateArcadeContent(input: { text: string; grade: string
     throw e;
   }
 }
+
+const VariantSchema = z.object({
+  items: z.array(z.object({
+    i: z.number().int(),
+    variants: z.array(z.object({ q: z.string(), choices: z.array(z.string()).min(3).max(4), answer: z.number().int(), explain: z.string() })),
+  })),
+});
+
+const VARIANT_SYSTEM = `You write sibling practice questions for a mastery-learning game.
+For each source question write 3 NEW multiple-choice questions that test the SAME underlying idea in a different form: change numbers/examples, reword it, or use a short scenario instead of plain recall. Never copy the source question or reuse its exact choices.
+Rules: 3-4 choices, exactly one correct, "answer" is the 0-based index of the correct choice, plausible distractors that reflect real misconceptions, vary the correct position. "explain" is one or two friendly sentences teaching why the answer is right. Only use facts that follow from the source question and its correct answer. Classroom-safe, no names or personal info. Return the same "i" you were given.`;
+
+export async function generateVariants(questions: { i: number; q: string; choices: string[]; answer: number; concept: string | null }[]) {
+  try {
+    const { data } = await callKoraStructured({
+      model: "claude-sonnet-4-6",
+      maxTokens: 16000,
+      system: VARIANT_SYSTEM,
+      messages: [{ role: "user", content: `<source_questions>\n${JSON.stringify(questions)}\n</source_questions>` }],
+      schema: VariantSchema,
+    });
+    return data.items;
+  } catch (e) {
+    if (e instanceof KoraConfigError) throw new GameError("AI set-building isn't switched on for this server yet.", "unavailable");
+    if (e instanceof KoraValidationError) throw new GameError("The AI returned something unreadable. Please try again.");
+    if (e instanceof KoraUpstreamError) throw new GameError("The AI service is busy. Please try again in a moment.");
+    throw e;
+  }
+}
