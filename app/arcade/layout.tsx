@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Fredoka } from "next/font/google";
+import "./fonts.css";
 import "./arcade.css";
-
-const display = Fredoka({ variable: "--font-arcade", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Classroom Arcade | Sinon Learning",
@@ -10,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ArcadeLayout({ children }: { children: React.ReactNode }) {
-  return <div className={`arcade-root ${display.variable}`}>{children}</div>;
+  return <div className="arcade-root">{children}</div>;
 }

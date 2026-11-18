@@ -4,7 +4,7 @@
   --muted: #b9bde6;
   min-height: 100vh; color: #fff; background-color: var(--bg);
   background-image: radial-gradient(rgba(255,255,255,.07) 1.5px, transparent 1.5px); background-size: 26px 26px;
-  font-family: var(--font-arcade), var(--font-inter), system-ui, sans-serif; -webkit-tap-highlight-color: transparent;
+  font-family: 'Fredoka', ui-rounded, 'Arial Rounded MT Bold', var(--font-inter), system-ui, sans-serif; -webkit-tap-highlight-color: transparent;
 }
 .arcade-root * { box-sizing: border-box; }
 .arcade-root a:not(.ar-btn) { color: inherit; }
