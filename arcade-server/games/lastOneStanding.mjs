@@ -144,7 +144,7 @@ export class LastOneStanding extends BaseGame {
       answeredCount: q.answers.size,
       question: showQ ? { q: q.q, choices: q.choices } : null,
       players: this.players.filter((p) => this.here(p)).map((p) => ({ id: p, alive: this.alive.has(p), nickname: this.nick(p), avatar: this.room.players.get(p)?.avatar, place: undefined })),
-      winner: this.winner, lastRound: this.phase === "reveal" || this.phase === "done" ? this.last : null,
+      winner: this.winner, lastRound: this.last,
       consolation: [...this.cons.entries()].filter(([p, s]) => s > 0 && this.here(p)).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, score]) => ({ id, nickname: this.nick(id), score })),
     };
     if (this.phase === "reveal" || this.phase === "done") out.question = { q: q.q, choices: q.choices };

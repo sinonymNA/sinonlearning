@@ -1,2 +1,14 @@
-import ArcadeJoinForm from "@/components/arcade/ArcadeJoinForm";
-export default function ArcadeJoinPage() { return <main className="min-h-screen bg-[#10152b] px-5 py-16 sm:px-10"><div className="mx-auto max-w-3xl"><a href="/arcade" className="text-sm text-cyan-300">← Arcade</a><h1 className="mt-8 text-5xl font-black text-white">Join the room</h1><p className="mt-4 text-slate-300">Enter the code your teacher displays.</p><div className="mt-10"><ArcadeJoinForm /></div></div></main>; }
+import Link from "next/link";
+import JoinPage from "@/components/arcade/JoinPage";
+import { PrefsProvider } from "@/components/arcade/prefs";
+
+export default async function Page({ searchParams }: { searchParams: Promise<{ code?: string }> }) {
+  const { code } = await searchParams;
+  return (
+    <main className="ar-wrap">
+      <p className="mb-3"><Link href="/arcade" className="font-bold underline">← Arcade</Link></p>
+      <h1 className="ar-h1 mb-6 text-center">Join a game</h1>
+      <PrefsProvider><JoinPage initialCode={String(code ?? "").toUpperCase().slice(0, 6)} /></PrefsProvider>
+    </main>
+  );
+}

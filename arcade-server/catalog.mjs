@@ -8,3 +8,13 @@ export const GAME_CATALOG = {
 };
 export const GAME_IDS = Object.keys(GAME_CATALOG);
 export const MAX_PLAYERS = 40;
+
+export const AVATARS = [
+  "rk-sun", "rk-moon", "rk-leaf", "rk-wave",
+  "c-blip", "c-mossy", "c-pepper", "c-boop", "c-fizz", "c-wisp", "c-biscuit", "c-zap", "c-nova", "c-gizmo", "c-pearl", "c-ember",
+];
+export const TEAMS = [
+  { id: 0, name: "Red Rockets", color: "#ef476f" }, { id: 1, name: "Blue Bolts", color: "#4d8dff" },
+  { id: 2, name: "Green Gliders", color: "#2fbf9b" }, { id: 3, name: "Gold Giants", color: "#ffb02e" },
+  { id: 4, name: "Purple Pandas", color: "#8d63ff" }, { id: 5, name: "Teal Tigers", color: "#17b8d0" },
+];

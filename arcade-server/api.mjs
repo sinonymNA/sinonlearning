@@ -92,7 +92,16 @@ export async function handle(service, ctx, body) {
       const room = service.need(body.code);
       authHost(room, ctx);
       room.tick();
-      room.host(String(body.cmd), body.args ?? {});
+      if (body.cmd === "content") {
+        const id = String(body.args?.setId ?? "builtin");
+        let set = DEFAULT_SET;
+        if (id !== "builtin") {
+          set = await store.getSet(id);
+          if (!set || set.ownerId !== ctx.user.id) fail("That content set isn't available to you.", "forbidden");
+        }
+        room.setContent(set);
+      } else room.host(String(body.cmd), body.args ?? {});
+      room.bump();
       return { view: room.view({ mode: "projector" }) };
     }
     case "info": {

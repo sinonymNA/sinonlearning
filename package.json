@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "arcade:test": "node --test "arcade-server/tests/*.test.mjs"",
+    "arcade:test": "node --test \"arcade-server/tests/*.test.mjs\"",
     "arcade:load": "node scripts/arcade-load-test.mjs"
   },
   "dependencies": {

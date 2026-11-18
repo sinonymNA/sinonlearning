@@ -76,6 +76,6 @@ export class RateLimiter {
 }
 
 export class GameError extends Error {
-  constructor(message, code = "invalid") { super(message); this.code = code; }
+  constructor(message, code = "invalid") { super(message); this.name = "GameError"; this.code = code; }
 }
 export const fail = (message, code) => { throw new GameError(message, code); };

@@ -1,5 +1,3 @@
-import crypto from "node:crypto";
-
 export const RARITIES = {
   common: { label: "Common", weight: 60, color: "#7a8aa5" },
   uncommon: { label: "Uncommon", weight: 25, color: "#2fbf9b" },
@@ -39,7 +37,7 @@ export function packOdds(packId = "basic") {
   return { pack: { id: pack.id, name: pack.name, cost: pack.cost }, rarities, characters };
 }
 
-const rand01 = () => crypto.randomInt(0, 2 ** 30) / 2 ** 30;
+const rand01 = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
 
 export function rollPack(packId = "basic", rng = rand01) {
   const pack = PACKS[packId];

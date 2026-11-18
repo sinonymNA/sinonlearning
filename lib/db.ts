@@ -16,6 +16,24 @@ export function query<T extends QueryResultRow>(text: string, params?: unknown[]
   return getPool().query<T>(text, params);
 }
 
+/** Run several statements on one connection inside BEGIN/COMMIT (rolls back on error). */
+export async function transaction<T>(
+  fn: (run: <R extends QueryResultRow>(text: string, params?: unknown[]) => Promise<{ rows: R[] }>) => Promise<T>
+): Promise<T> {
+  const client = await getPool().connect();
+  try {
+    await client.query("BEGIN");
+    const out = await fn((text, params) => client.query(text, params));
+    await client.query("COMMIT");
+    return out;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 let schemaReady: Promise<void> | null = null;
 
 export function ensureSchema(): Promise<void> {

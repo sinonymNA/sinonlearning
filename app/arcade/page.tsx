@@ -1,22 +1,52 @@
 import Link from "next/link";
+import QuickJoin from "@/components/arcade/QuickJoin";
+import Avatar from "@/components/arcade/Avatar";
+import { GAME_CATALOG, GAME_IDS } from "@/lib/arcadeCatalog";
+import { getArcadeUser } from "@/lib/arcadeAuth";
+// @ts-ignore - plain ESM
+import { isDeveloper } from "../../arcade-server/api.mjs";
 
-const games = [
-  { name: "Hot Potato", slug: "hot_potato", icon: "🥔", description: "Pass the potato with valid words before it overheats.", status: "Playable first release" },
-  { name: "Quick Draw", slug: "quick_draw", icon: "🎨", description: "Draw secret prompts while your team guesses.", status: "Building next" },
-  { name: "Last One Standing", slug: "last_one_standing", icon: "⚡", description: "Answer fast, stay in the arena.", status: "Building next" },
-  { name: "Telephone", slug: "telephone", icon: "☎️", description: "Watch drawings and descriptions transform.", status: "Building next" },
-  { name: "Imposter", slug: "imposter", icon: "🕵️", description: "Ask, answer, and catch the bluff.", status: "Building next" },
-];
+export const dynamic = "force-dynamic";
 
-export default function ArcadePage() {
-  return <main className="min-h-screen bg-[#10152b] px-5 py-12 text-white sm:px-10">
-    <div className="mx-auto max-w-6xl">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div><p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-300">Sinon Learning</p><h1 className="mt-3 text-5xl font-black tracking-tight">Classroom Arcade</h1><p className="mt-4 max-w-2xl text-lg text-slate-300">Fast, original multiplayer games for the whole room. Teachers host. Students join with a code.</p></div>
-        <Link href="/arcade/host" className="rounded-2xl bg-amber-300 px-5 py-3 font-bold text-slate-950 shadow-lg shadow-amber-300/20">Host a game</Link>
-      </div>
-      <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{games.map((game) => <article key={game.slug} className="rounded-3xl border border-white/10 bg-white/[0.07] p-6 shadow-xl"><div className="text-5xl">{game.icon}</div><h2 className="mt-5 text-2xl font-black">{game.name}</h2><p className="mt-2 min-h-12 text-slate-300">{game.description}</p><span className="mt-5 inline-block rounded-full bg-cyan-300/15 px-3 py-1 text-xs font-bold text-cyan-200">{game.status}</span></article>)}</div>
-      <div className="mt-10 rounded-3xl border border-violet-300/20 bg-violet-300/10 p-6"><h2 className="text-xl font-bold">Developer test lab</h2><p className="mt-2 text-slate-300">Spawn simulated players, test server rules, and inspect the room before using it with a class.</p><Link href="/arcade/test-lab" className="mt-4 inline-block rounded-xl border border-white/20 px-4 py-2 font-semibold">Open test lab</Link></div>
-    </div>
-  </main>;
+export default async function ArcadePage() {
+  const user = await getArcadeUser();
+  const dev = isDeveloper(user);
+  return (
+    <main className="ar-wrap">
+      <header className="flex flex-wrap items-center justify-between gap-3 py-2">
+        <Link href="/" className="font-bold underline">← Sinon Learning</Link>
+        <nav className="flex flex-wrap gap-2" aria-label="Arcade">
+          <Link className="ar-btn sm paper" href="/arcade/characters">🧸 Characters</Link>
+          <Link className="ar-btn sm paper" href="/arcade/shop">🪙 Shop</Link>
+          {user?.role === "teacher" && <Link className="ar-btn sm paper" href="/arcade/content">📚 My content</Link>}
+          {dev && <Link className="ar-btn sm grape" href="/arcade/test-lab">🧪 Test lab</Link>}
+        </nav>
+      </header>
+      <section className="my-8 grid items-center gap-8 md:grid-cols-[1.3fr_1fr]">
+        <div>
+          <p className="ar-pill mb-3">Original multiplayer games for the whole class</p>
+          <h1 className="ar-h1">Classroom <span className="text-[var(--sun)]">Arcade</span></h1>
+          <p className="mt-4 max-w-xl text-xl ar-muted">Five fast party games for up to 40 students. Teachers host with a room code, students join on any device, and every score is decided on the server.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link className="ar-btn xl" href="/arcade/host">🎤 Host a game</Link>
+            <Link className="ar-btn xl mint" href="/arcade/join">🎮 Join a game</Link>
+          </div>
+        </div>
+        <div className="ar-panel grid gap-4 text-center">
+          <p className="ar-h2">Got a code?</p>
+          <div className="mx-auto"><QuickJoin /></div>
+          <div className="flex flex-wrap justify-center gap-1">{["c-blip", "c-ember", "c-gizmo", "c-wisp", "rk-sun", "c-nova"].map((id, i) => <div key={id} className="float" style={{ animationDelay: `${i * 0.2}s` }}><Avatar id={id} size={54} /></div>)}</div>
+        </div>
+      </section>
+      <section aria-label="Games" className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {GAME_IDS.map((id: string) => { const g = GAME_CATALOG[id]; return (
+          <article key={id} className="ar-card" style={{ borderTop: `14px solid ${g.color}` }}>
+            <div className="text-5xl">{g.icon}</div><h2 className="mt-2 text-2xl font-bold">{g.name}</h2><p className="mt-1 min-h-16 font-medium">{g.blurb}</p>
+            <p className="mt-3 flex gap-2 text-sm font-bold"><span className="ar-chip">⏱ {g.minutes} min</span><span className="ar-chip">👥 {g.min}+ players</span></p>
+          </article>); })}
+        <article className="ar-card" style={{ background: "var(--grape)", color: "#fff" }}><div className="text-5xl">🎉</div><h2 className="mt-2 text-2xl font-bold">Arcade Party</h2><p className="mt-1 font-medium">Play all five in a row. Scores are normalised across games and a final podium crowns the champion.</p><Link className="ar-btn sm mt-4" href="/arcade/host">Start a party</Link></article>
+      </section>
+      <p className="ar-muted mt-10 text-sm">Guests can play without an account. Coins and characters need a Sinon account. Nicknames only: no chat, no direct messages, no public profiles.</p>
+    </main>
+  );
 }
