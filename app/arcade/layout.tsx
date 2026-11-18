@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./fonts.css";
 import "./arcade.css";
+import AppShell from "@/components/arcade/AppShell";
 
 export const metadata: Metadata = {
   title: "Classroom Arcade | Sinon Learning",
-  description: "Six original multiplayer party games for the whole class: Hot Potato, Quick Draw, Last One Standing, Piggy Bank, Telephone and Imposter.",
+  description: "Daily puzzles, six multiplayer class games and Mastery Peak.",
 };
 
 export default function ArcadeLayout({ children }: { children: React.ReactNode }) {
-  return <div className="arcade-root">{children}</div>;
+  return <div className="arcade-root"><AppShell>{children}</AppShell></div>;
 }

@@ -2,6 +2,7 @@ import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
 import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeLoose, sanitizeQuestion, RECOMMENDED, CONTENT_KEYS } from "./content.mjs";
 import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
 import { DAILY_BONUS, dailyShop, dayKey, dealFor } from "./shop.mjs";
+import { PUZZLE_COUNT, TRIES, applyGuess, checkAnswer, coinsFor, dailyPuzzles, publicPuzzle, revealText, stateFor } from "./daily.mjs";
 import { GameError, RateLimiter, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
@@ -461,4 +462,51 @@ export async function handleMastery(ctx, body) {
       default: fail("Unknown request.");
     }
   });
+}
+
+
+// ---------- Daily Puzzle ----------
+// Per-account progress/streak is stored as a small JSON blob under the pseudo set id "daily" (same table as Mastery Peak).
+const dailyLimiter = new RateLimiter();
+export async function handleDaily(ctx, body) {
+  const { store, user } = ctx;
+  if (dailyLimiter.limited(`daily:${user?.id ?? ctx.ip ?? "anon"}`, 60_000, 60)) fail("Slow down a little.", "rate");
+  const date = dayKey();
+  const puzzles = dailyPuzzles(date);
+  const pub = puzzles.map(publicPuzzle);
+  const publicState = (st) => st && { results: st.results, tries: st.tries, done: st.done, streak: st.streak, best: st.best };
+  const load = async () => stateFor(await store.getMastery(user.id, "daily"), date);
+  switch (body.type) {
+    case "get": {
+      if (!user) return { date, puzzles: pub, signedIn: false, tries: TRIES };
+      const st = await load();
+      // resolved puzzles show their answer so a refresh doesn't lose the explanation
+      const reveals = st.results.map((r, i) => (r && !r.ok ? (puzzles[i].reveal ?? revealText(puzzles[i])) : null));
+      return { date, puzzles: pub, signedIn: true, tries: TRIES, state: publicState(st), reveals, reward: st.rewarded ? coinsFor(st) : null };
+    }
+    case "check": {
+      const n = Number(body.n);
+      if (!Number.isInteger(n) || n < 0 || n >= PUZZLE_COUNT) fail("Unknown puzzle.");
+      const answer = String(body.answer ?? "").slice(0, 40);
+      if (!user) {
+        // guests: stateless check (nothing is awarded, progress lives in their browser)
+        const correct = checkAnswer(puzzles[n], answer);
+        const giveUp = !correct && Number(body.tries) >= TRIES;
+        return { correct, resolved: correct || giveUp, reveal: giveUp ? (puzzles[n].reveal ?? revealText(puzzles[n])) : null };
+      }
+      const st = await load();
+      const r = applyGuess(puzzles, st, n, answer, date);
+      if (r.error) fail(r.error);
+      let reward = null;
+      if (r.finished && !st.rewarded) {
+        st.rewarded = true;
+        const coins = coinsFor(st);
+        const a = await store.awardCapped({ userId: user.id, coins, key: `puzzle:${date}`, reason: "puzzle daily", dailyCap: 20, group: "puzzle" });
+        reward = a.awarded ? a.coins : 0;
+      }
+      await store.saveMastery(user.id, "daily", st);
+      return { ...r, state: publicState(st), reward };
+    }
+    default: fail("Unknown request.");
+  }
 }

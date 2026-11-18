@@ -87,3 +87,5 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Not verified in a real browser: Brain Pass UI, spotlight/deal shop interactions while signed in, AI builder against the live model.
 
 - Added mastery.test.mjs (9 tests). Suite: 142 passing.
+
+- Added daily.test.mjs (determinism, solvability, no answer leaks, tries/reveal/streaks, API guest + signed-in, coins once/day). Suite: 149 passing. Browser-checked (dev auth): boot intro, home at 1366x768 (page does not scroll), phone 390x844, wrong-answer flash.

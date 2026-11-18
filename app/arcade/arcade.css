@@ -364,3 +364,90 @@
   .qd-members .lb-row { padding: 2px 8px 2px 4px; font-size: 12px; gap: 4px; min-height: 0; }
   .qd-members .lb-row .truncate { max-width: 64px; }
 }
+
+/* ================= App shell: locked to the screen, top bar + bottom menu bar ================= */
+.app-shell { position: fixed; inset: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; color: #fff;
+  background-color: var(--bg); background-image: radial-gradient(rgba(255,255,255,.07) 1.5px, transparent 1.5px); background-size: 26px 26px; overscroll-behavior: none; }
+.app-top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 14px; padding-top: max(8px, env(safe-area-inset-top));
+  background: linear-gradient(#0e1030, #14163a); border-bottom: 4px solid #0a0b24; box-shadow: 0 4px 0 rgba(0,0,0,.25); animation: app-drop .45s cubic-bezier(.2,.9,.3,1.2) both; z-index: 5; }
+.app-logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.35rem; letter-spacing: .12em; text-decoration: none; color: #fff; }
+.app-logo-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--sun); border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink); font-size: 1.2rem; animation: ar-wobble 3s ease-in-out infinite; }
+.app-top-right { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.app-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: .95rem; background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.18); text-decoration: none; color: #fff; white-space: nowrap; transition: transform .1s; }
+.app-chip:hover { transform: translateY(-1px); background: rgba(255,255,255,.18); }
+.app-chip.flame { background: rgba(255,122,61,.3); border-color: rgba(255,122,61,.6); }
+.app-chip.me { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.app-body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; animation: app-enter .35s ease-out both; }
+.app-body > main.ar-wrap { padding-bottom: 24px; }
+.app-bottom { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 6px 8px; padding-bottom: max(6px, env(safe-area-inset-bottom));
+  background: linear-gradient(#14163a, #0e1030); border-top: 4px solid #0a0b24; box-shadow: 0 -4px 0 rgba(0,0,0,.25); animation: app-rise .45s cubic-bezier(.2,.9,.3,1.2) both; z-index: 5; }
+.app-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 54px; border-radius: 14px; text-decoration: none; color: var(--muted); font-weight: 700; font-size: .72rem; letter-spacing: .03em;
+  animation: ar-pop .4s both; transition: transform .1s, background .15s, color .15s; border: 2px solid transparent; }
+.app-tab-icon { font-size: 1.45rem; line-height: 1; transition: transform .15s; }
+.app-tab:hover { background: rgba(255,255,255,.07); color: #fff; }
+.app-tab:active { transform: scale(.94); }
+.app-tab.on { color: var(--ink); background: var(--sun); border-color: var(--ink); box-shadow: 0 3px 0 var(--ink); transform: translateY(-3px); }
+.app-tab.on .app-tab-icon { transform: scale(1.15); }
+@keyframes app-drop { 0% { transform: translateY(-100%) } 100% { transform: none } }
+@keyframes app-rise { 0% { transform: translateY(100%) } 100% { transform: none } }
+@keyframes app-enter { 0% { opacity: 0; transform: translateY(14px) scale(.985) } 100% { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .app-top, .app-bottom, .app-body, .app-tab, .mode-tile, .game-chip, .home-join, .daily-card { animation: none !important; } }
+
+/* boot / splash */
+.boot { position: fixed; inset: 0; z-index: 60; display: grid; place-content: center; justify-items: center; gap: 10px; background: radial-gradient(circle at 50% 40%, #3a3f9a, #14163a 70%); transition: opacity .45s, transform .45s; cursor: pointer; overflow: hidden; }
+.boot.out { opacity: 0; transform: scale(1.08); pointer-events: none; }
+.boot-rays { position: absolute; inset: -50%; background: repeating-conic-gradient(rgba(255,255,255,.06) 0 10deg, transparent 10deg 20deg); animation: boot-spin 12s linear infinite; }
+.boot-potato { position: relative; animation: boot-drop .8s cubic-bezier(.2,.9,.3,1.3) both, ar-float 2.4s ease-in-out .8s infinite; }
+.boot-title { position: relative; display: flex; gap: 4px; font-size: clamp(3rem, 14vw, 6.5rem); line-height: 1; font-weight: 700; margin: 0; }
+.boot-title span { display: inline-block; color: var(--sun); text-shadow: 0 6px 0 var(--ink); animation: boot-letter .5s cubic-bezier(.2,.9,.3,1.4) both; }
+.boot-title span:nth-child(even) { color: var(--coral); }
+.boot-sub { position: relative; font-weight: 700; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); animation: ar-slide .6s .9s both; }
+.boot-bar { position: relative; width: min(320px, 70vw); height: 16px; border-radius: 99px; background: rgba(0,0,0,.4); border: 3px solid #0a0b24; overflow: hidden; margin-top: 12px; }
+.boot-bar > i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--mint), var(--sky)); }
+.boot-tip { position: relative; font-weight: 600; opacity: .85; min-height: 1.4em; }
+.boot-skip { position: absolute; bottom: 18px; font-size: .8rem; opacity: .5; }
+@keyframes boot-spin { to { transform: rotate(360deg) } }
+@keyframes boot-drop { 0% { transform: translateY(-120vh) rotate(-30deg) } 70% { transform: translateY(14px) rotate(6deg) } 100% { transform: none } }
+@keyframes boot-letter { 0% { transform: translateY(60px) scale(.3) rotate(-20deg); opacity: 0 } 100% { transform: none; opacity: 1 } }
+
+/* home: daily puzzle hero + game modes, all inside the locked screen */
+.home-grid { display: grid; gap: 14px; padding: 14px; max-width: 1180px; margin: 0 auto; height: 100%; grid-template-columns: 1.1fr 1fr; align-content: stretch; }
+.home-left, .home-right { min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.home-left > .daily-card { flex: 1; min-height: 0; }
+.home-join { padding: 12px; animation: ar-slide .5s both; }
+.mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; flex: 1; min-height: 0; align-content: start; }
+.mode-tile { --c: var(--sun); display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 12px 14px; min-height: 92px; border-radius: 20px; text-decoration: none; color: var(--ink) !important; background: var(--c);
+  border: 3px solid var(--ink); box-shadow: 0 5px 0 var(--ink); animation: ar-pop .5s both; transition: transform .1s, box-shadow .1s; }
+.mode-tile:hover { transform: translateY(-3px) rotate(-.6deg); box-shadow: 0 8px 0 var(--ink); }
+.mode-tile:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.mode-tile.mint { --c: var(--mint); } .mode-tile.sky { --c: var(--sky); } .mode-tile.grape { --c: var(--grape); color: #fff !important; } .mode-tile.coral { --c: var(--coral); }
+.mode-tile.lime { --c: var(--lime); } .mode-tile.sun { --c: var(--sun); } .mode-tile.paper { --c: var(--paper); }
+.mode-icon { font-size: 1.8rem; line-height: 1; } .mode-name { font-weight: 700; font-size: 1.15rem; line-height: 1.1; } .mode-note { font-size: .8rem; font-weight: 600; opacity: .8; }
+.game-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.game-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px 4px 6px; border-radius: 999px; background: rgba(255,255,255,.08); border: 2px solid; font-weight: 700; font-size: .8rem; animation: ar-pop .5s both; }
+
+/* daily puzzle card */
+.daily-card { display: flex; flex-direction: column; gap: 10px; animation: ar-pop .55s .05s both; }
+.daily-pip { width: 14px; height: 14px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.3); }
+.daily-pip.ok { background: var(--mint); border-color: var(--mint); } .daily-pip.miss { background: var(--coral); border-color: var(--coral); }
+.daily-pip.cur { background: var(--sun); border-color: #fff; animation: ar-heat 1s infinite; }
+.daily-body { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; justify-content: center; position: relative; animation: ar-slide .35s both; }
+.daily-title { font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; font-size: .85rem; }
+.daily-prompt { display: flex; flex-wrap: wrap; gap: 8px; }
+.daily-prompt.text { font-size: 1.35rem; font-weight: 700; line-height: 1.25; }
+.daily-prompt .tile { display: grid; place-items: center; min-width: 46px; height: 56px; padding: 0 12px; border-radius: 14px; background: var(--sun); color: var(--ink); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink); font-weight: 700; font-size: 1.7rem; letter-spacing: .06em; }
+.daily-flash { text-align: center; padding: 10px; border-radius: 16px; font-weight: 700; font-size: 1.2rem; animation: ar-pop .3s both; border: 3px solid var(--ink); color: var(--ink); }
+.daily-flash.good { background: var(--mint); } .daily-flash.bad { background: var(--sun); } .daily-flash.reveal { background: var(--coral); color: #fff; }
+.daily-done { text-align: center; align-items: center; }
+.stamp-in { animation: ar-stamp .6s both; color: var(--sun); }
+
+@media (max-width: 899px) {
+  .app-logo { font-size: 1.1rem; } .app-logo-mark { width: 30px; height: 30px; font-size: 1rem; }
+  .app-chip { padding: 4px 9px; font-size: .85rem; } .app-chip.me { max-width: 84px; }
+  .app-tab { min-height: 50px; font-size: .66rem; } .app-tab-icon { font-size: 1.3rem; }
+  .home-grid { grid-template-columns: 1fr; height: auto; padding: 10px; }
+  .home-left > .daily-card { flex: none; }
+  .mode-grid { grid-template-columns: repeat(2, 1fr); } .mode-tile { min-height: 78px; padding: 10px 12px; }
+  .daily-prompt .tile { min-width: 38px; height: 48px; font-size: 1.4rem; }
+}
+@media (min-width: 900px) { .mode-grid { grid-auto-rows: minmax(92px, 1fr); align-content: stretch; } .mode-name { font-size: 1.3rem; } .mode-icon { font-size: 2.2rem; } .daily-prompt .tile { min-width: 58px; height: 70px; font-size: 2.1rem; } }
