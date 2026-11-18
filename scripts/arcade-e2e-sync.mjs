@@ -28,10 +28,14 @@ for (const name of ["Ann", "Ben"]) {
 await pages[0].waitForSelector("text=2 players in the lobby", { timeout: 10000 });
 check(true, "two independent browsers joined the same room by code");
 await dev({ type: "host", code, cmd: "start" });
-await Promise.all(pages.map((p) => p.waitForSelector("text=Round 1/", { timeout: 20000 })));
-
-const artistIdx = (await pages[0].locator("text=You're drawing!").count()) ? 0 : 1;
+await Promise.all(pages.map((p) => p.waitForSelector("text=/Round 1\\//", { timeout: 20000 })));
+// word-choice phase: the artist sees three options, the guesser only "choosing…"
+await pages[0].waitForTimeout(800);
+const artistIdx = (await pages[0].locator("text=Pick your word!").count()) ? 0 : 1;
 const artist = pages[artistIdx], guesser = pages[1 - artistIdx];
+check((await guesser.locator("text=is choosing a word").count()) > 0, "guesser sees 'choosing a word' and no options");
+await artist.locator("button.choice").first().click();
+await artist.waitForSelector("text=/^Draw:/"); await guesser.waitForSelector(".canvas-wrap canvas", { timeout: 8000 });
 check(true, `artist is player ${artistIdx + 1}`);
 const wordText = await artist.locator("text=/^Draw:/").first().innerText();
 const word = wordText.replace("Draw:", "").trim();

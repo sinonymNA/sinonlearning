@@ -4,6 +4,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import GameArt from "./GameArt";
 import { api } from "./useRoom";
 import { GAME_CATALOG, GAME_IDS } from "@/lib/arcadeCatalog";
 
@@ -29,7 +30,7 @@ export default function HostSetup() {
       <div className="ar-panel"><h2 className="ar-h2 mb-1">1. Pick your games</h2><p className="ar-muted mb-4">Click in the order you want to play. Choose all five for the full Arcade Party.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{GAME_IDS.map((g: string) => { const c = GAME_CATALOG[g]; const on = sel.includes(g); return (
           <button key={g} aria-pressed={on} className="ar-card text-left" style={{ background: on ? c.color : "var(--paper)", color: on ? "#fff" : "var(--ink)" }} onClick={() => setSel(on ? (sel.length > 1 ? sel.filter((x) => x !== g) : sel) : [...sel, g])}>
-            <div className="flex items-center justify-between"><span className="text-4xl">{c.icon}</span>{on && <span className="ar-chip">#{sel.indexOf(g) + 1}</span>}</div><div className="mt-1 text-xl font-bold">{c.name}</div><div className="mt-1 text-sm">{c.blurb}</div></button>); })}</div>
+            <div className="flex items-center justify-between"><GameArt id={g} size={56} />{on && <span className="ar-chip">#{sel.indexOf(g) + 1}</span>}</div><div className="mt-1 text-xl font-bold">{c.name}</div><div className="mt-1 text-sm">{c.blurb}</div></button>); })}</div>
         <button className="ar-btn grape sm mt-4" onClick={() => setSel(GAME_IDS)}>🎉 Select all five (Arcade Party)</button></div>
       <div className="ar-panel grid gap-4 sm:grid-cols-2"><label className="grid gap-1 font-bold">2. Content set<select className="ar-input" value={setId} onChange={(e) => setSetId(e.target.value)}>{(sets.length ? sets : [{ id: "builtin", title: "Arcade starter pack" }]).map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
         <label className="grid gap-1 font-bold">3. Scoring<select className="ar-input" value={teams} onChange={(e) => setTeams(Number(e.target.value))}><option value={0}>Solo scoring</option>{[2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} teams</option>)}</select></label>

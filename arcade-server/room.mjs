@@ -184,6 +184,7 @@ export class Room {
       gameId, name: GAME_CATALOG[gameId].name, reason,
       rows: rows.map((r) => ({ ...r, nickname: this.players.get(r.id)?.nickname ?? "(left)", avatar: this.players.get(r.id)?.avatar })),
       highlights: game.highlights?.() ?? [],
+      awards: (game.awards?.() ?? []).filter((a) => this.players.has(a.pid)).map((a) => ({ ...a, nickname: this.players.get(a.pid).nickname, avatar: this.players.get(a.pid).avatar })),
     };
     this.history.push(result);
     this.awardCoins(rows, gameId);

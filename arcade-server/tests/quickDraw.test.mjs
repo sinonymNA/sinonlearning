@@ -4,12 +4,13 @@ import { makeRoom } from "./helpers.mjs";
 import { LIMITS } from "../drawing.mjs";
 
 const content = { title: "P", items: { drawPrompts: ["zebra crossing", "volcano", "pineapple", "lighthouse", "dragon", "castle", "rocket"] } };
+const pickAll = (g, ctx, i = 0) => { for (const grp of g.groups) if (grp.status === "pick") ctx.act(grp.artist, { type: "choose", index: i }); };
 const seg = (k, pts = [10, 10, 50, 50, 90, 20]) => ({ k, t: 0, c: 1, w: 1, p: pts });
 
 test("35 players -> groups of 5-7 with one artist each; guessers never see the secret word", () => {
   const ctx = makeRoom({ n: 35, playlist: ["quick_draw"], content });
   const g = ctx.begin();
-  ctx.advance(2000);
+  ctx.advance(2000); pickAll(g, ctx);
   assert.equal(g.groups.length, 5);
   for (const grp of g.groups) {
     assert.equal(grp.status, "draw");
@@ -26,7 +27,7 @@ test("35 players -> groups of 5-7 with one artist each; guessers never see the s
 
 test("only the artist can draw; strokes are validated and size-limited", () => {
   const ctx = makeRoom({ n: 6, playlist: ["quick_draw"], content });
-  const g = ctx.begin(); ctx.advance(2000);
+  const g = ctx.begin(); ctx.advance(2000); pickAll(g, ctx);
   const grp = g.groups[0];
   const guesser = grp.members.find((m) => m !== grp.artist);
   assert.match(ctx.tryAct(guesser, { type: "draw", segs: [seg(1)] }).error, /not the artist/);
@@ -42,7 +43,7 @@ test("only the artist can draw; strokes are validated and size-limited", () => {
 
 test("real-time sync: guessers receive only new strokes via cursor, artist actions appear immediately", () => {
   const ctx = makeRoom({ n: 5, playlist: ["quick_draw"], content });
-  const g = ctx.begin(); ctx.advance(2000);
+  const g = ctx.begin(); ctx.advance(2000); pickAll(g, ctx);
   const grp = g.groups[0];
   const viewer = grp.members.find((m) => m !== grp.artist);
   ctx.act(grp.artist, { type: "draw", segs: [seg(1), seg(2)] });
@@ -62,7 +63,7 @@ test("real-time sync: guessers receive only new strokes via cursor, artist actio
 
 test("guessing: speed-based points, artist rewarded, duplicates blocked, close guesses flagged privately", () => {
   const ctx = makeRoom({ n: 5, playlist: ["quick_draw"], content });
-  const g = ctx.begin(); ctx.advance(2000);
+  const g = ctx.begin(); ctx.advance(2000); pickAll(g, ctx);
   const grp = g.groups[0];
   const [a, b] = grp.members.filter((m) => m !== grp.artist);
   const word = grp.word, firstArtist = grp.artist;
@@ -89,7 +90,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
   const grp = g.groups[0];
   const artists = [];
   for (let turn = 0; turn < 5; turn++) {
-    ctx.advance(1700);
+    ctx.advance(1700); pickAll(g, ctx);
     if (grp.artist && !artists.includes(grp.artist)) artists.push(grp.artist);
     for (const m of grp.members) if (m !== grp.artist) ctx.tryAct(m, { type: "guess", text: grp.word });
     ctx.advance(100);
@@ -103,7 +104,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
 
 test("artist who disconnects ends the turn without freezing the group", () => {
   const ctx = makeRoom({ n: 5, playlist: ["quick_draw"], content });
-  const g = ctx.begin(); ctx.advance(2000);
+  const g = ctx.begin(); ctx.advance(2000); pickAll(g, ctx);
   const grp = g.groups[0];
   const artist = grp.artist;
   ctx.room.players.get(artist).forceOffline = true;
@@ -118,4 +119,25 @@ test("full 35-bot Quick Draw round completes with scores", () => {
   ctx.advance(260000, 250);
   assert.equal(ctx.room.history.length, 1);
   assert.ok(ctx.room.history[0].rows.some((r) => r.points > 0));
+});
+
+test("artist chooses one of three words; guessers cannot see the options; auto-pick on timeout", () => {
+  const ctx = makeRoom({ n: 4, playlist: ["quick_draw"], content });
+  const g = ctx.begin(); ctx.advance(2000);
+  const grp = g.groups[0];
+  assert.equal(grp.status, "pick");
+  const av = ctx.view(grp.artist).game.group;
+  assert.equal(av.options.length, 3);
+  const guesser = grp.members.find((m) => m !== grp.artist);
+  const gv = JSON.stringify(ctx.view(guesser).game.group);
+  for (const w of av.options) assert.ok(!gv.includes(w), "options leaked to a guesser");
+  assert.match(ctx.tryAct(guesser, { type: "choose", index: 0 }).error, /not choosing/);
+  assert.match(ctx.tryAct(grp.artist, { type: "choose", index: 7 }).error, /Pick one/);
+  ctx.act(grp.artist, { type: "choose", index: 2 });
+  assert.equal(grp.status, "draw");
+  assert.equal(grp.word, av.options[2]);
+  // timeout path
+  const c2 = makeRoom({ n: 3, playlist: ["quick_draw"], content }); const g2 = c2.begin(); c2.advance(2000);
+  c2.advance(6000);
+  assert.equal(g2.groups[0].status, "draw");
 });

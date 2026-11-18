@@ -1,6 +1,7 @@
 import { BaseGame } from "./base.mjs";
 import { chooseSequence, isWord, vocabSequence } from "../dictionary.mjs";
 import { fail, partition, pick, randInt, normalizeWord } from "../util.mjs";
+import { isClean } from "../moderation.mjs";
 
 const HEARTS = 3, FUSE_MIN = 8000, FUSE_SPREAD = 7000, BOOM_MS = 3200, GAME_MS = 170000, MAX_ROUNDS = 8;
 const ASSIST_MS = 700, ASSIST_CAP = 2800;
@@ -16,8 +17,10 @@ export class HotPotato extends BaseGame {
       id: i, members, hearts: new Map(members.map((m) => [m, HEARTS])), used: new Set(), round: 0, turn: 0, holder: null, prev: null,
       lastVictim: null, sequence: "", status: "live", boomUntil: 0, boomVictim: null, lastPass: null, reactions: [], passes: 0,
       fuseAt: 0, fuseTotal: 1, bonusMs: 0, heatBias: 0, lastReact: new Map(), winner: null, words: 0,
+      draft: "", heldSince: 0, boomGuesses: new Map(), boomResults: [],
     }));
     this.byPlayer = new Map();
+    this.stats = { longest: null, passes: new Map(), boom: new Map(), quick: new Map() };
     for (const g of this.groups) for (const m of g.members) this.byPlayer.set(m, g);
     for (const g of this.groups) this.beginRound(g, t);
   }
@@ -42,7 +45,7 @@ export class HotPotato extends BaseGame {
   beginRound(g, t) {
     const alive = this.alive(g);
     if (alive.length <= 1 || g.round >= MAX_ROUNDS) return this.finishGroup(g);
-    g.round++; g.turn++; g.status = "live"; g.boomVictim = null; g.bonusMs = 0; g.lastPass = null;
+    g.round++; g.turn++; g.status = "live"; g.boomVictim = null; g.bonusMs = 0; g.lastPass = null; g.draft = ""; g.boomGuesses = new Map(); g.heldSince = t;
     g.holder = this.pickHolder(g, g.lastVictim);
     g.prev = null;
     g.sequence = this.newSequence(g, g.sequence);
@@ -83,6 +86,15 @@ export class HotPotato extends BaseGame {
     g.hearts.set(victim, hearts);
     g.status = "boom"; g.boomVictim = victim; g.lastVictim = victim; g.boomUntil = t + this.D(BOOM_MS);
     for (const m of this.alive(g)) if (m !== victim) this.add(m, 5);
+    g.boomResults = [];
+    const end = g.fuseAt + g.bonusMs;
+    for (const [pid, at] of g.boomGuesses) {
+      const d = Math.max(0, end - at), s = this.room.settings.timeScale;
+      const pts = d <= 1000 * s ? 15 : d <= 2500 * s ? 8 : d <= 4500 * s ? 3 : 0;
+      if (pts) { this.add(pid, pts); g.boomResults.push({ id: pid, pts }); this.stats.boom.set(pid, (this.stats.boom.get(pid) ?? 0) + pts); }
+    }
+    g.boomResults.sort((a, b) => b.pts - a.pts);
+    g.draft = "";
     this.room.log("hp_boom", { group: g.id, victim: this.nick(victim), heartsLeft: hearts });
   }
 
@@ -119,6 +131,18 @@ export class HotPotato extends BaseGame {
       if (g.reactions.length > 8) g.reactions.shift();
       return { ok: true };
     }
+    if (a.type === "draft") {
+      if (g.status !== "live" || g.holder !== pid) return { ok: true };
+      g.draft = String(a.text ?? "").toLowerCase().replace(/[^a-z' -]/g, "").slice(0, 24);
+      return { ok: true };
+    }
+    if (a.type === "boom") {
+      if (g.status !== "live") fail("Wait for the next potato!");
+      if (g.holder === pid) fail("You're holding it - pass it!");
+      if (g.boomGuesses.has(pid)) fail("You already made your guess this round.");
+      g.boomGuesses.set(pid, t);
+      return { ok: true };
+    }
     if (a.type !== "word") fail("Unknown action.");
     if (g.status !== "live") fail("Wait for the next potato!");
     if (a.turn !== undefined && a.turn !== g.turn) fail("Too late - the potato moved.", "stale");
@@ -129,11 +153,15 @@ export class HotPotato extends BaseGame {
       const word = this.checkWord(g, a.word);
       g.used.add(word); g.words++;
       const bonus = this.vocab.has(word) ? 10 : 0;
-      this.add(pid, 10 + Math.min(10, Math.floor(word.length / 2)) + bonus);
+      const quick = t - g.heldSince <= this.D(2500) ? 5 : 0;
+      this.add(pid, 10 + Math.min(10, Math.floor(word.length / 2)) + bonus + quick);
+      if (!this.stats.longest || word.length > this.stats.longest.word.length) this.stats.longest = { pid, word };
+      this.stats.passes.set(pid, (this.stats.passes.get(pid) ?? 0) + 1);
       const to = this.movePotato(g, pid);
+      g.draft = ""; g.heldSince = t;
       g.lastPass = { from: pid, to, word, n: g.passes };
       this.room.log("hp_pass", { group: g.id, from: this.nick(pid), to: this.nick(to), word });
-      return { ok: true, word, vocab: bonus > 0 };
+      return { ok: true, word, vocab: bonus > 0, quick: quick > 0 };
     }
     // eliminated players are "ghosts": valid words cool the fuse a little and earn small points
     if (g.bonusMs >= ASSIST_CAP) fail("The potato can't cool down any more this round.");
@@ -156,7 +184,8 @@ export class HotPotato extends BaseGame {
       holder: g.holder, heat: this.heat(g, t), boomVictim: g.boomVictim, winner: g.winner,
       members: g.members.map((m) => ({ id: m, hearts: g.hearts.get(m) ?? 0, nickname: this.nick(m), avatar: this.room.players.get(m)?.avatar, connected: this.connected(m), gone: !this.here(m) })),
       lastPass: g.lastPass, reactions: g.reactions.slice(-5), words: g.words,
-      you: pid ? { hearts: g.hearts.get(pid) ?? 0, holder: g.holder === pid && g.status === "live", ghost: (g.hearts.get(pid) ?? 0) <= 0, assistLeft: g.bonusMs < ASSIST_CAP } : undefined,
+      draft: g.status === "live" ? (isClean(g.draft) ? g.draft : "•••") : "", boomResults: g.status === "boom" ? g.boomResults.map((r) => ({ ...r, nickname: this.nick(r.id) })) : [],
+      you: pid ? { boomGuessed: g.boomGuesses.has(pid), hearts: g.hearts.get(pid) ?? 0, holder: g.holder === pid && g.status === "live", ghost: (g.hearts.get(pid) ?? 0) <= 0, assistLeft: g.bonusMs < ASSIST_CAP } : undefined,
     };
   }
 
@@ -166,6 +195,15 @@ export class HotPotato extends BaseGame {
     if (g) out.group = this.groupView(g, pid);
     out.groups = this.groups.map((x) => ({ id: x.id, status: x.status, round: x.round, alive: this.alive(x).length, size: x.members.length, holder: x.status === "live" ? this.nick(x.holder) : null, winner: x.winner ? this.nick(x.winner) : null, heat: this.heat(x, this.room.t()) }));
     if (!pid && opts?.group !== undefined && this.groups[opts.group]) out.group = this.groupView(this.groups[opts.group], null);
+    return out;
+  }
+
+  awards() {
+    const out = [];
+    const top = (map) => [...map.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (this.stats.longest) out.push({ id: "wordsmith", icon: "📏", title: "Wordsmith", pid: this.stats.longest.pid, detail: `"${this.stats.longest.word}"` });
+    const p = top(this.stats.passes); if (p) out.push({ id: "passer", icon: "🔥", title: "Hot Hands", pid: p[0], detail: `${p[1]} passes` });
+    const b = top(this.stats.boom); if (b) out.push({ id: "boom", icon: "🎯", title: "Fuse Whisperer", pid: b[0], detail: `${b[1]} pts guessing booms` });
     return out;
   }
 

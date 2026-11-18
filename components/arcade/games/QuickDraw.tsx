@@ -28,6 +28,18 @@ export default function QuickDraw({ view, stamp, send, meId, optsRef, projector 
   if (!grp) return <div className="ar-panel text-center">Getting your group ready…</div>;
   if (grp.status === "done") return <div className="ar-panel text-center"><p className="ar-h2">🎨 Your group is done!</p><p className="ar-muted mt-2">Waiting for the other groups to finish…</p></div>;
   const isArtist = grp.you?.artist;
+  if (grp.status === "pick") {
+    return (
+      <div className="grid gap-4 text-center">
+        <div className="ar-panel"><p className="ar-muted font-bold">Round {grp.turn}/{grp.turns}</p><Timer ms={grp.endsIn} stamp={stamp} total={5000} label="Choose" /></div>
+        {isArtist && !projector ? (
+          <div className="ar-panel grid gap-3"><p className="ar-h2">Pick your word!</p>
+            <div className="grid gap-3 sm:grid-cols-3">{grp.options?.map((w: string, i: number) => <button key={w} className="choice pop" style={{ justifyContent: "center", animationDelay: `${i * 0.08}s` }} onClick={() => send({ type: "choose", index: i }).catch(() => undefined)}>{w}</button>)}</div>
+            <p className="ar-muted text-sm">Nobody else can see these. Pick something you can draw fast!</p></div>
+        ) : <div className="ar-panel"><p className="ar-h2 float">✏️ {grp.artistName} is choosing a word…</p></div>}
+      </div>
+    );
+  }
 
   async function sendGuess(e: React.FormEvent) {
     e.preventDefault();

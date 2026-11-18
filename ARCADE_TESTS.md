@@ -3,14 +3,14 @@
 Everything below was actually executed in this repository (Linux container, Node 22, Chromium 1243 via Playwright, PostgreSQL 16 for the account tests). "Not executed" items are listed at the end.
 
 ## 1. Automated unit/integration tests - `npm run arcade:test` (node:test)
-**89 tests, 89 pass (~0.9 s, fake clock; stable over repeated runs).**
+**93 tests, 93 pass (~0.9 s, fake clock; stable over repeated runs).**
 
 | File | Tests | Covers |
 |---|---|---|
 | `core.test.mjs` | 14 | room creation/codes, join/capacity 40, nickname moderation, token privacy, reconnect/disconnect detection, late joiners, pause/resume/skip (server timers), teacher authorization (guest/student/other teacher/creator), malformed input, rate limiting, remove player, end session, grouping (35 → 5×7 / 7×5), 35-player start, min-player rules |
-| `hotPotato.test.mjs` | 11 | dictionary/sequence quality, 35 players in groups, word validation + repeats, stale-turn duplicate protection, random transfer distribution (never self/prev), hidden fuse, explosion + ghosts, late word after expiry, disconnected holder, teacher vocab, full 35-bot game |
+| `hotPotato.test.mjs` | 14 | dictionary/sequence quality, 35 players in groups, word validation + repeats, stale-turn duplicate protection, random transfer distribution (never self/prev), hidden fuse, explosion + ghosts, late word after expiry, disconnected holder, teacher vocab, full 35-bot game |
 | `lastOneStanding.test.mjs` | 10 | ladder 35→20→10→5→2→1, round-1 advancement, early/duplicate/late answers, answer not leaked, tie-window fair draw, nobody-correct re-ask, final showdown/sudden death, consolation scoring, teacher questions, 35-bot game |
-| `quickDraw.test.mjs` | 7 | secret word never in guesser/projector views, artist-only drawing, stroke validation/clamping/limits, incremental sync + clear, guess scoring/duplicates/close feedback, artist rotation, artist disconnect, 35-bot game |
+| `quickDraw.test.mjs` | 8 | secret word never in guesser/projector views, artist-only drawing, stroke validation/clamping/limits, incremental sync + clear, guess scoring/duplicates/close feedback, artist rotation, artist disconnect, 35-bot game |
 | `telephone.test.mjs` | 6 | chain assignment (nobody gets own chain; each chain used once per stage), 45/20/45 timings + private task, draw→describe→draw flow, timeout fill-ins + full reveal payload, voting, 35-bot game |
 | `imposter.test.mjs` | 14 | 7×5 groups for 35, exactly one imposter, role privacy (imposter/crew/projector/host), question rotation + 10/20/5 s timings, hidden answers + simultaneous reveal, "No answer."/disconnect, fallback questions, secret-word blocking/censoring, vote rules (15 s, no self-vote, hidden), correct guess wins, wrong accusation, tie → runoff → second tie, runoff resolution, reveal gating, 35-bot game |
 | `economy.test.mjs` | 7 | 12 characters/odds sum, statistical odds, coin awards (signed-in only, idempotent, 150 cap, ≥3 players), pack opening (cost, once, duplicate/concurrent requests), guests, delete-my-data, unowned avatars |
@@ -42,3 +42,6 @@ Run against **both `next dev` and the production build (`next build` + `next sta
 - Load test against the Railway deployment (only localhost was available).
 - Audio output (sound effects) and screen-reader behaviour were not machine-verified; no formal accessibility audit.
 - Colour/animation polish was reviewed from screenshots only (no video).
+
+## 7. Polish pass (Phase 1 of ARCADE_POLISH_PLAN.md)
+Added tests: Hot Potato live-typing moderation/privacy, boom-guess scoring, quick bonus + awards; Quick Draw word choice (options never leak to guessers, auto-pick). Re-ran the two-browser sync test (13/13 pass, now includes the word-choice phase) and a real-browser Hot Potato + Quick Draw party (no console errors). Awards and BOOM visuals confirmed from screenshots. The full 5-game browser e2e and the 35-client load test were NOT re-run after this pass.

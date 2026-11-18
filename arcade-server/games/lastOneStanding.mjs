@@ -18,6 +18,7 @@ export class LastOneStanding extends BaseGame {
     this.out = new Map(); // pid -> { round, order, correct, ms }
     this.cons = new Map(this.players.map((p) => [p, 0])); // consolation points
     this.pool = shuffle(this.content.items);
+    this.streaks = new Map(); this.fastest = null;
     this.qIndex = 0; this.asked = 0; this.round = 1; this.retries = 0; this.winner = null; this.last = null; this.eliminationOrder = 0;
     this.nextQuestion(this.room.t());
   }
@@ -96,6 +97,12 @@ export class LastOneStanding extends BaseGame {
       if (a.choice === q.answer) { const pts = 12 + Math.round(18 * (1 - a.ms / window)); this.cons.set(pid, (this.cons.get(pid) ?? 0) + pts); this.add(pid, pts); }
     }
     for (const pid of aliveList) if (q.answers.has(pid)) this.add(pid, 5);
+    for (const r of correct) {
+      const s = (this.streaks.get(r.pid) ?? 0) + 1; this.streaks.set(r.pid, s);
+      if (s >= 2) this.add(r.pid, 8 * Math.min(s - 1, 4));
+      if (!this.fastest || r.a.ms < this.fastest.ms) this.fastest = { pid: r.pid, ms: r.a.ms };
+    }
+    for (const pid of aliveList) if (!correct.some((r) => r.pid === pid)) this.streaks.set(pid, 0);
 
     this.last = { correct: q.answer, counts, advanced: [], eliminated: [], tie, retry, finale, nobody: correct.length === 0, answered: q.answers.size };
     if (retry) { this.retries++; this.room.log("los_retry", { retry }); }
@@ -154,6 +161,16 @@ export class LastOneStanding extends BaseGame {
       out.you = { alive: this.alive.has(pid), answered: !!a, choice: a?.choice ?? null, correct: this.phase === "reveal" && a ? a.choice === q.answer : null, place: this.phase === "done" ? this.placements().find((p) => p.id === pid)?.place : null };
     }
     if (this.phase === "done") out.placements = this.placements();
+    return out;
+  }
+
+  awards() {
+    const out = [];
+    if (this.fastest) out.push({ id: "fastest", icon: "⚡", title: "Fastest Finger", pid: this.fastest.pid, detail: `${(this.fastest.ms / 1000).toFixed(2)}s` });
+    const s = [...this.streaks.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (s && s[1] >= 2) out.push({ id: "streak", icon: "🔥", title: "On Fire", pid: s[0], detail: `${s[1]} in a row` });
+    const c = [...this.cons.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (c && c[1] > 0) out.push({ id: "comeback", icon: "🪂", title: "Consolation King", pid: c[0], detail: `${c[1]} pts` });
     return out;
   }
 

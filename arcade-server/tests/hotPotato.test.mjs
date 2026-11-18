@@ -160,3 +160,53 @@ test("a full 35-bot game finishes: hearts drop, survivors are awarded, results a
   assert.equal(res.rows[0].norm, 1000);
   assert.ok(res.rows.some((r) => r.points >= 25), "someone should have scored");
 });
+
+test("live typing: spectators see the holder's draft (moderated); only the holder can draft; draft clears on pass", () => {
+  const { begin, room, tryAct } = makeRoom({ n: 5 });
+  const g = begin(); const grp = g.groups[0];
+  const other = grp.members.find((m) => m !== grp.holder);
+  tryAct(other, { type: "draft", text: "sneaky" });
+  assert.equal(room.view({ playerId: other }).game.group.draft, "");
+  tryAct(grp.holder, { type: "draft", text: "Sta-t!!1" });
+  assert.equal(room.view({ playerId: other }).game.group.draft, "sta-t");
+  tryAct(grp.holder, { type: "draft", text: "shit" });
+  assert.equal(room.view({ playerId: other }).game.group.draft, "•••");
+  grp.fuseAt = room.t() + 1e9;
+  const w = wordsContaining(grp.sequence).find((x) => !grp.used.has(x));
+  assert.ok(tryAct(grp.holder, { type: "word", word: w }).ok);
+  assert.equal(room.view({ playerId: other }).game.group.draft, "");
+});
+
+test("boom guess: spectators score by how close they tap to the real explosion; once per round; holder can't", () => {
+  const { begin, room, tryAct, clock, advance } = makeRoom({ n: 5 });
+  const g = begin(); const grp = g.groups[0];
+  const [a, b, c] = grp.members.filter((m) => m !== grp.holder);
+  assert.match(tryAct(grp.holder, { type: "boom" }).error, /holding/);
+  grp.fuseAt = room.t() + 6000;
+  clock.now += 5400; assert.ok(tryAct(a, { type: "boom" }).ok);   // 0.6s early => 15
+  assert.match(tryAct(a, { type: "boom" }).error, /already/);
+  grp.boomGuesses.set(b, grp.fuseAt - 2000);                      // 2.0s early => 8
+  grp.boomGuesses.set(c, grp.fuseAt - 9000);                      // far too early => 0
+  advance(900);
+  assert.equal(grp.status, "boom");
+  assert.equal(g.points.get(a) >= 15, true);
+  const res = room.view({ playerId: a }).game.group.boomResults;
+  assert.deepEqual(res.map((r) => r.pts), [15, 8]);
+  assert.ok(!res.some((r) => r.id === c));
+  assert.ok(g.awards().some((x) => x.id === "boom"));
+});
+
+test("quick-pass bonus and end-of-game awards are produced", () => {
+  const { begin, room, tryAct } = makeRoom({ n: 4 });
+  const g = begin(); const grp = g.groups[0];
+  grp.fuseAt = room.t() + 1e9;
+  const holder = grp.holder;
+  const w = wordsContaining(grp.sequence).find((x) => !grp.used.has(x) && x.length >= 7) ?? wordsContaining(grp.sequence)[0];
+  const r = tryAct(holder, { type: "word", word: w });
+  assert.equal(r.result.quick, true);
+  const awards = g.awards();
+  assert.ok(awards.find((a) => a.id === "wordsmith" && a.pid === holder));
+  g.done = true; room.tick();
+  assert.ok(room.history.at(-1).awards.length >= 1);
+  assert.ok(room.history.at(-1).awards[0].nickname);
+});

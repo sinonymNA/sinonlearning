@@ -260,6 +260,15 @@ export class Imposter extends BaseGame {
     return { imposter: g.imposter === pid, word: g.imposter === pid ? null : g.word.word, related: g.imposter === pid ? [] : g.word.related };
   }
 
+  awards() {
+    const out = [];
+    const sly = this.groups.find((g) => g.outcome?.winner === "imposter" && g.outcome.reason !== "guess");
+    if (sly) out.push({ id: "sly", icon: "😈", title: "Master of Disguise", pid: sly.imposter, detail: "fooled the whole group" });
+    const sharp = this.groups.find((g) => g.outcome?.caught && !g.guessCorrect);
+    if (sharp) out.push({ id: "sharp", icon: "🕵️", title: "Case Closed", pid: sharp.members.find((m) => m !== sharp.imposter && sharp.firstVotes?.get(m) === sharp.imposter) ?? sharp.members[0], detail: "caught the imposter" });
+    return out;
+  }
+
   highlights() {
     const wins = this.groups.filter((g) => g.outcome?.winner === "imposter").length;
     return [`${this.groups.length - wins} of ${this.groups.length} groups caught their imposter`];

@@ -11,6 +11,11 @@ import Imposter from "./games/Imposter";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function GameSwitch(props: any) {
   const kind = props.view.game?.kind;
+  return <div className={`stage theme-${kind}`}><Game {...props} kind={kind} /></div>;
+}
+
+function Game(props: any) {
+  const kind = props.kind;
   switch (kind) {
     case "hot_potato": return props.projector ? <HotPotatoProjector {...props} /> : <HotPotato {...props} />;
     case "last_one_standing": return <LastOne {...props} />;

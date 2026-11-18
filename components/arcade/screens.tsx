@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Avatar from "./Avatar";
+import GameArt from "./GameArt";
 import { BigCountdown, Leaderboard, Podium } from "./ui";
 import { api } from "./useRoom";
 import { GAME_CATALOG, TEAMS } from "@/lib/arcadeCatalog";
@@ -42,7 +43,7 @@ export function IntroScreen({ view, stamp }: { view: any; stamp: number }) {
   return (
     <div className="ar-panel pop grid gap-4 text-center" style={{ borderColor: n.color }}>
       <p className="ar-muted font-bold">Game {n.index + 1} of {n.of}</p>
-      <div className="potato float" style={{ fontSize: "6rem", animation: undefined }} aria-hidden>{n.icon}</div>
+      <div className="float mx-auto" aria-hidden><GameArt id={n.id ?? n.gameId} size={140} /></div>
       <h2 className="ar-h1" style={{ color: n.color }}>{n.name}</h2>
       <ul className="mx-auto grid max-w-xl gap-2 text-left text-lg font-semibold">{(HOW_TO[n.id ?? n.gameId] ?? []).map((t, i) => <li key={i} className="slide rounded-xl bg-[var(--bg)] px-4 py-2" style={{ animationDelay: `${i * 0.15}s` }}>{i + 1}. {t}</li>)}</ul>
       <p className="font-bold">Starting in</p><BigCountdown ms={view.timer?.ms} stamp={stamp} />
@@ -61,6 +62,16 @@ export function ResultsScreen({ view, stamp, meId, projector }: { view: any; sta
         <p className="ar-muted font-bold">{r?.name} results</p>
         <h2 className="ar-h1">{r?.rows[0] ? `${r.rows[0].nickname} wins!` : "Round over"}</h2>
         <Podium rows={r?.rows ?? []} valueKey="points" />
+        {r?.awards?.length > 0 && (
+          <div className="mx-auto mt-5 grid max-w-3xl gap-3 text-left sm:grid-cols-2">
+            {r.awards.map((a: any, i: number) => (
+              <div key={a.id} className="award slide" style={{ animationDelay: `${0.4 + i * 0.25}s` }}>
+                <span className="text-4xl" aria-hidden>{a.icon}</span><Avatar id={a.avatar} size={44} />
+                <div className="min-w-0"><div className="text-sm font-bold uppercase tracking-wider text-[var(--sun)]">{a.title}</div><div className="truncate font-bold">{a.nickname}</div><div className="ar-muted truncate text-sm">{a.detail}</div></div>
+              </div>
+            ))}
+          </div>
+        )}
         {r?.highlights?.map((h: string, i: number) => <p key={i} className="mt-1 font-bold">✨ {h}</p>)}
         {mine && !projector && <p className="mt-3 text-xl font-bold">You scored <span className="text-[var(--sun)]">{mine.points}</span> points → <span className="text-[var(--mint)]">+{mine.norm}</span> to your arcade total</p>}
       </div>

@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Avatar from "./Avatar";
+import GameArt from "./GameArt";
 import { GameSwitch } from "./GameSwitch";
 import { PrefsButtons, PrefsProvider } from "./prefs";
 import { FinalScreen, IntroScreen, ResultsScreen, TeamBoard } from "./screens";
@@ -62,7 +63,7 @@ function Inner({ code }: { code: string }) {
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {GAME_IDS.map((g: string) => { const c = GAME_CATALOG[g]; const on = sel.includes(g); return (
                     <button key={g} aria-pressed={on} onClick={() => toggleGame(g)} className="ar-card text-left" style={{ background: on ? c.color : "var(--paper)", color: on ? "#fff" : "var(--ink)", textShadow: on ? "0 2px 0 rgba(0,0,0,.25)" : undefined }}>
-                      <div className="flex items-center justify-between"><span className="text-3xl">{c.icon}</span>{on && <span className="ar-chip">#{sel.indexOf(g) + 1}</span>}</div>
+                      <div className="flex items-center justify-between"><GameArt id={g} size={52} />{on && <span className="ar-chip">#{sel.indexOf(g) + 1}</span>}</div>
                       <div className="mt-1 text-xl font-bold">{c.name}</div><div className="text-sm opacity-90">{c.minutes} min · {c.min}+ players</div>
                     </button>); })}
                 </div>

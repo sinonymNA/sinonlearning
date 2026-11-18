@@ -173,5 +173,14 @@ export class Telephone extends BaseGame {
     return { stage: g.stage, status: g.status, prompt: chain.prompt };
   }
 
+  awards() {
+    const out = [];
+    for (const g of this.groups) for (const ci of g.funniest ?? []) {
+      const c = g.chains[ci]; const votes = g.voteResult?.[ci] ?? 0;
+      if (votes > 0 && out.length < 3) out.push({ id: `funny${g.id}`, icon: "😂", title: "Funniest Chain", pid: c.owner, detail: `"${c.prompt}" (${votes} votes)` });
+    }
+    return out;
+  }
+
   highlights() { return [`${this.groups.reduce((a, g) => a + g.n, 0)} chains were telephoned`]; }
 }

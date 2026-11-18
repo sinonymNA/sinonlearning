@@ -2,12 +2,13 @@ import { BaseGame } from "./base.mjs";
 import { appendSegs, newLog } from "../drawing.mjs";
 import { editDistance, fail, normalizeWord, partition, shuffle } from "../util.mjs";
 
-const TURN_MS = 30000, REVEAL_MS = 4200, MAX_TURNS = 5;
+const TURN_MS = 28000, REVEAL_MS = 4200, MAX_TURNS = 5, PICK_MS = 5000;
 
 export class QuickDraw extends BaseGame {
   start() {
     const t = this.room.t();
     this.prompts = shuffle(this.content.items);
+    this.artistHits = new Map();
     this.pi = 0;
     this.groups = partition(this.players, { max: 7, floor: 3 }).map((members, id) => ({
       id, members, order: shuffle(members), turn: 0, cursor: 0, turns: Math.min(members.length, MAX_TURNS), status: "pause", artist: null, word: "", key: 0,
@@ -31,10 +32,18 @@ export class QuickDraw extends BaseGame {
     }
     if (!artist) return this.finishGroup(g);
     g.turn++;
-    g.artist = artist; g.word = this.nextWord(); g.key = g.id * 1000 + g.turn; g.log = newLog();
-    g.guessed = new Map(); g.tries = new Map(); g.lastGuess = new Map(); g.status = "draw"; g.startedAt = t; g.endsAt = t + this.D(TURN_MS); g.offlineSince = null; g.note = "";
+    // the artist picks one of three words (skribbl-style) before the clock starts
+    const options = [];
+    while (options.length < 3) { const w = this.nextWord(); if (!options.includes(w)) options.push(w); if (this.prompts.length < 3 && options.length >= this.prompts.length) break; }
+    g.artist = artist; g.word = ""; g.options = options; g.key = g.id * 1000 + g.turn; g.log = newLog();
+    g.guessed = new Map(); g.tries = new Map(); g.lastGuess = new Map(); g.status = "pick"; g.until = t + this.D(PICK_MS); g.offlineSince = null; g.note = "";
+    this.room.log("qd_pick", { group: g.id, turn: g.turn, artist: this.nick(artist) });
+  }
+
+  startDraw(g, t, word) {
+    g.word = word; g.status = "draw"; g.startedAt = t; g.endsAt = t + this.D(TURN_MS);
     g.revealOrder = shuffle([...Array(normalizeWord(g.word).length).keys()]);
-    this.room.log("qd_turn", { group: g.id, turn: g.turn, artist: this.nick(artist) });
+    this.room.log("qd_turn", { group: g.id, turn: g.turn, artist: this.nick(g.artist) });
   }
 
   finishGroup(g) { g.status = "done"; }
@@ -50,6 +59,7 @@ export class QuickDraw extends BaseGame {
   tick(t) {
     for (const g of this.groups) {
       if (g.status === "pause" && t >= g.until) this.beginTurn(g, t);
+      else if (g.status === "pick") { if (t >= g.until || !this.connected(g.artist)) this.startDraw(g, t, g.options[0]); }
       else if (g.status === "draw") {
         const others = g.members.filter((m) => m !== g.artist && this.here(m) && this.connected(m));
         if (!this.here(g.artist) || !this.connected(g.artist)) { g.offlineSince ??= t; } else g.offlineSince = null;
@@ -68,6 +78,13 @@ export class QuickDraw extends BaseGame {
       appendSegs(g.log, a.segs);
       return { ok: true, n: g.log.segs.length };
     }
+    if (a.type === "choose") {
+      if (g.status !== "pick" || g.artist !== pid) fail("You're not choosing a word right now.");
+      const i = Number(a.index);
+      if (!Number.isInteger(i) || i < 0 || i >= g.options.length) fail("Pick one of the words.");
+      this.startDraw(g, t, g.options[i]);
+      return { ok: true };
+    }
     if (a.type === "guess") {
       if (g.status !== "draw") fail("No round to guess in right now.");
       if (g.artist === pid) fail("The artist can't guess.");
@@ -83,6 +100,8 @@ export class QuickDraw extends BaseGame {
         const frac = Math.min(1, (t - g.startedAt) / (g.endsAt - g.startedAt));
         const pts = 50 + Math.round(50 * (1 - frac));
         g.guessed.set(pid, { ms: Math.round(t - g.startedAt), pts });
+        (g.allGuesses ??= []).push([pid, { ms: Math.round(t - g.startedAt) }]);
+        this.artistHits.set(g.artist, (this.artistHits.get(g.artist) ?? 0) + 1);
         this.add(pid, pts);
         return { ok: true, correct: true, points: pts };
       }
@@ -110,6 +129,7 @@ export class QuickDraw extends BaseGame {
       id: g.id, status: g.status, turn: g.turn, turns: g.turns, artist: g.artist,
       artistName: g.artist ? this.nick(g.artist) : null, endsIn: Math.max(0, (g.status === "draw" ? g.endsAt : g.until) - t), totalMs: g.endsAt - g.startedAt,
       mask: g.status === "draw" ? this.mask(g, t) : null, word: showWord ? g.word : null, note: g.note,
+      options: g.status === "pick" && isArtist ? g.options : null,
       members: g.members.map((m) => ({ id: m, nickname: this.nick(m), avatar: this.room.players.get(m)?.avatar, points: this.points.get(m) ?? 0, guessed: g.guessed.has(m), artist: m === g.artist, connected: this.connected(m) })),
       draw: { key: g.key, from, segs: wantSegs ? g.log.segs.slice(from) : [], total: g.log.segs.length },
       you: pid ? { artist: !!isArtist, guessed: g.guessed.has(pid), points: g.guessed.get(pid)?.pts ?? 0 } : undefined,
@@ -127,5 +147,15 @@ export class QuickDraw extends BaseGame {
   }
 
   botHint(pid) { const g = this.byPlayer.get(pid); return g?.status === "draw" ? { word: g.word, artist: g.artist === pid } : null; }
+  awards() {
+    let fastest = null;
+    for (const g of this.groups) for (const [pid, v] of (g.allGuesses ?? [])) if (!fastest || v.ms < fastest.ms) fastest = { pid, ms: v.ms };
+    const out = [];
+    if (fastest) out.push({ id: "fast", icon: "⚡", title: "Quickest Guesser", pid: fastest.pid, detail: `${(fastest.ms / 1000).toFixed(1)}s` });
+    const artist = [...this.artistHits.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (artist) out.push({ id: "artist", icon: "🎨", title: "Crowd-Pleaser", pid: artist[0], detail: `${artist[1]} guessed it` });
+    return out;
+  }
+
   highlights() { return [`${this.groups.length} groups drew ${this.groups.reduce((a, g) => a + g.turns, 0)} masterpieces`]; }
 }

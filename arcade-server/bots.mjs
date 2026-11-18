@@ -103,6 +103,7 @@ export class Bots {
       }
       case "quick_draw": {
         const grp = g.byPlayer.get(pid);
+        if (grp && grp.status === "pick" && grp.artist === pid) return { key: `qdp:${grp.key}:${pid}`, queue: [{ delay: d(600, 2500), run: { type: "choose", index: randInt(3) } }] };
         if (!grp || grp.status !== "draw") return null;
         const key = `qd:${grp.key}:${pid}`;
         if (grp.artist === pid) {

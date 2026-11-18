@@ -78,8 +78,9 @@ export async function handle(service, ctx, body) {
     case "act": {
       const room = service.need(body.code);
       const p = room.authPlayer(body.playerId, body.token);
-      const heavy = body.action?.type === "draw";
-      limit(service, ctx, `act:${room.code}:${p.id}`, heavy ? 2000 : 3000, heavy ? 40 : 18);
+      const kind = body.action?.type;
+      const heavy = kind === "draw" || kind === "draft";
+      limit(service, ctx, `act:${room.code}:${p.id}:${heavy ? kind : "x"}`, heavy ? 2000 : 3000, heavy ? 40 : 18);
       if (JSON.stringify(body.action ?? {}).length > 12000) fail("That message was too large.");
       room.tick();
       const result = room.act(p.id, body.action ?? {});
