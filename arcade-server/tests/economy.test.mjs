@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { makeRoom, studentCtx, guestCtx } from "./helpers.mjs";
 import { MemoryStore } from "../store.mjs";
-import { CHARACTERS, PACKS, packOdds, rollPack, RARITIES } from "../characters.mjs";
+import { CHARACTERS, PACKS, PACK_IDS, packOdds, rollPack, RARITIES } from "../characters.mjs";
 import { handleEconomy } from "../api.mjs";
 
 test("40 original characters across five rarities, all drawable; odds sum to 100%", () => {
@@ -11,7 +11,7 @@ test("40 original characters across five rarities, all drawable; odds sum to 100
   assert.ok(CHARACTERS.every((c) => c.tagline.length > 10));
   for (const c of CHARACTERS) assert.ok(RARITIES[c.rarity]);
   const odds = packOdds("basic");
-  assert.equal(odds.pack.cost, 150);
+  assert.equal(odds.pack.cost, 100);
   assert.ok(Math.abs(odds.rarities.reduce((a, r) => a + r.percent, 0) - 100) < 0.2);
   assert.ok(Math.abs(odds.characters.reduce((a, c) => a + c.percent, 0) - 100) < 0.3);
 });
@@ -57,25 +57,25 @@ test("a room never pays more than 150 coins per player in one session; tiny room
   assert.ok(!awards.some((a) => a.small));
 });
 
-test("pack opening: needs 150 coins, charges once, adds to the collection, and is duplicate-request safe", async () => {
+test("pack opening: needs 100 coins, charges once, adds to the collection, and is duplicate-request safe", async () => {
   const store = new MemoryStore();
   const ctx = studentCtx(store, "kid-1");
-  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-aaaa1111" }), /need 150/);
-  await store.award({ userId: "kid-1", coins: 400, key: "seed" });
+  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-aaaa1111" }), /need 100/);
+  await store.award({ userId: "kid-1", coins: 250, key: "seed" });
   const a = await handleEconomy(ctx, { type: "open_pack", requestId: "req-aaaa1111" });
-  assert.equal(a.coins, 250);
+  assert.equal(a.coins, 150);
   assert.ok(CHARACTERS.find((c) => c.id === a.character.id));
   // retrying the same request (double click / network retry) returns the same result and does not charge again
   const again = await handleEconomy(ctx, { type: "open_pack", requestId: "req-aaaa1111" });
   assert.equal(again.character.id, a.character.id);
-  assert.equal((await store.getWallet("kid-1")).coins, 250);
+  assert.equal((await store.getWallet("kid-1")).coins, 150);
   // concurrent identical requests also charge once
   const [x, y] = await Promise.all([handleEconomy(ctx, { type: "open_pack", requestId: "req-bbbb2222" }), handleEconomy(ctx, { type: "open_pack", requestId: "req-bbbb2222" })]);
   assert.equal(x.character.id, y.character.id);
-  assert.equal((await store.getWallet("kid-1")).coins, 100);
+  assert.equal((await store.getWallet("kid-1")).coins, 50);
   const col = await store.getCollection("kid-1");
   assert.equal(col.reduce((n, c) => n + c.count, 0), 2);
-  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-cccc3333" }), /need 150/);
+  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-cccc3333" }), /need 100/);
   await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "x" }), /request id/);
 });
 
@@ -85,7 +85,7 @@ test("guests cannot open packs or keep a collection; delete-my-data wipes everyt
   const me = await handleEconomy(guestCtx(store), { type: "me" });
   assert.equal(me.signedIn, false);
   const ctx = studentCtx(store, "kid-9");
-  await store.award({ userId: "kid-9", coins: 150, key: "s" });
+  await store.award({ userId: "kid-9", coins: 100, key: "s" });
   await handleEconomy(ctx, { type: "open_pack", requestId: "req-delete001" });
   await handleEconomy(ctx, { type: "delete_my_data" });
   assert.equal((await store.getWallet("kid-9")).coins, 0);
@@ -98,4 +98,40 @@ test("unowned collectible avatars cannot be used in rooms", () => {
   assert.equal(p.avatar, "rk-sun");
   const q = room.addPlayer({ nickname: "Owner", avatar: "c-ember", ownedAvatars: ["c-ember"] });
   assert.equal(q.avatar, "c-ember");
+});
+
+test("four packs: prices ascend, every pack's odds sum to 100%, guarantees hold (Super = no commons, Legend = rare+, Starter = no legendaries)", () => {
+  const ids = PACK_IDS;
+  assert.deepEqual(ids, ["starter", "basic", "super", "legend"]);
+  const costs = ids.map((id) => PACKS[id].cost);
+  assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
+  assert.ok(costs[0] <= 50 && costs[3] <= 700, "prices stay modest");
+  for (const id of ids) {
+    const o = packOdds(id);
+    assert.ok(Math.abs(o.rarities.reduce((n, r) => n + r.percent, 0) - 100) < 0.3, id);
+    assert.ok(Math.abs(o.characters.reduce((n, c) => n + c.percent, 0) - 100) < 0.5, `${id} per-character`);
+  }
+  const rank = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+  const roll = (id, n = 4000) => Array.from({ length: n }, () => rollPack(id));
+  assert.ok(roll("super").every((c) => rank[c.rarity] >= 1), "Super never gives a common");
+  assert.ok(roll("legend").every((c) => rank[c.rarity] >= 2), "Legend never gives a common or uncommon");
+  assert.ok(roll("starter").every((c) => c.rarity !== "legendary"));
+  const avg = (id) => roll(id).reduce((n, c) => n + rank[c.rarity], 0) / 4000;
+  assert.ok(avg("starter") < avg("basic") && avg("basic") < avg("super") && avg("super") < avg("legend"), "better packs really are better");
+});
+
+test("opening each pack charges that pack's price; unknown packs are rejected", async () => {
+  const store = new MemoryStore(); const ctx = studentCtx(store, "kid-packs");
+  await store.award({ userId: "kid-packs", coins: 1000, key: "seed" });
+  let left = 1000;
+  for (const id of ["starter", "basic", "super", "legend"]) {
+    const r = await handleEconomy(ctx, { type: "open_pack", requestId: `req-${id}-0001`, packId: id });
+    left -= PACKS[id].cost;
+    assert.equal(r.coins, left, id);
+    assert.ok(r.character.id);
+  }
+  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-nope-0001", packId: "mega" }), /Unknown pack/);
+  const cat = await handleEconomy(ctx, { type: "catalog" });
+  assert.equal(cat.packs.length, 4);
+  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need 600/);
 });

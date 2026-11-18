@@ -23,7 +23,7 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 - [x] Arcade Party: intro → play → results → leaderboard → next game, normalised cumulative scores (per-game points scaled to ≤1000 vs. the game's best / par), final podium, game winners, team board.
 
 ## Progression & content
-- [x] Coins separate from points; awarded server-side to signed-in players only (≥3 players, 150/session cap, idempotent per game); 12 original characters (5 rarities); Basic pack 150 coins with published odds; atomic, duplicate-safe pack opening (row lock + request-id idempotency); guests can play but cannot keep coins; delete-my-data.
+- [x] Coins separate from points; awarded server-side to signed-in players only (≥3 players, 150/session cap, idempotent per game); 12 original characters (5 rarities); four packs (Starter 40, Classic 100, Super 250, Legend 600) with published odds per pack; atomic, duplicate-safe pack opening (row lock + request-id idempotency); guests can play but cannot keep coins; delete-my-data.
 - [x] Teacher content sets (questions, vocab, draw prompts, telephone prompts, secret words), manual entry, CSV import, per-game compatibility check, built-in defaults, reuse of existing Game Shows (Race/Memory/Wheel import).
 - [~] Visual/sound polish: CSS/SVG/Canvas only; WebAudio sfx with mute and reduced-motion toggle. Verified by screenshots in Chromium (desktop + 390 px phone). Audio itself is not machine-verifiable; no real Chromebook/Safari/Firefox runs.
 
@@ -54,3 +54,6 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 ## Drawing + icons
 - [x] Paint bucket fill in Quick Draw and Telephone (one shared tool: protocol segment t=3, validated, capped at 60 fills/drawing, flood-filled identically on every client).
 - [x] Uploaded-image characters supported (`IMG(...)` in `characters.mjs`, files in `public/characters/`), documented in ARCADE_ICON_GUIDE.md. No custom icons have been added yet.
+
+## Packs (rebalanced, cheaper)
+- [x] Four packs: Starter 40 (78/18/3.5/0.5/0 %), Classic 100 (60/26/10.5/3/0.5), Super 250 (no commons: 0/55/33/10/2), Legend 600 (rare+: 0/0/55/37/8). Odds per rarity and per character are shown per pack; shop has a pack picker; the free demo has the same picker. Old 150-coin pack replaced (existing `basic` id kept, now "Classic" at 100).

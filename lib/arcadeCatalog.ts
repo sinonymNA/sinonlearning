@@ -1,6 +1,6 @@
 // Typed re-exports of the arcade engine's static data for client components.
 import { GAME_CATALOG as RAW_CATALOG, GAME_IDS as RAW_IDS, MAX_PLAYERS as RAW_MAX, AVATARS as RAW_AVATARS, TEAMS as RAW_TEAMS } from "../arcade-server/catalog.mjs";
-import { CHARACTERS as RAW_CHARS, RARITIES as RAW_RARITIES, STARTER_AVATARS as RAW_STARTERS, packOdds as rawPackOdds } from "../arcade-server/characters.mjs";
+import { CHARACTERS as RAW_CHARS, RARITIES as RAW_RARITIES, STARTER_AVATARS as RAW_STARTERS, packOdds as rawPackOdds, allPackOdds as rawAllPackOdds } from "../arcade-server/characters.mjs";
 
 import { PHRASES as RAW_PHRASES } from "../arcade-server/chat.mjs";
 export type ChatPhrase = { id: string; text: string; game: string; tab: string };
@@ -16,4 +16,6 @@ export type CharacterLook = { body: string; color: string; eyes: string; mouth: 
 export const CHARACTERS: { id: string; name: string; rarity: string; tagline: string; look?: CharacterLook; image?: string }[] = RAW_CHARS;
 export const RARITIES: Record<string, { label: string; weight: number; color: string }> = RAW_RARITIES;
 export const STARTER_AVATARS: { id: string; name: string }[] = RAW_STARTERS;
-export const packOdds = rawPackOdds as (id?: string) => { pack: { id: string; name: string; cost: number }; rarities: { id: string; label: string; percent: number }[]; characters: { id: string; name: string; rarity: string; percent: number }[] };
+export type PackOdds = { pack: { id: string; name: string; cost: number; color: string; blurb: string }; rarities: { id: string; label: string; percent: number }[]; characters: { id: string; name: string; rarity: string; percent: number }[] };
+export const packOdds = rawPackOdds as (id?: string) => PackOdds;
+export const allPackOdds = rawAllPackOdds as () => PackOdds[];

@@ -76,7 +76,7 @@ const before = (await call("/api/arcade/economy", { type: "me" }, student)).json
 const [a, b] = await Promise.all([call("/api/arcade/economy", { type: "open_pack", requestId: "req-concurrent-1" }, student), call("/api/arcade/economy", { type: "open_pack", requestId: "req-concurrent-1" }, student)]);
 check(a.status === 200 && b.status === 200 && a.json.character.id === b.json.character.id, "two simultaneous identical requests return the same character");
 const afterOne = (await call("/api/arcade/economy", { type: "me" }, student)).json.coins;
-check(before - afterOne === 150, `...and charge exactly 150 coins once (${before} -> ${afterOne})`);
+check(before - afterOne === 100, `...and charge exactly 100 coins once (Classic pack) (${before} -> ${afterOne})`);
 const again = await call("/api/arcade/economy", { type: "open_pack", requestId: "req-concurrent-1" }, student);
 check(again.json.repeated === true && (await call("/api/arcade/economy", { type: "me" }, student)).json.coins === afterOne, "retrying the same request id never charges twice");
 await call("/api/arcade/economy", { type: "open_pack", requestId: "req-second-0002" }, student);

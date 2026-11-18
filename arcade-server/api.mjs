@@ -1,6 +1,6 @@
 import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
 import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems } from "./content.mjs";
-import { CHARACTERS, STARTER_AVATARS, packOdds } from "./characters.mjs";
+import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
 import { GameError, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
@@ -133,7 +133,7 @@ export async function handle(service, ctx, body) {
 export async function handleEconomy(ctx, body) {
   const { store, user } = ctx;
   switch (body.type) {
-    case "catalog": return { characters: CHARACTERS, starters: STARTER_AVATARS, odds: packOdds("basic") };
+    case "catalog": return { characters: CHARACTERS, starters: STARTER_AVATARS, packs: allPackOdds() };
     case "me": {
       if (!user) return { signedIn: false, ...{ coins: 0, owned: [] } };
       const wallet = await store.getWallet(user.id);
@@ -144,7 +144,9 @@ export async function handleEconomy(ctx, body) {
       if (!user) fail("Sign in to open packs - guest players can't keep coins or characters.", "forbidden");
       const requestId = String(body.requestId ?? "");
       if (!/^[A-Za-z0-9_-]{8,64}$/.test(requestId)) fail("Missing request id.");
-      return store.openPack(user.id, requestId, "basic");
+      const packId = body.packId === undefined ? "basic" : String(body.packId);
+      if (!PACKS[packId]) fail("Unknown pack.");
+      return store.openPack(user.id, requestId, packId);
     }
     case "delete_my_data": {
       if (!user) fail("Not signed in.", "forbidden");

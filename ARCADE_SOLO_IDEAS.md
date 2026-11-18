@@ -20,4 +20,4 @@ Build **Potato Rush** and **Streak Climb** next (both reuse validated engine cod
 ## Economy guardrails
 - Practice vs bots: 150 coins/day cap (shipped).
 - Solo modes: pay on *personal best improvements* and daily first-run bonus, never per minute played.
-- A pack is 150 coins: target ~1 pack per 3-4 days of casual solo play so packs stay exciting.
+- Packs now cost 40 / 100 / 250 / 600 coins; target a Classic pack every 1-2 days of casual solo play, a Legend pack roughly weekly.

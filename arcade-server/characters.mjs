@@ -64,27 +64,38 @@ void IMG;
 export const STARTER_AVATARS = [
   { id: "rk-sun", name: "Sunny" }, { id: "rk-moon", name: "Moony" }, { id: "rk-leaf", name: "Leafy" }, { id: "rk-wave", name: "Wavy" },
 ];
-export const PACKS = { basic: { id: "basic", name: "Basic Character Pack", cost: 150, rarityWeights: Object.fromEntries(Object.entries(RARITIES).map(([k, v]) => [k, v.weight])) } };
+const W = (common, uncommon, rare, epic, legendary) => ({ common, uncommon, rare, epic, legendary });
+/** Four packs. Higher price = better odds (Super guarantees uncommon+, Legend guarantees rare+). */
+export const PACKS = {
+  starter: { id: "starter", name: "Starter Pack", cost: 40, color: "#4cc3ff", blurb: "Cheap and cheerful. Mostly commons, with a small shot at something better.", rarityWeights: W(78, 18, 3.5, 0.5, 0) },
+  basic: { id: "basic", name: "Classic Pack", cost: 100, color: "#ffc233", blurb: "The everyday pack with a real chance at rares.", rarityWeights: W(60, 26, 10.5, 3, 0.5) },
+  super: { id: "super", name: "Super Pack", cost: 250, color: "#8a6bff", blurb: "No commons! Every card is uncommon or better.", rarityWeights: W(0, 55, 33, 10, 2) },
+  legend: { id: "legend", name: "Legend Pack", cost: 600, color: "#ff5d73", blurb: "Rare or better every time, with the best shot at epics and legendaries.", rarityWeights: W(0, 0, 55, 37, 8) },
+};
+export const PACK_IDS = Object.keys(PACKS);
 
 export function packOdds(packId = "basic") {
   const pack = PACKS[packId];
   const total = Object.values(pack.rarityWeights).reduce((a, b) => a + b, 0);
-  const rarities = Object.entries(pack.rarityWeights).map(([id, w]) => ({ id, label: RARITIES[id].label, percent: Math.round((w / total) * 1000) / 10 }));
-  const characters = CHARACTERS.map((c) => {
+  const rarities = Object.entries(pack.rarityWeights).filter(([, w]) => w > 0).map(([id, w]) => ({ id, label: RARITIES[id].label, percent: Math.round((w / total) * 1000) / 10 }));
+  const characters = CHARACTERS.filter((c) => pack.rarityWeights[c.rarity] > 0).map((c) => {
     const inRarity = CHARACTERS.filter((x) => x.rarity === c.rarity).length;
     return { id: c.id, name: c.name, rarity: c.rarity, percent: Math.round(((pack.rarityWeights[c.rarity] / total) / inRarity) * 10000) / 100 };
   });
-  return { pack: { id: pack.id, name: pack.name, cost: pack.cost }, rarities, characters };
+  return { pack: { id: pack.id, name: pack.name, cost: pack.cost, color: pack.color, blurb: pack.blurb }, rarities, characters };
 }
+
+export const allPackOdds = () => PACK_IDS.map((id) => packOdds(id));
 
 const rand01 = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
 
 export function rollPack(packId = "basic", rng = rand01) {
   const pack = PACKS[packId];
   if (!pack) throw new Error("Unknown pack.");
-  const total = Object.values(pack.rarityWeights).reduce((a, b) => a + b, 0);
-  let roll = rng() * total, rarity = "common";
-  for (const [id, w] of Object.entries(pack.rarityWeights)) { if (roll < w) { rarity = id; break; } roll -= w; rarity = id; }
+  const entries = Object.entries(pack.rarityWeights).filter(([, w]) => w > 0);
+  const total = entries.reduce((a, [, w]) => a + w, 0);
+  let roll = rng() * total, rarity = entries[entries.length - 1][0];
+  for (const [id, w] of entries) { if (roll < w) { rarity = id; break; } roll -= w; }
   const pool = CHARACTERS.filter((c) => c.rarity === rarity);
   return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
 }

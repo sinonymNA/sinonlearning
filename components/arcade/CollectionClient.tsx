@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import Avatar from "./Avatar";
 import { api } from "./useRoom";
+import { RARITIES } from "@/lib/arcadeCatalog";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function CollectionClient() {
@@ -14,7 +15,7 @@ export default function CollectionClient() {
   useEffect(() => { api("/api/arcade/economy", { type: "catalog" }).then(setCat); api("/api/arcade/economy", { type: "me" }).then(setMe); }, []);
   if (!cat || !me) return <p className="ar-h2">Loading…</p>;
   const owned = new Map<string, number>((me.owned ?? []).map((o: any) => [o.id, o.count]));
-  const rarity = (id: string) => cat.odds.rarities.find((r: any) => r.id === id);
+  const rarity = (id: string) => ({ label: RARITIES[id]?.label ?? id });
   const RC: Record<string, string> = { common: "#7a8aa5", uncommon: "#2fbf9b", rare: "#4d8dff", epic: "#a35cff", legendary: "#ffb02e" };
   return (
     <div className="grid gap-6">
