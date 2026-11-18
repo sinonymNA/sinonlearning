@@ -6,6 +6,9 @@ import { FISH, ABYSS_PACK_IDS, PACK_IDS, PACKS, packOdds, rollPack, CHARACTERS }
 import { MemoryStore } from "../store.mjs";
 import { studentCtx, guestCtx } from "./helpers.mjs";
 
+// answering needs the clock to have started (LEAD_MS after the question is first shown)
+const A = (c, body) => { c.now += 3000; return handleAbyss(c, body); };
+
 test("prompt bank: every prompt has all six tiers, no empty/duplicate answers within a tier, and its rule holds for every answer", () => {
   assert.ok(AB.PROMPTS.length >= 20);
   const ids = new Set();
@@ -56,18 +59,18 @@ test("run: scoring, depth, timing and the answer clock", () => {
   let q = AB.question(run, t);
   assert.equal(q.total, 7); assert.equal(q.msLeft, 25000); assert.ok(!JSON.stringify(q).includes("tiers"));
   const p = AB.getPrompt(run.ids[0]);
-  const r = AB.submit(run, p.tiers.reef[0].split("=")[0], t + 5000);
+  const r = AB.submit(run, p.tiers.reef[0].split("=")[0], t + 8000);
   assert.equal(r.result.points, 60); assert.equal(r.result.tier, "reef"); assert.equal(r.result.depth, 600);
   assert.ok(r.result.examples.every((e) => AB.TIER_ORDER.indexOf(e.tier) > AB.TIER_ORDER.indexOf("reef")));
   // late answer is a miss even if it is the best answer
   t += 40_000; AB.question(run, t);
-  const late = AB.submit(run, AB.getPrompt(run.ids[1]).tiers.pearl[0].split("=")[0], t + 29_000);
+  const late = AB.submit(run, AB.getPrompt(run.ids[1]).tiers.pearl[0].split("=")[0], t + 32_000);
   assert.equal(late.result.points, 0); assert.equal(late.result.timedOut, true);
   // within grace is fine
   t += 40_000; AB.question(run, t);
-  const ok = AB.submit(run, AB.getPrompt(run.ids[2]).tiers.shoal[0].split("=")[0], t + 27_000);
+  const ok = AB.submit(run, AB.getPrompt(run.ids[2]).tiers.shoal[0].split("=")[0], t + 29_500);
   assert.equal(ok.result.points, 30);
-  for (let i = 3; i < 7; i++) { t += 40_000; AB.question(run, t); AB.submit(run, "nonsense zz", t + 26_000, Math.random, { expired: true }); }
+  for (let i = 3; i < 7; i++) { t += 40_000; AB.question(run, t); AB.submit(run, "nonsense zz", t + 28_500, Math.random, { expired: true }); }
   assert.equal(run.done, true); assert.equal(run.points, 90);
   assert.match(AB.shareText(run, "2032-02-01"), /90\/700 · 900 m deep/);
 });
@@ -78,7 +81,7 @@ test("unlimited: three misses end the dive, prompts don't repeat, cash-out keeps
   while (!run.done && hits < 100) {
     const q = AB.question(run, t); const p = AB.getPrompt(run.ids[run.i]);
     assert.ok(q);
-    if (hits % 2 === 0) AB.submit(run, p.tiers.bubble[0].split("=")[0], t + 100); else AB.submit(run, "zzzz", t + 26_000, Math.random, { expired: true }); hits++; t += 30_000;
+    if (hits % 2 === 0) AB.submit(run, p.tiers.bubble[0].split("=")[0], t + 3000); else AB.submit(run, "zzzz", t + 28_500, Math.random, { expired: true }); hits++; t += 30_000;
   }
   assert.equal(run.done, true); assert.equal(run.lives, 0);
   assert.equal(new Set(run.ids).size, run.ids.length, "no repeats while unseen prompts remain");
@@ -95,18 +98,18 @@ test("API (signed in): daily dive is server-timed, resumes, awards pearls + stre
   // refresh mid-dive keeps the same question and clock
   ctx.now += 6000;
   const again = await handleAbyss(ctx, { type: "start", mode: "daily" });
-  assert.equal(again.question.startedAt, r.question.startedAt); assert.equal(again.question.msLeft, 19000);
+  assert.equal(again.question.startedAt, r.question.startedAt); assert.equal(again.question.msLeft, 21500);
   let last;
   for (let i = 0; i < 7; i++) {
     const ids = AB.dailyIds("2032-03-10");
     const p = AB.getPrompt(ids[i]);
     ctx.now += 2000;
-    last = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: p.tiers.shoal[0].split("=")[0] });
+    last = await A(ctx, { type: "answer", mode: "daily", answer: p.tiers.shoal[0].split("=")[0] });
     assert.equal(last.result.points, 30);
   }
   assert.equal(last.done, true); assert.equal(last.run.points, 210);
   assert.equal(last.finish.pearls, 42); assert.equal(last.finish.profile.streak, 1);
-  await assert.rejects(handleAbyss(ctx, { type: "answer", mode: "daily", answer: "x" }), /over|Start/);
+  await assert.rejects(A(ctx, { type: "answer", mode: "daily", answer: "x" }), /over|Start/);
   const done = await handleAbyss(ctx, { type: "start", mode: "daily" });
   assert.equal(done.question, null); assert.ok(done.share);
   const h2 = await handleAbyss(ctx, { type: "home" });
@@ -124,7 +127,7 @@ test("API: archive only for the last 14 days and gives no pearls or streak; gues
   let r = await handleAbyss(ctx, { type: "start", mode: "archive", date: "2032-05-19" });
   const ids = AB.dailyIds("2032-05-19");
   let last;
-  for (let i = 0; i < 7; i++) last = await handleAbyss(ctx, { type: "answer", mode: "archive", date: "2032-05-19", answer: AB.getPrompt(ids[i]).tiers.pearl[0].split("=")[0] });
+  for (let i = 0; i < 7; i++) last = await A(ctx, { type: "answer", mode: "archive", date: "2032-05-19", answer: AB.getPrompt(ids[i]).tiers.pearl[0].split("=")[0] });
   assert.equal(last.run.points, 700); assert.equal(last.finish.pearls, 0);
   assert.equal((await handleAbyss(ctx, { type: "home" })).profile.dives, 0);
 
@@ -132,7 +135,7 @@ test("API: archive only for the last 14 days and gives no pearls or streak; gues
   let gr = await handleAbyss(g, { type: "start", mode: "daily" });
   assert.ok(gr.guestRun);
   const p0 = AB.getPrompt(AB.dailyIds("2032-05-20")[0]);
-  const ans = await handleAbyss(g, { type: "answer", mode: "daily", answer: p0.tiers.trench[0].split("=")[0], run: gr.guestRun });
+  const ans = await A(g, { type: "answer", mode: "daily", answer: p0.tiers.trench[0].split("=")[0], run: gr.guestRun });
   assert.equal(ans.result.points, 85); assert.ok(ans.guestRun.i === 1);
   await assert.rejects(handleAbyss(g, { type: "fish" }).then((x) => { assert.equal(x.signedIn, false); throw new Error("ok-guest"); }), /ok-guest/);
   await assert.rejects(handleAbyss(g, { type: "open_pack", packId: "abyss_reef", requestId: "abcdefgh1" }), /Sign in/);
@@ -144,7 +147,7 @@ test("API: unlimited run, cash-out pearls capped per day, and the report endpoin
   for (let i = 0; i < 6; i++) {
     const p = AB.getPrompt(AB.getPrompt(r.run ? (await store.getMastery("diver-3", "abyss:unlimited")).ids[i] : "")?.id);
     ctx.now += 1000;
-    r = await handleAbyss(ctx, { type: "answer", mode: "unlimited", answer: p.tiers.pearl[0].split("=")[0] });
+    r = await A(ctx, { type: "answer", mode: "unlimited", answer: p.tiers.pearl[0].split("=")[0] });
   }
   const c = await handleAbyss(ctx, { type: "cashout", mode: "unlimited" });
   assert.equal(c.finish.pearls, 60); assert.equal(c.run.done, true);
@@ -183,7 +186,7 @@ test("fish: separate collection + currency from Party; packs charge pearls; stre
   const ids = AB.dailyIds("2032-07-01");
   await handleAbyss(ctx, { type: "start", mode: "daily" });
   let last;
-  for (let i = 0; i < 7; i++) last = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: AB.getPrompt(ids[i]).tiers.bubble[0].split("=")[0] });
+  for (let i = 0; i < 7; i++) last = await A(ctx, { type: "answer", mode: "daily", answer: AB.getPrompt(ids[i]).tiers.bubble[0].split("=")[0] });
   assert.deepEqual(last.finish.newFish, ["f-pearl-guppy"]);
   assert.ok((await handleAbyss(ctx, { type: "fish" })).owned.some((o) => o.id === "f-pearl-guppy"));
   // deleting the account removes pearls + fish too
@@ -196,43 +199,42 @@ test("unlisted answers do NOT end the question: keep guessing until one scores, 
   const run = AB.newRun("daily", { date: "2032-09-01" });
   let t = 9_000_000; AB.question(run, t);
   const p = AB.getPrompt(run.ids[0]);
-  let r = AB.submit(run, "definitely not listed", t + 2000);
+  let r = AB.submit(run, "definitely not listed", t + 4500);
   assert.equal(r.retry, true); assert.equal(run.i, 0); assert.equal(run.points, 0);
-  r = AB.submit(run, "also not listed", t + 4000);
+  r = AB.submit(run, "also not listed", t + 6500);
   assert.deepEqual(r.guesses, ["definitely not listed", "also not listed"]);
-  assert.equal(AB.question(run, t + 5000).guesses.length, 2, "question view shows guesses so a refresh keeps them");
-  assert.ok(AB.submit(run, "   ", t + 5000).error, "empty guesses are rejected, not counted");
-  r = AB.submit(run, p.tiers.trench[0].split("=")[0], t + 9000);
+  assert.equal(AB.question(run, t + 7000).guesses.length, 2, "question view shows guesses so a refresh keeps them");
+  assert.ok(AB.submit(run, "   ", t + 7000).error, "empty guesses are rejected, not counted");
+  r = AB.submit(run, p.tiers.trench[0].split("=")[0], t + 11_500);
   assert.equal(r.result.points, 85); assert.deepEqual(r.result.wrong, ["definitely not listed", "also not listed"]);
   assert.equal(run.i, 1); assert.deepEqual(run.guesses, []);
   // clock runs out while unlisted: miss, and the guesses come back for reporting
   t += 40_000; AB.question(run, t);
-  AB.submit(run, "nope", t + 3000);
-  r = AB.submit(run, "nope again", t + 25_200, Math.random, { expired: true });
+  AB.submit(run, "nope", t + 5500);
+  r = AB.submit(run, "nope again", t + 27_700, Math.random, { expired: true });
   assert.equal(r.result.points, 0); assert.equal(r.result.timedOut, true); assert.equal(r.result.wrong.length, 2);
   // a client claiming "expired" early is ignored (still a retry)
   t += 40_000; AB.question(run, t);
-  assert.equal(AB.submit(run, "nope", t + 5000, Math.random, { expired: true }).retry, true);
+  assert.equal(AB.submit(run, "nope", t + 7500, Math.random, { expired: true }).retry, true);
   // a correct answer right at the buzzer still scores
-  const buzzer = AB.submit(run, AB.getPrompt(run.ids[run.i]).tiers.reef[0].split("=")[0], t + 25_100, Math.random, { expired: true });
+  const buzzer = AB.submit(run, AB.getPrompt(run.ids[run.i]).tiers.reef[0].split("=")[0], t + 27_600, Math.random, { expired: true });
   assert.equal(buzzer.result.points, 60);
   // out of guesses = miss (can't brute-force the list)
   t += 40_000; AB.question(run, t);
   let last;
-  for (let i = 0; i < AB.MAX_GUESSES; i++) last = AB.submit(run, `guess ${i}`, t + 1000 + i);
+  for (let i = 0; i < AB.MAX_GUESSES; i++) last = AB.submit(run, `guess ${i}`, t + 4000 + i);
   assert.equal(last.result.points, 0); assert.equal(last.result.outOfGuesses, true);
 });
 
 test("API: retries keep the question open and the clock running; expired flag closes it", async () => {
   const store = new MemoryStore(); const ctx = { ...studentCtx(store, "diver-9"), now: Date.UTC(2032, 8, 5, 9) };
   await handleAbyss(ctx, { type: "start", mode: "daily" });
-  ctx.now += 3000;
-  const r = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: "not a real answer" });
-  assert.equal(r.retry, true); assert.equal(r.question.n, 0); assert.equal(r.question.msLeft, 22000); assert.equal(r.run.points, 0);
+  const r = await A(ctx, { type: "answer", mode: "daily", answer: "not a real answer" });
+  assert.equal(r.retry, true); assert.equal(r.question.n, 0); assert.equal(r.question.msLeft, 24500); assert.equal(r.run.points, 0);
   const again = await handleAbyss(ctx, { type: "start", mode: "daily" });
   assert.deepEqual(again.question.guesses, ["not a real answer"]);
-  ctx.now += 22_500;
-  const out = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: "", expired: true });
+  ctx.now += 25_000;
+  const out = await A(ctx, { type: "answer", mode: "daily", answer: "", expired: true });
   assert.equal(out.result.timedOut, true); assert.equal(out.question.n, 1);
   assert.deepEqual(out.result.wrong, ["not a real answer"]);
 });

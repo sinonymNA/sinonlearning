@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import PackOpener from "./PackOpener";
-import { sfx } from "./prefs";
+import PixelOcean, { type Marker } from "./PixelOcean";
+import { PrefsProvider, sfx, usePrefs } from "./prefs";
 import { api } from "./useRoom";
 import { RARITIES } from "@/lib/arcadeCatalog";
 
@@ -22,52 +23,48 @@ function useCountdown() {
 }
 const fmt = (n: number) => n.toLocaleString("en-US");
 
-/* ---------------- Scene pieces ---------------- */
-const ZONES: [number, string][] = [[1500, "Sunlight Zone"], [3500, "Twilight Zone"], [5500, "Midnight Zone"], [7000, "Abyssal Zone"], [Infinity, "Hadal Zone"]];
+/* ---------------- Pixel UI pieces ---------------- */
+const ZONES: [number, string][] = [[1500, "SUNLIGHT ZONE"], [3500, "TWILIGHT ZONE"], [5500, "MIDNIGHT ZONE"], [7000, "ABYSSAL ZONE"], [Infinity, "HADAL ZONE"]];
 const zoneOf = (m: number) => ZONES.find(([max]) => m < max)![1];
-const SNOW = Array.from({ length: 26 }, (_, i) => ({ x: (i * 37) % 100, s: 7 + ((i * 13) % 9), d: -((i * 7) % 11), z: 2 + (i % 4) }));
-const GLOW = Array.from({ length: 12 }, (_, i) => ({ x: (i * 53 + 11) % 96, y: (i * 29 + 8) % 80, d: (i % 5) * 0.7 }));
-
-function CountUp({ value, ms = 1200 }: { value: number; ms?: number }) {
-  const [v, setV] = useState(value);
-  const from = useRef(value);
-  useEffect(() => {
-    const start = performance.now(), a = from.current, b = value;
-    if (a === b) return;
-    let raf = 0;
-    const step = (t: number) => { const f = Math.min(1, (t - start) / ms), e = 1 - (1 - f) ** 3; setV(Math.round(a + (b - a) * e)); if (f < 1) raf = requestAnimationFrame(step); else from.current = b; };
-    raf = requestAnimationFrame(step);
-    return () => { cancelAnimationFrame(raf); from.current = value; };
-  }, [value, ms]);
-  return <>{fmt(v)}</>;
-}
-
-/** The underwater world. `depth` (metres) darkens the water and `diving` speeds the drifting plankton up. */
-function Scene({ depth, diving = false, children }: { depth: number; diving?: boolean; children: React.ReactNode }) {
-  const d = Math.min(1, depth / 7000);
-  return (
-    <div className={`sc ${diving ? "diving" : ""}`} style={{ ["--d" as any]: d }}>
-      <div className="sc-bg" /><div className="sc-rays" aria-hidden><i /><i /><i /></div>
-      <div className="sc-snow" aria-hidden>{SNOW.map((p, i) => <i key={i} style={{ left: `${p.x}%`, animationDuration: `${p.s}s`, animationDelay: `${p.d}s`, width: p.z, height: p.z }} />)}</div>
-      <div className="sc-glow" aria-hidden>{GLOW.map((g, i) => <i key={i} style={{ left: `${g.x}%`, top: `${g.y}%`, animationDelay: `${g.d}s` }} />)}</div>
-      <svg className="sc-floor" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden>
-        <path className="weed w1" d="M20 60 C14 40 28 30 18 8 C34 30 26 44 32 60Z" /><path className="weed w2" d="M52 60 C46 44 58 34 50 14 C64 34 58 46 64 60Z" />
-        <path className="weed w1" d="M340 60 C334 38 350 28 340 4 C356 30 348 46 356 60Z" /><path className="weed w2" d="M372 60 C368 44 380 36 372 18 C388 38 380 48 388 60Z" />
-        <path d="M0 60 L0 50 Q40 40 90 52 Q200 44 310 52 Q360 42 400 50 L400 60Z" className="rock" />
-      </svg>
-      <div className="sc-ui">{children}</div>
-    </div>
-  );
-}
+const TIER_LIST = [
+  { id: "bubble", label: "BUBBLE", points: 10 }, { id: "clever", label: "SHOW-OFF", points: 15 }, { id: "shoal", label: "SHOAL", points: 30 },
+  { id: "reef", label: "REEF", points: 60 }, { id: "trench", label: "TRENCH", points: 85 }, { id: "pearl", label: "ABYSS PEARL", points: 100 },
+];
 
 function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
   return (
     <div className="sheet-back" onClick={onClose} role="presentation">
-      <div className="sheet" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between gap-2"><h2 className="ar-h2">{title}</h2><button className="ar-btn sm paper" onClick={onClose}>Close</button></div>
+      <div className="sheet px-plate" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between gap-2"><h2 className="px-h">{title}</h2><button className="px-btn sm" onClick={onClose}>CLOSE</button></div>
         <div className="sheet-body">{children}</div>
       </div>
+    </div>
+  );
+}
+
+function PixelMenu({ onClose, signedIn }: { onClose: () => void; signedIn: boolean }) {
+  return (
+    <Sheet title="MENU" onClose={onClose}>
+      <div className="grid gap-2">
+        <Link className="px-btn" href="/arcade/abyss">▸ HOME</Link>
+        <Link className="px-btn" href="/arcade/abyss/play?mode=daily">▸ DAILY DIVE</Link>
+        <Link className="px-btn" href="/arcade/abyss/unlimited">▸ UNLIMITED</Link>
+        <Link className="px-btn" href="/arcade/abyss/fish">▸ FISH PACKS</Link>
+        <Link className="px-btn" href="/arcade/abyss/me">▸ DIVE LOG</Link>
+        <Link className="px-btn" href="/arcade">▸ PARTY MODE</Link>
+        {!signedIn && <Link className="px-btn" href="/arcade/account">▸ SIGN IN (SAVE STREAKS)</Link>}
+      </div>
+    </Sheet>
+  );
+}
+
+function TopButtons({ onMenu }: { onMenu: () => void }) {
+  const { prefs, set } = usePrefs();
+  return (
+    <div className="px-icons">
+      <button className="px-icon" onClick={onMenu} aria-label="Menu">☰</button>
+      <button className="px-icon" onClick={() => set({ muted: !prefs.muted })} aria-label={prefs.muted ? "Sound off" : "Sound on"} aria-pressed={prefs.muted}>{prefs.muted ? "🔇" : "🔊"}</button>
     </div>
   );
 }
@@ -75,49 +72,52 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
 /* ---------------- Home ---------------- */
 export function AbyssHome() {
   const [d, setD] = useState<any>(null);
-  const [sheet, setSheet] = useState<null | "how" | "archive">(null);
+  const [sheet, setSheet] = useState<null | "how" | "archive" | "menu">(null);
   const left = useCountdown();
   useEffect(() => { api(A, { type: "home" }).then(setD).catch(() => setD({ error: true })); }, []);
-  if (!d) return <Scene depth={0}><div className="sc-center"><p className="ar-h2 float">🌊 Filling the ocean…</p></div></Scene>;
-  if (d.error) return <Scene depth={0}><div className="sc-center"><p>Couldn&apos;t reach the deep. Try again.</p></div></Scene>;
-  const t = d.today;
-  const status = !d.signedIn ? "guest" : !t ? "new" : t.done ? "done" : "going";
-  const depth = status === "done" ? t.depth : 0;
+  const t = d?.today;
+  const status = !d?.signedIn ? "guest" : !t ? "new" : t.done ? "done" : "going";
   return (
-    <Scene depth={depth}>
-      <div className="home-stack">
-        <h1 className="abyss-logo" aria-label="Abyss">{"ABYSS".split("").map((c, i) => <span key={i} style={{ animationDelay: `${i * 120}ms` }}>{c}</span>)}</h1>
-        <p className="abyss-tag">Find the answer nobody else thinks of.</p>
-        <div className="hero-fish"><div className="fish-halo" /><div className="fish-body"><Avatar id={d.profile?.fish ?? "f-bubbles"} size={220} /></div></div>
-        <div className="home-cta">
-          <Link className="ar-btn xl coral dive-btn" href="/arcade/abyss/play?mode=daily">{status === "done" ? `Today: ${fmt(t.depth)} m` : status === "going" ? "Resume the dive" : "Daily Dive"}</Link>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {d.profile?.streak > 0 && <span className="sc-pill">🔥 {d.profile.streak}-day streak</span>}
-            <span className="sc-pill">⏳ new dive in <b className="tabular-nums">{left}</b></span>
-            {!d.signedIn && <Link className="sc-pill" href="/arcade/account">Guest · sign in to save streaks</Link>}
-          </div>
-        </div>
-        <nav className="home-dock" aria-label="Abyss menu">
-          <Link href="/arcade/abyss/unlimited" className="dock-btn"><span>♾️</span>Unlimited</Link>
-          <button className="dock-btn" onClick={() => setSheet("archive")} disabled={!d.signedIn}><span>🗓️</span>Archive</button>
-          <Link href="/arcade/abyss/fish" className="dock-btn"><span>🐠</span>Fish</Link>
-          <button className="dock-btn" onClick={() => setSheet("how")}><span>❓</span>How to play</button>
-        </nav>
+    <PrefsProvider>
+      <div className="px-play home">
+        <PixelOcean depth={0} surfaceFrac={0.64} ruler={false} />
+        <div className="px-crt" />
+        <TopButtons onMenu={() => setSheet("menu")} />
+        {!d ? <p className="px-loading">LOADING…</p> : d.error ? <p className="px-loading">COULDN&apos;T REACH THE DEEP</p> : (
+          <>
+            <div className="px-title">
+              <h1 aria-label="Abyss" className="px-logo">ABYSS</h1>
+              <p className="px-sub">THE DAILY DIVE</p>
+              <p className="px-blurb">{d.daily} PROMPTS · {d.timeLimit} SECONDS EACH · RARER ANSWERS SINK DEEPER</p>
+            </div>
+            <div className="px-bottom">
+              <Link href="/arcade/abyss/play?mode=daily" className="px-btn big">▼ {status === "done" ? `TODAY: ${fmt(t.depth)} M` : status === "going" ? "RESUME DESCENT" : "BEGIN DESCENT"} ▼</Link>
+              <p className="px-meta">{d.profile?.streak > 0 ? `🔥 ${d.profile.streak}-DAY STREAK · ` : ""}NEXT DIVE IN {left}{d.signedIn ? ` · ${d.pearls} PEARLS` : " · GUEST"}</p>
+              <div className="px-row">
+                <button className="px-btn sm" disabled={!d.signedIn} onClick={() => setSheet("archive")}>ARCHIVE ↺</button>
+                <Link className="px-btn sm" href="/arcade/abyss/unlimited">UNLIMITED ∞</Link>
+                <Link className="px-btn sm" href="/arcade/abyss/fish">FISH 🐠</Link>
+                <button className="px-btn sm" onClick={() => setSheet("how")}>HOW TO PLAY</button>
+              </div>
+            </div>
+          </>
+        )}
+        {sheet === "menu" && <PixelMenu onClose={() => setSheet(null)} signedIn={!!d?.signedIn} />}
+        {sheet === "how" && d && (
+          <Sheet title="HOW TO PLAY" onClose={() => setSheet(null)}>
+            <p className="px-p">Every prompt has lots of correct answers. Type one. <b>The less common your correct answer, the deeper you sink</b> (10 m per point). Wrong guesses are free: keep guessing until one scores or the {d.timeLimit}s run out (12 guesses per prompt).</p>
+            <div className="tier-grid">{d.tiers.map((x: any) => <div key={x.id} className="tier-card" style={{ borderColor: TIER_COLOR[x.id] }}><span className="tier-icon">{x.icon}</span><b>{x.label}</b><span className="tabular-nums">{x.points} pts</span><span className="text-xs opacity-70">{x.blurb}</span></div>)}</div>
+            <p className="px-p opacity-70">{d.count} prompts in the bank. If a correct answer isn&apos;t recognised, report it after the prompt ends.</p>
+          </Sheet>
+        )}
+        {sheet === "archive" && d && (
+          <Sheet title="ARCHIVE" onClose={() => setSheet(null)}>
+            <p className="px-p opacity-70">Replay the last {d.archive.length} days. Archive dives don&apos;t count for streaks or pearls.</p>
+            <div className="flex flex-wrap gap-2">{d.archive.map((a: any) => <Link key={a.date} className="px-btn sm" href={`/arcade/abyss/play?mode=archive&date=${a.date}`}>{a.date.slice(5)} {a.done ? `✓ ${a.points}` : a.started ? "…" : ""}</Link>)}</div>
+          </Sheet>
+        )}
       </div>
-      {sheet === "how" && (
-        <Sheet title="How deep can you go?" onClose={() => setSheet(null)}>
-          <p className="mb-3">Each prompt has lots of correct answers. Type one. <b>The less common your correct answer, the more points</b> - every point is 10 metres of depth. Wrong guesses are free: keep guessing until something scores or the {d.timeLimit}s run out (you get 12 guesses per prompt).</p>
-          <div className="tier-grid">{d.tiers.map((x: any) => <div key={x.id} className="tier-card" style={{ borderColor: TIER_COLOR[x.id] }}><span className="tier-icon">{x.icon}</span><b>{x.label}</b><span className="tabular-nums">{x.points} pts</span><span className="ar-muted text-xs">{x.blurb}</span></div>)}</div>
-          <p className="ar-muted mt-3 text-sm">{d.count} prompts in the bank. If a correct answer isn&apos;t recognised, report it after the prompt ends.</p>
-        </Sheet>
-      )}
-      {sheet === "archive" && (
-        <Sheet title="Archive" onClose={() => setSheet(null)}>
-          <p className="ar-muted mb-3 text-sm">Replay the last {d.archive.length} days. Archive dives don&apos;t count for streaks or pearls.</p>
-          <div className="flex flex-wrap gap-2">{d.archive.map((a: any) => <Link key={a.date} className="ar-btn sm paper" href={`/arcade/abyss/play?mode=archive&date=${a.date}`}>{a.date.slice(5)} {a.done ? `✅ ${a.points}` : a.started ? "…" : ""}</Link>)}</div>
-        </Sheet>
-      )}
-    </Scene>
+    </PrefsProvider>
   );
 }
 
@@ -125,6 +125,9 @@ export function AbyssHome() {
 type Phase = "loading" | "question" | "reveal" | "done";
 type Mood = "idle" | "nope" | "good" | "great" | "miss";
 export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
+  return <PrefsProvider><AbyssPlayInner forceMode={forceMode} /></PrefsProvider>;
+}
+function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
   const [cfg, setCfg] = useState<{ mode: string; date: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -145,26 +148,30 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [msLeft, setMsLeft] = useState(25000);
-  const [depth, setDepth] = useState(0);
+  const [lead, setLead] = useState(0);
+  const [target, setTarget] = useState(0);        // depth the diver is heading to
+  const [shown, setShown] = useState(0);          // depth currently on screen (HUD)
+  const [markerBase, setMarkerBase] = useState(0);
   const [mood, setMood] = useState<Mood>("idle");
-  const [diving, setDiving] = useState(false);
+  const [arrived, setArrived] = useState(true);
   const [reported, setReported] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [menu, setMenu] = useState(false);
   const guestRun = useRef<any>(null);
-  const base = useRef({ at: 0, left: 25000 });
+  const base = useRef({ at: 0, left: 25000, lead: 0 });
   const input = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
   const lsKey = `abyss:guest:${mode}:${archiveDate || "x"}`;
 
   const take = useCallback((d: any) => {
     if (d.guestRun) { guestRun.current = d.guestRun; try { localStorage.setItem(lsKey, JSON.stringify(d.guestRun)); } catch { /* private mode */ } }
-    setRun(d.run); setDepth(d.run.depth);
+    setRun(d.run);
   }, [lsKey]);
 
-  const showQuestion = useCallback((question: any) => {
-    setQ(question); setAnswer(""); setErr(null); setRes(null); setReported([]); setWrong(question.guesses ?? []); setMood("idle");
-    base.current = { at: performance.now(), left: question.msLeft }; setMsLeft(question.msLeft);
-    submitting.current = false; setPhase("question"); setTimeout(() => input.current?.focus(), 120);
+  const showQuestion = useCallback((question: any, runDepth: number) => {
+    setQ(question); setAnswer(""); setErr(null); setRes(null); setReported([]); setWrong(question.guesses ?? []); setMood("idle"); setMarkerBase(runDepth); setArrived(true);
+    base.current = { at: performance.now(), left: question.msLeft, lead: question.startsIn ?? 0 }; setMsLeft(question.msLeft); setLead(question.startsIn ?? 0);
+    submitting.current = false; setPhase("question");
   }, []);
 
   useEffect(() => {
@@ -176,8 +183,8 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
         if (!m.signedIn) { try { held = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch { /* ignore */ } }
         const d = await api(A, { type: "start", mode, date: archiveDate || undefined, run: held ?? undefined });
         if (d.fish) setFish(d.fish);
-        take(d);
-        if (d.question) showQuestion(d.question); else { setShare(d.share); setPhase("done"); }
+        take(d); setTarget(d.run.depth); setShown(d.run.depth);
+        if (d.question) showQuestion(d.question, d.run.depth); else { setShare(d.share); setPhase("done"); }
       } catch (e: any) { setErr(e.message); setPhase("done"); }
     })();
   }, [cfg, mode, archiveDate, lsKey, take, showQuestion]);
@@ -188,17 +195,15 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
     submitting.current = true; setBusy(true); setErr(null);
     try {
       const d = await api(A, { type: "answer", mode, date: archiveDate || undefined, answer: value, expired: expired || undefined, run: guestRun.current ?? undefined });
-      take(d);
       if (d.retry) {          // not on the list: keep the question open
-        setWrong(d.guesses); setAnswer(""); setMood("nope"); sfx("bad"); setTimeout(() => setMood("idle"), 700);
-        if (d.question) { base.current = { at: performance.now(), left: d.question.msLeft }; }
+        take(d); setWrong(d.guesses); setAnswer(""); setMood("nope"); sfx("bad"); setTimeout(() => setMood("idle"), 700);
+        if (d.question) base.current = { at: performance.now(), left: d.question.msLeft, lead: 0 };
         submitting.current = false; setTimeout(() => input.current?.focus(), 30);
         return;
       }
-      setRes(d.result); setPhase("reveal");
+      take(d); setRes(d.result); setArrived(false); setPhase("reveal"); setTarget(d.run.depth);
       const pts = d.result.points;
       setMood(pts >= 85 ? "great" : pts ? "good" : "miss"); sfx(pts >= 60 ? "win" : pts ? "good" : "bad");
-      if (pts) { setDiving(true); setTimeout(() => setDiving(false), 1800); }
       if (d.done) { setFinish(d.finish); setShare(d.share); window.dispatchEvent(new Event("arcade:refresh")); }
       setQ(d.question);
     } catch (e: any) { setErr(e.message); submitting.current = false; } finally { setBusy(false); }
@@ -207,12 +212,16 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
   useEffect(() => {
     if (phase !== "question") return;
     const t = setInterval(() => {
-      const left = Math.max(0, base.current.left - (performance.now() - base.current.at));
+      const el = performance.now() - base.current.at;
+      setLead(Math.max(0, base.current.lead - el));
+      const left = Math.max(0, base.current.left - Math.max(0, el - base.current.lead));
       setMsLeft(left);
-      if (left <= 0) { clearInterval(t); submit(input.current?.value ?? "", true); }
+      if (left <= 0 && el >= base.current.lead) { clearInterval(t); submit(input.current?.value ?? "", true); }
     }, 100);
     return () => clearInterval(t);
   }, [phase, submit, q]);
+
+  useEffect(() => { if (phase === "question" && lead <= 0) input.current?.focus(); }, [phase, lead <= 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function cashOut() {
     try { const d = await api(A, { type: "cashout", mode: "unlimited", run: guestRun.current ?? undefined }); take(d); setFinish(d.finish); setShare(d.share); setQ(null); setRes(null); setPhase("done"); window.dispatchEvent(new Event("arcade:refresh")); } catch (e: any) { setErr(e.message); }
@@ -220,97 +229,104 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
   async function report(g: string) { try { await api(A, { type: "report", promptId: res.promptId, answer: g }); setReported((r) => [...r, g]); } catch (e: any) { setErr(e.message); } }
   async function copy() { if (!share) return; try { await navigator.clipboard.writeText(share); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ } }
 
-  const title = mode === "daily" ? "Daily Dive" : mode === "archive" ? `Archive · ${archiveDate}` : "Unlimited";
-  const frac = msLeft / 25000;
-  const R = 112, C = 2 * Math.PI * R;
+  const markers: Marker[] = phase === "done" ? [] : TIER_LIST.map((t) => ({ depth: markerBase + t.points * 10, label: `${t.label} · ${t.points}`, color: TIER_COLOR[t.id] }));
+  const title = mode === "daily" ? "DAILY DIVE" : mode === "archive" ? `ARCHIVE ${archiveDate.slice(5)}` : "UNLIMITED";
   const tierColor = res?.tier ? TIER_COLOR[res.tier] : "#ff5d73";
+  const total = run?.total ?? null;
+  const frac = msLeft / 25000;
 
-  if (phase === "loading") return <Scene depth={0}><div className="sc-center"><p className="ar-h2 float">🤿 Suiting up…</p></div></Scene>;
   return (
-    <Scene depth={depth} diving={diving}>
-      <div className="play-stack">
-        <header className="play-hud">
-          <div className="zone-chip">{zoneOf(depth)}<small>{title}</small></div>
-          <div className="depth-big" aria-label={`Depth ${depth} metres`}><b><CountUp value={depth} /></b><span>metres</span></div>
-          <div className="hud-pills">
-            {run?.lives !== null && run?.lives !== undefined && <span className="sc-pill" aria-label={`${run.lives} air tanks`}>{"🫧".repeat(Math.max(0, run.lives))}{"▫️".repeat(Math.max(0, 3 - run.lives))}</span>}
-            <span className="sc-pill tabular-nums">{run?.points ?? 0} pts</span>
-            {run?.total ? <span className="sc-pill tabular-nums">{Math.min((run.i ?? 0) + (phase === "question" ? 1 : 0), run.total)}/{run.total}</span> : null}
-          </div>
-        </header>
-
-        {phase !== "done" && (q || res) && (
-          <div className="sonar" key={res ? `r${res.n}` : `q${q?.n}`}>
-            <p className="sonar-cat">{(res ? res.prompt : null) ? "Answered" : q?.cat}</p>
-            <p className="sonar-prompt">{res ? res.prompt : q?.prompt}</p>
-          </div>
-        )}
-
-        <div className="fish-stage">
-          {phase === "question" && (
-            <svg className="timer-ring" viewBox="0 0 240 240" role="timer" aria-label={`${Math.ceil(msLeft / 1000)} seconds left`}>
-              <circle cx="120" cy="120" r={R} className="ring-bg" />
-              <circle cx="120" cy="120" r={R} className={`ring-fg ${msLeft < 6000 ? "low" : ""}`} strokeDasharray={C} strokeDashoffset={C * (1 - frac)} transform="rotate(-90 120 120)" />
-            </svg>
-          )}
-          <div className={`fish-halo ${mood}`} />
-          <div className={`fish-body mood-${mood}`}><Avatar id={fish} size={190} /></div>
-          {phase === "question" && <span className="ring-num tabular-nums">{Math.ceil(msLeft / 1000)}</span>}
-          {mood === "great" && <><span className="shock" /><span className="shock s2" /></>}
-          {phase === "reveal" && res && (
-            <div className={`tier-pop ${res.points ? "" : "miss"}`} key={res.n} style={{ ["--tc" as any]: tierColor }}>
-              <span className="tier-big">{res.points ? res.tierInfo.icon : "💀"}</span>
-              <b>{res.points ? res.tierInfo.label : res.timedOut ? "Out of time" : res.outOfGuesses ? "Out of guesses" : "Missed"}</b>
-              <span className="tier-points tabular-nums">+{res.points}</span>
-            </div>
-          )}
-          {phase === "question" && wrong.length > 0 && <div className="wrong-chips" aria-live="polite">{wrong.slice(-3).map((g, i) => <span key={`${g}-${i}`} className="wrong-chip">✖ {g}</span>)}</div>}
+    <div className="px-play">
+      <PixelOcean depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+      <div className="px-crt" />
+      <header className="px-hud">
+        <div className="px-plate px-stat"><small>DEPTH</small><b>{fmt(shown)}m</b></div>
+        <div className="px-progress" aria-label="Progress">
+          {total ? <div className="px-pips">{Array.from({ length: total }, (_, i) => { const r = run?.results?.[i]; return <i key={i} style={{ background: r ? (r.tier ? TIER_COLOR[r.tier] : "#5a2230") : i === (run?.i ?? 0) ? "#ff5d9e" : "#0c1a33" }} />; })}</div>
+            : <div className="px-lives">{"●".repeat(Math.max(0, run?.lives ?? 0))}<span>{"○".repeat(Math.max(0, 3 - (run?.lives ?? 0)))}</span></div>}
+          <small>{total ? `PROMPT ${Math.min((run?.i ?? 0) + 1, total)} OF ${total}` : `${title} · ${zoneOf(shown)}`}</small>
         </div>
+        <div className="px-plate px-stat right"><small>SCORE</small><b>{run?.points ?? 0}</b></div>
+      </header>
+      <TopButtons onMenu={() => setMenu(true)} />
 
-        {phase === "question" && q && (
-          <div className="play-input">
-            <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (answer.trim()) submit(answer); }}>
-              <input ref={input} className="ar-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type a correct answer… make it a rare one" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Your answer" maxLength={80} />
-              <button className="ar-btn coral" style={{ whiteSpace: "nowrap" }} disabled={busy || !answer.trim()}>Lock in</button>
-            </form>
-            <p className="play-hint">{wrong.length ? `Not on the list - keep trying! ${q.guessesLeft ?? ""} guesses left` : "Wrong guesses are free - keep going until the clock runs out."}</p>
-            {mode === "unlimited" && <button className="ar-btn sm paper" onClick={cashOut}>Surface with {run?.points ?? 0} pts</button>}
-            {err && <p role="alert" className="font-bold text-[var(--coral)]">{err}</p>}
-          </div>
-        )}
+      {phase !== "loading" && phase !== "done" && (
+        <div className={`px-sign ${phase === "reveal" ? "answered" : ""}`} key={phase === "reveal" ? `a${res?.n}` : `q${q?.n}`}>
+          {phase === "question" ? (
+            <>
+              <p className="px-signtag">{q?.total ? `PROMPT ${q.n + 1} OF ${q.total}` : `DIVE ${q?.n + 1}`} · {String(q?.cat).toUpperCase()}</p>
+              <p className="px-prompt">{q?.prompt}</p>
+              <p className="px-signfoot">▼ RARER ANSWERS SINK DEEPER ▼</p>
+            </>
+          ) : res && (
+            <>
+              <p className="px-signtag">{res.prompt.toUpperCase()}</p>
+              <p className="px-prompt">{res.matched ? `“${res.matched.toUpperCase()}”` : res.timedOut ? "“…”" : `“${res.answer.toUpperCase()}”`}</p>
+            </>
+          )}
+        </div>
+      )}
 
-        {phase === "reveal" && res && (
-          <div className="play-input reveal-panel" aria-live="polite">
-            {res.matched && <p className="text-sm">Counted as <b>{res.matched}</b>{res.fuzzy ? " (we fixed a typo)" : ""} · {res.tierInfo?.blurb}</p>}
-            {!res.matched && res.wrong?.length > 0 && <div className="text-sm"><span className="ar-muted">Valid answer that we missed? </span>{res.wrong.slice(0, 4).map((g: string) => <button key={g} className="ar-btn sm paper" style={{ marginRight: 4, marginBottom: 4 }} disabled={!me?.signedIn || reported.includes(g)} onClick={() => report(g)}>{reported.includes(g) ? "✓ reported" : `Report "${g}"`}</button>)}</div>}
-            {res.examples?.length > 0 && <p className="text-sm"><span className="ar-muted">Deeper answers: </span>{res.examples.map((e: any, i: number) => <span key={i} className="ar-pill" style={{ background: TIER_COLOR[e.tier] + "44", marginRight: 4 }}>{e.name}</span>)}</p>}
-            {run?.done ? <button className="ar-btn xl coral" onClick={() => setPhase("done")} autoFocus>See your dive</button> : <button className="ar-btn xl coral" onClick={() => q && showQuestion(q)} autoFocus>Next prompt →</button>}
-            {err && <p role="alert" className="font-bold text-[var(--coral)]">{err}</p>}
-          </div>
-        )}
+      {phase === "question" && wrong.length > 0 && <div className="px-wrong" aria-live="polite">{wrong.slice(-3).map((g, i) => <span key={`${g}-${i}`}>✖ {g.toUpperCase()}</span>)}</div>}
 
-        {phase === "done" && (
-          <div className="done-card">
-            {run ? (
-              <>
-                <p className="ar-h1 stamp-in"><CountUp value={run.depth} /> m</p>
-                <p className="text-lg font-bold">{run.points} points · {zoneOf(run.depth)}</p>
-                <ul className="done-list">{run.results.map((r: any, i: number) => <li key={i}><span>{r.tier ? { bubble: "🫧", clever: "😏", shoal: "🐟", reef: "🪸", trench: "🦑", pearl: "🦪" }[r.tier as string] : "💀"}</span><span className="flex-1 truncate"><b>{r.matched ?? (r.timedOut ? "(no answer)" : r.answer)}</b> <span className="ar-muted">- {r.prompt}</span></span><span className="tabular-nums">+{r.points}</span></li>)}</ul>
-                {finish?.pearls > 0 && <p className="sc-pill">🦪 +{finish.pearls} pearls</p>}
-                {finish?.newFish?.length > 0 && <div className="ar-card flex items-center gap-3" style={{ padding: 10 }}><Avatar id={finish.newFish[0]} size={64} /><p className="font-bold">New fish unlocked for your streak!</p></div>}
-                {finish?.profile?.streak > 0 && <p className="font-bold">🔥 {finish.profile.streak}-day streak</p>}
-                {!me?.signedIn && <p className="ar-card" style={{ padding: 10 }}>Sign in to earn pearls and keep a streak. <Link className="font-bold underline" href="/arcade/account">Sign in</Link></p>}
-                <div className="flex flex-wrap justify-center gap-2">
-                  {share && <button className="ar-btn sm mint" onClick={copy}>{copied ? "Copied!" : "📋 Copy result"}</button>}
-                  {mode === "unlimited" && <button className="ar-btn sm coral" onClick={() => { window.location.href = "/arcade/abyss/unlimited"; }}>Dive again</button>}
-                  <Link className="ar-btn sm paper" href="/arcade/abyss">Back to Abyss</Link>
-                </div>
-              </>
-            ) : <><p className="font-bold text-[var(--coral)]">{err ?? "Something went wrong."}</p><Link className="ar-btn sm paper" href="/arcade/abyss">Back to Abyss</Link></>}
+      {phase === "question" && q && (
+        <div className="px-bottom">
+          {lead > 0 ? (
+            <p className="px-plate px-lead">DESCENDING · THE CLOCK STARTS IN {Math.ceil(lead / 1000)}</p>
+          ) : (
+            <>
+              <div className={`px-clock ${msLeft < 6000 ? "low" : ""}`} role="timer" aria-label={`${Math.ceil(msLeft / 1000)} seconds left`}><div className="px-clockbar">{Array.from({ length: 25 }, (_, i) => <i key={i} className={i < Math.ceil(frac * 25) ? "on" : ""} />)}</div><b>{Math.ceil(msLeft / 1000)}s</b></div>
+              <form className="px-form" onSubmit={(e) => { e.preventDefault(); if (answer.trim()) submit(answer); }}>
+                <input ref={input} className="px-input" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="TYPE AN ANSWER…" autoComplete="off" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="Your answer" maxLength={80} />
+                <button className="px-btn" disabled={busy || !answer.trim()}>LOCK IN</button>
+              </form>
+              <p className="px-meta">{wrong.length ? `NOT ON THE LIST - KEEP TRYING (${q.guessesLeft ?? ""} LEFT)` : "WRONG GUESSES ARE FREE UNTIL THE CLOCK ENDS"}{mode === "unlimited" ? "" : ""}</p>
+              {mode === "unlimited" && <button className="px-btn sm" type="button" onClick={cashOut}>SURFACE WITH {run?.points ?? 0} PTS</button>}
+            </>
+          )}
+          {err && <p role="alert" className="px-err">{err}</p>}
+        </div>
+      )}
+
+      {phase === "reveal" && res && arrived && (
+        <>
+          <div className="px-banner" key={`b${res.n}`} style={{ ["--tc" as any]: tierColor }}>
+            <span>{res.points ? res.tierInfo.icon : "💀"}</span>
+            <b>{res.points ? res.tierInfo.label.toUpperCase() : res.timedOut ? "OUT OF TIME" : res.outOfGuesses ? "OUT OF GUESSES" : "MISSED"}</b>
+            <em>+{res.points}</em>
           </div>
-        )}
-      </div>
-    </Scene>
+          <div className="px-bottom" aria-live="polite">
+            {res.matched && <p className="px-meta">COUNTED AS {res.matched.toUpperCase()}{res.fuzzy ? " (TYPO FIXED)" : ""} · {fmt(res.depth)} M</p>}
+            {!res.matched && res.wrong?.length > 0 && <div className="px-row">{res.wrong.slice(0, 3).map((g: string) => <button key={g} className="px-btn sm" disabled={!me?.signedIn || reported.includes(g)} onClick={() => report(g)}>{reported.includes(g) ? "✓ REPORTED" : `REPORT “${g.toUpperCase()}”`}</button>)}</div>}
+            {res.examples?.length > 0 && <p className="px-meta">DEEPER ANSWERS: {res.examples.map((e: any) => e.name.toUpperCase()).join(" · ")}</p>}
+            {run?.done ? <button className="px-btn big" onClick={() => setPhase("done")} autoFocus>SEE YOUR DIVE</button> : <button className="px-btn big" onClick={() => q && showQuestion(q, run.depth)} autoFocus>NEXT PROMPT ▼</button>}
+            {err && <p role="alert" className="px-err">{err}</p>}
+          </div>
+        </>
+      )}
+
+      {phase === "done" && (
+        <div className="px-done">
+          {run ? (
+            <div className="px-plate px-donecard">
+              <p className="px-bigdepth">{fmt(run.depth)} M</p>
+              <p className="px-meta">{run.points} POINTS · {zoneOf(run.depth)}</p>
+              <ul className="done-list">{run.results.map((r: any, i: number) => <li key={i}><span>{r.tier ? { bubble: "🫧", clever: "😏", shoal: "🐟", reef: "🪸", trench: "🦑", pearl: "🦪" }[r.tier as string] : "💀"}</span><span className="flex-1 truncate"><b>{(r.matched ?? (r.timedOut ? "(no answer)" : r.answer)).toUpperCase()}</b> <span className="opacity-60">- {r.prompt}</span></span><span className="tabular-nums">+{r.points}</span></li>)}</ul>
+              {finish?.pearls > 0 && <p className="px-meta">🦪 +{finish.pearls} PEARLS</p>}
+              {finish?.newFish?.length > 0 && <div className="flex items-center justify-center gap-3"><Avatar id={finish.newFish[0]} size={56} /><p className="px-meta">NEW FISH UNLOCKED FOR YOUR STREAK!</p></div>}
+              {finish?.profile?.streak > 0 && <p className="px-meta">🔥 {finish.profile.streak}-DAY STREAK</p>}
+              {!me?.signedIn && <p className="px-meta">SIGN IN TO EARN PEARLS AND KEEP A STREAK · <Link className="underline" href="/arcade/account">SIGN IN</Link></p>}
+              <div className="px-row">
+                {share && <button className="px-btn sm" onClick={copy}>{copied ? "COPIED!" : "COPY RESULT"}</button>}
+                {mode === "unlimited" && <button className="px-btn sm" onClick={() => { window.location.href = "/arcade/abyss/unlimited"; }}>DIVE AGAIN</button>}
+                <Link className="px-btn sm" href="/arcade/abyss">BACK</Link>
+              </div>
+            </div>
+          ) : <div className="px-plate px-donecard"><p className="px-err">{err ?? "SOMETHING WENT WRONG"}</p><Link className="px-btn sm" href="/arcade/abyss">BACK</Link></div>}
+        </div>
+      )}
+      {menu && <PixelMenu onClose={() => setMenu(false)} signedIn={!!me?.signedIn} />}
+    </div>
   );
 }
 

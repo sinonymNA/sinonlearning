@@ -3,7 +3,8 @@ import { ABYSS_PROMPTS } from "./data/abyssPrompts.mjs";
 import { dayKey, hash, rng } from "./shop.mjs";
 
 export const TIME_LIMIT_MS = 25_000;
-export const GRACE_MS = 3_000;       // network latency allowance on top of the limit
+export const GRACE_MS = 3_000;
+export const LEAD_MS = 2_500;       // the dive animation plays and the clock starts this long after a question is first shown       // network latency allowance on top of the limit
 export const DAILY_COUNT = 7;
 export const LIVES = 3;
 export const MAX_GUESSES = 12;     // per question: enough for typos, too few to brute-force an answer list
@@ -122,8 +123,8 @@ export function question(run, now) {
   if (run.done) return null;
   if (run.mode === "unlimited" && run.ids.length === run.i) run.ids.push(pickUnlimited(run));
   const p = getPrompt(run.ids[run.i]);
-  if (run.qStartedAt == null) run.qStartedAt = now;
-  return { n: run.i, total: total(run), cat: p.cat, prompt: p.prompt, limit: TIME_LIMIT_MS, startedAt: run.qStartedAt, msLeft: Math.max(0, TIME_LIMIT_MS - (now - run.qStartedAt)), guesses: run.guesses ?? [], guessesLeft: Math.max(0, MAX_GUESSES - (run.guesses?.length ?? 0)) };
+  if (run.qStartedAt == null) run.qStartedAt = now + LEAD_MS;
+  return { n: run.i, total: total(run), cat: p.cat, prompt: p.prompt, limit: TIME_LIMIT_MS, startedAt: run.qStartedAt, startsIn: Math.max(0, run.qStartedAt - now), msLeft: Math.max(0, TIME_LIMIT_MS - Math.max(0, now - run.qStartedAt)), guesses: run.guesses ?? [], guessesLeft: Math.max(0, MAX_GUESSES - (run.guesses?.length ?? 0)) };
 }
 
 /**
@@ -134,6 +135,7 @@ export function submit(run, answer, now, rand = Math.random, opts = {}) {
   if (run.done) return { error: "This dive is over." };
   if (run.qStartedAt == null) return { error: "Ask for the question first." };
   const p = getPrompt(run.ids[run.i]);
+  if (now < run.qStartedAt - 400) return { error: "The clock hasn't started yet." };
   const text = String(answer ?? "").trim();
   const elapsed = now - run.qStartedAt;
   const late = elapsed > TIME_LIMIT_MS + GRACE_MS;

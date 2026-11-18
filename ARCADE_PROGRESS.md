@@ -65,3 +65,6 @@ See ARCADE_ABYSS.md. App shell has a Party | Abyss switch; Abyss has its own oce
 ## Abyss v2 (user feedback)
 - Rule fix: unlisted answers no longer consume the prompt (retry until a match, the clock expires, or 12 guesses). Client sends `expired: true` at 0 s; the server only honours it near the real limit.
 - Visual rebuild: centred fish + timer ring in an animated depth-reactive underwater scene, title-screen home with dock + sheets. Browser-checked (dev auth): home, wrong guesses, reveal, a full 7-prompt dive to the done screen (pearls + streak awarded), phone sizes 390x844 and 360x640 fit without scrolling. Not checked: Safari/real devices, Unlimited death/cash-out in browser.
+
+## Abyss v3 (pixel art, from reference screenshots)
+Pixel canvas ocean + pixel HUD/menus, lead-in countdown, DOM labels for crisp text. Browser-checked (dev auth): home, lead-in, question, wrong guess, sink + tier banner, full 7-prompt dive to results at 390x780, 360x640, desktop. Not checked: real iOS Safari (canvas text/pixelation, safe areas), performance on low-end phones.

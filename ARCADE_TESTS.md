@@ -92,3 +92,4 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 
 - Added abyss.test.mjs (prompt-bank validation incl. startsWith/endsWith rules, matching, daily determinism, scoring/timing, unlimited, signed-in API, archive/guest, pearls/fish/streak fish/account deletion). Suite: 158 passing.
 - Abyss v2: +2 tests (retry-until-match, API retries). Suite: 160 passing.
+- Abyss v3: LEAD_MS lead-in, tests adjusted for the 2.5 s lead. Suite: 160 passing.
