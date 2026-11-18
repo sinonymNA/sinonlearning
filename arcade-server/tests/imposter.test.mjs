@@ -285,3 +285,39 @@ test("full 35-bot Imposter session finishes, groups run independently", () => {
   assert.equal(ctx.room.history.length, 1);
   assert.equal(ctx.room.history[0].rows.length, 35);
 });
+
+test("slower, friendlier timing: 20 s to ask, 30 s to answer, 10 s to read the answers, 20 s to vote, 15 s final guess", () => {
+  assert.deepEqual([TIMES.ask, TIMES.answer, TIMES.show, TIMES.vote, TIMES.guess], [20000, 30000, 10000, 20000, 15000]);
+  const ctx = setup(4); const { grp } = ctx;
+  toAsk(ctx);
+  assert.equal(view(ctx, grp.members[0]).totalMs, 20000);
+});
+
+test("the asker can click a preset question or type their own; presets are private, safe, and can be reshuffled", () => {
+  const ctx = setup(4); const { grp } = ctx;
+  toAsk(ctx);
+  const asker = ctx.g.questioner(grp), other = grp.members.find((m) => m !== asker);
+  const mine = view(ctx, asker).you;
+  assert.equal(mine.presets.length, 6);
+  assert.ok(mine.presets.every((q) => IMPOSTER_FALLBACK_QUESTIONS.includes(q)));
+  assert.ok(mine.presets.every((q) => !q.toUpperCase().includes(grp.word.word)), "presets never contain the secret word");
+  assert.equal(view(ctx, other).you.presets, undefined, "other players can't see the asker's options");
+  assert.match(ctx.tryAct(other, { type: "question", preset: 0 }).error, /isn't your turn/);
+  assert.match(ctx.tryAct(asker, { type: "question", preset: 99 }).error, /suggested questions/);
+  const before = mine.presets.join("|");
+  ctx.act(asker, { type: "reroll" });
+  assert.notEqual(view(ctx, asker).you.presets.join("|"), before, "reroll gives new options");
+  ctx.act(asker, { type: "reroll" }); ctx.act(asker, { type: "reroll" });
+  assert.match(ctx.tryAct(asker, { type: "reroll" }).error, /No more shuffles/);
+  const pick = view(ctx, asker).you.presets[2];
+  assert.ok(ctx.tryAct(asker, { type: "question", preset: 2 }).ok);
+  assert.equal(grp.phase, "answer");
+  assert.equal(grp.question.text, pick);
+  assert.equal(grp.question.fallback, false);
+  // typed questions still work on the next turn, and a used preset is not offered again
+  for (const m of grp.members) ctx.act(m, { type: "answer", text: "fine" });
+  ctx.advance(TIMES.show + 200);
+  const asker2 = ctx.g.questioner(grp);
+  assert.ok(!view(ctx, asker2).you.presets.includes(pick), "asked questions don't come back");
+  assert.ok(ctx.tryAct(asker2, { type: "question", text: "What would you cook here?" }).ok);
+});

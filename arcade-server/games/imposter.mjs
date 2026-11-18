@@ -4,7 +4,7 @@ import { IMPOSTER_FALLBACK_QUESTIONS } from "../content.mjs";
 import { fail, normalizeWord, partition, pick, shuffle } from "../util.mjs";
 
 // Exact timings from the product spec (all scaled by the room's timeScale in tests).
-export const TIMES = { role: 5000, ask: 10000, answer: 20000, show: 5000, vote: 15000, voteShow: 6000, runoff: 10000, runoffShow: 5000, guess: 10000, final: 9000 };
+export const TIMES = { role: 6000, ask: 20000, answer: 30000, show: 10000, vote: 20000, voteShow: 7000, runoff: 12000, runoffShow: 6000, guess: 15000, final: 10000 };
 const OFFLINE_GRACE = 1500;
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -39,7 +39,13 @@ export class Imposter extends BaseGame {
 
   live(g) { return g.members.filter((m) => this.here(m) && this.connected(m)); }
   questioner(g) { return g.members[g.turn]; }
-  setPhase(g, phase, ms, t) { g.phase = phase; g.endsAt = t + this.D(ms); g.offlineSince = null; }
+  setPhase(g, phase, ms, t) { g.phase = phase; g.endsAt = t + this.D(ms); g.phaseMs = this.D(ms); g.offlineSince = null; }
+
+  /** Six unused generic questions the asker can click instead of typing (none can reveal the word). */
+  pickPresets(g) {
+    const fresh = shuffle(this.fallbackPool.filter((q) => !g.asked.has(q.toLowerCase())));
+    return fresh.slice(0, 6);
+  }
 
   fallbackQuestion(g) {
     for (let i = 0; i < this.fallbackPool.length; i++) {
@@ -52,7 +58,7 @@ export class Imposter extends BaseGame {
   startTurn(g, t) {
     g.turn++;
     if (g.turn >= g.n) return this.startVote(g, t);
-    g.question = null; g.answers = new Map();
+    g.question = null; g.answers = new Map(); g.presets = this.pickPresets(g); g.rerolls = 0;
     this.setPhase(g, "ask", TIMES.ask, t);
     this.room.log("imp_ask", { group: g.id, turn: g.turn + 1, asker: this.nick(this.questioner(g)) });
   }
@@ -172,9 +178,22 @@ export class Imposter extends BaseGame {
     const g = this.byPlayer.get(pid);
     if (!g) fail("You're not in an imposter group.");
     switch (a.type) {
+      case "reroll": {
+        if (g.phase !== "ask" || this.questioner(g) !== pid) fail("It isn't your turn to ask.");
+        if (g.rerolls >= 3) fail("No more shuffles this turn - pick one or type your own!");
+        g.rerolls++; g.presets = this.pickPresets(g);
+        return { ok: true };
+      }
       case "question": {
         if (g.phase !== "ask") fail("It's not question time.");
         if (this.questioner(g) !== pid) fail("It isn't your turn to ask.");
+        if (a.preset !== undefined) {
+          const i = Number(a.preset);
+          if (!Number.isInteger(i) || i < 0 || i >= g.presets.length) fail("Pick one of the suggested questions.");
+          this.openAnswers(g, g.presets[i], false, t);
+          this.add(pid, 8);
+          return { ok: true, preset: true };
+        }
         const text = this.checkText(g, pid, a.text, { min: 3, max: 120, label: "Question" });
         if (g.asked.has(text.toLowerCase())) fail("That question was already asked!");
         this.openAnswers(g, text, false, t);
@@ -222,7 +241,7 @@ export class Imposter extends BaseGame {
     const showAnswers = g.phase === "show";
     const asker = g.turn >= 0 && g.turn < g.n ? this.questioner(g) : null;
     const out = {
-      id: g.id, phase: g.phase, endsIn: Math.max(0, g.endsAt - t), turn: Math.min(g.turn + 1, g.n), turns: g.n,
+      id: g.id, phase: g.phase, endsIn: Math.max(0, g.endsAt - t), totalMs: g.phaseMs ?? 10000, turn: Math.min(g.turn + 1, g.n), turns: g.n,
       members: g.members.map((m) => ({
         id: m, nickname: this.nick(m), avatar: this.room.players.get(m)?.avatar, connected: this.connected(m),
         asker: m === asker && (g.phase === "ask" || g.phase === "answer" || g.phase === "show"),
@@ -235,7 +254,7 @@ export class Imposter extends BaseGame {
       answers: showAnswers ? g.members.map((m) => ({ id: m, nickname: this.nick(m), text: g.answers.has(m) ? this.safe(g, g.answers.get(m)) : null })) : null,
       history: g.history.map((h) => ({ turn: h.turn, from: h.from, question: this.safe(g, h.question), answers: h.answers.map((x) => ({ id: x.id, text: this.safe(g, x.text) })) })),
     };
-    if (pid) out.you = { id: pid, role: isImp ? "imposter" : "crew", word: isImp ? null : g.word.word, message: isImp ? "YOU ARE THE IMPOSTER." : null, answered: g.answers.has(pid), voted: g.votes.has(pid) };
+    if (pid) out.you = { presets: g.phase === "ask" && pid === asker ? g.presets : undefined, canReroll: g.phase === "ask" && pid === asker ? g.rerolls < 3 : undefined, id: pid, role: isImp ? "imposter" : "crew", word: isImp ? null : g.word.word, message: isImp ? "YOU ARE THE IMPOSTER." : null, answered: g.answers.has(pid), voted: g.votes.has(pid) };
     if (g.phase === "vote" || g.phase === "runoff") out.vote = { runoff: g.phase === "runoff" ? g.runoff : null, count: g.votes.size };
     if (g.phase === "voteShow" || g.phase === "runoffShow" || g.phase === "guess" || revealed) {
       if (g.tally) out.tally = { counts: g.tally.counts, votes: g.tally.votes, runoff: g.tally.runoff, accused: g.accused, tieNote: g.tieNote };

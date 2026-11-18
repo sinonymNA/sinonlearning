@@ -68,14 +68,24 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
       );
       break;
     case "ask":
-      body = isAsker && !projector ? answerForm("Your turn! Ask the group a question about the secret word (10s)", "question", "e.g. What would you bring here?", 120)
-        : <div className="ar-panel text-center ar-h2">✏️ {name(grp.questioner)} is typing a question…</div>;
+      body = isAsker && !projector ? (
+        <div className="ar-card grid gap-3">
+          <p className="font-bold">Your turn to ask! Click a question or type your own.</p>
+          <div className="grid gap-2 sm:grid-cols-2">{(you?.presets ?? []).map((q: string, i: number) => <button key={q} className="choice pop" style={{ minHeight: 0, padding: "10px 14px", fontSize: "1rem", animationDelay: `${i * 0.05}s` }} onClick={() => submit("question", { preset: i })}>{q}</button>)}</div>
+          {you?.canReroll && <button className="ar-btn sm paper w-fit" onClick={() => submit("reroll")}>🔀 Show different questions</button>}
+          <form className="grid gap-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) submit("question", { text }); }}>
+            <label className="font-bold" htmlFor="imp-input">…or write your own</label>
+            <div className="flex gap-2"><input id="imp-input" className="ar-input" value={text} maxLength={120} onChange={(e) => setText(e.target.value)} placeholder="e.g. What would you bring here?" autoComplete="off" /><button className="ar-btn coral" type="submit">Ask</button></div>
+          </form>
+          <p role="alert" className="min-h-5 font-bold text-[var(--coral)]">{err}</p>
+        </div>
+      ) : <div className="ar-panel text-center ar-h2">✏️ {name(grp.questioner)} is picking a question…</div>;
       break;
     case "answer":
       body = (
         <div className="grid gap-3">
           <div className="ar-card text-center"><div className="text-sm font-bold opacity-60">{name(grp.question?.from)} ASKED{grp.question?.fallback ? " (auto question)" : ""}</div><div className="text-3xl font-bold">{grp.question?.text}</div></div>
-          {!projector && (you?.answered ? <div className="ar-card pop text-center font-bold">✅ Answer locked in. Others can&apos;t see it yet!</div> : answerForm("Everybody answers at the same time (20s)", "answer", "Type your answer…", 80))}
+          {!projector && (you?.answered ? <div className="ar-card pop text-center font-bold">✅ Answer locked in. Others can&apos;t see it yet!</div> : answerForm("Everybody answers at the same time", "answer", "Type your answer…", 80))}
         </div>
       );
       break;
@@ -123,7 +133,7 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
       body = you?.role === "imposter" && !projector ? (
         <div className="grid gap-2">
           <div className="ar-card text-center font-bold">{grp.tally?.accused === you.id ? "You were caught!" : "You survived the vote!"} Guess the secret word to win anyway!</div>
-          {grp.guess?.submitted ? <div className="ar-card pop text-center ar-h2">Guess locked in…</div> : answerForm("Your guess for the secret word (10s)", "guess", "The secret word is…", 40)}
+          {grp.guess?.submitted ? <div className="ar-card pop text-center ar-h2">Guess locked in…</div> : answerForm("Your guess for the secret word", "guess", "The secret word is…", 40)}
         </div>
       ) : <div className="ar-panel text-center ar-h2 shake">🕵️ The imposter is making a final guess…</div>;
       break;
@@ -144,7 +154,7 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
     }
   }
 
-  const timerTotal = { ask: 10000, answer: 20000, show: 5000, vote: 15000, voteShow: 6000, runoff: 10000, runoffShow: 5000, guess: 10000, role: 5000, final: 9000 }[grp.phase as string] ?? 10000;
+  const timerTotal = grp.totalMs ?? 10000;
   return (
     <div className="imp-layout grid gap-3">
       <div className="imp-left grid content-start gap-3">

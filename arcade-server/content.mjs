@@ -119,6 +119,11 @@ export const IMPOSTER_FALLBACK_QUESTIONS = [
   "What is something you might see here?", "How would you feel if you were here right now?",
   "What would be the best part?", "What would be the most annoying part?", "What time of day is best for this?",
   "What do you think you would wear here?", "What is the first thing you would tell a friend about it?",
+  "What would you eat or drink here?", "Is it better with a lot of people or just a few?", "What is something you'd never do here?",
+  "What would your pet think about this?", "What's one thing that could go wrong here?", "How would you explain this to a 5 year old?",
+  "What sound would you hear the most?", "Would you rather be here in summer or winter?", "What is something you'd find in your pocket here?",
+  "What would a superhero do here?", "What's the funniest thing that could happen here?", "How long could you stay here before getting bored?",
+  "What smell comes to mind?", "What's one rule you'd make for this place?", "Who in your family would love this most?", "What would you take a photo of?",
 ];
 
 /** Fixed multi-word draw prompts (the simple word-splitter above would break these). */

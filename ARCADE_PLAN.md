@@ -47,3 +47,6 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 - [x] Teachers can add/remove practice bots in a normal room (lobby only, max 40 players, bots never earn coins).
 - [x] Quick chat: curated jokes/cheers/emoji + per-game phrases, pop-ups on every screen incl. projector, cooldown, teacher on/off. No free-text chat by design.
 - [x] More drawing time: Quick Draw 55 s per turn (4 turns), Telephone 75 s / 25 s / 75 s.
+
+## Imposter pacing change (owner request, overrides the original 10/20/5 s spec)
+Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (runoff 12 s), final guess 15 s. The asker can click one of six private preset questions (shuffle up to 3 times) or type their own; fallback questions still cover silence. A typical 5-player group now takes ~5-6 minutes if everyone uses the full time.

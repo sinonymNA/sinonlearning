@@ -25,7 +25,7 @@ test("personal information is rejected in nicknames and free text", () => {
 test("in-game text is moderated server-side (Imposter question/answer, Telephone description)", () => {
   const ctx = makeRoom({ n: 4, playlist: ["imposter"] });
   const g = ctx.begin(); const grp = g.groups[0];
-  ctx.advance(5100);
+  ctx.advance(6100);
   const asker = g.questioner(grp);
   assert.match(ctx.tryAct(asker, { type: "question", text: "what the fuck is this" }).error, /classroom-friendly/);
   assert.equal(ctx.tryAct(asker, { type: "question", text: "What would you bring here?" }).ok, true);
