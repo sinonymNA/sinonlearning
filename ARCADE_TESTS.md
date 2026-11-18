@@ -80,3 +80,5 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 
 ## 18. Teacher gift button
 119 unit tests pass (new gift test: signed-in only, guests/bots skipped, host-only, 3 per session, daily cap across rooms, empty-room error, the student's own view carries the gift). `scripts/arcade-e2e-gift.mjs` (5 PASS, real browsers, in-memory store): teacher presses the button, sees "Gave 100 coins to 1 signed-in student (1 guest skipped)", the signed-in student gets the toast and the shop shows 100 coins, the guest gets nothing. Not run against PostgreSQL (the capped-award SQL path is shared with solo practice, which was verified there). Also raised the 35-bot Imposter/Telephone test time budgets (they were borderline after the slower timers).
+
+- Added: gallery test, hot-hands stall test, group-balance test (sizes 2..40), sit-out test. Suite: 123 passing. Phone fit check: `node scripts/arcade-fit-check.mjs --size 390x844 --scale 0.25` (not all screens at 0 yet; see ARCADE_PROGRESS.md).

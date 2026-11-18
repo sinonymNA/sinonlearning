@@ -30,3 +30,10 @@ Run `npm run arcade:load -- --url https://<deployed-host>` and a Chromebook/iPad
 
 ## External blockers
 None for development. Needs from the owner: production `DATABASE_URL` (already required by Margins), and a policy/legal review before classroom use with minors.
+
+## Gallery / hot hands / groups / phone fit pass
+- Quick Draw: every drawing saved per turn and shown in an end-of-game gallery with the target word (cursor `gal`; tests added).
+- Imposter: secret/role can be hidden on screen (tap-to-peek chip + role-phase hide toggle).
+- Hot Potato: 8 s hold limit ("hot hands": -5 pts, fuse -2 s), animated potato flight between avatars.
+- Groups: partition verified balanced (spread <= 1); players absent >20 s at launch are sat out. Original "10 vs 3" report not reproduced.
+- Phone layout (`@media (max-width: 899px)`): at 390x844 most screens fit. Known remaining overflow: Telephone reveal (~70 px), results (~58 px), Imposter (31-109 px depending on phase), Hot Potato ~20 px. Not checked at 360x740 or landscape; no real-device test.

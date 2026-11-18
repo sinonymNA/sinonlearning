@@ -329,7 +329,7 @@
   .lb-scroll { max-height: 40vh; overflow: auto; }
 }
 @media (max-width: 899px) {
-  .hp-potato svg { width: min(17vh, 150px); }
+  .hp-potato svg { width: min(12vh, 105px); }
   .hp-tile { width: 40px !important; height: 46px !important; font-size: 1.6rem !important; }
   .hp-stage-label { font-size: .8rem; }
   .hp-members svg { width: 32px; height: 32px; }
