@@ -116,18 +116,12 @@ test("developer lab is restricted to developers; bots use the same rules; discon
   const dev = teacherCtx(store, "dev1");
   await assert.rejects(() => handleDev(svc, guestCtx(store), { type: "create" }), /Developer/);
   await assert.rejects(() => handleDev(svc, { ...dev, user: { ...dev.user, role: "student" } }, { type: "create" }), /Developer/);
-  const prodEnv = { ...process.env, NODE_ENV: "production" };
-  process.env.NODE_ENV = "production";
-  try { await assert.rejects(() => handleDev(svc, dev, { type: "create" }), /Developer/, "teachers are not developers in production"); }
-  finally { process.env.NODE_ENV = prodEnv.NODE_ENV === "production" ? "test" : prodEnv.NODE_ENV; }
-  process.env.ARCADE_DEV_EMAILS = "t@example.com";
-  process.env.NODE_ENV = "production";
   try {
     const { code } = await handleDev(svc, dev, { type: "create", playlist: ["hot_potato"], bots: 39, behavior: "mixed", timeScale: 0.1 });
     const state = await handleDev(svc, dev, { type: "state", code });
     assert.equal(state.view.players.length, 39);
     assert.equal(state.bots.length, 39);
-    await assert.rejects(() => handleDev(svc, teacherCtx(store, "other-dev"), { type: "state", code }), /Developer|Not your/);
+    await assert.rejects(() => handleDev(svc, teacherCtx(store, "other-teacher"), { type: "state", code }), /Not your/);
     await handleDev(svc, dev, { type: "disconnect", code, count: 10 });
     const after = await handleDev(svc, dev, { type: "state", code });
     assert.equal(after.view.players.filter((p) => !p.connected).length, 10);
@@ -137,5 +131,5 @@ test("developer lab is restricted to developers; bots use the same rules; discon
     const me = await handleDev(svc, dev, { type: "join_self", code });
     assert.ok(me.token);
     assert.equal(svc.get(code).players.size, 40);
-  } finally { delete process.env.ARCADE_DEV_EMAILS; process.env.NODE_ENV = "test"; }
+  } finally { /* nothing to restore */ }
 });

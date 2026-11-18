@@ -26,7 +26,7 @@ See ARCADE_PLAN.md (all boxes ticked except the partially-verified visual/sound 
 - Optional: flying-potato transfer animation; more built-in content; school-specific moderation lists.
 
 ## Next exact action
-Run `npm run arcade:load -- --url https://<deployed-host>` and a Chromebook/iPad session against the Railway deployment (set `DATABASE_URL`, and `ARCADE_DEV_EMAILS` for the developer lab).
+Run `npm run arcade:load -- --url https://<deployed-host>` and a Chromebook/iPad session against the Railway deployment (set `DATABASE_URL`).
 
 ## External blockers
-None for development. Needs from the owner: production `DATABASE_URL` (already required by Margins), `ARCADE_DEV_EMAILS` for the lab, and a policy/legal review before classroom use with minors.
+None for development. Needs from the owner: production `DATABASE_URL` (already required by Margins), and a policy/legal review before classroom use with minors.

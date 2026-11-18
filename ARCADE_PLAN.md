@@ -28,7 +28,7 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 - [~] Visual/sound polish: CSS/SVG/Canvas only; WebAudio sfx with mute and reduced-motion toggle. Verified by screenshots in Chromium (desktop + 390 px phone). Audio itself is not machine-verifiable; no real Chromebook/Safari/Firefox runs.
 
 ## Developer lab & tests
-- [x] Lab: create test room, up to 39 bots + 1 real player, pick game/behavior (smart/average/sloppy/afk/chaotic/mixed), start/pause/skip/end, disconnect/reconnect bots, game log, scores, metrics; every call re-authorised server-side (`ARCADE_DEV_EMAILS`).
+- [x] Lab: create test room, up to 39 bots + 1 real player, pick game/behavior (smart/average/sloppy/afk/chaotic/mixed), start/pause/skip/end, disconnect/reconnect bots, game log, scores, metrics; every call re-authorised server-side (signed-in teacher required).
 - [x] Game-specific bots act only through `room.act()` (same validation as students).
 - [x] Separate network load script `scripts/arcade-load-test.mjs` (independent HTTP clients, not objects in one browser).
 - [x] Automated tests (89 unit/integration), browser e2e scripts, account/PostgreSQL integration script, production build.

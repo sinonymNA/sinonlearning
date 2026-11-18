@@ -5,12 +5,9 @@ import { GameError, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
 
-/** Developer = listed in ARCADE_DEV_EMAILS, or (outside production only) any teacher account. */
-export function isDeveloper(user, env = process.env) {
-  if (!user) return false;
-  const list = String(env.ARCADE_DEV_EMAILS ?? "").toLowerCase().split(",").map((s) => s.trim()).filter(Boolean);
-  if (list.includes(String(user.email ?? "").toLowerCase())) return true;
-  return env.NODE_ENV !== "production" && user.role === "teacher" && !list.length;
+/** The test lab is open to any signed-in teacher account (no env configuration); guests and students are refused. */
+export function isDeveloper(user) {
+  return user?.role === "teacher";
 }
 export const isTeacher = (user) => user?.role === "teacher";
 

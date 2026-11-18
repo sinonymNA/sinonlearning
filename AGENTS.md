@@ -13,6 +13,6 @@
 - Views are the only thing clients see. Private data (imposter role/word, secret draw word, correct answer, hot-potato fuse) must never appear in a view for someone who should not have it. `arcade-server/tests/imposter.test.mjs` and `quickDraw.test.mjs` assert this; keep them green.
 - Drawing: ONE protocol/validator (`drawing.mjs`) and ONE client engine (`components/arcade/DrawingCanvas.tsx`) shared by Quick Draw and Telephone.
 - Rooms live in process memory (`lib/arcadeRuntime.ts`, same pattern as `/api/suspect`); coins/collections/content sets persist via `lib/arcadeDb.ts` (Postgres) or `MemoryStore` when `DATABASE_URL` is unset.
-- Developer lab access: `ARCADE_DEV_EMAILS` (comma list). Outside production, teacher accounts also qualify when that list is empty. `ARCADE_DEV_AUTH=1` (never honoured when NODE_ENV=production) enables a cookie identity for local browser/load tests.
+- Developer lab access: any signed-in teacher account (`isDeveloper` in `arcade-server/api.mjs`); guests and students are refused and each lab room is owned by its creator. `ARCADE_DEV_AUTH=1` (never honoured when NODE_ENV=production) enables a cookie identity for local browser/load tests.
 - Tests: `npm run arcade:test`. Load test (35 real HTTP clients): `npm run arcade:load -- --url http://localhost:3100`. Browser e2e: `node scripts/arcade-e2e.mjs`.
 - Memory files to keep current after every milestone: `ARCADE_PLAN.md` (checklist), `ARCADE_PROGRESS.md`, `ARCADE_TESTS.md`. Do not tick a box unless it was verified.

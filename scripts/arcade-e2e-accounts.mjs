@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Integration test against REAL Margins accounts + PostgreSQL (no dev-auth shortcut).
- *   DATABASE_URL=postgres://... ARCADE_DEV_EMAILS=teacher.lab@example.com npx next dev -p 3100
+ *   DATABASE_URL=postgres://... npx next dev -p 3100
  *   DATABASE_URL=postgres://... node scripts/arcade-e2e-accounts.mjs --url http://localhost:3100
  * Verifies: teacher-only hosting, student/guest rejection, developer-lab gating, persistent content sets,
  * server-side coin awards, atomic duplicate-safe pack opening (incl. concurrent identical requests),
@@ -39,7 +39,7 @@ check((await call("/api/arcade", { type: "host", code, cmd: "start" }, labTeache
 check((await call("/api/arcade", { type: "poll", code, host: true })).status === 403, "guest cannot open the host view");
 
 // --- developer lab gating ---
-check((await call("/api/arcade/dev", { type: "create" }, teacher)).status === 403, "ordinary teacher is not a developer (ARCADE_DEV_EMAILS set)");
+check((await call("/api/arcade/dev", { type: "create", playlist: ["hot_potato"] }, teacher)).status === 200, "any signed-in teacher can open the lab");
 check((await call("/api/arcade/dev", { type: "create" }, student)).status === 403, "student blocked from developer lab");
 check((await call("/api/arcade/dev", { type: "create" })).status === 403, "guest blocked from developer lab");
 const lab = await call("/api/arcade/dev", { type: "create", playlist: ["hot_potato"], bots: 5, timeScale: 0.1 }, labTeacher);
