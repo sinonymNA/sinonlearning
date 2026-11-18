@@ -74,3 +74,6 @@ Quick chat grew from ~65 to 222 unique phrases (84 corny jokes/puns, more cheers
 
 ## 16. Snack Squad + Snack Pack
 118 unit tests pass (new: 56 unique characters incl. 16 snack; Snack Pack only drops snack and all 16 are obtainable over 6000 rolls; the other four packs never drop snack characters; odds sum to 100 %; each of the five packs charges its own price; snack characters must be owned to be used as an avatar). Shop, demo (Snack tab, peek sheet, reveal) and collection checked in Chromium, no console errors; all 16 characters reviewed in a screenshot (the ice-cream cone's drip artwork was redrawn after it looked like a mustache). Not tested: opening a Snack Pack through a real signed-in session against PostgreSQL, and the collection page with owned snack characters.
+
+## 17. Skip pack animation switch
+A "⚡ Skip pack animation" switch (remembered in the browser) sits under every pack opener (shop and demo). Chromium check on the demo page: animated reveal ~3.0 s, with the switch on ~0.15 s with no flip animation, the setting survives a reload, and switching it off restores the shaking pack; no console errors. The paid shop path uses the same component but was not clicked through with a real signed-in account.

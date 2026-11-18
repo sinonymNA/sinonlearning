@@ -4,10 +4,10 @@
 
 import { useCallback, useEffect, useState, createContext, useContext } from "react";
 
-type Prefs = { muted: boolean; calm: boolean; chatHidden: boolean };
+type Prefs = { muted: boolean; calm: boolean; chatHidden: boolean; skipPacks: boolean };
 const KEY = "arcade:prefs";
 let audio: AudioContext | null = null;
-let current: Prefs = { muted: false, calm: false, chatHidden: false };
+let current: Prefs = { muted: false, calm: false, chatHidden: false, skipPacks: false };
 
 function load(): Prefs {
   try { return { ...current, ...(JSON.parse(localStorage.getItem(KEY) || "{}") as Partial<Prefs>) }; } catch { return current; }

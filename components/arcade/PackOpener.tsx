@@ -34,13 +34,19 @@ export default function PackOpener({ onOpen, canOpen = true, label = "Open pack"
   const [res, setRes] = useState<Result | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [glow, setGlow] = useState("none");
-  const { prefs } = usePrefs();
+  const { prefs, set } = usePrefs();
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
   async function open() {
     if (stage === "shake" || stage === "burst") return;
-    setErr(null); setRes(null); setStage("shake"); setGlow("none");
+    setErr(null); setRes(null);
+    if (prefs.skipPacks) {   // animation off: show the card right away
+      try { const result = await onOpen(); setRes(result); setStage("revealed"); sfx(result.character.rarity === "common" ? "good" : "win"); }
+      catch (e: any) { setErr(e.message ?? "Could not open the pack."); setStage("idle"); }
+      return;
+    }
+    setStage("shake"); setGlow("none");
     sfx("whoosh");
     const started = performance.now();
     let result: Result;
@@ -71,7 +77,7 @@ export default function PackOpener({ onOpen, canOpen = true, label = "Open pack"
           <div className="absolute inset-0 grid place-items-center"><div className="pack-burst" style={{ background: r?.color }} /></div>
         )}
         {stage === "revealed" && res && r && (
-          <div className="card-flip" style={{ width: "100%" }}>
+          <div className={prefs.skipPacks ? "" : "card-flip"} style={{ width: "100%" }}>
             <div className="card-face" style={{ borderColor: r.color, boxShadow: `0 0 0 5px #14163a, 0 0 40px ${r.color}` }}>
               <span className="ar-chip" style={{ background: r.color, color: "#fff", borderColor: "#14163a" }}>{r.label}</span>
               <div className={res.character.rarity === "common" ? "float" : "float pack-sparkle"}><Avatar id={res.character.id} size={170} title={res.character.name} /></div>
@@ -85,6 +91,10 @@ export default function PackOpener({ onOpen, canOpen = true, label = "Open pack"
       <button className="ar-btn coral xl" disabled={!canOpen || stage === "shake" || stage === "burst"} onClick={open}>
         {stage === "shake" ? "Opening…" : stage === "revealed" ? "Open another" : label}
       </button>
+      <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-bold">
+        <input type="checkbox" role="switch" checked={prefs.skipPacks} onChange={(e) => set({ skipPacks: e.target.checked })} style={{ width: 20, height: 20 }} />
+        ⚡ Skip pack animation
+      </label>
       {hint && <p className="ar-muted text-center text-sm">{hint}</p>}
       <p role="alert" className="min-h-6 font-bold text-[var(--coral)]">{err}</p>
     </div>
