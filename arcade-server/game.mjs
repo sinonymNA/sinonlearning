@@ -54,6 +54,7 @@ export class ArcadeRoom {
     this.usedWords = new Set();
   }
   submitWord(playerId, rawWord) {
+    if (this.potato && Date.now() >= this.potato.expiresAt) { this.tick(); throw new Error("Potato expired"); }
     if (this.phase !== "playing" || this.game !== "hot_potato") throw new Error("This round is not accepting words");
     const player = this.players.get(playerId);
     if (!player || player.eliminated || this.potato?.holderId !== playerId) throw new Error("Only the potato holder can submit");

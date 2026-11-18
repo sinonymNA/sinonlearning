@@ -1,13 +1,14 @@
 // @ts-nocheck
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/marginsAuth";
 import { ArcadeService } from "../../../arcade-server/game.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const state = globalThis as typeof globalThis & { arcadeRuntime?: { service: InstanceType<typeof ArcadeService>; sessions: Map<string, any> } };
-const runtime = state.arcadeRuntime ??= { service: new ArcadeService(), sessions: new Map() };
+const arcadeRuntime = state.arcadeRuntime ??= { service: new ArcadeService(), sessions: new Map() };
 
 function snapshot(room, session) {
   room.tick();
@@ -21,18 +22,20 @@ export async function POST(request: Request) {
     const { sessionId, message } = await request.json();
     if (!message || typeof message.type !== "string" || JSON.stringify(message).length > 16000) throw new Error("Malformed message");
     if (message.type === "create") {
-      const room = runtime.service.create({ game: message.game === "hot_potato" ? "hot_potato" : "hot_potato", playlist: Array.isArray(message.playlist) ? message.playlist.slice(0, 5) : ["hot_potato"] });
-      const id = crypto.randomUUID(); runtime.sessions.set(id, { room, isHost: true });
+      const teacher = await getCurrentUser();
+      if (teacher?.role !== "teacher") return NextResponse.json({ messages: [{ type: "error", message: "Sign in as a teacher to host." }] }, { status: 403 });
+      const room = arcadeRuntime.service.create({ game: "hot_potato" });
+      const id = crypto.randomUUID(); arcadeRuntime.sessions.set(id, { room, isHost: true });
       return NextResponse.json({ sessionId: id, messages: [{ type: "created", code: room.code, hostToken: room.hostToken }, room.publicState()] });
     }
     if (message.type === "join") {
-      const room = runtime.service.get(message.code);
+      const room = arcadeRuntime.service.get(message.code);
       if (!room) throw new Error("Room not found");
       const player = room.addPlayer(message);
-      const id = crypto.randomUUID(); runtime.sessions.set(id, { room, playerId: player.id });
+      const id = crypto.randomUUID(); arcadeRuntime.sessions.set(id, { room, playerId: player.id });
       return NextResponse.json({ sessionId: id, messages: [{ type: "joined", code: room.code, playerId: player.id, reconnectToken: player.reconnectToken }, ...snapshot(room, { playerId: player.id })] });
     }
-    const session = runtime.sessions.get(sessionId);
+    const session = arcadeRuntime.sessions.get(sessionId);
     if (!session) throw new Error("Session ended; reconnect to the room");
     const room = session.room;
     if (message.type === "start") { if (!session.isHost || !room.host(message.hostToken)) throw new Error("Teacher authorization required"); room.start(); }
