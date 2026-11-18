@@ -117,3 +117,39 @@ test("solo controls: only the solo player can pause/quit; non-solo rooms reject 
   assert.equal(room.phase, "ended");
   await assert.rejects(() => handle(svc, guestCtx(store), { type: "solo_create", game: "nope" }), /Pick a game/);
 });
+
+test("teacher gift: 100 coins to every signed-in student in the room; guests/bots skipped; host only; 3 per session; daily cap", async () => {
+  const store = new MemoryStore(); const svc = new ArcadeService();
+  const teacher = { user: { id: "t1", role: "teacher", name: "T" }, ip: "1.1.1.1", store };
+  const { code } = await handle(svc, teacher, { type: "create", playlist: ["hot_potato"] });
+  const mk = async (name) => { const a = await signup(store, { username: name, password: "hunter22" }); return userFromToken(store, (await startSession(store, a.id)).token); };
+  const u1 = await mk("gift_kid1"), u2 = await mk("gift_kid2");
+  await handle(svc, { store, user: u1, ip: "2.2.2.2" }, { type: "join", code, nickname: "Aaa" });
+  await handle(svc, { store, user: u2, ip: "2.2.2.3" }, { type: "join", code, nickname: "Bbb" });
+  await handle(svc, guestCtx(store, "2.2.2.4"), { type: "join", code, nickname: "Guest" });
+  await handle(svc, teacher, { type: "host", code, cmd: "bots", args: { count: 3 } });
+  // not the host: refused
+  await assert.rejects(() => handle(svc, { store, user: u1, ip: "2.2.2.2" }, { type: "host", code, cmd: "gift" }), /teacher who created|Sign in/);
+  await assert.rejects(() => handle(svc, guestCtx(store), { type: "host", code, cmd: "gift" }), /Sign in|teacher/);
+  const r = await handle(svc, teacher, { type: "host", code, cmd: "gift" });
+  assert.deepEqual([r.gift.given, r.gift.signedIn, r.gift.guests, r.gift.left, r.gift.coins], [2, 2, 1, 2, 100]);
+  assert.equal((await store.getWallet(u1.id)).coins, 100);
+  assert.equal((await store.getWallet(u2.id)).coins, 100);
+  assert.equal(svc.get(code).playerList().find((p) => p.userId === u1.id).gift.coins, 100);
+  const view = svc.get(code).view({ playerId: svc.get(code).playerList().find((p) => p.userId === u1.id).id });
+  assert.equal(view.me.gift.coins, 100, "the student's own view carries the gift so the UI can celebrate");
+  await handle(svc, teacher, { type: "host", code, cmd: "gift" });
+  await handle(svc, teacher, { type: "host", code, cmd: "gift" });
+  assert.equal((await store.getWallet(u1.id)).coins, 300);
+  await assert.rejects(() => handle(svc, teacher, { type: "host", code, cmd: "gift" }), /3 times per session/);
+  // daily cap across rooms: this student already received 300 today
+  const again = await handle(svc, teacher, { type: "create", playlist: ["hot_potato"] });
+  await handle(svc, { store, user: u1, ip: "2.2.2.2" }, { type: "join", code: again.code, nickname: "Aaa" });
+  const capped = await handle(svc, teacher, { type: "host", code: again.code, cmd: "gift" });
+  assert.equal(capped.gift.given, 0, "daily gift cap protects the economy");
+  assert.equal((await store.getWallet(u1.id)).coins, 300);
+  // empty room
+  const empty = await handle(svc, teacher, { type: "create", playlist: ["hot_potato"] });
+  await handle(svc, guestCtx(store, "9.9.9.9"), { type: "join", code: empty.code, nickname: "OnlyGuest" });
+  await assert.rejects(() => handle(svc, teacher, { type: "host", code: empty.code, cmd: "gift" }), /No signed-in students/);
+});

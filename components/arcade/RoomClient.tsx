@@ -3,17 +3,32 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/set-state-in-effect */
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import { GameSwitch } from "./GameSwitch";
 import JoinForm from "./JoinForm";
-import { PrefsButtons, PrefsProvider } from "./prefs";
+import { PrefsButtons, PrefsProvider, sfx } from "./prefs";
 import { FinalScreen, IntroScreen, LobbyScreen, ResultsScreen, SoloFinal } from "./screens";
 import { Banner, Leaderboard } from "./ui";
 import ChatDock from "./ChatDock";
 import { api, saveCreds, useRoom } from "./useRoom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+function GiftToast({ gift, code }: { gift?: { id: number; coins: number }; code: string }) {
+  const [shown, setShown] = useState<number | null>(null);
+  const seen = useRef<number | null>(null);
+  useEffect(() => {
+    if (!gift) return;
+    if (seen.current === null) { seen.current = gift.id; if (typeof window !== "undefined" && sessionStorage.getItem(`arcade:gift:${code}:${gift.id}`)) return; }
+    else if (seen.current === gift.id) return;
+    seen.current = gift.id; setShown(gift.id); sfx("win");
+    try { sessionStorage.setItem(`arcade:gift:${code}:${gift.id}`, "1"); } catch { /* ignore */ }
+    const t = setTimeout(() => setShown(null), 6000); return () => clearTimeout(t);
+  }, [gift]);
+  if (!gift || shown !== gift.id) return null;
+  return <div role="status" className="pop fixed left-1/2 top-16 z-50 -translate-x-1/2 rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sun)] px-6 py-3 text-xl font-bold text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">🪙 +{gift.coins} coins from your teacher!</div>;
+}
+
 export default function RoomClient({ code }: { code: string }) {
   return <PrefsProvider><Inner code={code.toUpperCase()} /></PrefsProvider>;
 }
@@ -40,6 +55,7 @@ function Inner({ code }: { code: string }) {
   const me = view.me;
   const meId = creds.playerId;
   const solo = view.solo;
+  const giftId = view.me?.gift?.id ?? 0;
   const soloCmd = (cmd: string) => api("/api/arcade", { type: "solo_cmd", code, playerId: creds.playerId, token: creds.token, cmd }).then(() => room.poll()).catch(() => undefined);
   const playAgain = async () => {
     const d = await api("/api/arcade", { type: "solo_create", game: solo.game, difficulty: solo.difficulty, nickname: me?.nickname, avatar: me?.avatar });
@@ -76,6 +92,7 @@ function Inner({ code }: { code: string }) {
         </div>
       </main>
       <ChatDock view={view} code={code} creds={creds} />
+      <GiftToast gift={view.me?.gift} code={code} />
     </div>
   );
 }

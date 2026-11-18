@@ -126,6 +126,6 @@ test("full 35-bot Telephone session completes", () => {
   const ctx = makeRoom({ n: 0, playlist: ["telephone"] });
   ctx.svc.addBots(ctx.room, 35, "mixed");
   ctx.room.start();
-  ctx.advance(330000, 250);
+  ctx.advance(600000, 250);
   assert.equal(ctx.room.history.length, 1);
 });

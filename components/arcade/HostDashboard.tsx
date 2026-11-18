@@ -27,7 +27,12 @@ function Inner({ code }: { code: string }) {
   const [botCount, setBotCount] = useState(10);
   const [botLevel, setBotLevel] = useState("medium");
   useEffect(() => { setOrigin(window.location.origin); api("/api/arcade/content", { type: "list" }).then((d) => setSets(d.sets)).catch(() => undefined); }, []);
-  const cmd = async (c: string, args: any = {}) => { try { await room.hostCmd(c, args); } catch (e: any) { setToast(e.message); setTimeout(() => setToast(null), 3500); } };
+  const cmd = async (c: string, args: any = {}) => { try { return await room.hostCmd(c, args); } catch (e: any) { setToast(e.message); setTimeout(() => setToast(null), 3500); } };
+  const gift = async () => {
+    if (!confirm("Give 100 coins to every signed-in student in this room? (Guests can't keep coins.)")) return;
+    const d: any = await cmd("gift");
+    if (d?.gift) { setToast(`🪙 Gave ${d.gift.coins} coins to ${d.gift.given} signed-in ${d.gift.given === 1 ? "student" : "students"}${d.gift.guests ? ` (${d.gift.guests} guest${d.gift.guests === 1 ? "" : "s"} skipped)` : ""}${d.gift.given < d.gift.signedIn ? ` · ${d.gift.signedIn - d.gift.given} hit their daily gift limit` : ""}. ${d.gift.left} gift${d.gift.left === 1 ? "" : "s"} left.`); setTimeout(() => setToast(null), 6000); }
+  };
 
   if (lost) return <div className="ar-wrap"><div className="ar-panel"><h1 className="ar-h2">Can&apos;t open this room</h1><p className="mt-2">{lost}</p><Link className="ar-btn mt-4" href="/arcade/host">Host a new game</Link></div></div>;
   if (!view) return <div className="ar-wrap ar-h2">Loading dashboard…</div>;
@@ -52,6 +57,7 @@ function Inner({ code }: { code: string }) {
             <p className="mt-1 text-lg font-bold">{view.players.length} / 40 players · {view.players.filter((p: any) => p.connected).length} connected</p>
           </div>
           <div className="flex flex-wrap gap-3">
+            <button className="ar-btn lime" onClick={gift} disabled={view.phase === "ended" || view.players.length === 0} title="Give every signed-in student in the room 100 coins">🪙 Give 100 coins</button>
             <a className="ar-btn sky" href={`/arcade/room/${view.code}/projector`} target="_blank" rel="noreferrer">📽 Projector mode</a>
             <button className="ar-btn paper" onClick={() => navigator.clipboard?.writeText(joinUrl).catch(() => undefined)}>📋 Copy join link</button>
           </div>

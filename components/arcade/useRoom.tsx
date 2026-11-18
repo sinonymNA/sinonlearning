@@ -93,6 +93,7 @@ export function useRoom(code: string, opts: { host?: boolean; mode?: string } = 
   const hostCmd = useCallback(async (cmd: string, args: Record<string, unknown> = {}) => {
     const data = await api("/api/arcade", { type: "host", code, cmd, args });
     apply(data.view);
+    return data;
   }, [code, apply]);
 
   const join = useCallback(async (nickname: string, avatar: string) => {

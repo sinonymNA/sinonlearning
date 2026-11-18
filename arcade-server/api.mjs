@@ -10,6 +10,7 @@ import { login, signup, startSession } from "./accounts.mjs";
 export function isDeveloper(user) {
   return user?.role === "teacher";
 }
+export const GIFT = { coins: 100, maxPerRoom: 3, dailyCap: 300 };
 export const isTeacher = (user) => user?.role === "teacher";
 
 const SAFE_OPTS = (o) => {
@@ -99,6 +100,21 @@ export async function handle(service, ctx, body) {
           if (!set || set.ownerId !== ctx.user.id) fail("That content set isn't available to you.", "forbidden");
         }
         room.setContent(set);
+      } else if (body.cmd === "gift") {
+        // Teacher gift: 100 coins to every SIGNED-IN student currently in the room (guests and bots are skipped).
+        if (room.phase === "ended") fail("This session has ended.");
+        if ((room.giftCount ?? 0) >= GIFT.maxPerRoom) fail(`You can give coins ${GIFT.maxPerRoom} times per session.`);
+        const targets = room.playerList().filter((p) => p.userId && !p.bot);
+        if (!targets.length) fail("No signed-in students are in the room yet (guests can't keep coins).");
+        const n = (room.giftCount = (room.giftCount ?? 0) + 1);
+        let given = 0;
+        await Promise.all(targets.map(async (p) => {
+          const r = await store.awardCapped({ userId: p.userId, coins: GIFT.coins, key: `${room.id}:gift:${n}`, reason: "gift from teacher", dailyCap: GIFT.dailyCap, group: "gift" });
+          if (r.awarded) { given++; p.gift = { id: n, coins: r.coins }; }
+        }));
+        room.log("teacher_gift", { n, signedIn: targets.length, given });
+        room.bump();
+        return { view: room.view({ mode: "projector" }), gift: { given, signedIn: targets.length, guests: room.playerList().filter((p) => !p.userId && !p.bot).length, left: GIFT.maxPerRoom - n, coins: GIFT.coins } };
       } else if (body.cmd === "bots") {
         if (room.phase !== "lobby") fail("Add bots from the lobby.");
         const free = MAX_PLAYERS - room.players.size;

@@ -61,3 +61,6 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 ## Snack Squad (second character set) + Snack Pack
 - [x] 16 new hand-built food mascots (7 common, 4 uncommon, 3 rare, 1 epic, 1 legendary): Pickle Pete, Fry Guy, Toasty, Cheddar, Sunny Egg, Berry, Popper, Taco Tina, Boba Bean, Slice, Nori, Dazzle (donut), Cone-y, Bruno (burger), Cupcake Queen, Sundae Supreme.
 - [x] Snack Pack (120 coins, 55/28/12/4/1 %): a specialty pack that drops ONLY Snack Squad; every other pack never drops them. Collection page groups characters by set with per-set progress. Next set idea: Classroom Crew.
+
+## Teacher gift button
+- [x] "🪙 Give 100 coins" on the host dashboard: pays every signed-in student currently in the room (guests and bots skipped). Safeguards: host only, max 3 gifts per session, 300 gift-coins/day per student, one payment per press per student. Students see a toast and the coins appear in their wallet.

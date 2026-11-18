@@ -370,7 +370,7 @@ export class Room {
     }
     if (playerId && this.players.has(playerId)) {
       const p = this.players.get(playerId);
-      base.me = { solo: this.solo ? { place: p.soloPlace ?? null, of: p.soloTotal ?? null, coins: p.coinsEarned ?? null, capped: !!p.coinsCapped, signedIn: !!p.userId } : undefined, id: p.id, nickname: p.nickname, avatar: p.avatar, team: p.team, waiting: p.waiting, total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, signedIn: !!p.userId };
+      base.me = { gift: p.gift, solo: this.solo ? { place: p.soloPlace ?? null, of: p.soloTotal ?? null, coins: p.coinsEarned ?? null, capped: !!p.coinsCapped, signedIn: !!p.userId } : undefined, id: p.id, nickname: p.nickname, avatar: p.avatar, team: p.team, waiting: p.waiting, total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, signedIn: !!p.userId };
     }
     return base;
   }

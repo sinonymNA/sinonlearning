@@ -77,3 +77,6 @@ Quick chat grew from ~65 to 222 unique phrases (84 corny jokes/puns, more cheers
 
 ## 17. Skip pack animation switch
 A "⚡ Skip pack animation" switch (remembered in the browser) sits under every pack opener (shop and demo). Chromium check on the demo page: animated reveal ~3.0 s, with the switch on ~0.15 s with no flip animation, the setting survives a reload, and switching it off restores the shaking pack; no console errors. The paid shop path uses the same component but was not clicked through with a real signed-in account.
+
+## 18. Teacher gift button
+119 unit tests pass (new gift test: signed-in only, guests/bots skipped, host-only, 3 per session, daily cap across rooms, empty-room error, the student's own view carries the gift). `scripts/arcade-e2e-gift.mjs` (5 PASS, real browsers, in-memory store): teacher presses the button, sees "Gave 100 coins to 1 signed-in student (1 guest skipped)", the signed-in student gets the toast and the shop shows 100 coins, the guest gets nothing. Not run against PostgreSQL (the capped-award SQL path is shared with solo practice, which was verified there). Also raised the 35-bot Imposter/Telephone test time budgets (they were borderline after the slower timers).
