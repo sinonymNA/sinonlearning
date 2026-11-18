@@ -1,18 +1,7 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { inter, fraunces } from "@/lib/siteFonts";
 import { SITE_URL } from "@/lib/seo";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["opsz"],
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

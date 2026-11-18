@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { animate, stagger } from "animejs";
 import { motion, useMotionValue, type PanInfo } from "framer-motion";
-import { Patrick_Hand } from "next/font/google";
+import { patrickHand } from "@/lib/siteFonts";
 import { Image as ImageIcon, Link2, StickyNote, Type, X, Loader2, Sparkles } from "lucide-react";
 import { useLocalStorageState } from "@/hooks/useLocalStorageState";
 
-const handwriting = Patrick_Hand({ subsets: ["latin"], weight: "400" });
+const handwriting = patrickHand;
 
 type BoardPostKind = "sticky" | "text" | "image" | "link";
 
