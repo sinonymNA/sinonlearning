@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "arcade:test": "node --test "arcade-server/tests/*.test.mjs"",
+    "arcade:load": "node scripts/arcade-load-test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
