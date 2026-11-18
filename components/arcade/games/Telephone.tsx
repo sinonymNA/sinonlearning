@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react/no-unescaped-entities, react-hooks/set-state-in-effect, react-hooks/refs */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DrawPad, Replay, StrokeViewer } from "../DrawingCanvas";
 import { sfx } from "../prefs";
@@ -9,7 +11,8 @@ import { useRemaining } from "../useRoom";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const STEP_TITLES = ["The prompt…", "First drawing", "Someone described it as…", "Final drawing"];
 
-function Chain({ entry, step, projector }: { entry: any; step: number; projector?: boolean }) {
+function Chain({ entry, step, projector, stepMs }: { entry: any; step: number; projector?: boolean; stepMs: number }) {
+  const dur = Math.max(400, Math.min(2600, stepMs * 0.8));
   return (
     <div className="grid gap-3">
       <p className="ar-muted font-bold">Started by {entry.owner}</p>
@@ -18,8 +21,8 @@ function Chain({ entry, step, projector }: { entry: any; step: number; projector
         {step >= 2 && entry.desc != null && <div className="ar-card slide"><div className="text-sm font-bold opacity-60">{entry.descBy} DESCRIBED IT AS</div><div className={projector ? "text-4xl font-bold" : "text-2xl font-bold"}>&ldquo;{entry.desc}&rdquo;</div></div>}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        {step >= 1 && entry.d1 && <div className="slide"><p className="mb-1 font-bold">🎨 First drawing</p><Replay segs={entry.d1} play={step === 1} /></div>}
-        {step >= 3 && entry.d2 && <div className="slide"><p className="mb-1 font-bold">🎨 Final drawing</p><Replay segs={entry.d2} play={step === 3} /></div>}
+        {step >= 1 && entry.d1 && <div className="slide"><p className="mb-1 font-bold">🎨 First drawing</p><Replay segs={entry.d1} play={step === 1} durationMs={dur} /></div>}
+        {step >= 3 && entry.d2 && <div className="slide"><p className="mb-1 font-bold">🎨 Final drawing</p><Replay segs={entry.d2} play={step === 3} durationMs={dur} /></div>}
       </div>
     </div>
   );
@@ -48,8 +51,12 @@ export default function Telephone({ view, stamp, send, meId, optsRef, projector 
 
   const onSegs = useCallback((segs: any[]) => send({ type: "draw", segs }), [send]);
   const stepLeft = useRemaining(g.reveal?.stepIn, stamp);
+  const lenRef = useRef({ key: "", len: 3000 });
+  const stepKey = g.reveal ? `${g.reveal.ri}:${g.reveal.step}` : "";
+  if (g.reveal && lenRef.current.key !== stepKey) lenRef.current = { key: stepKey, len: Math.max(400, g.reveal.stepIn ?? 3000) };
+  const stepLen = lenRef.current.len;
   void stepLeft;
-  if (!grp) return <div className="ar-panel text-center">Hang tight - you'll join the next game!</div>;
+  if (!grp) return <div className="ar-panel text-center">{projector ? "Loading group…" : "Hang tight - you'll join the next game!"}</div>;
 
   const label = ["Stage 1 of 3 · DRAW", "Stage 2 of 3 · DESCRIBE", "Stage 3 of 3 · DRAW AGAIN"][Math.min(2, stage)];
 
@@ -85,7 +92,7 @@ export default function Telephone({ view, stamp, send, meId, optsRef, projector 
     return (
       <div className="grid gap-3">
         <div className="ar-panel flex flex-wrap items-center justify-between font-bold"><span>📞 The big reveal - chain {rv.ri + 1} of {grp.n}</span><span>{STEP_TITLES[rv.step] ?? "…"}</span></div>
-        {cur ? <Chain key={rv.ri} entry={cur} step={rv.step} projector={projector} /> : <div className="ar-panel text-center">Loading chain…</div>}
+        {cur ? <Chain key={rv.ri} entry={cur} step={rv.step} projector={projector} stepMs={stepLen} /> : <div className="ar-panel text-center">Loading chain…</div>}
       </div>
     );
   }

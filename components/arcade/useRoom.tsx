@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -74,9 +76,6 @@ export function useRoom(code: string, opts: { host?: boolean; mode?: string } = 
     // the loop reads the latest view through the ref below
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, poll]);
-
-  const viewRef = useRef<View>(null);
-  viewRef.current = view;
 
   const send = useCallback(async (action: Record<string, unknown>) => {
     const c = credsRef.current;

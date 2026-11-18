@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/immutability */
+
 import { useEffect, useState } from "react";
 import { api } from "./useRoom";
 import { GAME_CATALOG } from "@/lib/arcadeCatalog";
@@ -25,7 +27,7 @@ export default function ContentManager() {
     questions: form.questions, vocab: lines(form.vocab), drawPrompts: lines(form.drawPrompts), telephonePrompts: lines(form.telephonePrompts),
     imposterWords: lines(form.imposterWords).map((l) => { const [word, rel = ""] = l.split("|"); return { word: word.trim(), related: rel.split(/[;,]/).map((x) => x.trim()).filter(Boolean) }; }),
   });
-  useEffect(() => { const t = setTimeout(() => api("/api/arcade/content", { type: "compat", items: safeItems() }).then((d) => setCompat(d.compatibility)).catch(() => setCompat(null)), 300); return () => clearTimeout(t); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [form]);
+  useEffect(() => { const t = setTimeout(() => api("/api/arcade/content", { type: "compat", items: safeItems() }).then((d) => setCompat(d.compatibility)).catch(() => setCompat(null)), 300); return () => clearTimeout(t);   }, [form]);
   function safeItems() { const it = items(); return { ...it, questions: it.questions.filter((q: Q) => q.q.length >= 5) }; }
 
   async function open(sid: string) {

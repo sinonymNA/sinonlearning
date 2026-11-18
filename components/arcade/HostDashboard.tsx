@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability */
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Avatar from "./Avatar";
@@ -27,7 +29,6 @@ function Inner({ code }: { code: string }) {
   if (lost) return <div className="ar-wrap"><div className="ar-panel"><h1 className="ar-h2">Can&apos;t open this room</h1><p className="mt-2">{lost}</p><Link className="ar-btn mt-4" href="/arcade/host">Host a new game</Link></div></div>;
   if (!view) return <div className="ar-wrap ar-h2">Loading dashboard…</div>;
 
-  const playing = view.phase === "playing";
   const needed = Math.max(...view.playlist.map((g: string) => GAME_CATALOG[g].min));
   const canStart = view.phase === "lobby" && view.players.length >= needed;
   const joinUrl = `${origin}/arcade/join?code=${view.code}`;

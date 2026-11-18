@@ -1,6 +1,6 @@
 import { BaseGame } from "./base.mjs";
 import { appendSegs, newLog } from "../drawing.mjs";
-import { editDistance, fail, normalizeWord, partition, shuffle, pick } from "../util.mjs";
+import { editDistance, fail, normalizeWord, partition, shuffle } from "../util.mjs";
 
 const TURN_MS = 30000, REVEAL_MS = 4200, MAX_TURNS = 5;
 

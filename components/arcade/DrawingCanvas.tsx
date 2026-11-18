@@ -1,5 +1,7 @@
 "use client";
 
+ 
+
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
 
 /**
@@ -121,7 +123,7 @@ export const DrawPad = forwardRef<PadHandle, { onSegs: (segs: Seg[]) => Promise<
     void pump();
   }, [color, size, tool, pump]);
 
-  useEffect(() => { reset(); queue.current = []; stroke.current = null; /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [resetKey]);
+  useEffect(() => { reset(); queue.current = []; stroke.current = null;   }, [resetKey]);
   useEffect(() => () => { if (flushTimer.current) clearInterval(flushTimer.current); }, []);
 
   useImperativeHandle(handle, () => ({ clear: () => doClear() }));

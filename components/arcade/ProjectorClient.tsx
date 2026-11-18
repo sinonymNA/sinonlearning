@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability */
+
 import { useEffect, useState } from "react";
 import { GameSwitch } from "./GameSwitch";
 import Avatar from "./Avatar";

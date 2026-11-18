@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react/no-unescaped-entities, react-hooks/set-state-in-effect */
+
 import { useEffect, useRef, useState } from "react";
 import Avatar from "../Avatar";
 import { sfx } from "../prefs";

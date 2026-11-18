@@ -53,7 +53,7 @@ export class Bots {
       const bot = p.bot;
       if (bot.afk) continue;
       let plan = null;
-      try { plan = this.plan(room.playlist[room.gameIndex], id, bot, room.game, t); } catch { plan = null; }
+      try { plan = this.plan(room.playlist[room.gameIndex], id, bot, room.game); } catch { plan = null; }
       if (plan && plan.key !== bot.key) { bot.key = plan.key; bot.queue = plan.queue.map((q) => ({ at: t + room.dur(q.delay), run: q.run })); }
       while (bot.queue.length && bot.queue[0].at <= t) {
         const step = bot.queue.shift();
@@ -67,7 +67,7 @@ export class Bots {
   }
 
   // ----- per game brains. They act only through room.act(); hints stand in for a human's knowledge -----
-  plan(game, pid, bot, g, t) {
+  plan(game, pid, bot, g) {
     const room = this.room;
     const d = (lo, hi) => (lo + randInt(Math.max(1, hi - lo))) * bot.speed;
     switch (game) {

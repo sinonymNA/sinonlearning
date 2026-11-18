@@ -1,6 +1,6 @@
 import { BaseGame } from "./base.mjs";
 import { chooseSequence, isWord, vocabSequence } from "../dictionary.mjs";
-import { fail, partition, pick, randInt, shuffle, normalizeWord } from "../util.mjs";
+import { fail, partition, pick, randInt, normalizeWord } from "../util.mjs";
 
 const HEARTS = 3, FUSE_MIN = 8000, FUSE_SPREAD = 7000, BOOM_MS = 3200, GAME_MS = 170000, MAX_ROUNDS = 8;
 const ASSIST_MS = 700, ASSIST_CAP = 2800;
@@ -160,7 +160,7 @@ export class HotPotato extends BaseGame {
     };
   }
 
-  view(pid, opts, mode) {
+  view(pid, opts) {
     const out = { kind: "hot_potato", endsIn: Math.max(0, this.endsAt - this.room.t()), reactions: REACTIONS };
     const g = pid ? this.byPlayer.get(pid) : null;
     if (g) out.group = this.groupView(g, pid);

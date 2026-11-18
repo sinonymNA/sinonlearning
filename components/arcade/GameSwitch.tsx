@@ -1,5 +1,7 @@
 "use client";
 
+ 
+
 import HotPotato, { PotatoGroup } from "./games/HotPotato";
 import LastOne from "./games/LastOne";
 import QuickDraw from "./games/QuickDraw";
