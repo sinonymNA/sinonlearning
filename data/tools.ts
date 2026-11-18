@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Users, QrCode, Rocket, Gamepad2 } from "lucide-react";
+import { Users, QrCode, Rocket, Gamepad2, Joystick } from "lucide-react";
 
 export type ToolStatus = "Live" | "Prototype" | "Planned" | "Coming Later";
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    name: "Classroom Arcade",
+    status: "Live",
+    description:
+      "Five original multiplayer party games for up to 40 students: Hot Potato, Quick Draw, Last One Standing, Telephone, and Imposter. Host with a room code, play on any device.",
+    icon: Joystick,
+    href: "/arcade",
+  },
   {
     name: "Game Show Generator",
     status: "Live",

@@ -1,5 +1,5 @@
 import { GAME_CATALOG, GAME_IDS } from "./catalog.mjs";
-import { DEFAULT_SET, compatibility, importCsv, sanitizeItems } from "./content.mjs";
+import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems } from "./content.mjs";
 import { CHARACTERS, STARTER_AVATARS, packOdds } from "./characters.mjs";
 import { GameError, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
@@ -168,6 +168,14 @@ export async function handleContent(ctx, body) {
       if (text.length > 200_000) fail("That CSV is too large.");
       const { items, errors } = importCsv(kind, text);
       return { items, errors: errors.slice(0, 20) };
+    }
+    case "import_game_show": {
+      const id = String(body.id ?? "").match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
+      if (!id) fail("Paste the game show's play link or ID.");
+      const show = await ctx.gameShows?.getById(id);
+      if (!show) fail("Game show not found.", "not_found");
+      const items = sanitizeItems(itemsFromGameShow(show.payload));
+      return { title: show.title, items, compatibility: compatibility({ items }) };
     }
     case "compat": return { compatibility: compatibility({ items: sanitizeItems(body.items) }) };
     default: fail("Unknown request.");

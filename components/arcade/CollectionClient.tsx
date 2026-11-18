@@ -32,6 +32,10 @@ export default function CollectionClient() {
             <p className="mt-2 min-h-10 text-sm">{n ? c.tagline : "Open a pack to discover."}</p>{n > 1 && <p className="text-sm font-bold">×{n}</p>}
           </article>); })}
       </section>
+      {me.signedIn && (
+        <section className="ar-panel flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-bold">Your data</h2><p className="ar-muted text-sm">The arcade stores only your coins and collection (linked to your account). Nicknames in game rooms are never saved after the session.</p></div>
+          <button className="ar-btn sm coral" onClick={async () => { if (confirm("Delete all your arcade coins, characters and content sets? This cannot be undone.")) { await api("/api/arcade/economy", { type: "delete_my_data" }); setMe(await api("/api/arcade/economy", { type: "me" })); } }}>Delete my arcade data</button></section>
+      )}
       <section className="ar-panel"><h2 className="ar-h2 mb-3">Free starter avatars</h2><div className="flex flex-wrap gap-4">{cat.starters.map((s: any) => <div key={s.id} className="ar-av"><Avatar id={s.id} size={64} /><span>{s.name}</span></div>)}</div></section>
     </div>
   );

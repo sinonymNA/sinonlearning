@@ -38,6 +38,18 @@ export default function ContentManager() {
   async function save() {
     try { const d = await api("/api/arcade/content", { type: "save", id, title, items: items() }); setId(d.id); setMsg("Saved!"); load(); } catch (e: any) { setMsg(e.message); }
   }
+  const [showId, setShowId] = useState("");
+  async function importShow() {
+    try {
+      const d = await api("/api/arcade/content", { type: "import_game_show", id: showId });
+      setForm((f: any) => ({
+        questions: [...f.questions, ...d.items.questions], vocab: [f.vocab, ...d.items.vocab].filter(Boolean).join("\n"),
+        drawPrompts: [f.drawPrompts, ...d.items.drawPrompts].filter(Boolean).join("\n"), telephonePrompts: [f.telephonePrompts, ...d.items.telephonePrompts].filter(Boolean).join("\n"),
+        imposterWords: [f.imposterWords, ...d.items.imposterWords.map((w: any) => `${w.word} | ${w.related.join("; ")}`)].filter(Boolean).join("\n"),
+      }));
+      if (!title) setTitle(d.title); setShowId(""); setMsg(`Imported from "${d.title}". Review, then save.`);
+    } catch (e: any) { setMsg(e.message); }
+  }
   async function csv(kind: string, file: File | undefined) {
     if (!file) return;
     const text = await file.text();
@@ -64,6 +76,8 @@ export default function ContentManager() {
       <div className="grid gap-4">
         <div className="ar-panel grid gap-3"><label className="grid gap-1 font-bold">Set title<input className="ar-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Unit 4 Review" /></label>
           {compat && <div className="flex flex-wrap gap-2" aria-label="Compatibility">{Object.entries(compat).map(([g, v]: any) => <span key={g} className="ar-pill" style={{ background: v.ok ? "rgba(47,209,165,.3)" : "rgba(255,255,255,.1)" }}>{GAME_CATALOG[g].icon} {GAME_CATALOG[g].name}: {v.ok ? `ready (${v.count})` : `needs ${v.need}+ ${v.label} (${v.count})`}</span>)}</div>}</div>
+        <div className="ar-panel grid gap-2"><h2 className="font-bold">♻️ Reuse a Game Show you already made</h2><p className="ar-muted text-sm">Paste its play link or ID. Race becomes multiple-choice questions, Memory becomes vocabulary / drawing prompts / secret words, Wheel becomes telephone prompts.</p>
+          <div className="flex gap-2"><input className="ar-input" value={showId} onChange={(e) => setShowId(e.target.value)} placeholder="https://…/play/game-shows/…" aria-label="Game show link or ID" /><button className="ar-btn sm mint" onClick={importShow} disabled={!showId.trim()}>Import</button></div></div>
         <div className="ar-panel grid gap-3"><h2 className="ar-h2">⚡ Multiple-choice questions <span className="ar-muted text-base">(Last One Standing)</span></h2>
           <div className="ar-card grid gap-2"><input className="ar-input" placeholder="Question" value={draft.q} onChange={(e) => setDraft({ ...draft, q: e.target.value })} />
             {draft.choices.map((c, i) => <div key={i} className="flex items-center gap-2"><input type="radio" name="correct" checked={draft.answer === i} onChange={() => setDraft({ ...draft, answer: i })} aria-label={`Choice ${i + 1} is correct`} /><input className="ar-input" placeholder={`Choice ${"ABCD"[i]}${i < 2 ? "" : " (optional)"}`} value={c} onChange={(e) => setDraft({ ...draft, choices: draft.choices.map((x, j) => (j === i ? e.target.value : x)) })} /></div>)}

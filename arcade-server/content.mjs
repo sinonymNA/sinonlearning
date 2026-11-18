@@ -239,3 +239,35 @@ export function importCsv(kind, text) {
 }
 
 export const shuffled = shuffle;
+
+/**
+ * Convert an existing Game Show payload (lib/gameShowTypes.ts) into arcade content so teachers reuse the
+ * question banks they already built: Race -> multiple choice, Memory -> vocab/draw prompts/secret words,
+ * Wheel -> telephone prompts. Grid and Feud are free-response formats and are not convertible.
+ */
+export function itemsFromGameShow(payload) {
+  const d = payload?.data ?? {};
+  const out = { questions: [], vocab: [], drawPrompts: [], telephonePrompts: [], imposterWords: [] };
+  const short = (t, n) => String(t ?? "").trim().slice(0, n);
+  switch (payload?.type) {
+    case "race":
+      out.questions = (d.questions ?? []).map((q) => ({ q: short(q.question, 200), choices: (q.choices ?? []).slice(0, 4).map((c) => short(c, 80)), answer: q.correctIndex }));
+      break;
+    case "memory":
+      for (const p of d.pairs ?? []) {
+        const term = short(p.term, 30);
+        if (!term) continue;
+        out.vocab.push(term);
+        if (term.split(/\s+/).length <= 2) out.drawPrompts.push(term);
+        const related = String(p.definition ?? "").split(/[^A-Za-z']+/).filter((w) => w.length > 4).slice(0, 6);
+        out.imposterWords.push({ word: term.toUpperCase(), related });
+      }
+      break;
+    case "wheel":
+      out.telephonePrompts = (d.rounds ?? []).map((r) => short(r.phrase, 80)).filter(Boolean);
+      break;
+    default:
+      throw new GameError("Only Race, Memory and Wheel game shows can be converted (Grid and Feud are free-response).");
+  }
+  return out;
+}

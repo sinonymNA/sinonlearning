@@ -19,6 +19,7 @@ const columns = [
       { label: "Dash — Classroom Display", href: "/dash" },
       { label: "Scaffold — Notes Generator", href: "/notesheet" },
       { label: "Classroom Tools", href: "/tools" },
+      { label: "Classroom Arcade", href: "/arcade" },
       { label: "Simulations & Games", href: "/simulations" },
     ],
   },
@@ -26,6 +27,7 @@ const columns = [
     title: "Students",
     links: [
       { label: "Explore Student Resources", href: "/students" },
+      { label: "Join a Classroom Arcade game", href: "/arcade/join" },
       { label: "Simulations & Games", href: "/simulations" },
       { label: "Digital Textbooks", href: "/textbooks" },
     ],

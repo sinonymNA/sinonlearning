@@ -98,3 +98,13 @@ step-by-step deploy (set the service root to `reel_worker`, share `DATABASE_URL`
 no public port, one instance). Until that service is running, the rest of Reel
 works but the **Render preview** / **Produce** steps stay queued.
 
+
+## Classroom Arcade (`/arcade`)
+
+Five original multiplayer party games (Hot Potato, Quick Draw, Last One Standing, Telephone, Imposter) for up to 40 students, plus Arcade Party playlists, a teacher dashboard/projector, coins and collectible characters, teacher content sets, and a private developer test lab.
+
+- **Hosting**: sign in with a Margins *teacher* account → `/arcade/host`. Students (guests or signed in) join at `/arcade/join` with the six-character code.
+- **Transport**: authoritative HTTP polling (`POST /api/arcade`, 650–1000 ms) rather than WebSockets. Next.js route handlers cannot upgrade connections, and Railway runs `next start`, so WebSockets would require replacing the server with a custom one. Polling is simple, works through school proxies, reconnects by itself (player id + token in `localStorage`), and handled 35 concurrent clients with p95 ≈ 18 ms. Trade-offs: up to ~1 s latency for other players' changes, and rooms live in one Node process (a restart ends live sessions; coins/collections/content live in PostgreSQL).
+- **Environment**: `DATABASE_URL` (required for coins, collections, content sets; without it the arcade still runs with in-memory stores), `ARCADE_DEV_EMAILS` (comma-separated emails allowed into `/arcade/test-lab`; outside production, teacher accounts also qualify when unset). `ARCADE_DEV_AUTH=1` enables a cookie identity for local tests **only when `NODE_ENV` is not `production`**.
+- **Tests**: `npm run arcade:test` (unit/integration), `npm run arcade:load -- --url http://localhost:3100` (35 independent HTTP clients), `node scripts/arcade-e2e.mjs`, `node scripts/arcade-e2e-sync.mjs`, `node scripts/arcade-e2e-accounts.mjs` (see `ARCADE_TESTS.md`).
+- **Safety**: guests need no account; no chat or direct messages; nicknames are filtered; typed text is moderated and personal info is blocked; rooms are deleted after 4 h idle (30 min after ending); signed-in players can delete their arcade data. This is not a compliance certification - have your school review it.

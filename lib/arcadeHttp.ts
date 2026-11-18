@@ -14,7 +14,11 @@ export async function respond(request: Request, run: (ctx: any, body: any, arcad
     const body = JSON.parse(raw || "{}");
     const arcade = getArcade();
     const user = await getArcadeUser();
-    const ctx = { user, ip: getClientIp(request), store: arcade.store };
+    const ctx = {
+      user, ip: getClientIp(request), store: arcade.store,
+      // reuse of the existing Game Show question banks (lib/gameShows.ts)
+      gameShows: { getById: async (id: string) => (await import("@/lib/gameShows")).getGameShowById(id) },
+    };
     const data = await run(ctx, body, arcade);
     return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

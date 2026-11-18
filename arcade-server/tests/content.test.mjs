@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SET, compatibility, contentFor, importCsv, sanitizeItems, parseCsv } from "../content.mjs";
+import { DEFAULT_SET, compatibility, contentFor, importCsv, sanitizeItems, parseCsv, itemsFromGameShow } from "../content.mjs";
 import { handleContent } from "../api.mjs";
 import { MemoryStore } from "../store.mjs";
 import { teacherCtx, studentCtx, makeRoom } from "./helpers.mjs";
@@ -60,4 +60,20 @@ test("a game uses the teacher's set when compatible (Last One Standing)", () => 
   const ctx = makeRoom({ n: 3, playlist: ["last_one_standing"], content: set });
   const g = ctx.begin();
   assert.match(g.q.q, /Teacher question/);
+});
+
+test("existing Game Shows are reused: Race -> questions, Memory -> vocab/prompts/secret words, Grid rejected", async () => {
+  const race = itemsFromGameShow({ type: "race", data: { questions: [{ question: "What is 2 + 2?", choices: ["3", "4", "5", "6"], correctIndex: 1 }] } });
+  assert.equal(race.questions[0].answer, 1);
+  const mem = itemsFromGameShow({ type: "memory", data: { pairs: [{ term: "Mitochondria", definition: "The powerhouse producing cellular energy" }] } });
+  assert.deepEqual(mem.vocab, ["Mitochondria"]);
+  assert.equal(mem.imposterWords[0].word, "MITOCHONDRIA");
+  assert.ok(mem.imposterWords[0].related.includes("powerhouse"));
+  assert.throws(() => itemsFromGameShow({ type: "grid", data: {} }), /free-response/);
+  const ctx = { ...teacherCtx(new MemoryStore(), "t1"), gameShows: { getById: async () => ({ title: "Cells", payload: { type: "memory", data: { pairs: [{ term: "Nucleus", definition: "Control center of the cell" }, { term: "Ribosome", definition: "Makes proteins" }, { term: "Vacuole", definition: "Stores water and nutrients" }] } } }) } };
+  const res = await handleContent(ctx, { type: "import_game_show", id: "https://x.test/play/game-shows/123e4567-e89b-42d3-a456-426614174000" });
+  assert.equal(res.title, "Cells");
+  assert.equal(res.compatibility.hot_potato.ok, true);
+  assert.equal(res.compatibility.imposter.ok, true);
+  await assert.rejects(() => handleContent(ctx, { type: "import_game_show", id: "not an id" }), /play link or ID/);
 });
