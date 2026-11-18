@@ -1,0 +1,2 @@
+import ArcadeJoinForm from "@/components/arcade/ArcadeJoinForm";
+export default function ArcadeJoinPage() { return <main className="min-h-screen bg-[#10152b] px-5 py-16 sm:px-10"><div className="mx-auto max-w-3xl"><a href="/arcade" className="text-sm text-cyan-300">← Arcade</a><h1 className="mt-8 text-5xl font-black text-white">Join the room</h1><p className="mt-4 text-slate-300">Enter the code your teacher displays.</p><div className="mt-10"><ArcadeJoinForm /></div></div></main>; }
