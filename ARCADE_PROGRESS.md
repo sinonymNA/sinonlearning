@@ -37,3 +37,11 @@ None for development. Needs from the owner: production `DATABASE_URL` (already r
 - Hot Potato: 8 s hold limit ("hot hands": -5 pts, fuse -2 s), animated potato flight between avatars.
 - Groups: partition verified balanced (spread <= 1); players absent >20 s at launch are sat out. Original "10 vs 3" report not reproduced.
 - Phone layout (`@media (max-width: 899px)`): at 390x844 most screens fit. Known remaining overflow: Telephone reveal (~70 px), results (~58 px), Imposter (31-109 px depending on phase), Hot Potato ~20 px. Not checked at 360x740 or landscape; no real-device test.
+
+## Round: AI set builder, daily shop, Crew set, Hot Potato variety, everyone draws
+- Teacher AI set builder: `ai_generate` in `handleContent` (teacher-only, 12/hour, 60k chars, output run through `sanitizeLoose`); `lib/arcadeAi.ts` uses `callKoraStructured` (needs ANTHROPIC_API_KEY; otherwise "not switched on"). Questions now carry optional `explain` + `concept` (for Mastery Peak). UI: "Build a set with AI" panel in the content manager. NOT run against the real model in this environment (no key): only the plumbing/validation is tested with a fake generator.
+- Content libraries: 251 draw prompts, 127 telephone prompts, 70 imposter words, 138 questions (`arcade-server/data/extraContent.mjs`).
+- Quick Draw: root cause of "some people don't draw" was `turns = min(members, 4)` with groups up to 7. Now groups max 5 and turns = group size.
+- Hot Potato: every pass gets a random challenge (letters / starts-with / class quiz "Brain Pass"), mid-round surprise toss, longer fuse (18-30 s) and hold limit (12 s), wrong quiz answer = -2 pts and -1.5 s fuse. Quiz answer index never leaves the server.
+- Shop: `arcade-server/shop.mjs` daily shop (pure function of UTC date): deal of the day (20-40% off, never Starter), spotlight character (3x inside its tier, odds table reflects it), daily check-in +15 coins. Server charges the deal price (client cannot choose a price). New "Classroom Crew" set (16 procedural characters) + Crew Pack (130).
+- Mastery Peak: brainstorm + plan in `ARCADE_MASTERY_PEAK.md` (not built).

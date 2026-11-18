@@ -59,6 +59,7 @@ CHARACTERS.push(
 export const SETS = {
   original: { id: "original", name: "Classic Crew", blurb: "The original 40 mascots." },
   snack: { id: "snack", name: "Snack Squad", blurb: "16 food friends. Only found in the Snack Pack!" },
+  crew: { id: "crew", name: "Classroom Crew", blurb: "16 school-supply pals. Only found in the Crew Pack!" },
 };
 const SN = (id, name, rarity, tagline) => CHARACTERS.push({ id, name, rarity, tagline, set: "snack" });
 SN("s-pickle", "Pickle Pete", "common", "Always in a pickle, never worried about it.");
@@ -78,6 +79,26 @@ SN("s-burger", "Bruno", "rare", "Stacked with talent.");
 SN("s-cupcake", "Cupcake Queen", "epic", "Rules the bake sale with a frosting fist.");
 SN("s-sundae", "Sundae Supreme", "legendary", "Three scoops, one cherry, zero chill.");
 
+
+// ---- Classroom Crew: third set (procedurally drawn school supplies). Only drops from the Crew Pack. ---------------
+const CR = (id, name, rarity, tagline, ...look) => CHARACTERS.push({ id, name, rarity, tagline, set: "crew", ...L(...look) });
+CR("k-eraser", "Eraser Ed", "common", "Fixes every mistake. Leaves a little dust.", "square", "#ffb3c7", "happy", "smile", "none");
+CR("k-pencil", "Penny Pencil", "common", "Always sharp. Occasionally broken. Still writing.", "tall", "#ffd23d", "dots", "smile", "none");
+CR("k-glue", "Gluey", "common", "Sticks with you through thick and thin.", "blob", "#f4f0ff", "wide", "grin", "none");
+CR("k-ruler", "Ruler Rex", "common", "Measures up every time.", "tall", "#c7e6ff", "visor", "flat", "none");
+CR("k-stapler", "Stapler Stan", "common", "Holds the whole group project together.", "square", "#8a96b0", "wide", "grin", "none");
+CR("k-marker", "Marker Max", "common", "Colours outside the lines on purpose.", "round", "#ff5d73", "happy", "open", "none");
+CR("k-sticky", "Sticky Note", "common", "Don't forget about me! (Everybody does.)", "square", "#ffe66d", "dots", "smile", "none");
+CR("k-backpack", "Backpack Bea", "uncommon", "Carries everything. Remembers nothing.", "bean", "#6aa8ff", "happy", "smile", "bandana", "#ff5d73");
+CR("k-lunch", "Lunchbox Lou", "uncommon", "The best part of the whole day.", "square", "#ffb347", "wide", "grin", "headphones", "#14163a");
+CR("k-globe", "Globe Gus", "uncommon", "Has been everywhere. Spins about it.", "round", "#5de0b0", "wide", "smile", "antenna", "#ffd23d");
+CR("k-bell", "Bell Betty", "uncommon", "Rings at exactly the wrong moment.", "drop", "#ffd23d", "happy", "open", "bow", "#ff5d73");
+CR("k-pi", "Professor Pi", "rare", "Goes on forever. Nobody minds.", "round", "#b58aff", "visor", "smile", "wizard", "#ffd23d");
+CR("k-compass", "Captain Compass", "rare", "Never lost. Just exploring.", "tri", "#4cc3ff", "wide", "grin", "pirate", "#14163a");
+CR("k-beaker", "Beaker Bo", "rare", "Bubbling over with ideas. Mostly bubbling.", "drop", "#7be0c3", "wide", "open", "antenna", "#ff9bd0");
+CR("k-principal", "Principal Prism", "epic", "Sees every colour of the rainbow, and your homework.", "tall", "#ff9bd0", "sleepy", "smile", "crown", "#ffd23d");
+CR("k-aplus", "A+ Aria", "legendary", "Appears when the whole class aces the test.", "cloud", "#ffe066", "happy", "smile", "halo", "#ffffff");
+
 // ---- Uploaded (AI-generated / hand-drawn) characters -------------------------------------------------------
 // Put a transparent PNG at public/characters/<id>.png and add ONE line here. See ARCADE_ICON_GUIDE.md.
 //   IMG("i-blorp", "Blorp", "rare", "Tagline shown on the card.")
@@ -94,6 +115,7 @@ export const PACKS = {
   basic: { id: "basic", name: "Classic Pack", cost: 100, color: "#ffc233", blurb: "The everyday pack with a real chance at rares.", rarityWeights: W(60, 26, 10.5, 3, 0.5) },
   super: { id: "super", name: "Super Pack", cost: 250, color: "#8a6bff", blurb: "No commons! Every card is uncommon or better.", rarityWeights: W(0, 55, 33, 10, 2) },
   snack: { id: "snack", name: "Snack Pack", cost: 120, color: "#ff8fc7", set: "snack", blurb: "Only Snack Squad food friends! 16 to collect, including a legendary sundae.", rarityWeights: W(55, 28, 12, 4, 1) },
+  crew: { id: "crew", name: "Crew Pack", cost: 130, color: "#59c56a", set: "crew", blurb: "Only Classroom Crew school-supply pals! 16 to collect, including a legendary A+.", rarityWeights: W(55, 28, 12, 4, 1) },
   legend: { id: "legend", name: "Legend Pack", cost: 600, color: "#ff5d73", blurb: "Rare or better every time, with the best shot at epics and legendaries.", rarityWeights: W(0, 0, 55, 37, 8) },
 };
 export const PACK_IDS = Object.keys(PACKS).sort((a, b) => PACKS[a].cost - PACKS[b].cost);
@@ -101,23 +123,25 @@ export const PACK_IDS = Object.keys(PACKS).sort((a, b) => PACKS[a].cost - PACKS[
 /** A pack with a `set` drops only that set; every other pack drops only the original (un-setted) characters. */
 export const poolFor = (pack) => CHARACTERS.filter((c) => (pack.set ? c.set === pack.set : !c.set));
 
-export function packOdds(packId = "basic") {
+export function packOdds(packId = "basic", spotlight = null) {
   const pack = PACKS[packId];
   const total = Object.values(pack.rarityWeights).reduce((a, b) => a + b, 0);
   const rarities = Object.entries(pack.rarityWeights).filter(([, w]) => w > 0).map(([id, w]) => ({ id, label: RARITIES[id].label, percent: Math.round((w / total) * 1000) / 10 }));
   const pool = poolFor(pack);
   const characters = pool.filter((c) => pack.rarityWeights[c.rarity] > 0).map((c) => {
-    const inRarity = pool.filter((x) => x.rarity === c.rarity).length;
-    return { id: c.id, name: c.name, rarity: c.rarity, percent: Math.round(((pack.rarityWeights[c.rarity] / total) / inRarity) * 10000) / 100 };
+    const tier = pool.filter((x) => x.rarity === c.rarity);
+    const share = (c.id === spotlight ? SPOTLIGHT_BOOST : 1) / tier.reduce((a, x) => a + (x.id === spotlight ? SPOTLIGHT_BOOST : 1), 0);
+    return { id: c.id, name: c.name, rarity: c.rarity, percent: Math.round((pack.rarityWeights[c.rarity] / total) * share * 10000) / 100, spotlight: c.id === spotlight };
   });
   return { pack: { id: pack.id, name: pack.name, cost: pack.cost, color: pack.color, blurb: pack.blurb }, rarities, characters };
 }
 
-export const allPackOdds = () => PACK_IDS.map((id) => packOdds(id));
+export const allPackOdds = (spotlight = null) => PACK_IDS.map((id) => packOdds(id, spotlight));
 
+export const SPOTLIGHT_BOOST = 3;
 const rand01 = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;
 
-export function rollPack(packId = "basic", rng = rand01) {
+export function rollPack(packId = "basic", rng = rand01, spotlight = null) {
   const pack = PACKS[packId];
   if (!pack) throw new Error("Unknown pack.");
   const entries = Object.entries(pack.rarityWeights).filter(([, w]) => w > 0);
@@ -125,5 +149,9 @@ export function rollPack(packId = "basic", rng = rand01) {
   let roll = rng() * total, rarity = entries[entries.length - 1][0];
   for (const [id, w] of entries) { if (roll < w) { rarity = id; break; } roll -= w; }
   const pool = poolFor(pack).filter((c) => c.rarity === rarity);
-  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
+  // Daily spotlight: that character counts triple inside its rarity tier (odds table reflects this).
+  const weights = pool.map((c) => (c.id === spotlight ? SPOTLIGHT_BOOST : 1));
+  let r = rng() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) { if (r < weights[i]) return pool[i]; r -= weights[i]; }
+  return pool[pool.length - 1];
 }

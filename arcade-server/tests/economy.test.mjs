@@ -4,11 +4,13 @@ import { makeRoom, studentCtx, guestCtx } from "./helpers.mjs";
 import { MemoryStore } from "../store.mjs";
 import { CHARACTERS, PACKS, PACK_IDS, packOdds, rollPack, RARITIES } from "../characters.mjs";
 import { handleEconomy } from "../api.mjs";
+import { dealFor as dealForDay } from "../shop.mjs";
 
-test("40 original + 16 Snack Squad characters across five rarities, all drawable; odds sum to 100%", () => {
-  assert.equal(CHARACTERS.length, 56);
-  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 56);
+test("40 original + 16 Snack Squad + 16 Classroom Crew characters across five rarities, all drawable; odds sum to 100%", () => {
+  assert.equal(CHARACTERS.length, 72);
+  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 72);
   assert.equal(CHARACTERS.filter((c) => c.set === "snack").length, 16);
+  assert.equal(CHARACTERS.filter((c) => c.set === "crew").length, 16);
   assert.ok(CHARACTERS.every((c) => c.tagline.length > 10));
   for (const c of CHARACTERS) assert.ok(RARITIES[c.rarity]);
   const odds = packOdds("basic");
@@ -103,10 +105,10 @@ test("unowned collectible avatars cannot be used in rooms", () => {
 
 test("four packs: prices ascend, every pack's odds sum to 100%, guarantees hold (Super = no commons, Legend = rare+, Starter = no legendaries)", () => {
   const ids = PACK_IDS;
-  assert.deepEqual(ids, ["starter", "basic", "snack", "super", "legend"]);
+  assert.deepEqual(ids, ["starter", "basic", "snack", "crew", "super", "legend"]);
   const costs = ids.map((id) => PACKS[id].cost);
   assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
-  assert.ok(costs[0] <= 50 && costs[3] <= 700, "prices stay modest");
+  assert.ok(costs[0] <= 50 && costs[4] <= 700, "prices stay modest");
   for (const id of ids) {
     const o = packOdds(id);
     assert.ok(Math.abs(o.rarities.reduce((n, r) => n + r.percent, 0) - 100) < 0.3, id);
@@ -123,18 +125,19 @@ test("four packs: prices ascend, every pack's odds sum to 100%, guarantees hold 
 
 test("opening each pack charges that pack's price; unknown packs are rejected", async () => {
   const store = new MemoryStore(); const ctx = studentCtx(store, "kid-packs");
-  await store.award({ userId: "kid-packs", coins: 1200, key: "seed" });
-  let left = 1200;
-  for (const id of ["starter", "basic", "snack", "super", "legend"]) {
+  await store.award({ userId: "kid-packs", coins: 1600, key: "seed" });
+  let left = 1600;
+  for (const id of ["starter", "basic", "snack", "crew", "super", "legend"]) {
     const r = await handleEconomy(ctx, { type: "open_pack", requestId: `req-${id}-0001`, packId: id });
-    left -= PACKS[id].cost;
+    left -= dealForDay(id).price; // today's deal price, applied by the server
     assert.equal(r.coins, left, id);
     assert.ok(r.character.id);
   }
   await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-nope-0001", packId: "mega" }), /Unknown pack/);
   const cat = await handleEconomy(ctx, { type: "catalog" });
-  assert.equal(cat.packs.length, 5);
-  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need 600/);
+  assert.equal(cat.packs.length, 6);
+  assert.ok(cat.shop.deal && cat.shop.spotlight);
+  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need \d+/);
 });
 
 test("Snack Pack is a specialty pack: drops ONLY Snack Squad, every other pack never drops them, all 16 are obtainable", () => {
@@ -152,4 +155,57 @@ test("snack characters must be owned to be used as an avatar", () => {
   const { room } = makeRoom({ n: 0 });
   assert.equal(room.addPlayer({ nickname: "Aaa", avatar: "s-sundae", ownedAvatars: [] }).avatar, "rk-sun");
   assert.equal(room.addPlayer({ nickname: "Bbb", avatar: "s-sundae", ownedAvatars: ["s-sundae"] }).avatar, "s-sundae");
+});
+
+import { dailyShop, dealFor, dayKey, DAILY_BONUS } from "../shop.mjs";
+
+test("daily shop: deterministic per UTC date, varies across days, discount + spotlight are valid", () => {
+  const a = dailyShop("2030-01-01"), b = dailyShop("2030-01-01");
+  assert.deepEqual(a, b);
+  const seen = new Set();
+  for (let d = 1; d <= 28; d++) {
+    const s = dailyShop(`2030-02-${String(d).padStart(2, "0")}`);
+    seen.add(s.deal.packId + s.spotlight.characterId);
+    assert.ok(PACKS[s.deal.packId] && s.deal.packId !== "starter");
+    assert.ok(s.deal.price < PACKS[s.deal.packId].cost && s.deal.price >= 1);
+    assert.ok(s.spotlight.packIds.length >= 1, "spotlight must be obtainable");
+    assert.ok(["rare", "epic", "legendary"].includes(s.spotlight.rarity));
+  }
+  assert.ok(seen.size > 8, "shop should rotate");
+  // every pack shows up as the deal at least once in a month (nothing is permanently unavailable)
+  const deals = new Set(Array.from({ length: 60 }, (_, i) => dailyShop(`2030-03-${String((i % 28) + 1).padStart(2, "0")}-${i}`).deal.packId));
+  assert.ok(deals.size >= 4);
+});
+
+test("spotlight boosts that character inside its tier and the published odds still sum to 100%", () => {
+  const spot = "k-pi"; // Professor Pi, rare in the Crew pack
+  const base = packOdds("crew").characters.find((c) => c.id === spot).percent;
+  const boosted = packOdds("crew", spot).characters.find((c) => c.id === spot).percent;
+  assert.ok(boosted > base * 1.5);
+  assert.ok(Math.abs(packOdds("crew", spot).characters.reduce((a, c) => a + c.percent, 0) - 100) < 0.3);
+  let hits = 0, hitsBase = 0; const N = 30000;
+  for (let i = 0; i < N; i++) { if (rollPack("crew", undefined, spot).id === spot) hits++; if (rollPack("crew").id === spot) hitsBase++; }
+  assert.ok(hits > hitsBase * 1.4, `${hits} vs ${hitsBase}`);
+  assert.ok(Math.abs(hits / N - boosted / 100) < 0.02);
+});
+
+test("crew pack only drops Classroom Crew; deal price is what the server charges; daily coins once per day", async () => {
+  for (let i = 0; i < 300; i++) assert.equal(rollPack("crew").set, "crew");
+  const store = new MemoryStore(); const ctx = studentCtx(store, "kid-shop");
+  await store.award({ userId: "kid-shop", coins: 1000, key: "seed", reason: "test" });
+  const shop = dailyShop();
+  const d = dealFor(shop.deal.packId);
+  assert.equal(d.price, shop.deal.price);
+  const before = (await store.getWallet("kid-shop")).coins;
+  const r = await handleEconomy(ctx, { type: "open_pack", requestId: "req-deal-0001", packId: shop.deal.packId });
+  assert.equal(r.coins, before - shop.deal.price);
+  const plain = Object.keys(PACKS).find((id) => id !== shop.deal.packId);
+  const r2 = await handleEconomy(ctx, { type: "open_pack", requestId: "req-deal-0002", packId: plain });
+  assert.equal(r2.coins, r.coins - PACKS[plain].cost);
+  const c1 = await handleEconomy(ctx, { type: "claim_daily" });
+  const c2 = await handleEconomy(ctx, { type: "claim_daily" });
+  assert.equal(c1.claimed, true); assert.equal(c2.claimed, false);
+  assert.equal(c2.coins, r2.coins + DAILY_BONUS);
+  await assert.rejects(handleEconomy(guestCtx(), { type: "claim_daily" }), /Sign in/);
+  assert.equal(dayKey(Date.UTC(2030, 0, 5)), "2030-01-05");
 });

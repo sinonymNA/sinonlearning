@@ -61,20 +61,21 @@ export class MemoryStore {
   }
 
   /** Atomic + idempotent: the same requestId always returns the same result and never charges twice. */
-  async openPack(userId, requestId, packId = "basic", rng) {
+  async openPack(userId, requestId, packId = "basic", rng, deal = {}) {
     const pack = PACKS[packId];
     if (!pack) throw new GameError("Unknown pack.");
     const rid = `${userId}:${requestId}`;
     if (this.packs.has(rid)) return { ...this.packs.get(rid), repeated: true };
     const w = this.wallets.get(userId) ?? { coins: 0, lifetime: 0 };
-    if (w.coins < pack.cost) throw new GameError(`You need ${pack.cost} coins (you have ${w.coins}).`);
-    const character = rollPack(packId, rng);
-    this.wallets.set(userId, { ...w, coins: w.coins - pack.cost });
+    const price = deal.price ?? pack.cost;
+    if (w.coins < price) throw new GameError(`You need ${price} coins (you have ${w.coins}).`);
+    const character = rollPack(packId, rng, deal.spotlight ?? null);
+    this.wallets.set(userId, { ...w, coins: w.coins - price });
     const col = this.collections.get(userId) ?? new Map();
     const before = col.get(character.id) ?? 0;
     col.set(character.id, before + 1);
     this.collections.set(userId, col);
-    const result = { character, duplicate: before > 0, coins: w.coins - pack.cost };
+    const result = { character, duplicate: before > 0, coins: w.coins - price };
     this.packs.set(rid, result);
     return result;
   }

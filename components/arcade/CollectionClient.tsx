@@ -33,7 +33,7 @@ export default function CollectionClient() {
                 <div style={{ filter: n ? undefined : "brightness(0) opacity(.25)" }} className={n ? "float" : ""}><Avatar id={c.id} size={96} title={n ? c.name : "Locked character"} /></div>
                 <h3 className="mt-1 text-xl font-bold">{n ? c.name : "???"}</h3>
                 <span className="ar-chip" style={{ background: RC[c.rarity], color: "#fff" }}>{rarity(c.rarity)?.label}</span>
-                <p className="mt-2 min-h-10 text-sm">{n ? c.tagline : set.id === "snack" ? "Found only in the Snack Pack." : "Open a pack to discover."}</p>{n > 1 && <p className="text-sm font-bold">×{n}</p>}
+                <p className="mt-2 min-h-10 text-sm">{n ? c.tagline : set.id === "snack" ? "Found only in the Snack Pack." : set.id === "crew" ? "Found only in the Crew Pack." : "Open a pack to discover."}</p>{n > 1 && <p className="text-sm font-bold">×{n}</p>}
               </article>); })}
           </div>
         </section>); })}

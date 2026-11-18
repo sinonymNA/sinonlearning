@@ -1,6 +1,7 @@
 import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
 import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems, sanitizeLoose } from "./content.mjs";
 import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
+import { DAILY_BONUS, dailyShop, dayKey, dealFor } from "./shop.mjs";
 import { GameError, RateLimiter, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
@@ -150,7 +151,17 @@ export async function handle(service, ctx, body) {
 export async function handleEconomy(ctx, body) {
   const { store, user } = ctx;
   switch (body.type) {
-    case "catalog": return { characters: CHARACTERS, starters: STARTER_AVATARS, packs: allPackOdds() };
+    case "catalog": {
+      const shop = dailyShop();
+      return { characters: CHARACTERS, starters: STARTER_AVATARS, packs: allPackOdds(shop.spotlight.characterId), shop };
+    }
+    case "claim_daily": {
+      if (!user) fail("Sign in to claim your daily coins.", "forbidden");
+      const day = dayKey();
+      const r = await store.awardCapped({ userId: user.id, coins: DAILY_BONUS, key: `daily:${day}`, reason: "daily check-in", dailyCap: DAILY_BONUS, group: "daily" });
+      const wallet = await store.getWallet(user.id);
+      return { claimed: !!r.awarded, coins: wallet.coins, bonus: DAILY_BONUS };
+    }
     case "me": {
       if (!user) return { signedIn: false, ...{ coins: 0, owned: [] } };
       const wallet = await store.getWallet(user.id);
@@ -163,7 +174,7 @@ export async function handleEconomy(ctx, body) {
       if (!/^[A-Za-z0-9_-]{8,64}$/.test(requestId)) fail("Missing request id.");
       const packId = body.packId === undefined ? "basic" : String(body.packId);
       if (!PACKS[packId]) fail("Unknown pack.");
-      return store.openPack(user.id, requestId, packId);
+      return store.openPack(user.id, requestId, packId, undefined, dealFor(packId));
     }
     case "delete_my_data": {
       if (!user) fail("Not signed in.", "forbidden");

@@ -106,7 +106,7 @@ export class PgStore {
     return rows;
   }
 
-  async openPack(userId: string, requestId: string, packId = "basic", rng?: () => number) {
+  async openPack(userId: string, requestId: string, packId = "basic", rng?: () => number, deal: { price?: number; spotlight?: string | null } = {}) {
     await ensureArcadeSchema();
     const pack = PACKS[packId];
     if (!pack) throw new GameError("Unknown pack.");
@@ -121,15 +121,16 @@ export class PgStore {
         return { character: CHARACTERS.find((c) => c.id === r.character_id), duplicate: r.duplicate, coins: r.coins_after, repeated: true };
       }
       const coins = wallet.rows[0].coins;
-      if (coins < pack.cost) throw new GameError(`You need ${pack.cost} coins (you have ${coins}).`);
-      const character = rollPack(packId, rng);
+      const price = deal.price ?? pack.cost;
+      if (coins < price) throw new GameError(`You need ${price} coins (you have ${coins}).`);
+      const character = rollPack(packId, rng, deal.spotlight ?? null);
       const had = await run(`SELECT count FROM arcade_collection WHERE user_id = $1 AND character_id = $2`, [userId, character.id]);
-      await run(`UPDATE arcade_wallets SET coins = coins - $2 WHERE user_id = $1`, [userId, pack.cost]);
+      await run(`UPDATE arcade_wallets SET coins = coins - $2 WHERE user_id = $1`, [userId, price]);
       await run(`INSERT INTO arcade_collection (user_id, character_id) VALUES ($1,$2)
         ON CONFLICT (user_id, character_id) DO UPDATE SET count = arcade_collection.count + 1`, [userId, character.id]);
       const duplicate = had.rows.length > 0;
-      await run(`INSERT INTO arcade_pack_opens (user_id, request_id, character_id, duplicate, coins_after) VALUES ($1,$2,$3,$4,$5)`, [userId, requestId, character.id, duplicate, coins - pack.cost]);
-      return { character, duplicate, coins: coins - pack.cost };
+      await run(`INSERT INTO arcade_pack_opens (user_id, request_id, character_id, duplicate, coins_after) VALUES ($1,$2,$3,$4,$5)`, [userId, requestId, character.id, duplicate, coins - price]);
+      return { character, duplicate, coins: coins - price };
     });
   }
 
