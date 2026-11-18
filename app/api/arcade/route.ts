@@ -1,7 +1,7 @@
 // @ts-nocheck
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { ArcadeService } from "@/../arcade-server/game.mjs";
+import { ArcadeService } from "../../../arcade-server/game.mjs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
