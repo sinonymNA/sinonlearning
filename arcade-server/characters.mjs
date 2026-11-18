@@ -55,6 +55,29 @@ CHARACTERS.push(
   { id: "c-aurora", name: "Aurora", rarity: "legendary", tagline: "Appears once in a blue moon, wearing the sky.", ...L("tall", "#7be0ff", "happy", "smile", "crown", "#ff9bd0") },
 );
 
+// ---- Snack Squad: a second, specialty set. These only drop from the Snack Pack. -------------------------------
+export const SETS = {
+  original: { id: "original", name: "Classic Crew", blurb: "The original 40 mascots." },
+  snack: { id: "snack", name: "Snack Squad", blurb: "16 food friends. Only found in the Snack Pack!" },
+};
+const SN = (id, name, rarity, tagline) => CHARACTERS.push({ id, name, rarity, tagline, set: "snack" });
+SN("s-pickle", "Pickle Pete", "common", "Always in a pickle, never worried about it.");
+SN("s-fries", "Fry Guy", "common", "Salty humour. Extra crispy.");
+SN("s-toast", "Toasty", "common", "Pops up when you least expect it.");
+SN("s-cheddar", "Cheddar", "common", "Sharp wit, mild temper.");
+SN("s-egg", "Sunny Egg", "common", "Every morning is a good morning.");
+SN("s-berry", "Berry", "common", "Sweet on the outside and the inside.");
+SN("s-popper", "Popper", "common", "Cannot sit still. Will pop any second.");
+SN("s-taco", "Taco Tina", "uncommon", "Every day is Taco Tuesday.");
+SN("s-boba", "Boba Bean", "uncommon", "Bubbly personality, chewy answers.");
+SN("s-slice", "Slice", "uncommon", "Loves hanging out with the whole pie.");
+SN("s-nori", "Nori", "uncommon", "Rolls with the punches.");
+SN("s-donut", "Dazzle", "rare", "Covered in sprinkles and confidence.");
+SN("s-cone", "Cone-y", "rare", "Cool under pressure, melts for compliments.");
+SN("s-burger", "Bruno", "rare", "Stacked with talent.");
+SN("s-cupcake", "Cupcake Queen", "epic", "Rules the bake sale with a frosting fist.");
+SN("s-sundae", "Sundae Supreme", "legendary", "Three scoops, one cherry, zero chill.");
+
 // ---- Uploaded (AI-generated / hand-drawn) characters -------------------------------------------------------
 // Put a transparent PNG at public/characters/<id>.png and add ONE line here. See ARCADE_ICON_GUIDE.md.
 //   IMG("i-blorp", "Blorp", "rare", "Tagline shown on the card.")
@@ -70,16 +93,21 @@ export const PACKS = {
   starter: { id: "starter", name: "Starter Pack", cost: 40, color: "#4cc3ff", blurb: "Cheap and cheerful. Mostly commons, with a small shot at something better.", rarityWeights: W(78, 18, 3.5, 0.5, 0) },
   basic: { id: "basic", name: "Classic Pack", cost: 100, color: "#ffc233", blurb: "The everyday pack with a real chance at rares.", rarityWeights: W(60, 26, 10.5, 3, 0.5) },
   super: { id: "super", name: "Super Pack", cost: 250, color: "#8a6bff", blurb: "No commons! Every card is uncommon or better.", rarityWeights: W(0, 55, 33, 10, 2) },
+  snack: { id: "snack", name: "Snack Pack", cost: 120, color: "#ff8fc7", set: "snack", blurb: "Only Snack Squad food friends! 16 to collect, including a legendary sundae.", rarityWeights: W(55, 28, 12, 4, 1) },
   legend: { id: "legend", name: "Legend Pack", cost: 600, color: "#ff5d73", blurb: "Rare or better every time, with the best shot at epics and legendaries.", rarityWeights: W(0, 0, 55, 37, 8) },
 };
-export const PACK_IDS = Object.keys(PACKS);
+export const PACK_IDS = Object.keys(PACKS).sort((a, b) => PACKS[a].cost - PACKS[b].cost);
+
+/** A pack with a `set` drops only that set; every other pack drops only the original (un-setted) characters. */
+export const poolFor = (pack) => CHARACTERS.filter((c) => (pack.set ? c.set === pack.set : !c.set));
 
 export function packOdds(packId = "basic") {
   const pack = PACKS[packId];
   const total = Object.values(pack.rarityWeights).reduce((a, b) => a + b, 0);
   const rarities = Object.entries(pack.rarityWeights).filter(([, w]) => w > 0).map(([id, w]) => ({ id, label: RARITIES[id].label, percent: Math.round((w / total) * 1000) / 10 }));
-  const characters = CHARACTERS.filter((c) => pack.rarityWeights[c.rarity] > 0).map((c) => {
-    const inRarity = CHARACTERS.filter((x) => x.rarity === c.rarity).length;
+  const pool = poolFor(pack);
+  const characters = pool.filter((c) => pack.rarityWeights[c.rarity] > 0).map((c) => {
+    const inRarity = pool.filter((x) => x.rarity === c.rarity).length;
     return { id: c.id, name: c.name, rarity: c.rarity, percent: Math.round(((pack.rarityWeights[c.rarity] / total) / inRarity) * 10000) / 100 };
   });
   return { pack: { id: pack.id, name: pack.name, cost: pack.cost, color: pack.color, blurb: pack.blurb }, rarities, characters };
@@ -96,6 +124,6 @@ export function rollPack(packId = "basic", rng = rand01) {
   const total = entries.reduce((a, [, w]) => a + w, 0);
   let roll = rng() * total, rarity = entries[entries.length - 1][0];
   for (const [id, w] of entries) { if (roll < w) { rarity = id; break; } roll -= w; }
-  const pool = CHARACTERS.filter((c) => c.rarity === rarity);
+  const pool = poolFor(pack).filter((c) => c.rarity === rarity);
   return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
 }

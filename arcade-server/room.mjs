@@ -90,7 +90,7 @@ export class Room {
     while ([...this.players.values()].some((p) => p.nickname.toLowerCase() === final.toLowerCase())) final = `${nick.slice(0, 13)} ${n++}`;
     void lower;
     let av = AVATARS.includes(avatar) ? avatar : "rk-sun";
-    if (!bot && av.startsWith("c-") && !(ownedAvatars ?? []).includes(av)) av = "rk-sun";
+    if (!bot && !av.startsWith("rk-") && !(ownedAvatars ?? []).includes(av)) av = "rk-sun";
     const p = {
       id: uid(), nickname: final, avatar: av, userId, token: secretToken(), bot, lastSeen: this.clock(), joinedAt: this.t(),
       waiting: this.phase !== "lobby", team: null, forceOffline: false,

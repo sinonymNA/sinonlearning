@@ -57,3 +57,7 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 
 ## Packs (rebalanced, cheaper)
 - [x] Four packs: Starter 40 (78/18/3.5/0.5/0 %), Classic 100 (60/26/10.5/3/0.5), Super 250 (no commons: 0/55/33/10/2), Legend 600 (rare+: 0/0/55/37/8). Odds per rarity and per character are shown per pack; shop has a pack picker; the free demo has the same picker. Old 150-coin pack replaced (existing `basic` id kept, now "Classic" at 100).
+
+## Snack Squad (second character set) + Snack Pack
+- [x] 16 new hand-built food mascots (7 common, 4 uncommon, 3 rare, 1 epic, 1 legendary): Pickle Pete, Fry Guy, Toasty, Cheddar, Sunny Egg, Berry, Popper, Taco Tina, Boba Bean, Slice, Nori, Dazzle (donut), Cone-y, Bruno (burger), Cupcake Queen, Sundae Supreme.
+- [x] Snack Pack (120 coins, 55/28/12/4/1 %): a specialty pack that drops ONLY Snack Squad; every other pack never drops them. Collection page groups characters by set with per-set progress. Next set idea: Classroom Crew.

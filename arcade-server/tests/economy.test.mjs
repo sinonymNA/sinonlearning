@@ -5,9 +5,10 @@ import { MemoryStore } from "../store.mjs";
 import { CHARACTERS, PACKS, PACK_IDS, packOdds, rollPack, RARITIES } from "../characters.mjs";
 import { handleEconomy } from "../api.mjs";
 
-test("40 original characters across five rarities, all drawable; odds sum to 100%", () => {
-  assert.equal(CHARACTERS.length, 40);
-  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 40);
+test("40 original + 16 Snack Squad characters across five rarities, all drawable; odds sum to 100%", () => {
+  assert.equal(CHARACTERS.length, 56);
+  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 56);
+  assert.equal(CHARACTERS.filter((c) => c.set === "snack").length, 16);
   assert.ok(CHARACTERS.every((c) => c.tagline.length > 10));
   for (const c of CHARACTERS) assert.ok(RARITIES[c.rarity]);
   const odds = packOdds("basic");
@@ -102,7 +103,7 @@ test("unowned collectible avatars cannot be used in rooms", () => {
 
 test("four packs: prices ascend, every pack's odds sum to 100%, guarantees hold (Super = no commons, Legend = rare+, Starter = no legendaries)", () => {
   const ids = PACK_IDS;
-  assert.deepEqual(ids, ["starter", "basic", "super", "legend"]);
+  assert.deepEqual(ids, ["starter", "basic", "snack", "super", "legend"]);
   const costs = ids.map((id) => PACKS[id].cost);
   assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
   assert.ok(costs[0] <= 50 && costs[3] <= 700, "prices stay modest");
@@ -122,9 +123,9 @@ test("four packs: prices ascend, every pack's odds sum to 100%, guarantees hold 
 
 test("opening each pack charges that pack's price; unknown packs are rejected", async () => {
   const store = new MemoryStore(); const ctx = studentCtx(store, "kid-packs");
-  await store.award({ userId: "kid-packs", coins: 1000, key: "seed" });
-  let left = 1000;
-  for (const id of ["starter", "basic", "super", "legend"]) {
+  await store.award({ userId: "kid-packs", coins: 1200, key: "seed" });
+  let left = 1200;
+  for (const id of ["starter", "basic", "snack", "super", "legend"]) {
     const r = await handleEconomy(ctx, { type: "open_pack", requestId: `req-${id}-0001`, packId: id });
     left -= PACKS[id].cost;
     assert.equal(r.coins, left, id);
@@ -132,6 +133,23 @@ test("opening each pack charges that pack's price; unknown packs are rejected", 
   }
   await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-nope-0001", packId: "mega" }), /Unknown pack/);
   const cat = await handleEconomy(ctx, { type: "catalog" });
-  assert.equal(cat.packs.length, 4);
+  assert.equal(cat.packs.length, 5);
   await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need 600/);
+});
+
+test("Snack Pack is a specialty pack: drops ONLY Snack Squad, every other pack never drops them, all 16 are obtainable", () => {
+  const snack = Array.from({ length: 6000 }, () => rollPack("snack"));
+  assert.ok(snack.every((c) => c.set === "snack"), "snack pack only drops snack characters");
+  assert.equal(new Set(snack.map((c) => c.id)).size, 16, "every snack character can drop");
+  for (const id of ["starter", "basic", "super", "legend"]) assert.ok(Array.from({ length: 1500 }, () => rollPack(id)).every((c) => !c.set), `${id} never drops snack characters`);
+  const o = packOdds("snack");
+  assert.equal(o.characters.length, 16);
+  assert.ok(Math.abs(o.characters.reduce((n, c) => n + c.percent, 0) - 100) < 0.5);
+  assert.equal(PACKS.snack.cost, 120);
+});
+
+test("snack characters must be owned to be used as an avatar", () => {
+  const { room } = makeRoom({ n: 0 });
+  assert.equal(room.addPlayer({ nickname: "Aaa", avatar: "s-sundae", ownedAvatars: [] }).avatar, "rk-sun");
+  assert.equal(room.addPlayer({ nickname: "Bbb", avatar: "s-sundae", ownedAvatars: ["s-sundae"] }).avatar, "s-sundae");
 });

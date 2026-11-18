@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import ProcAvatar from "./ProcAvatar";
+import SnackArt, { isSnackId } from "./SnackArt";
 import { CHARACTERS } from "@/lib/arcadeCatalog";
 
 /** Original SVG characters. 4 free "rookie" avatars + 12 collectibles. Everything is drawn in a 100x100 box. */
@@ -42,6 +43,7 @@ export const avatarName = (id: string) => id;
 export default function Avatar({ id, size = 64, className = "", title }: { id?: string; size?: number; className?: string; title?: string }) {
   const ch = !ART[id ?? ""] ? CHARACTERS.find((c) => c.id === id) : undefined;
   const look = ch?.look;
+  if (isSnackId(id)) return <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? ch?.name ?? "snack"} style={{ flex: "none", overflow: "visible" }}><SnackArt id={id as string} /></svg>;
   if (ch?.image) return <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? ch.name} style={{ flex: "none", overflow: "visible" }}><image href={ch.image} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet" /></svg>;
   const art = look ? () => <ProcAvatar look={look} /> : ART[id ?? "rk-sun"] ?? ART["rk-sun"];
   return (
