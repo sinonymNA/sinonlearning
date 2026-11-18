@@ -2,7 +2,7 @@ import { BaseGame } from "./base.mjs";
 import { appendSegs, compact, newLog } from "../drawing.mjs";
 import { editDistance, fail, normalizeWord, partition, shuffle } from "../util.mjs";
 
-const TURN_MS = 55000, REVEAL_MS = 4200, MAX_TURNS = 4, PICK_MS = 5000, GALLERY_BASE_MS = 8000, GALLERY_PER_MS = 5000;
+const TURN_MS = 55000, REVEAL_MS = 4200, MAX_TURNS = 5, PICK_MS = 5000, GALLERY_BASE_MS = 8000, GALLERY_PER_MS = 5000;
 
 export class QuickDraw extends BaseGame {
   start() {
@@ -10,7 +10,7 @@ export class QuickDraw extends BaseGame {
     this.prompts = shuffle(this.content.items);
     this.artistHits = new Map();
     this.pi = 0;
-    this.groups = partition(this.players, { max: 7, floor: 3 }).map((members, id) => ({
+    this.groups = partition(this.players, { max: MAX_TURNS, floor: 3 }).map((members, id) => ({
       id, members, order: shuffle(members), turn: 0, cursor: 0, turns: Math.min(members.length, MAX_TURNS), status: "pause", artist: null, word: "", key: 0,
       log: newLog(), guessed: new Map(), startedAt: 0, endsAt: 0, until: t + this.D(1500), lastGuess: new Map(), tries: new Map(), reveal: [], revealOrder: [], note: "",
     }));

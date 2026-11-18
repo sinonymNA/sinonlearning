@@ -1,7 +1,7 @@
 import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
-import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems } from "./content.mjs";
+import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems, sanitizeLoose } from "./content.mjs";
 import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
-import { GameError, fail } from "./util.mjs";
+import { GameError, RateLimiter, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
 import { login, signup, startSession } from "./accounts.mjs";
@@ -176,6 +176,9 @@ export async function handleEconomy(ctx, body) {
 }
 
 // ---------- teacher content ----------
+const aiLimiter = new RateLimiter();
+export const AI_LIMIT = { windowMs: 3600_000, max: 12, maxChars: 60_000, minChars: 80 };
+
 export async function handleContent(ctx, body) {
   const { store, user } = ctx;
   if (!isTeacher(user)) fail("Teacher account required.", "forbidden");
@@ -213,6 +216,21 @@ export async function handleContent(ctx, body) {
       if (!show) fail("Game show not found.", "not_found");
       const items = sanitizeItems(itemsFromGameShow(show.payload));
       return { title: show.title, items, compatibility: compatibility({ items }) };
+    }
+    case "ai_generate": {
+      // Teacher pastes their own notes/vocab/lesson text; our AI turns it into content for every game.
+      if (typeof ctx.generate !== "function") fail("AI set-building isn't switched on for this server yet.", "unavailable");
+      const text = String(body.text ?? "").trim();
+      if (text.length < AI_LIMIT.minChars) fail("Paste a bit more material (a few sentences at least) so the AI has something to work from.");
+      if (text.length > AI_LIMIT.maxChars) fail("That's too much for one go. Split it into chunks under 60,000 characters.");
+      const grade = cleanText(body.grade || "any grade", { min: 1, max: 40, label: "Grade" });
+      const amount = ["small", "medium", "large"].includes(body.amount) ? body.amount : "medium";
+      if (aiLimiter.limited(`ai:${user.id}`, AI_LIMIT.windowMs, AI_LIMIT.max)) fail("You've used the AI builder a lot this hour. Try again a bit later.", "rate");
+      const raw = await ctx.generate({ text, grade, amount });
+      const { items, dropped } = sanitizeLoose(raw);
+      const total = Object.values(items).reduce((a, v) => a + v.length, 0);
+      if (!total) fail("The AI couldn't make anything usable from that. Try pasting clearer notes.");
+      return { items, dropped, compatibility: compatibility({ items }) };
     }
     case "compat": return { compatibility: compatibility({ items: sanitizeItems(body.items) }) };
     default: fail("Unknown request.");

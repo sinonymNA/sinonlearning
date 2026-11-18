@@ -7,11 +7,11 @@ const content = { title: "P", items: { drawPrompts: ["zebra crossing", "volcano"
 const pickAll = (g, ctx, i = 0) => { for (const grp of g.groups) if (grp.status === "pick") ctx.act(grp.artist, { type: "choose", index: i }); };
 const seg = (k, pts = [10, 10, 50, 50, 90, 20]) => ({ k, t: 0, c: 1, w: 1, p: pts });
 
-test("35 players -> groups of 5-7 with one artist each; guessers never see the secret word", () => {
+test("35 players -> groups of 5 with one artist each; guessers never see the secret word", () => {
   const ctx = makeRoom({ n: 35, playlist: ["quick_draw"], content });
   const g = ctx.begin();
   ctx.advance(2000); pickAll(g, ctx);
-  assert.equal(g.groups.length, 5);
+  assert.equal(g.groups.length, 7);
   for (const grp of g.groups) {
     assert.equal(grp.status, "draw");
     const word = grp.word;
@@ -89,7 +89,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
   const g = ctx.begin();
   const grp = g.groups[0];
   const artists = [];
-  for (let turn = 0; turn < 4; turn++) {
+  for (let turn = 0; turn < 5; turn++) {
     ctx.advance(1700); pickAll(g, ctx);
     if (grp.artist && !artists.includes(grp.artist)) artists.push(grp.artist);
     for (const m of grp.members) if (m !== grp.artist) ctx.tryAct(m, { type: "guess", text: grp.word });
@@ -97,7 +97,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
     assert.equal(grp.status, "reveal", "should end the moment everyone has guessed");
     ctx.advance(4500);
   }
-  assert.equal(new Set(artists).size, 4);
+  assert.equal(new Set(artists).size, 5, "every player gets a turn to draw");
   ctx.advance(40000);
   assert.equal(ctx.room.history.length, 1);
 });
@@ -184,4 +184,15 @@ test("gallery: every finished drawing is saved with its word; the group sees the
   ctx.advance(40000);
   assert.equal(grp.status, "done");
   assert.equal(ctx.room.history.length, 1);
+});
+
+test("everybody gets to draw: turns == group size, for every room size", () => {
+  for (const n of [3, 4, 5, 6, 7, 8, 11, 14, 23, 35, 40]) {
+    const ctx = makeRoom({ n, playlist: ["quick_draw"], content });
+    const g = ctx.begin();
+    for (const grp of g.groups) {
+      assert.equal(grp.turns, grp.members.length, `n=${n}: every member draws once`);
+      assert.ok(grp.members.length <= 5, `n=${n}: groups stay small enough to finish`);
+    }
+  }
 });

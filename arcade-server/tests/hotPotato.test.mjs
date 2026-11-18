@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { makeRoom } from "./helpers.mjs";
 import { sequenceBank, countMatches, wordsContaining, isWord } from "../dictionary.mjs";
+import { HotPotato } from "../games/hotPotato.mjs";
+
+// existing tests type words; the new challenge tests below switch kinds explicitly
+HotPotato.forceKind = "letters";
 
 const freshWord = (g, grp) => wordsContaining(grp.sequence).find((w) => !grp.used.has(w));
 
@@ -211,14 +215,15 @@ test("quick-pass bonus and end-of-game awards are produced", () => {
   assert.ok(room.history.at(-1).awards[0].nickname);
 });
 
-test("hot hands: nobody can sit on the potato - after 8 s it jumps to someone else, the holder loses points and the fuse shrinks", () => {
+test("hot hands: nobody can sit on the potato - after 12 s it jumps to someone else, the holder loses points and the fuse shrinks", () => {
   const { begin, room, advance } = makeRoom({ n: 5 });
   const g = begin(); const grp = g.groups[0];
   const first = grp.holder;
+  grp.surpriseAt = 0;
   grp.fuseAt = room.t() + 60000;                       // plenty of fuse so only the hold limit matters
   g.points.set(first, 20);
   const fuseBefore = grp.fuseAt;
-  advance(7000);
+  advance(11000);
   assert.equal(grp.holder, first, "still theirs inside the limit");
   assert.ok(room.view({ playerId: first }).game.group.holdIn > 0);
   advance(1500);
@@ -230,10 +235,65 @@ test("hot hands: nobody can sit on the potato - after 8 s it jumps to someone el
   assert.ok(grp.fuseAt < fuseBefore, "fuse got shorter");
   assert.notEqual(grp.prev, grp.holder);
   // the new holder gets a fresh hold clock
-  assert.ok(room.view({ playerId: grp.holder }).game.group.holdIn > 7000);
+  assert.ok(room.view({ playerId: grp.holder }).game.group.holdIn > 10000);
   // a pass inside the window resets the clock and avoids the penalty
   const ok = wordsContaining(grp.sequence).find((w) => !grp.used.has(w));
   const holder = grp.holder; advance(3000);
   assert.ok(room.act(holder, { type: "word", word: ok }).ok);
   assert.equal(g.stats.stalls, 1);
+});
+
+const withKind = (kind, fn) => { const old = HotPotato.forceKind; HotPotato.forceKind = kind; try { return fn(); } finally { HotPotato.forceKind = old; } };
+
+test("brain pass: holder must answer a class question; wrong answers cost fuse + points; the answer never leaks", () => {
+  withKind("quiz", () => {
+    const { begin, act, tryAct, view, players, room } = makeRoom({ n: 5 });
+    const g = begin(); const grp = g.groups[0];
+    assert.equal(grp.challenge.kind, "quiz");
+    const holder = grp.holder;
+    const v = view(holder).game.group;
+    assert.equal(v.challenge.kind, "quiz");
+    assert.ok(v.challenge.choices.length >= 3);
+    for (const m of players) assert.ok(!JSON.stringify(view(m).game).includes('"answer"'), "answer index must never be in a view");
+    assert.match(tryAct(holder, { type: "word", word: "banana" }).error, /Brain Pass/);
+    const other = players.find((p) => p.id !== holder);
+    assert.match(tryAct(other, { type: "answer", index: 0 }).error, /not holding/);
+    const wrong = grp.challenge.choices.findIndex((_, i) => i !== grp.challenge.answer);
+    const fuse = grp.fuseAt, pts = g.points.get(holder);
+    const r = tryAct(holder, { type: "answer", index: wrong });
+    assert.equal(r.code, "wrong");
+    assert.ok(grp.fuseAt < fuse); assert.ok(g.points.get(holder) <= pts);
+    assert.match(tryAct(holder, { type: "answer", index: wrong }).error, /already tried/);
+    const turn = grp.turn;
+    const ok = tryAct(holder, { type: "answer", index: grp.challenge.answer, turn });
+    assert.equal(ok.ok, true); assert.ok(ok.result.brain);
+    assert.notEqual(grp.holder, holder); assert.equal(grp.lastPass.brain, true);
+    void act; void room;
+  });
+});
+
+test("starts-with challenge: a word that only contains the letters is rejected", () => {
+  withKind("starts", () => {
+    const { begin, tryAct } = makeRoom({ n: 5 });
+    const g = begin(); const grp = g.groups[0];
+    assert.equal(grp.challenge.kind, "starts");
+    const seq = grp.sequence.toLowerCase();
+    const inside = wordsContaining(grp.sequence).find((w) => !w.startsWith(seq));
+    if (inside) assert.match(tryAct(grp.holder, { type: "word", word: inside }).error, /START/);
+    const good = wordsContaining(grp.sequence).find((w) => w.startsWith(seq) && w !== seq);
+    if (good) assert.equal(tryAct(grp.holder, { type: "word", word: good }).ok, true);
+  });
+});
+
+test("surprise toss: mid-round the potato can jump on its own with no penalty", () => {
+  withKind("letters", () => {
+    const { begin, advance } = makeRoom({ n: 5 });
+    const g = begin(); const grp = g.groups[0];
+    grp.surpriseAt = g.room.t() + 1000; // force one
+    const holder = grp.holder, pts = g.points.get(holder);
+    advance(1500);
+    assert.equal(grp.lastPass?.surprise, true);
+    assert.notEqual(grp.holder, holder);
+    assert.equal(g.points.get(holder), pts, "surprise is not a penalty");
+  });
 });

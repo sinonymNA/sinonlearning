@@ -1,5 +1,6 @@
 import { GameError, shuffle } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
+import { EXTRA_DRAW_PROMPTS, EXTRA_TELEPHONE_PROMPTS, EXTRA_IMPOSTER_WORDS, EXTRA_QUESTIONS } from "./data/extraContent.mjs";
 
 /** Content sets: { id, title, items: { questions, vocab, drawPrompts, telephonePrompts, imposterWords } } */
 const Q = (q, a, b, c, d, answer) => ({ q, choices: [a, b, c, d], answer });
@@ -51,7 +52,7 @@ export const DEFAULT_QUESTIONS = [
   Q("How many legs does a spider have?", "6", "8", "10", "12", 1),
   Q("What is the process of water turning into vapor?", "Condensation", "Evaporation", "Freezing", "Erosion", 1),
   Q("Which ocean is between Africa and Australia?", "Atlantic", "Indian", "Arctic", "Pacific", 1),
-  Q("Which sentence uses a capital letter correctly?", "my dog is big.", "My dog is Big.", "My dog is big.", "my Dog is big.", 2),
+  Q("Which sentence uses a capital letter correctly?", "my dog is big", "MY DOG is big.", "My dog is big.", "my Dog is Big!", 2),
   Q("What is 1/4 as a decimal?", "0.14", "0.25", "0.4", "0.75", 1),
   Q("Which animal is a reptile?", "Frog", "Snake", "Whale", "Bat", 1),
   Q("What is the center of an atom called?", "Shell", "Nucleus", "Cell", "Orbit", 1),
@@ -137,6 +138,13 @@ export const DRAW_PROMPTS = [
   "soccer ball", "skateboard", "kite", "balloon", "snowman", "campfire", "birthday cake", "present", "snail", "octopus",
 ];
 
+// merge the extra libraries into the built-in pools (de-duplicated)
+const mergeUnique = (base, extra, key = (x) => String(x).toLowerCase()) => { const seen = new Set(base.map(key)); for (const x of extra) if (!seen.has(key(x))) { seen.add(key(x)); base.push(x); } };
+mergeUnique(DRAW_PROMPTS, EXTRA_DRAW_PROMPTS);
+mergeUnique(DEFAULT_TELEPHONE_PROMPTS, EXTRA_TELEPHONE_PROMPTS);
+mergeUnique(DEFAULT_IMPOSTER_WORDS, EXTRA_IMPOSTER_WORDS, (w) => w.word);
+mergeUnique(DEFAULT_QUESTIONS, EXTRA_QUESTIONS, (q) => q.q);
+
 export const DEFAULT_SET = {
   id: "builtin",
   title: "Arcade starter pack",
@@ -184,7 +192,11 @@ export function sanitizeQuestion(raw) {
   const answer = Number(raw?.answer);
   if (!Number.isInteger(answer) || answer < 0 || answer >= choices.length) throw new GameError("Mark which choice is correct.");
   if (new Set(choices.map((c) => c.toLowerCase())).size !== choices.length) throw new GameError("Choices must be different.");
-  return { q, choices, answer };
+  const out = { q, choices, answer };
+  // optional remediation metadata (used by Mastery Peak): why the answer is right + which concept it tests
+  if (raw?.explain) { try { out.explain = cleanText(raw.explain, { min: 3, max: 300, label: "Explanation" }); } catch { /* drop */ } }
+  if (raw?.concept) { try { out.concept = cleanText(raw.concept, { min: 2, max: 60, label: "Concept" }); } catch { /* drop */ } }
+  return out;
 }
 const cleanWord = (w, max = 40) => cleanText(w, { min: 1, max, label: "Word" });
 
@@ -276,4 +288,19 @@ export function itemsFromGameShow(payload) {
       throw new GameError("Only Race, Memory and Wheel game shows can be converted (Grid and Feud are free-response).");
   }
   return out;
+}
+
+/** Like sanitizeItems but drops individual bad items instead of throwing (for AI output). Returns { items, dropped }. */
+export function sanitizeLoose(items = {}) {
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  let dropped = 0;
+  const each = (list, f, cap) => arr(list).slice(0, cap).flatMap((x) => { try { return [f(x)]; } catch { dropped++; return []; } });
+  const out = {
+    questions: each(items.questions, sanitizeQuestion, 200),
+    vocab: [...new Set(each(items.vocab, (w) => cleanWord(w, 30).toLowerCase(), 300))],
+    drawPrompts: [...new Set(each(items.drawPrompts, (w) => cleanWord(w).toLowerCase(), 300))],
+    telephonePrompts: [...new Set(each(items.telephonePrompts, (w) => cleanWord(w, 80), 300))],
+    imposterWords: each(items.imposterWords, (w) => ({ word: cleanWord(w.word, 30).toUpperCase(), related: arr(w.related).slice(0, 12).map((r) => cleanWord(r, 30).toLowerCase()) }), 200),
+  };
+  return { items: out, dropped };
 }

@@ -81,8 +81,14 @@ export class Bots {
         if (!mine) return null;
         const key = `hp:${grp.id}:${grp.turn}:${pid}`;
         const seq = grp.sequence;
+        if (hearts > 0 && grp.challenge?.kind === "quiz") {
+          const c = grp.challenge, n = c.choices.length;
+          const pick = () => (randInt(1000) < bot.accuracy * 1000 ? c.answer : (c.answer + 1 + randInt(n - 1)) % n);
+          return { key, queue: [{ delay: d(2500, 7000), run: () => ({ type: "answer", index: c.wrong.has(c.answer) ? c.answer : pick(), turn: grp.turn }) }] };
+        }
+        const startsOnly = hearts > 0 && grp.challenge?.kind === "starts";
         const word = () => {
-          const pool = wordsContaining(seq).filter((w) => !grp.used.has(w));
+          const pool = wordsContaining(seq).filter((w) => !grp.used.has(w) && (!startsOnly || w.startsWith(seq.toLowerCase())));
           return pool.length ? pool[randInt(Math.min(pool.length, 400))] : "zzz";
         };
         const q = [];

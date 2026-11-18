@@ -55,7 +55,11 @@ export function PotatoStage({ grp, meId, big = false, stamp }: { grp: any; meId?
   return (
     <div className="relative">
       <div className="relative mx-auto flex flex-col items-center text-center">
-        {grp.status === "live" && (
+        {grp.status === "live" && grp.challenge?.kind === "quiz" && (
+          <div className="mb-2 rounded-2xl border-[3px] border-[var(--ink)] bg-[var(--sun)] px-4 py-2 font-bold text-[var(--ink)] shadow-[0_5px_0_var(--ink)]">🧠 BRAIN PASS</div>
+        )}
+        {grp.status === "live" && grp.challenge?.kind === "starts" && <div className="mb-1 text-sm font-bold uppercase tracking-wide opacity-80">Word must START with</div>}
+        {grp.status === "live" && grp.challenge?.kind !== "quiz" && (
           <div className="mb-2 flex gap-2" aria-label={`Letters: ${grp.sequence}`}>
             {String(grp.sequence).split("").map((ch: string, i: number) => (
               <span key={`${grp.turn}-${i}`} className="hp-tile pop grid place-items-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] font-bold text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" style={{ width: big ? 96 : 64, height: big ? 110 : 74, fontSize: big ? "3.8rem" : "2.6rem", animationDelay: `${i * 0.05}s` }}>{ch}</span>
@@ -167,10 +171,24 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
       <div className="grid gap-3 content-start">
       <div className="ar-panel"><PotatoMembers grp={grp} meId={meId} /></div>
 
-      {canType && (
+      {grp.status === "live" && grp.challenge?.kind === "quiz" && (
+        <div className="ar-card grid gap-2" aria-label="Brain pass question">
+          <p className="font-bold">{grp.you?.holder ? "Answer to pass the potato!" : "Help your teammate (no spoilers in chat!):"}</p>
+          <p className="text-lg font-bold">{grp.challenge.q}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {grp.challenge.choices.map((c: string, i: number) => (
+              <button key={`${grp.turn}-${i}`} className="choice" disabled={!grp.you?.holder || grp.challenge.wrong.includes(i)} onClick={async () => {
+                try { await send({ type: "answer", index: i, turn: grp.turn }); setErr(null); sfx("good"); } catch (e2: any) { setErr(e2.message); setShake((x) => x + 1); sfx("bad"); }
+              }}>{c}</button>
+            ))}
+          </div>
+          <p role="status" className="min-h-6 font-bold text-[var(--coral)]">{err}</p>
+        </div>
+      )}
+      {canType && !(grp.you?.holder && grp.challenge?.kind === "quiz") && (
         <form onSubmit={submit} key={shake} className={`ar-card ${shake ? "shake" : ""}`}>
           <label className="mb-2 block font-bold">
-            {grp.you.holder ? <>Type a word containing <span className="rounded bg-[var(--sun)] px-2">{grp.sequence}</span> to pass the potato!</> : <>You're out - but you can still help! A valid word with <b>{grp.sequence}</b> cools the potato.</>}
+            {grp.you.holder ? <>Type a word {grp.challenge?.kind === "starts" ? "that STARTS with" : "containing"} <span className="rounded bg-[var(--sun)] px-2">{grp.sequence}</span> to pass the potato!</> : <>You're out - but you can still help! A valid word with <b>{grp.sequence}</b> cools the potato.</>}
           </label>
           <div className="flex gap-2">
             <input ref={input} className="ar-input" value={word} onChange={(e) => onType(e.target.value)} autoCapitalize="off" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="send" placeholder="type here…" aria-label="Your word" />
@@ -189,7 +207,7 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
         </div>
       )}
       <div className="flex min-h-10 flex-wrap items-center gap-3" aria-live="polite">
-        {grp.lastPass && <span key={grp.lastPass.n} className="slide ar-pill">🥔 {grp.members.find((m: any) => m.id === grp.lastPass.from)?.nickname} → {grp.members.find((m: any) => m.id === grp.lastPass.to)?.nickname}: {grp.lastPass.stalled ? <b>too slow! (-5, shorter fuse)</b> : <b>{grp.lastPass.word}</b>}</span>}
+        {grp.lastPass && <span key={grp.lastPass.n} className="slide ar-pill">🥔 {grp.members.find((m: any) => m.id === grp.lastPass.from)?.nickname} → {grp.members.find((m: any) => m.id === grp.lastPass.to)?.nickname}: {grp.lastPass.stalled ? <b>too slow! (-5, shorter fuse)</b> : grp.lastPass.surprise ? <b>🌀 surprise toss!</b> : grp.lastPass.brain ? <b>🧠 brain pass!</b> : <b>{grp.lastPass.word}</b>}</span>}
         {grp.reactions.map((r: any) => <span key={r.at + r.from} className="pop text-2xl">{r.emoji}</span>)}
       </div>
       </div>
