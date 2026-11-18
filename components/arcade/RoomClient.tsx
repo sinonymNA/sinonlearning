@@ -8,9 +8,9 @@ import Avatar from "./Avatar";
 import { GameSwitch } from "./GameSwitch";
 import JoinForm from "./JoinForm";
 import { PrefsButtons, PrefsProvider } from "./prefs";
-import { FinalScreen, IntroScreen, LobbyScreen, ResultsScreen } from "./screens";
+import { FinalScreen, IntroScreen, LobbyScreen, ResultsScreen, SoloFinal } from "./screens";
 import { Banner, Leaderboard } from "./ui";
-import { useRoom } from "./useRoom";
+import { api, saveCreds, useRoom } from "./useRoom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function RoomClient({ code }: { code: string }) {
@@ -38,24 +38,35 @@ function Inner({ code }: { code: string }) {
   if (!view) return <div className="ar-wrap ar-h2 text-center">Connecting to the room…</div>;
   const me = view.me;
   const meId = creds.playerId;
+  const solo = view.solo;
+  const soloCmd = (cmd: string) => api("/api/arcade", { type: "solo_cmd", code, playerId: creds.playerId, token: creds.token, cmd }).then(() => room.poll()).catch(() => undefined);
+  const playAgain = async () => {
+    const d = await api("/api/arcade", { type: "solo_create", game: solo.game, difficulty: solo.difficulty, nickname: me?.nickname, avatar: me?.avatar });
+    saveCreds(d.code, { playerId: d.playerId, token: d.token, nickname: d.nickname, avatar: d.avatar });
+    window.location.assign(`/arcade/room/${d.code}`);
+  };
 
   return (
     <>
       <header className="ar-topbar">
         <div className="flex min-w-0 items-center gap-2"><Avatar id={me?.avatar ?? creds.avatar} size={40} /><div className="min-w-0"><div className="truncate font-bold">{me?.nickname ?? creds.nickname}</div><div className="text-xs opacity-80">Room {view.code}{me?.team != null && view.teams ? ` · ${view.teams.find((t: any) => t.id === me.team)?.name}` : ""}</div></div></div>
-        <div className="flex items-center gap-3"><span className="ar-pill" title="Arcade total plus this game's points">⭐ {(me?.total ?? 0) + (me?.points ?? 0)}</span><PrefsButtons /></div>
+        <div className="flex items-center gap-3"><span className="ar-pill" title="Arcade total plus this game's points">⭐ {(me?.total ?? 0) + (me?.points ?? 0)}</span>{solo && view.phase !== "final" && view.phase !== "ended" && (
+            view.paused ? <button className="ar-btn sm mint" onClick={() => soloCmd("resume")}>▶ Resume</button> : <button className="ar-btn sm paper" onClick={() => soloCmd("pause")}>⏸</button>
+          )}
+          {solo && view.phase !== "ended" && <button className="ar-btn sm coral" onClick={() => { if (confirm("Quit this practice run?")) soloCmd("quit"); }}>Quit</button>}
+          <PrefsButtons /></div>
       </header>
       {offline && <Banner>📡 Connection lost - trying to reconnect…</Banner>}
       {view.paused && <Banner>⏸ Your teacher paused the game</Banner>}
       <main className="ar-wrap">
-        {view.phase === "lobby" && <LobbyScreen view={view} meId={meId} />}
+        {view.phase === "lobby" && !solo && <LobbyScreen view={view} meId={meId} />}
         {view.phase === "intro" && <IntroScreen view={view} stamp={stamp} />}
         {view.phase === "playing" && (me?.waiting
           ? <div className="grid gap-4"><div className="ar-panel text-center ar-h2">⏳ A game is in progress. You'll jump in for the next one!</div><Leaderboard rows={view.leaderboard ?? []} meId={meId} /></div>
           : <GameSwitch view={view} stamp={stamp} send={room.send} meId={meId} optsRef={room.optsRef} />)}
         {view.phase === "results" && <ResultsScreen view={view} stamp={stamp} meId={meId} />}
-        {view.phase === "final" && <FinalScreen view={view} meId={meId} />}
-        {view.phase === "ended" && <div className="ar-panel text-center"><h2 className="ar-h1">Session ended</h2><p className="mt-2 text-lg">Thanks for playing!</p><Link className="ar-btn mt-4" href="/arcade/shop">Visit the shop</Link></div>}
+        {view.phase === "final" && (solo ? <SoloFinal view={view} meId={meId} onAgain={playAgain} /> : <FinalScreen view={view} meId={meId} />)}
+        {view.phase === "ended" && <div className="ar-panel text-center"><h2 className="ar-h1">{solo ? "Practice ended" : "Session ended"}</h2><p className="mt-2 text-lg">Thanks for playing!</p><div className="mt-4 flex flex-wrap justify-center gap-3">{solo && <Link className="ar-btn mint" href="/arcade/solo">Solo menu</Link>}<Link className="ar-btn" href="/arcade/shop">Visit the shop</Link></div></div>}
         {view.phase === "playing" && !me?.waiting && view.leaderboard && view.game?.kind !== "last_one_standing" && <div className="mt-6"><Leaderboard rows={view.leaderboard} meId={meId} limit={5} title="Live leaderboard" showPoints /></div>}
       </main>
     </>

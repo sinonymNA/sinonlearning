@@ -4,7 +4,45 @@ import { GameError } from "./util.mjs";
 
 /** In-memory store with the same interface as lib/arcadeDb.ts (used by tests and when no DATABASE_URL is set). */
 export class MemoryStore {
-  constructor() { this.wallets = new Map(); this.awards = new Set(); this.collections = new Map(); this.packs = new Map(); this.sets = new Map(); }
+  constructor() { this.accounts = new Map(); this.sessions = new Map(); this.awardLog = []; this.wallets = new Map(); this.awards = new Set(); this.collections = new Map(); this.packs = new Map(); this.sets = new Map(); }
+
+  // ----- username/password accounts -----
+  async createAccount({ username, passwordHash }) {
+    const key = username.toLowerCase();
+    if ([...this.accounts.values()].some((a) => a.key === key)) throw new GameError("That username is taken.");
+    const id = crypto.randomUUID();
+    this.accounts.set(id, { id, username, key, passwordHash });
+    return { id, username };
+  }
+  async getAccountByUsername(username) { const key = String(username).toLowerCase(); return [...this.accounts.values()].find((a) => a.key === key) ?? null; }
+  async createSession({ tokenHash, accountId, expiresAt }) { this.sessions.set(tokenHash, { accountId, expiresAt }); }
+  async getSessionAccount(tokenHash) {
+    const s = this.sessions.get(tokenHash);
+    if (!s || s.expiresAt < new Date()) return null;
+    return this.accounts.get(s.accountId) ?? null;
+  }
+  async deleteSession(tokenHash) { this.sessions.delete(tokenHash); }
+  async deleteAccount(accountId) {
+    this.accounts.delete(accountId);
+    for (const [k, s] of this.sessions) if (s.accountId === accountId) this.sessions.delete(k);
+    await this.deleteUserData(`acct:${accountId}`);
+  }
+
+  /** Award with a per-day cap for a reason group (used by solo practice so it can't be farmed). */
+  async awardCapped({ userId, coins, key, reason, dailyCap, group = "solo" }) {
+    const dedupe = `${userId}:${key}`;
+    if (this.awards.has(dedupe)) return { awarded: false, coins: 0 };
+    const today = new Date().toISOString().slice(0, 10);
+    const used = this.awardLog.filter((a) => a.userId === userId && a.group === group && a.day === today).reduce((n, a) => n + a.coins, 0);
+    const allowed = Math.max(0, Math.min(coins, dailyCap - used));
+    if (allowed <= 0) return { awarded: false, coins: 0, capped: true };
+    this.awards.add(dedupe);
+    this.awardLog.push({ userId, group, day: today, coins: allowed });
+    const w = this.wallets.get(userId) ?? { coins: 0, lifetime: 0 };
+    this.wallets.set(userId, { coins: w.coins + allowed, lifetime: w.lifetime + allowed });
+    void reason;
+    return { awarded: true, coins: allowed, capped: allowed < coins };
+  }
 
   async getWallet(userId) { return { ...(this.wallets.get(userId) ?? { coins: 0, lifetime: 0 }) }; }
 

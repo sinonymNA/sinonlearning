@@ -35,3 +35,8 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 
 ## Safety
 - [x] Private room codes, teacher auth, nickname filter, text moderation + PII blocking, teacher remove, rate limiting (join/act/create/draw), server-side validation, private role delivery, no chat/DMs/public profiles, minimal data (nickname in memory only; account link only for coins), rooms auto-deleted (4 h idle / 30 min after end), delete-my-data. No compliance claims; needs school review.
+
+## Accounts & solo (added)
+- [x] Username + password arcade accounts (no email/real name), hashed session tokens, delete-account, rate limits.
+- [x] Solo practice vs bots for all 5 games, 3 difficulties, placement coins x difficulty, 150/day cap, guests earn nothing.
+- [ ] True solo modes (see ARCADE_SOLO_IDEAS.md): Potato Rush, Streak Climb, Daily Challenge - brainstormed, not built.

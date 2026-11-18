@@ -13,7 +13,7 @@ const g = globalThis as typeof globalThis & { __arcade?: { service: ArcadeServic
 export function getArcade() {
   if (!g.__arcade) {
     const store = process.env.DATABASE_URL ? new PgStore() : new MemoryStore();
-    const service = new ArcadeService({ onAward: (award) => { Promise.resolve(store.award(award)).catch((e) => console.error("arcade award failed", e)); } });
+    const service = new ArcadeService({ onAward: (award) => Promise.resolve(award.dailyCap ? store.awardCapped(award) : store.award(award)).catch((e) => { console.error("arcade award failed", e); return { awarded: false, coins: 0 }; }) });
     sequenceBank(); // warm the dictionary so the first Hot Potato round is instant
     service.startTicker(250);
     g.__arcade = { service, store };

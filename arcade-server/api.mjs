@@ -4,6 +4,7 @@ import { CHARACTERS, STARTER_AVATARS, packOdds } from "./characters.mjs";
 import { GameError, fail } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
 import { BEHAVIORS } from "./bots.mjs";
+import { login, signup, startSession } from "./accounts.mjs";
 
 /** The test lab is open to any signed-in teacher account (no env configuration); guests and students are refused. */
 export function isDeveloper(user) {
@@ -102,6 +103,7 @@ export async function handle(service, ctx, body) {
       room.bump();
       return { view: room.view({ mode: "projector" }) };
     }
+    case "solo_create": case "solo_cmd": return handleSolo(service, ctx, body);
     case "info": {
       const room = service.get(body.code);
       return { exists: !!room, phase: room?.phase ?? null, playerCount: room?.players.size ?? 0, lateJoin: room?.settings.lateJoin ?? false };
@@ -119,7 +121,7 @@ export async function handleEconomy(ctx, body) {
       if (!user) return { signedIn: false, ...{ coins: 0, owned: [] } };
       const wallet = await store.getWallet(user.id);
       const owned = await store.getCollection(user.id);
-      return { signedIn: true, name: user.name, role: user.role, coins: wallet.coins, lifetime: wallet.lifetime, owned };
+      return { signedIn: true, name: user.name, role: user.role, kind: user.kind ?? "margins", coins: wallet.coins, lifetime: wallet.lifetime, owned };
     }
     case "open_pack": {
       if (!user) fail("Sign in to open packs - guest players can't keep coins or characters.", "forbidden");
@@ -129,8 +131,9 @@ export async function handleEconomy(ctx, body) {
     }
     case "delete_my_data": {
       if (!user) fail("Not signed in.", "forbidden");
-      await store.deleteUserData(user.id);
-      return { ok: true };
+      if (user.kind === "arcade") await store.deleteAccount(user.accountId);
+      else await store.deleteUserData(user.id);
+      return { ok: true, loggedOut: user.kind === "arcade" };
     }
     default: fail("Unknown request.");
   }
@@ -225,6 +228,70 @@ export async function handleDev(service, ctx, body) {
     case "host": { const room = labRoom(body.code); room.host(String(body.cmd), body.args ?? {}); return { ok: true }; }
     case "force_offline": { const room = labRoom(body.code); const p = room.players.get(String(body.playerId)); if (p) p.forceOffline = !!body.value; return { ok: true }; }
     default: fail("Unknown dev command.");
+  }
+}
+
+// ---------- username/password accounts ----------
+/** Returns { user?, startSession?: {token, expiresAt}, endSession?: true }. The route layer sets/clears the cookie. */
+export async function handleAccount(service, ctx, body) {
+  const { store } = ctx;
+  switch (body.type) {
+    case "signup": {
+      limit(service, ctx, `signup:${ctx.ip}`, 3600000, 80);
+      const acc = await signup(store, { username: body.username, password: body.password });
+      const sess = await startSession(store, acc.id);
+      return { user: { name: acc.username, kind: "arcade" }, startSession: sess };
+    }
+    case "login": {
+      limit(service, ctx, `login:${ctx.ip}`, 60000, 40);
+      limit(service, ctx, `login-user:${String(body.username).toLowerCase()}`, 60000, 8);
+      const acc = await login(store, { username: body.username, password: body.password });
+      const sess = await startSession(store, acc.id);
+      return { user: { name: acc.username, kind: "arcade" }, startSession: sess };
+    }
+    case "logout": return { endSession: true };
+    case "delete_account": {
+      if (ctx.user?.kind !== "arcade") fail("Sign in to your arcade account first.", "forbidden");
+      await store.deleteAccount(ctx.user.accountId);
+      return { endSession: true };
+    }
+    default: fail("Unknown request.");
+  }
+}
+
+// ---------- solo practice (real engine, bot opponents, capped coins) ----------
+export const SOLO = {
+  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4 },
+  difficulty: { easy: { behavior: "sloppy", mult: 0.6 }, medium: { behavior: "average", mult: 1 }, hard: { behavior: "smart", mult: 1.4 } },
+  dailyCap: 150,
+};
+
+export async function handleSolo(service, ctx, body) {
+  switch (body.type) {
+    case "solo_create": {
+      limit(service, ctx, `solo:${ctx.ip}`, 60000, 60);
+      if (!GAME_IDS.includes(body.game)) fail("Pick a game.");
+      const diff = SOLO.difficulty[body.difficulty] ? body.difficulty : "medium";
+      const room = service.create({ playlist: [body.game], hostUserId: null, hostName: "Practice", settings: { teams: 0 }, solo: { game: body.game, difficulty: diff } });
+      let owned = [];
+      if (ctx.user) owned = (await ctx.store.getCollection(ctx.user.id)).map((c) => c.id);
+      const nick = String(body.nickname ?? "").trim() || ctx.user?.name || "Player";
+      const p = room.addPlayer({ nickname: nick, avatar: body.avatar, userId: ctx.user?.id ?? null, ownedAvatars: owned });
+      service.addBots(room, SOLO.bots[body.game], SOLO.difficulty[diff].behavior);
+      room.start();
+      return { code: room.code, playerId: p.id, token: p.token, nickname: p.nickname, avatar: p.avatar };
+    }
+    case "solo_cmd": {
+      const room = service.need(body.code);
+      if (!room.solo) fail("Not a solo run.", "forbidden");
+      const p = room.authPlayer(body.playerId, body.token);
+      room.touch(p.id);
+      const cmd = String(body.cmd);
+      if (!["pause", "resume", "quit"].includes(cmd)) fail("Unknown command.");
+      room.host(cmd === "quit" ? "end" : cmd);
+      return { view: room.view({ playerId: p.id }) };
+    }
+    default: fail("Unknown request.");
   }
 }
 export { GameError, GAME_CATALOG };

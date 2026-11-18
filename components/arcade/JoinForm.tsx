@@ -33,7 +33,7 @@ export default function JoinForm({ fixedCode, onJoin, initialCode = "" }: { fixe
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api("/api/arcade/economy", { type: "me" }).then((me) => { setOwned((me.owned ?? []).map((o: any) => o.id)); setSignedIn(!!me.signedIn); if (me.signedIn && me.name && !nickname) setNickname(String(me.name).split(" ")[0].slice(0, 14)); }).catch(() => undefined);
+    api("/api/arcade/economy", { type: "me" }).then((me) => { setOwned((me.owned ?? []).map((o: any) => o.id)); setSignedIn(!!me.signedIn); if (me.signedIn && me.kind !== "arcade" && me.name && !nickname) setNickname(String(me.name).split(" ")[0].slice(0, 14)); }).catch(() => undefined);
     try { const n = localStorage.getItem("arcade:nickname"); if (n) setNickname((cur) => cur || n); } catch { /* ignore */ }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

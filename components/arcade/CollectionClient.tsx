@@ -20,7 +20,7 @@ export default function CollectionClient() {
     <div className="grid gap-6">
       <div className="ar-panel flex flex-wrap items-center justify-between gap-3">
         <div><p className="ar-h2">{owned.size} / {cat.characters.length} collected</p><p className="ar-muted">Characters are cosmetic only - they never change gameplay.</p></div>
-        {me.signedIn ? <Link className="ar-btn" href="/arcade/shop">🪙 {me.coins} coins · Open a pack</Link> : <Link className="ar-btn" href="/margins/login">Sign in to collect</Link>}
+        {me.signedIn ? <Link className="ar-btn" href="/arcade/shop">🪙 {me.coins} coins · Open a pack</Link> : <Link className="ar-btn" href="/arcade/account">Sign in to collect</Link>}
       </div>
       {!me.signedIn && <div className="ar-card">Guests can play, but coins and collections are saved to your account. Sign in to start collecting.</div>}
       <section aria-label="Collectible characters" className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

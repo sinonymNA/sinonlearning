@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { getCurrentUser } from "./marginsAuth";
+import { getArcade } from "./arcadeRuntime";
+// @ts-ignore - plain ESM
+import { userFromToken } from "../arcade-server/accounts.mjs";
 
-export interface ArcadeUser { id: string; email: string; role: "teacher" | "student"; name: string }
+export const ARCADE_COOKIE = "arcade_session";
+
+export interface ArcadeUser { id: string; email: string; role: "teacher" | "student"; name: string; kind?: "margins" | "arcade"; accountId?: string }
 
 /**
  * Identity for the arcade, reusing Margins accounts. Only a minimal projection is returned (never the
@@ -22,8 +27,12 @@ export async function getArcadeUser(): Promise<ArcadeUser | undefined> {
   }
   try {
     const user = await getCurrentUser();
-    return user ? { id: user.id, email: user.email, role: user.role, name: user.name } : undefined;
+    if (user) return { id: user.id, email: user.email, role: user.role, name: user.name, kind: "margins" };
   } catch {
-    return undefined; // no database configured: everyone is a guest
+    /* no Margins database: fall through to arcade accounts / guest */
   }
+  // lightweight username/password account (no email, no real name)
+  const token = (await cookies()).get(ARCADE_COOKIE)?.value;
+  if (!token) return undefined;
+  try { return (await userFromToken(getArcade().store, token)) as ArcadeUser | undefined; } catch { return undefined; }
 }

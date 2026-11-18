@@ -3,7 +3,7 @@
 Everything below was actually executed in this repository (Linux container, Node 22, Chromium 1243 via Playwright, PostgreSQL 16 for the account tests). "Not executed" items are listed at the end.
 
 ## 1. Automated unit/integration tests - `npm run arcade:test` (node:test)
-**93 tests, 93 pass (~0.9 s, fake clock; stable over repeated runs).**
+**100 tests, 100 pass (~0.9 s, fake clock; stable over repeated runs).**
 
 | File | Tests | Covers |
 |---|---|---|
@@ -48,3 +48,8 @@ Added tests: Hot Potato live-typing moderation/privacy, boom-guess scoring, quic
 
 ## 8. Hot Potato pacing + characters/packs
 Hot Potato slowed (fuse 14–24 s, 4.5 s boom pause, 7 rounds, ~3 min with 35 bots). Characters grew 12 → 40; economy test now asserts 40 unique drawable characters and odds still sum to 100 %. Pack-opening demo (`/arcade/shop/demo`) and the real shop share `PackOpener`; verified in Chromium (shake/reveal/confetti, 40-character sheet, no console errors). Unit tests: 93/93. The real (paid) opening path through `PackOpener` was not re-run against Postgres after this UI change.
+
+## 9. Accounts + solo practice
+- `accounts.test.mjs` (7): username/password validation, store keeps only username + hash (no email/name), session token hashed/expiring, delete-account wipes coins+collection, brute-force throttle, all 5 solo games run to the end with correct bot counts, solo coins by place x difficulty, guests earn nothing, 150/day cap holds, solo pause/quit authorization.
+- `scripts/arcade-e2e-solo.mjs` (9 checks PASS, run against `next dev` with the in-memory store AND with local PostgreSQL 16): signup form has exactly two fields and no email; account created; solo Last One Standing started with a free-form nickname; coins awarded; shop shows them; log out/in restores coins; no console errors. Postgres rows inspected: `arcade_accounts` holds only username + hash prefix, one hashed session, one `solo ...` award.
+- Not run: solo practice for the other four games in a real browser (covered by unit tests only); paid pack opening after the account change; production-build run of the account flow.

@@ -37,7 +37,7 @@ export class ArcadeService {
     for (const room of this.rooms.values()) {
       try { room.tick(); } catch (e) { room.log("tick_error", { message: String(e?.message ?? e) }); }
       const idle = now - room.lastActivity;
-      if ((room.phase === "ended" && idle > ENDED_MS) || idle > IDLE_MS) this.rooms.delete(room.code);
+      if ((room.phase === "ended" && idle > ENDED_MS) || idle > IDLE_MS || (room.solo && (room.phase === "final" || room.phase === "ended") && idle > 20 * 60 * 1000)) this.rooms.delete(room.code);
     }
     this.limiter.sweep(now);
   }

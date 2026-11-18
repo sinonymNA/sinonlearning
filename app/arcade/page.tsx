@@ -17,6 +17,8 @@ export default async function ArcadePage() {
       <header className="flex flex-wrap items-center justify-between gap-3 py-2">
         <Link href="/" className="font-bold underline">← Sinon Learning</Link>
         <nav className="flex flex-wrap gap-2" aria-label="Arcade">
+          <Link className="ar-btn sm mint" href="/arcade/solo">🎮 Solo</Link>
+          <Link className="ar-btn sm paper" href="/arcade/account">👤 Account</Link>
           <Link className="ar-btn sm paper" href="/arcade/characters">🧸 Characters</Link>
           <Link className="ar-btn sm paper" href="/arcade/shop">🪙 Shop</Link>
           <Link className="ar-btn sm lime" href="/arcade/shop/demo">🎁 Pack demo</Link>
@@ -31,6 +33,7 @@ export default async function ArcadePage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link className="ar-btn xl" href="/arcade/host">Host a game</Link>
             <Link className="ar-btn xl mint" href="/arcade/join">Join with a code</Link>
+            <Link className="ar-btn xl sky" href="/arcade/solo">Play solo</Link>
           </div>
           <div className="mt-5 max-w-xs"><QuickJoin /></div>
         </div>

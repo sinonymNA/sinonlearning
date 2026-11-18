@@ -16,7 +16,7 @@ const CONNECT_MS = 9000;
  */
 export class Room {
   constructor({ playlist = ["hot_potato"], settings = {}, hostUserId = null, hostName = "Teacher", content = null,
-    clock = Date.now, testMode = false, devUserId = null, onAward = null } = {}) {
+    clock = Date.now, testMode = false, devUserId = null, onAward = null, solo = null } = {}) {
     this.id = uid();
     this.code = roomCode();
     this.clock = clock;
@@ -24,6 +24,7 @@ export class Room {
     this.hostUserId = hostUserId;
     this.hostName = hostName;
     this.testMode = testMode;
+    this.solo = solo; // { game, difficulty } for practice runs against bots
     this.devUserId = devUserId;
     this.onAward = onAward;
     this.content = content ?? DEFAULT_SET;
@@ -194,7 +195,22 @@ export class Room {
     this.bump();
   }
 
+  awardSolo(rows, gameId) {
+    const human = this.playerList().find((p) => !p.bot);
+    if (!human) return;
+    const place = rows.findIndex((r) => r.id === human.id) + 1;
+    const base = [30, 22, 16, 11, 8][place - 1] ?? 5;
+    const mult = { easy: 0.6, medium: 1, hard: 1.4 }[this.solo.difficulty] ?? 1;
+    human.soloPlace = place; human.soloTotal = rows.length;
+    if (!human.userId || !this.onAward) { human.coinsEarned = null; return; }
+    const coins = Math.max(1, Math.round(base * mult));
+    Promise.resolve(this.onAward({ userId: human.userId, coins, key: `${this.id}:solo`, reason: `solo ${gameId} place ${place}`, dailyCap: 150 }))
+      .then((r) => { human.coinsEarned = r?.coins ?? 0; human.coinsCapped = !!r?.capped; this.bump(); })
+      .catch(() => { human.coinsEarned = 0; });
+  }
+
   awardCoins(rows, gameId) {
+    if (this.solo) return this.awardSolo(rows, gameId);
     if (!this.onAward || rows.length < 3) return;
     rows.forEach((row, i) => {
       const p = this.players.get(row.id);
@@ -314,6 +330,7 @@ export class Room {
         total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, bot: mode === "dev" ? !!p.bot : undefined,
       })),
       timer,
+      solo: this.solo ? { game: this.solo.game, difficulty: this.solo.difficulty } : undefined,
       teams: this.teamBoard(),
     };
     if (this.phase === "intro") base.next = { gameId: this.introGame, ...GAME_CATALOG[this.introGame], index: this.gameIndex, of: this.playlist.length };
@@ -329,7 +346,7 @@ export class Room {
     }
     if (playerId && this.players.has(playerId)) {
       const p = this.players.get(playerId);
-      base.me = { id: p.id, nickname: p.nickname, avatar: p.avatar, team: p.team, waiting: p.waiting, total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, signedIn: !!p.userId };
+      base.me = { solo: this.solo ? { place: p.soloPlace ?? null, of: p.soloTotal ?? null, coins: p.coinsEarned ?? null, capped: !!p.coinsCapped, signedIn: !!p.userId } : undefined, id: p.id, nickname: p.nickname, avatar: p.avatar, team: p.team, waiting: p.waiting, total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, signedIn: !!p.userId };
     }
     return base;
   }

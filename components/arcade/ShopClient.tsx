@@ -39,7 +39,7 @@ export default function ShopClient() {
           <h2 className="text-2xl font-bold">{cat.odds.pack.name}</h2><p className="mb-2">One random character from the collection · {cost} 🪙</p>
           <PackOpener onOpen={open} canOpen={me.signedIn && me.coins >= cost} label={`Open pack · ${cost} 🪙`}
             hint={!me.signedIn ? "Sign in to buy packs." : me.coins < cost ? `You need ${cost - me.coins} more coins. Play a game to earn them!` : undefined} />
-          {!me.signedIn && <p className="font-bold"><Link className="underline" href="/margins/login">Sign in</Link></p>}
+          {!me.signedIn && <p className="font-bold"><Link className="underline" href="/arcade/account">Sign in</Link></p>}
           <p className="mt-3"><Link className="font-bold underline" href="/arcade/shop/demo">Try the free demo pack →</Link></p>
         </section>
         <section className="ar-panel"><h2 className="ar-h2 mb-2">Pack odds</h2>

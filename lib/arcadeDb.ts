@@ -22,6 +22,11 @@ export function ensureArcadeSchema(): Promise<void> {
       await query(`CREATE TABLE IF NOT EXISTS arcade_content_sets (
         id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, title TEXT NOT NULL, items JSONB NOT NULL,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+      await query(`CREATE TABLE IF NOT EXISTS arcade_accounts (
+        id TEXT PRIMARY KEY, username TEXT NOT NULL, username_lower TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+      await query(`CREATE TABLE IF NOT EXISTS arcade_sessions (
+        token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`);
       await query(`CREATE INDEX IF NOT EXISTS arcade_content_owner_idx ON arcade_content_sets (owner_id)`);
     })();
   }
@@ -29,6 +34,55 @@ export function ensureArcadeSchema(): Promise<void> {
 }
 
 export class PgStore {
+  // ----- username/password accounts (no email, no real name) -----
+  async createAccount({ username, passwordHash }) {
+    await ensureArcadeSchema();
+    const id = crypto.randomUUID();
+    try {
+      await query(`INSERT INTO arcade_accounts (id, username, username_lower, password_hash) VALUES ($1,$2,$3,$4)`, [id, username, username.toLowerCase(), passwordHash]);
+    } catch (e) { if ((e as { code?: string }).code === "23505") throw new GameError("That username is taken."); throw e; }
+    return { id, username };
+  }
+  async getAccountByUsername(username: string) {
+    await ensureArcadeSchema();
+    const { rows } = await query(`SELECT id, username, password_hash FROM arcade_accounts WHERE username_lower = $1`, [username.toLowerCase()]);
+    return rows[0] ? { id: rows[0].id, username: rows[0].username, passwordHash: rows[0].password_hash } : null;
+  }
+  async createSession({ tokenHash, accountId, expiresAt }) {
+    await ensureArcadeSchema();
+    await query(`INSERT INTO arcade_sessions (token_hash, account_id, expires_at) VALUES ($1,$2,$3)`, [tokenHash, accountId, expiresAt]);
+    await query(`DELETE FROM arcade_sessions WHERE expires_at < now()`);
+  }
+  async getSessionAccount(tokenHash: string) {
+    await ensureArcadeSchema();
+    const { rows } = await query(`SELECT a.id, a.username FROM arcade_sessions s JOIN arcade_accounts a ON a.id = s.account_id WHERE s.token_hash = $1 AND s.expires_at > now()`, [tokenHash]);
+    return rows[0] ?? null;
+  }
+  async deleteSession(tokenHash: string) { await ensureArcadeSchema(); await query(`DELETE FROM arcade_sessions WHERE token_hash = $1`, [tokenHash]); }
+  async deleteAccount(accountId: string) {
+    await ensureArcadeSchema();
+    await query(`DELETE FROM arcade_sessions WHERE account_id = $1`, [accountId]);
+    await query(`DELETE FROM arcade_accounts WHERE id = $1`, [accountId]);
+    await this.deleteUserData(`acct:${accountId}`);
+  }
+
+  /** Award with a per-day cap for a reason group (solo practice), serialised by a wallet row lock. */
+  async awardCapped({ userId, coins, key, reason, dailyCap, group = "solo" }) {
+    await ensureArcadeSchema();
+    return transaction(async (run) => {
+      await run(`INSERT INTO arcade_wallets (user_id) VALUES ($1) ON CONFLICT DO NOTHING`, [userId]);
+      await run(`SELECT coins FROM arcade_wallets WHERE user_id = $1 FOR UPDATE`, [userId]);
+      const dup = await run(`SELECT 1 FROM arcade_awards WHERE user_id = $1 AND award_key = $2`, [userId, key]);
+      if (dup.rows.length) return { awarded: false, coins: 0 };
+      const used = await run(`SELECT COALESCE(SUM(coins),0)::int AS n FROM arcade_awards WHERE user_id = $1 AND reason LIKE $2 AND created_at >= date_trunc('day', now())`, [userId, `${group}%`]);
+      const allowed = Math.max(0, Math.min(coins, dailyCap - used.rows[0].n));
+      if (allowed <= 0) return { awarded: false, coins: 0, capped: true };
+      await run(`INSERT INTO arcade_awards (user_id, award_key, coins, reason) VALUES ($1,$2,$3,$4)`, [userId, key, allowed, reason]);
+      await run(`UPDATE arcade_wallets SET coins = coins + $2, lifetime = lifetime + $2 WHERE user_id = $1`, [userId, allowed]);
+      return { awarded: true, coins: allowed, capped: allowed < coins };
+    });
+  }
+
   async getWallet(userId: string) {
     await ensureArcadeSchema();
     const { rows } = await query(`SELECT coins, lifetime FROM arcade_wallets WHERE user_id = $1`, [userId]);
