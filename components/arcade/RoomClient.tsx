@@ -10,6 +10,7 @@ import JoinForm from "./JoinForm";
 import { PrefsButtons, PrefsProvider } from "./prefs";
 import { FinalScreen, IntroScreen, LobbyScreen, ResultsScreen, SoloFinal } from "./screens";
 import { Banner, Leaderboard } from "./ui";
+import ChatDock from "./ChatDock";
 import { api, saveCreds, useRoom } from "./useRoom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -74,6 +75,7 @@ function Inner({ code }: { code: string }) {
         {sideBoard && <aside className="fit-side mt-6 lg:mt-0"><Leaderboard rows={view.leaderboard} meId={meId} limit={10} title="Live leaderboard" showPoints /></aside>}
         </div>
       </main>
+      <ChatDock view={view} code={code} creds={creds} />
     </div>
   );
 }

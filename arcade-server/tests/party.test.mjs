@@ -12,7 +12,7 @@ test("complete Arcade Party: 35 players, all five games in sequence, normalised 
   ctx.svc.addBots(ctx.room, 35, "mixed");
   const seen = [];
   ctx.room.start();
-  for (let i = 0; i < 4000 && ctx.room.phase !== "final"; i++) {
+  for (let i = 0; i < 8000 && ctx.room.phase !== "final"; i++) {
     ctx.advance(250, 250);
     const tag = `${ctx.room.phase}:${ctx.room.gameIndex}`;
     if (seen[seen.length - 1] !== tag) seen.push(tag);

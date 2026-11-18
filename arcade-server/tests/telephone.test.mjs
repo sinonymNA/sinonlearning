@@ -29,13 +29,13 @@ test("chain assignment: nobody receives their own chain after stage 1, every cha
   }
 });
 
-test("stage timings 45s / 20s / 45s and the private task is only the player's own chain", () => {
+test("stage timings 75s / 25s / 75s and the private task is only the player's own chain", () => {
   const ctx = makeRoom({ n: 6, playlist: ["telephone"], content });
   const g = ctx.begin();
   const grp = g.groups[0];
-  assert.deepEqual(g.view(null, {}).stageMs, [45000, 20000, 45000]);
+  assert.deepEqual(g.view(null, {}).stageMs, [75000, 25000, 75000]);
   const v0 = ctx.room.view({ playerId: grp.members[0] }).game;
-  assert.ok(Math.abs(v0.group.endsIn - 45000) < 200);
+  assert.ok(Math.abs(v0.group.endsIn - 75000) < 200);
   assert.equal(v0.task.kind, "draw");
   assert.equal(v0.task.prompt, grp.chains[0].prompt);
   // another player's prompt is not in this player's view
@@ -75,14 +75,14 @@ test("timeouts fill in missing descriptions; reveal shows the full chain prompt 
   const g = ctx.begin();
   const grp = g.groups[0];
   grp.members.forEach((m) => ctx.act(m, { type: "draw", segs: [seg(1), seg(2)] }));
-  ctx.advance(46000);
+  ctx.advance(76000);
   assert.equal(grp.stage, 1);
   ctx.act(grp.members[0], { type: "describe", text: "a wobbly thing" });
-  ctx.advance(22000);
+  ctx.advance(27500);
   assert.equal(grp.stage, 2);
   assert.ok(grp.chains.some((c) => c.missing), "missing descriptions get a placeholder");
   grp.members.forEach((m) => ctx.act(m, { type: "draw", segs: [seg(5), seg(6)] }));
-  ctx.advance(47000);
+  ctx.advance(78000);
   assert.equal(grp.status, "reveal");
   // walk the reveal and collect everything a client would receive
   const got = {};
@@ -105,7 +105,7 @@ test("voting: can't vote own chain, votes close and award points to the funniest
   const ctx = makeRoom({ n: 4, playlist: ["telephone"], content });
   const g = ctx.begin();
   const grp = g.groups[0];
-  grp.members.forEach((m) => ctx.act(m, { type: "draw", segs: [seg(1), seg(2)] })); ctx.advance(46000);
+  grp.members.forEach((m) => ctx.act(m, { type: "draw", segs: [seg(1), seg(2)] })); ctx.advance(76000);
   grp.members.forEach((m) => ctx.act(m, { type: "describe", text: "something silly" })); ctx.advance(300);
   grp.members.forEach((m) => { ctx.act(m, { type: "draw", segs: [seg(1), seg(2)] }); ctx.act(m, { type: "done" }); }); ctx.advance(500);
   ctx.advance(60000);

@@ -4,7 +4,7 @@ import "./arcade.css";
 
 export const metadata: Metadata = {
   title: "Classroom Arcade | Sinon Learning",
-  description: "Five original multiplayer party games for the whole class: Hot Potato, Quick Draw, Last One Standing, Telephone and Imposter.",
+  description: "Six original multiplayer party games for the whole class: Hot Potato, Quick Draw, Last One Standing, Piggy Bank, Telephone and Imposter.",
 };
 
 export default function ArcadeLayout({ children }: { children: React.ReactNode }) {

@@ -41,7 +41,7 @@ export default function TestLab() {
     <div className="grid gap-5">
       <section className="ar-panel grid gap-4">
         <h2 className="ar-h2">1. Create a test room</h2>
-        <div className="flex flex-wrap gap-2">{GAME_IDS.map((g: string) => <button key={g} aria-pressed={sel.includes(g)} className={`ar-btn sm ${sel.includes(g) ? "" : "paper"}`} onClick={() => setSel(sel.includes(g) ? (sel.length > 1 ? sel.filter((x) => x !== g) : sel) : [...sel, g])}>{GAME_CATALOG[g].icon} {GAME_CATALOG[g].name}</button>)}<button className="ar-btn sm grape" onClick={() => setSel(GAME_IDS)}>All five</button></div>
+        <div className="flex flex-wrap gap-2">{GAME_IDS.map((g: string) => <button key={g} aria-pressed={sel.includes(g)} className={`ar-btn sm ${sel.includes(g) ? "" : "paper"}`} onClick={() => setSel(sel.includes(g) ? (sel.length > 1 ? sel.filter((x) => x !== g) : sel) : [...sel, g])}>{GAME_CATALOG[g].icon} {GAME_CATALOG[g].name}</button>)}<button className="ar-btn sm grape" onClick={() => setSel(GAME_IDS)}>All games</button></div>
         <div className="grid gap-3 sm:grid-cols-4">
           <label className="grid gap-1 font-bold">Bots: {bots}<input type="range" min={0} max={39} value={bots} onChange={(e) => setBots(Number(e.target.value))} /></label>
           <label className="grid gap-1 font-bold">Bot behavior<select className="ar-input" value={behavior} onChange={(e) => setBehavior(e.target.value)}>{["mixed", "smart", "average", "sloppy", "afk", "chaotic"].map((b) => <option key={b}>{b}</option>)}</select></label>

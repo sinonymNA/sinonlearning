@@ -2,7 +2,7 @@ import { BaseGame } from "./base.mjs";
 import { appendSegs, newLog } from "../drawing.mjs";
 import { editDistance, fail, normalizeWord, partition, shuffle } from "../util.mjs";
 
-const TURN_MS = 28000, REVEAL_MS = 4200, MAX_TURNS = 5, PICK_MS = 5000;
+const TURN_MS = 55000, REVEAL_MS = 4200, MAX_TURNS = 4, PICK_MS = 5000;
 
 export class QuickDraw extends BaseGame {
   start() {

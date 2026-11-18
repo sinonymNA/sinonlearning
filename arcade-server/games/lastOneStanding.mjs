@@ -1,7 +1,7 @@
 import { BaseGame } from "./base.mjs";
 import { fail, shuffle } from "../util.mjs";
 
-const READY_MS = 3500, WINDOW_MS = 12000, REVEAL_MS = 4800, TIE_MS = 250, MAX_QUESTIONS = 24, MAX_RETRIES = 3;
+const REVIVE_AT = 2, READY_MS = 3500, WINDOW_MS = 12000, REVEAL_MS = 4800, TIE_MS = 250, MAX_QUESTIONS = 24, MAX_RETRIES = 3;
 
 /** Advancement ladder: 35 -> 20 -> 10 -> 5 -> 2 -> 1. */
 export function nextTarget(alive) {
@@ -18,7 +18,7 @@ export class LastOneStanding extends BaseGame {
     this.out = new Map(); // pid -> { round, order, correct, ms }
     this.cons = new Map(this.players.map((p) => [p, 0])); // consolation points
     this.pool = shuffle(this.content.items);
-    this.streaks = new Map(); this.fastest = null;
+    this.streaks = new Map(); this.fastest = null; this.ghostStreak = new Map(); this.revives = 0; this.maxRevives = Math.max(3, Math.floor(this.players.length / 5));
     this.qIndex = 0; this.asked = 0; this.round = 1; this.retries = 0; this.winner = null; this.last = null; this.eliminationOrder = 0;
     this.nextQuestion(this.room.t());
   }
@@ -89,6 +89,12 @@ export class LastOneStanding extends BaseGame {
       tie = true;
     }
 
+    // Second chance: knocked-out players keep playing, and REVIVE_AT correct answers in a row put them back on the platform
+    const ghosts = this.players.filter((p) => !this.alive.has(p) && this.here(p));
+    for (const pid of ghosts) {
+      const a = q.answers.get(pid);
+      this.ghostStreak.set(pid, a && a.choice === q.answer ? (this.ghostStreak.get(pid) ?? 0) + 1 : 0);
+    }
     // consolation round: eliminated players score separately
     const counts = q.choices.map(() => 0);
     for (const a of q.answers.values()) counts[a.choice]++;
@@ -122,6 +128,14 @@ export class LastOneStanding extends BaseGame {
         this.out.set(pid, { round: this.round, order: this.eliminationOrder++, correct: a?.choice === q.answer });
       });
       this.last.advanced = [...keep]; this.last.eliminated = cut;
+      // revive (only while the field is still big enough that a comeback doesn't spoil the finale)
+      this.last.revived = [];
+      const ready = ghosts.filter((p) => (this.ghostStreak.get(p) ?? 0) >= REVIVE_AT).sort((x, y) => (this.ghostStreak.get(y) ?? 0) - (this.ghostStreak.get(x) ?? 0));
+      for (const pid of ready) {
+        if (this.alive.size + this.last.revived.length < 3 || this.revives >= this.maxRevives) break;
+        this.last.revived.push(pid);
+      }
+      for (const pid of this.last.revived) { this.alive.add(pid); this.out.delete(pid); this.ghostStreak.set(pid, 0); this.revives++; this.add(pid, 30); }
       this.round++;
       this.room.log("los_round", { advanced: keep.size, eliminated: cut.length, tie });
     }
@@ -158,7 +172,7 @@ export class LastOneStanding extends BaseGame {
     if (this.phase === "reveal" || this.phase === "done" || mode === "dev") out.correct = q.answer;
     if (pid) {
       const a = q.answers.get(pid);
-      out.you = { alive: this.alive.has(pid), answered: !!a, choice: a?.choice ?? null, correct: this.phase === "reveal" && a ? a.choice === q.answer : null, place: this.phase === "done" ? this.placements().find((p) => p.id === pid)?.place : null };
+      out.you = { streak: this.ghostStreak.get(pid) ?? 0, reviveAt: REVIVE_AT, alive: this.alive.has(pid), answered: !!a, choice: a?.choice ?? null, correct: this.phase === "reveal" && a ? a.choice === q.answer : null, place: this.phase === "done" ? this.placements().find((p) => p.id === pid)?.place : null };
     }
     if (this.phase === "done") out.placements = this.placements();
     return out;

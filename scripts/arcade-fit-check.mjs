@@ -18,7 +18,7 @@ const dev = async (b) => { const r = await fetch(`${BASE}/api/arcade/dev`, { met
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--no-sandbox"] });
 const ctx = await browser.newContext({ viewport: { width: W, height: H } });
 await ctx.addCookies([{ name: "arcade_dev_auth", value: cookie, url: BASE }]);
-const { code } = await dev({ type: "create", playlist: ["hot_potato", "last_one_standing", "quick_draw", "telephone", "imposter"], bots: 24, behavior: "mixed", timeScale: SCALE });
+const { code } = await dev({ type: "create", playlist: ["piggy_bank", "last_one_standing", "quick_draw", "telephone"], bots: 24, behavior: "mixed", timeScale: SCALE });
 const me = await dev({ type: "join_self", code });
 const page = await ctx.newPage();
 await page.addInitScript(([c, v]) => localStorage.setItem(`arcade:room:${c}`, JSON.stringify(v)), [code, { playerId: me.playerId, token: me.token, nickname: "Dev" }]);
@@ -39,6 +39,7 @@ while (Date.now() < end) {
     if (await w.isVisible().catch(() => false)) { const seq = (await page.locator('[aria-label^="Letters:"]').first().getAttribute("aria-label").catch(() => ""))?.replace("Letters: ", "").toLowerCase(); const c = WORDS.filter((x) => seq && x.includes(seq) && x.length > seq.length && x.length < 9); if (c.length) { await w.fill(c[Math.floor(Math.random() * c.length)]); await page.keyboard.press("Enter"); } }
     const ch = page.locator("button.choice:not([disabled])").first(); if (await ch.isVisible().catch(() => false)) await ch.click({ timeout: 1500 }).catch(() => undefined);
     const cv = page.locator('canvas[aria-label="Drawing canvas"]'); if (await cv.isVisible().catch(() => false)) { const b = await cv.boundingBox(); if (b) { await page.mouse.move(b.x + 30, b.y + 30); await page.mouse.down(); await page.mouse.move(b.x + 150, b.y + 120, { steps: 6 }); await page.mouse.up(); } const d = page.getByRole("button", { name: "I'm done!" }); if (await d.isVisible().catch(() => false)) await d.click().catch(() => undefined); }
+    const cz = page.locator("button.chest:not([disabled])").first(); if (await cz.isVisible().catch(() => false)) await cz.click({ timeout: 1500 }).catch(() => undefined);
     const gi = page.locator('input[aria-label="Your guess"]'); if (await gi.isVisible().catch(() => false)) { await gi.fill("cat"); await page.keyboard.press("Enter"); }
     const di = page.locator('input[aria-label="Description"]'); if (await di.isVisible().catch(() => false)) { await di.fill("a blob"); await page.keyboard.press("Enter"); }
     const ii = page.locator("#imp-input"); if (await ii.isVisible().catch(() => false)) { await ii.fill("snacks"); await page.keyboard.press("Enter"); }

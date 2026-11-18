@@ -29,7 +29,7 @@ export default async function ArcadePage() {
       <section className="my-6 grid items-center gap-6 md:grid-cols-[1.25fr_1fr]">
         <div>
           <h1 className="ar-h1" style={{ fontSize: "clamp(3rem, 11vw, 7rem)", lineHeight: 0.9 }}>Don&apos;t<br />hold the<br /><span className="text-[var(--sun)]">potato.</span></h1>
-          <p className="mt-5 max-w-lg text-xl ar-muted">Five loud, fast party games for the whole class. Teachers make a room, kids join with a code, and the server keeps everyone honest.</p>
+          <p className="mt-5 max-w-lg text-xl ar-muted">Six loud, fast party games for the whole class. Teachers make a room, kids join with a code, and the server keeps everyone honest.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link className="ar-btn xl" href="/arcade/host">Host a game</Link>
             <Link className="ar-btn xl mint" href="/arcade/join">Join with a code</Link>
@@ -48,7 +48,7 @@ export default async function ArcadePage() {
             <div className="flex items-start justify-between gap-3"><div><h2 className="text-3xl font-bold leading-none" style={{ color: g.color }}>{g.name}</h2><p className="mt-3 font-medium text-white/85">{g.blurb}</p></div><div className="float shrink-0"><GameArt id={id} size={84} /></div></div>
             <p className="mt-4 flex gap-2 text-sm font-bold"><span className="ar-pill">{g.minutes} min</span><span className="ar-pill">{g.min}+ players</span></p>
           </article>); })}
-        <article className="ar-card flex flex-col justify-between" style={{ background: "var(--sun)", transform: "rotate(.8deg)", padding: 22 }}><div><h2 className="text-3xl font-bold leading-none">Arcade Party</h2><p className="mt-3 font-semibold">All five back to back. Scores are balanced so no single game decides it, then a podium, awards and a champion.</p></div><Link className="ar-btn mt-5 self-start" href="/arcade/host">Start a party</Link></article>
+        <article className="ar-card flex flex-col justify-between" style={{ background: "var(--sun)", transform: "rotate(.8deg)", padding: 22 }}><div><h2 className="text-3xl font-bold leading-none">Arcade Party</h2><p className="mt-3 font-semibold">Every game back to back. Scores are balanced so no single game decides it, then a podium, awards and a champion.</p></div><Link className="ar-btn mt-5 self-start" href="/arcade/host">Start a party</Link></article>
       </section>
       <p className="ar-muted mt-10 text-sm">Guests can play without an account. Coins and characters need a Sinon account. Nicknames only: no chat, no direct messages, no public profiles.</p>
     </main>

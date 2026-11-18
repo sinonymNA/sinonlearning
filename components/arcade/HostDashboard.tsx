@@ -24,6 +24,8 @@ function Inner({ code }: { code: string }) {
   const [toast, setToast] = useState<string | null>(null);
   const [sets, setSets] = useState<any[]>([]);
   const [origin, setOrigin] = useState("");
+  const [botCount, setBotCount] = useState(10);
+  const [botLevel, setBotLevel] = useState("medium");
   useEffect(() => { setOrigin(window.location.origin); api("/api/arcade/content", { type: "list" }).then((d) => setSets(d.sets)).catch(() => undefined); }, []);
   const cmd = async (c: string, args: any = {}) => { try { await room.hostCmd(c, args); } catch (e: any) { setToast(e.message); setTimeout(() => setToast(null), 3500); } };
 
@@ -67,15 +69,26 @@ function Inner({ code }: { code: string }) {
                       <div className="mt-1 text-xl font-bold">{c.name}</div><div className="text-sm opacity-90">{c.minutes} min · {c.min}+ players</div>
                     </button>); })}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2"><button className="ar-btn sm grape" onClick={() => cmd("playlist", { playlist: GAME_IDS })}>🎉 Arcade Party (all five)</button>{GAME_IDS.map((g: string) => <button key={g} className="ar-btn sm paper" onClick={() => cmd("playlist", { playlist: [g] })}>Only {GAME_CATALOG[g].name}</button>)}</div>
+                <div className="mt-3 flex flex-wrap gap-2"><button className="ar-btn sm grape" onClick={() => cmd("playlist", { playlist: GAME_IDS })}>🎉 Arcade Party (all games)</button>{GAME_IDS.map((g: string) => <button key={g} className="ar-btn sm paper" onClick={() => cmd("playlist", { playlist: [g] })}>Only {GAME_CATALOG[g].name}</button>)}</div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-4">
                 <label className="grid gap-1 font-bold">Question / word set
                   <select className="ar-input" value={sets.find((s) => s.title === view.content?.title)?.id ?? "builtin"} onChange={(e) => cmd("content", { setId: e.target.value })}>{sets.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
                 <label className="grid gap-1 font-bold">Scoring
                   <select className="ar-input" value={view.settings.teams} onChange={(e) => cmd("settings", { teams: Number(e.target.value), lateJoin: view.settings.lateJoin ? "open" : "closed" })}><option value={0}>Solo</option>{[2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} teams</option>)}</select></label>
+                <label className="grid gap-1 font-bold">Quick chat
+                  <select className="ar-input" value={view.settings.chat === false ? "off" : "on"} onChange={(e) => cmd("chat", { on: e.target.value === "on" })}><option value="on">On (preset jokes &amp; emoji)</option><option value="off">Off</option></select></label>
                 <label className="grid gap-1 font-bold">Late joiners
                   <select className="ar-input" value={view.settings.lateJoin ? "open" : "closed"} onChange={(e) => cmd("settings", { teams: view.settings.teams, lateJoin: e.target.value })}><option value="open">Wait for next game</option><option value="closed">Not allowed</option></select></label>
+              </div>
+              <div className="ar-card grid gap-2" style={{ background: "var(--bg)", color: "var(--paper)", borderColor: "#0e1030" }}>
+                <p className="font-bold">🤖 Practice bots <span className="ar-muted font-medium">- fill the room so games feel full (bots never earn coins)</span></p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <label className="grid gap-1 text-sm font-bold">How many<input type="number" min={1} max={39} className="ar-input" style={{ width: 90 }} value={botCount} onChange={(e) => setBotCount(Number(e.target.value))} /></label>
+                  <label className="grid gap-1 text-sm font-bold">Skill<select className="ar-input" style={{ width: 130 }} value={botLevel} onChange={(e) => setBotLevel(e.target.value)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+                  <button className="ar-btn sm mint" onClick={() => cmd("bots", { count: botCount, difficulty: botLevel })}>+ Add bots</button>
+                  <button className="ar-btn sm paper" disabled={!view.players.some((p: any) => p.bot)} onClick={() => cmd("clearbots")}>Remove all bots ({view.players.filter((p: any) => p.bot).length})</button>
+                </div>
               </div>
               {compat && <div className="flex flex-wrap gap-2" aria-label="Content compatibility">{sel.map((g) => <span key={g} className="ar-pill" style={{ background: compat[g]?.ok ? "rgba(47,209,165,.25)" : "rgba(255,93,115,.3)" }}>{GAME_CATALOG[g].icon} {compat[g]?.ok ? `${compat[g].count} ${compat[g].label}` : `Not enough ${compat[g]?.label} - using built-in`}</span>)}</div>}
               <div className="flex flex-wrap items-center gap-3">
@@ -94,6 +107,7 @@ function Inner({ code }: { code: string }) {
             <button className="ar-btn sky" onClick={() => cmd("skip")} disabled={!["playing", "intro", "results"].includes(view.phase)}>⏭ Skip {view.phase === "playing" ? "round" : "ahead"}</button>
             {(view.phase === "final" || view.phase === "results") && view.phase === "final" && <button className="ar-btn lime" onClick={() => cmd("restart")}>🔁 Play again (new lobby)</button>}
             <button className="ar-btn coral" onClick={() => { if (confirm("End this session for everyone?")) cmd("end"); }} disabled={view.phase === "ended"}>⏹ End session</button>
+            <button className="ar-btn sm paper" onClick={() => cmd("chat", { on: view.settings.chat === false })}>{view.settings.chat === false ? "💬 Turn chat on" : "🙊 Turn chat off"}</button>
             <span className="ar-pill">Game {Math.max(1, view.gameIndex + 1)} of {view.playlist.length}</span>
           </section>
         )}

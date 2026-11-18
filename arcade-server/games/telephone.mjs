@@ -3,7 +3,7 @@ import { appendSegs, hasInk, newLog, compact } from "../drawing.mjs";
 import { cleanText } from "../moderation.mjs";
 import { fail, partition, shuffle } from "../util.mjs";
 
-const STAGE_MS = [45000, 20000, 45000];
+const STAGE_MS = [75000, 25000, 75000];
 const STEP_MS = [2000, 3500, 2500, 3500, 1500]; // prompt, drawing 1, description, drawing 2, hold
 const VOTE_MS = 10000, VOTE_REVEAL_MS = 4500, INTRO_STAGE_MS = 1800;
 

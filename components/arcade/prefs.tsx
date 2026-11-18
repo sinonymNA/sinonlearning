@@ -4,10 +4,10 @@
 
 import { useCallback, useEffect, useState, createContext, useContext } from "react";
 
-type Prefs = { muted: boolean; calm: boolean };
+type Prefs = { muted: boolean; calm: boolean; chatHidden: boolean };
 const KEY = "arcade:prefs";
 let audio: AudioContext | null = null;
-let current: Prefs = { muted: false, calm: false };
+let current: Prefs = { muted: false, calm: false, chatHidden: false };
 
 function load(): Prefs {
   try { return { ...current, ...(JSON.parse(localStorage.getItem(KEY) || "{}") as Partial<Prefs>) }; } catch { return current; }
@@ -51,6 +51,7 @@ export function PrefsButtons() {
   return (
     <span className="flex gap-2">
       <button className="ar-btn sm paper" aria-pressed={prefs.muted} onClick={() => set({ muted: !prefs.muted })} title={prefs.muted ? "Sound is off" : "Sound is on"}>{prefs.muted ? "🔇" : "🔊"}<span className="sr-only">Toggle sound</span></button>
+      <button className="ar-btn sm paper" aria-pressed={prefs.chatHidden} onClick={() => set({ chatHidden: !prefs.chatHidden })} title={prefs.chatHidden ? "Chat pop-ups hidden" : "Chat pop-ups on"}>{prefs.chatHidden ? "🙊" : "💬"}<span className="sr-only">Toggle chat pop-ups</span></button>
       <button className="ar-btn sm paper" aria-pressed={prefs.calm} onClick={() => set({ calm: !prefs.calm })} title="Reduce motion">{prefs.calm ? "🧘" : "🎢"}<span className="sr-only">Reduce motion</span></button>
     </span>
   );

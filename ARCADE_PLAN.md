@@ -40,3 +40,10 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 - [x] Username + password arcade accounts (no email/real name), hashed session tokens, delete-account, rate limits.
 - [x] Solo practice vs bots for all 5 games, 3 difficulties, placement coins x difficulty, 150/day cap, guests earn nothing.
 - [ ] True solo modes (see ARCADE_SOLO_IDEAS.md): Potato Rush, Streak Climb, Daily Challenge - brainstormed, not built.
+
+## Session 3 additions
+- [x] Second chance in Last One Standing: knocked-out players keep answering; 2 correct in a row puts them back on the platform (never into the finale, capped per game).
+- [x] Piggy Bank (6th game): nobody is eliminated; answer for coins, then pick SAFE / SPICY (steal) / WILD (jackpot, steal from leader, swap, oops; unlocked by a right answer); shields; heist feed; awards.
+- [x] Teachers can add/remove practice bots in a normal room (lobby only, max 40 players, bots never earn coins).
+- [x] Quick chat: curated jokes/cheers/emoji + per-game phrases, pop-ups on every screen incl. projector, cooldown, teacher on/off. No free-text chat by design.
+- [x] More drawing time: Quick Draw 55 s per turn (4 turns), Telephone 75 s / 25 s / 75 s.

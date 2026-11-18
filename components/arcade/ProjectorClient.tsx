@@ -3,6 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/immutability */
 
 import { useEffect, useState } from "react";
+import ChatDock from "./ChatDock";
 import { GameSwitch } from "./GameSwitch";
 import Avatar from "./Avatar";
 import { PrefsButtons, PrefsProvider } from "./prefs";
@@ -54,6 +55,7 @@ function Inner({ code }: { code: string }) {
       {view.phase === "playing" && <aside className="fit-side"><Leaderboard rows={view.leaderboard ?? []} limit={10} title="Leaderboard" showPoints />{view.teams && <div className="mt-3"><TeamBoard teams={view.teams} /></div>}</aside>}
       </div>
       </div>
+      <ChatDock view={view} code={code} readOnly />
     </div>
   );
 }

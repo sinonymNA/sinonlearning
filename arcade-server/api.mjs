@@ -1,4 +1,4 @@
-import { GAME_CATALOG, GAME_IDS } from "./catalog.mjs";
+import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
 import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems } from "./content.mjs";
 import { CHARACTERS, STARTER_AVATARS, packOdds } from "./characters.mjs";
 import { GameError, fail } from "./util.mjs";
@@ -99,9 +99,26 @@ export async function handle(service, ctx, body) {
           if (!set || set.ownerId !== ctx.user.id) fail("That content set isn't available to you.", "forbidden");
         }
         room.setContent(set);
+      } else if (body.cmd === "bots") {
+        if (room.phase !== "lobby") fail("Add bots from the lobby.");
+        const free = MAX_PLAYERS - room.players.size;
+        const n = Math.min(free, Math.max(0, Math.floor(Number(body.args?.count) || 0)));
+        if (n < 1) fail(free < 1 ? "The room is full." : "Pick how many bots to add.");
+        service.addBots(room, n, (SOLO.difficulty[body.args?.difficulty] ?? SOLO.difficulty.medium).behavior);
+        room.log("host_added_bots", { count: n });
+      } else if (body.cmd === "clearbots") {
+        if (room.phase !== "lobby") fail("Remove bots from the lobby.");
+        room.bots?.clear();
       } else room.host(String(body.cmd), body.args ?? {});
       room.bump();
       return { view: room.view({ mode: "projector" }) };
+    }
+    case "chat": {
+      const room = service.need(body.code);
+      const p = room.authPlayer(body.playerId, body.token);
+      limit(service, ctx, `chat:${room.code}:${p.id}`, 8000, 4);
+      room.chat(p.id, body.phrase);
+      return { ok: true };
     }
     case "solo_create": case "solo_cmd": return handleSolo(service, ctx, body);
     case "info": {
@@ -261,7 +278,7 @@ export async function handleAccount(service, ctx, body) {
 
 // ---------- solo practice (real engine, bot opponents, capped coins) ----------
 export const SOLO = {
-  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4 },
+  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4, piggy_bank: 7 },
   difficulty: { easy: { behavior: "sloppy", mult: 0.6 }, medium: { behavior: "average", mult: 1 }, hard: { behavior: "smart", mult: 1.4 } },
   dailyCap: 150,
 };

@@ -7,6 +7,7 @@ import LastOne from "./games/LastOne";
 import QuickDraw from "./games/QuickDraw";
 import Telephone from "./games/Telephone";
 import Imposter from "./games/Imposter";
+import PiggyBank from "./games/PiggyBank";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function GameSwitch(props: any) {
@@ -22,6 +23,7 @@ function Game(props: any) {
     case "quick_draw": return <QuickDraw {...props} />;
     case "telephone": return <Telephone {...props} />;
     case "imposter": return <Imposter {...props} />;
+    case "piggy_bank": return <PiggyBank {...props} />;
     default: return <div className="ar-panel">Loading game…</div>;
   }
 }

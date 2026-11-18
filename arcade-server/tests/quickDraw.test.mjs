@@ -80,7 +80,7 @@ test("guessing: speed-based points, artist rewarded, duplicates blocked, close g
   const late = ctx.tryAct(b, { type: "guess", text: word });
   assert.ok(late.result.points < early.result.points, "later guess scores less");
   assert.ok(early.result.points >= 50 && early.result.points <= 100);
-  ctx.advance(30000);
+  ctx.advance(40000);
   assert.ok(g.points.get(firstArtist) >= 60, "artist earns for correct guesses");
 });
 
@@ -89,7 +89,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
   const g = ctx.begin();
   const grp = g.groups[0];
   const artists = [];
-  for (let turn = 0; turn < 5; turn++) {
+  for (let turn = 0; turn < 4; turn++) {
     ctx.advance(1700); pickAll(g, ctx);
     if (grp.artist && !artists.includes(grp.artist)) artists.push(grp.artist);
     for (const m of grp.members) if (m !== grp.artist) ctx.tryAct(m, { type: "guess", text: grp.word });
@@ -97,7 +97,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
     assert.equal(grp.status, "reveal", "should end the moment everyone has guessed");
     ctx.advance(4500);
   }
-  assert.equal(new Set(artists).size, 5);
+  assert.equal(new Set(artists).size, 4);
   ctx.advance(10000);
   assert.equal(ctx.room.history.length, 1);
 });

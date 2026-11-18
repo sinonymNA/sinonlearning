@@ -16,6 +16,7 @@ export const HOW_TO: Record<string, string[]> = {
   quick_draw: ["One person in your group draws a secret word.", "Everyone else types guesses. Faster guesses score more.", "Artists score when their group gets it. Everyone takes turns."],
   last_one_standing: ["Everyone gets the same question at the same time.", "Only the fastest CORRECT players stay on the platform.", "Knocked out? Keep answering in the consolation round."],
   telephone: ["Draw your prompt. Then describe someone else's drawing. Then draw that description.", "You never get your own chain back.", "Watch the big reveal and vote for the funniest."],
+  piggy_bank: ["Everyone answers the same question. Right answers fill your piggy bank - faster is more.", "Then pick a chest: SAFE for steady coins, SPICY to steal from a rival, WILD (unlocked by a right answer) for jackpots and heists.", "Shields block thieves. Nobody is ever knocked out - biggest piggy wins!"],
   imposter: ["Everyone knows the secret word except ONE imposter.", "Take turns asking questions. Everyone answers at once, then answers are revealed.", "Vote out the imposter. If you ARE the imposter, guess the word at the end!"],
 };
 

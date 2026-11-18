@@ -66,6 +66,9 @@ async function act() {
   // Last One Standing
   const choice = p.locator("button.choice:not([disabled])").first();
   if (await choice.isVisible().catch(() => false)) { await sleep(300 + Math.random() * 1500); await choice.click({ timeout: 2000 }).catch(() => undefined); seen.add("choice"); return; }
+  // Piggy Bank chests
+  const chest = p.locator("button.chest:not([disabled])").first();
+  if (await chest.isVisible().catch(() => false)) { await sleep(300 + Math.random() * 1200); await chest.click({ timeout: 2000 }).catch(() => undefined); seen.add("chest"); return; }
   // Quick Draw / Telephone drawing
   const canvas = p.locator('canvas[aria-label="Drawing canvas"]');
   if (await canvas.isVisible().catch(() => false)) {

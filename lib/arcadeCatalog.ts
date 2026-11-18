@@ -2,6 +2,10 @@
 import { GAME_CATALOG as RAW_CATALOG, GAME_IDS as RAW_IDS, MAX_PLAYERS as RAW_MAX, AVATARS as RAW_AVATARS, TEAMS as RAW_TEAMS } from "../arcade-server/catalog.mjs";
 import { CHARACTERS as RAW_CHARS, RARITIES as RAW_RARITIES, STARTER_AVATARS as RAW_STARTERS, packOdds as rawPackOdds } from "../arcade-server/characters.mjs";
 
+import { PHRASES as RAW_PHRASES } from "../arcade-server/chat.mjs";
+export type ChatPhrase = { id: string; text: string; game: string; tab: string };
+export const PHRASES: ChatPhrase[] = RAW_PHRASES;
+
 export type GameInfo = { id: string; name: string; icon: string; color: string; min: number; ref: number; minutes: string; blurb: string };
 export const GAME_CATALOG: Record<string, GameInfo> = RAW_CATALOG;
 export const GAME_IDS: string[] = RAW_IDS;

@@ -91,7 +91,11 @@ export default function LastOne({ view, stamp, send, meId, projector = false }: 
         </div>
       )}
 
-      {!projector && you && g.phase === "question" && you.alive === false && <div className="ar-panel text-center font-bold">🪂 You're in the <span className="text-[var(--sun)]">Consolation Round</span> - answer fast to score points!</div>}
+      {!projector && you && g.phase === "question" && you.alive === false && (
+        <div className="ar-panel text-center font-bold">🪂 <span className="text-[var(--sun)]">Second chance!</span> Get {you.reviveAt} right in a row to jump back on the platform
+          <span className="ml-2 inline-flex gap-1 align-middle">{Array.from({ length: you.reviveAt }).map((_, i) => <span key={i} className="inline-block h-3 w-8 rounded-full" style={{ background: i < you.streak ? "var(--mint)" : "rgba(255,255,255,.25)" }} />)}</span></div>
+      )}
+      {reveal && lr?.revived?.length > 0 && <div className="ar-panel pop text-center font-bold">🎉 Back on the platform: {lr.revived.map((id: string) => g.players.find((p: any) => p.id === id)?.nickname).join(", ")}{lr.revived.includes(meId) ? " (that's YOU!)" : ""}</div>}
       {reveal && lr && (
         <div className="ar-panel slide text-center">
           {lr.retry ? <p className="ar-h2">{lr.retry}</p> : (

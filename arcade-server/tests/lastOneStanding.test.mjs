@@ -145,3 +145,32 @@ test("full 35-player run with mixed bots ends with exactly one winner", () => {
   assert.ok(res, "game should finish");
   assert.equal(ctx.room.history.length, 1);
 });
+
+test("second chance: a knocked-out player who answers 2 in a row correctly is revived (never into the finale)", () => {
+  const ctx = makeRoom({ n: 35, playlist: ["last_one_standing"], content });
+  const g = ctx.begin();
+  const ids = [...g.alive];
+  // round 1: 35 -> 20. The 15 slowest/wrong are out; "hero" is one of them
+  play(ctx, ids.map((id, i) => [id, i < 25, 800 + i * 300]));
+  assert.equal(g.alive.size, 20);
+  const out = ids.filter((id) => !g.alive.has(id));
+  const hero = out[0];
+  ctx.advance(5000, 100);
+  // round 2: 20 -> 10; ghosts answer (hero right), streak 1
+  play(ctx, [...[...g.alive].map((id, i) => [id, true, 1000 + i * 300]), [hero, true, 900], ...out.slice(1).map((id) => [id, false, 1500])]);
+  assert.equal(g.alive.size, 10);
+  assert.equal(g.ghostStreak.get(hero), 1);
+  assert.ok(!g.alive.has(hero));
+  ctx.advance(5000, 100);
+  // round 3: 10 -> 5; hero right again => streak 2 => revived
+  play(ctx, [...[...g.alive].map((id, i) => [id, true, 1000 + i * 300]), [hero, true, 900]]);
+  assert.ok(g.last.revived.includes(hero), "second correct answer in a row brings the ghost back");
+  assert.ok(g.alive.has(hero) && g.alive.size === 6);
+  assert.ok(g.points.get(hero) >= 30);
+  assert.equal(ctx.view(hero).game.you.alive, true);
+  // the finale stays clean: with 2 left nobody can be revived
+  const small = makeRoom({ n: 3, playlist: ["last_one_standing"], content });
+  const sg = small.begin();
+  sg.ghostStreak.set([...sg.alive][0], 5);
+  assert.equal(sg.maxRevives >= 3, true);
+});

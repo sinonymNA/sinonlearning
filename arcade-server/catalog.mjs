@@ -5,6 +5,7 @@ export const GAME_CATALOG = {
   quick_draw: { id: "quick_draw", name: "Quick Draw", icon: "🎨", color: "#2fbf9b", min: 2, ref: 330, minutes: "3", blurb: "Draw the secret word while your group guesses. Fast guesses score big." },
   last_one_standing: { id: "last_one_standing", name: "Last One Standing", icon: "⚡", color: "#7c5cff", min: 2, ref: 520, minutes: "2-4", blurb: "Everyone answers the same question. Only the fastest correct players stay on the platform." },
   telephone: { id: "telephone", name: "Telephone", icon: "☎️", color: "#ffb02e", min: 3, ref: 230, minutes: "4-5", blurb: "Draw, describe, draw again - then watch how badly the message changed." },
+  piggy_bank: { id: "piggy_bank", name: "Piggy Bank", icon: "🐷", color: "#ff6fb0", min: 2, ref: 2000, minutes: "3-4", blurb: "Answer fast, then pick a chest: bank it safe, steal from rivals, or go wild. Nobody is ever knocked out!" },
   imposter: { id: "imposter", name: "Imposter", icon: "🕵️", color: "#ef476f", min: 3, ref: 230, minutes: "3-4", blurb: "Ask, answer, and spot the one player who doesn't know the secret word." },
 };
 export const GAME_IDS = Object.keys(GAME_CATALOG);

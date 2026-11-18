@@ -3,6 +3,7 @@ import { cleanNickname } from "./moderation.mjs";
 import { GAMES } from "./games/index.mjs";
 import { GameError, fail, roomCode, secretToken, shuffle, uid, clamp } from "./util.mjs";
 import { DEFAULT_SET, contentFor } from "./content.mjs";
+import { CHAT_COOLDOWN_MS, PHRASE_BY_ID } from "./chat.mjs";
 
 export { AVATARS, TEAMS };
 
@@ -32,7 +33,9 @@ export class Room {
       timeScale: clamp(Number(settings.timeScale) || 1, 0.02, 1),
       teams: clamp(Number(settings.teams) || 0, 0, 6),
       lateJoin: settings.lateJoin !== "closed",
+      chat: settings.chat !== false && settings.chat !== "off",
     };
+    this.chatLog = []; this.chatSeq = 0;
     this.playlist = this.cleanPlaylist(playlist);
     this.phase = "lobby"; // lobby | intro | playing | results | final | ended
     this.players = new Map();
@@ -115,6 +118,25 @@ export class Room {
   }
 
   bump() { this.version++; }
+
+  /** Quick chat: only curated phrases (see chat.mjs). Never free text. */
+  chat(pid, phraseId) {
+    const p = this.players.get(pid);
+    if (!p) fail("You are not in this room.", "auth");
+    if (!this.settings.chat) fail("The teacher turned quick chat off.");
+    if (this.phase === "ended") fail("This session has ended.");
+    const phrase = PHRASE_BY_ID.get(String(phraseId));
+    const game = this.phase === "playing" ? this.playlist[this.gameIndex] : null;
+    if (!phrase || (phrase.game !== "all" && phrase.game !== game)) fail("Pick one of the quick chat phrases.");
+    const now = this.clock();
+    if (now - (p.lastChat ?? -1e9) < CHAT_COOLDOWN_MS) fail("Hold on a second before sending another!", "rate");
+    p.lastChat = now;
+    this.touch(pid);
+    this.chatLog.push({ id: ++this.chatSeq, pid, text: phrase.text, at: now });
+    if (this.chatLog.length > 40) this.chatLog.shift();
+    this.bump();
+    return { ok: true };
+  }
 
   // ---------- lifecycle ----------
   setPlaylist(list) { if (this.phase !== "lobby") fail("Change the playlist from the lobby."); this.playlist = this.cleanPlaylist(list); this.bump(); }
@@ -242,7 +264,8 @@ export class Room {
       case "remove": this.removePlayer(String(args.playerId), "teacher"); break;
       case "end": this.phase = "ended"; this.game = null; this.log("ended_by_teacher"); break;
       case "playlist": this.setPlaylist(args.playlist); break;
-      case "settings": if (this.phase !== "lobby") fail("Settings lock once the session starts."); this.settings.teams = clamp(Number(args.teams) || 0, 0, 6); this.settings.lateJoin = args.lateJoin !== "closed"; break;
+      case "settings": if (this.phase !== "lobby") fail("Settings lock once the session starts."); this.settings.teams = clamp(Number(args.teams) || 0, 0, 6); this.settings.lateJoin = args.lateJoin !== "closed"; if (args.chat !== undefined) this.settings.chat = args.chat !== false && args.chat !== "off"; break;
+      case "chat": this.settings.chat = !!args.on; if (!args.on) this.chatLog = []; break;
       case "restart": if (this.phase !== "final" && this.phase !== "results") fail("Nothing to restart yet."); this.resetToLobby(); break;
       default: fail("Unknown teacher command.");
     }
@@ -327,9 +350,10 @@ export class Room {
       settings: this.settings, content: { title: this.content.title },
       players: this.playerList().map((p) => ({
         id: p.id, nickname: p.nickname, avatar: p.avatar, connected: this.isConnected(p.id), waiting: p.waiting, team: p.team,
-        total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, bot: mode === "dev" ? !!p.bot : undefined,
+        total: this.totals.get(p.id) ?? 0, points: this.game?.points.get(p.id) ?? 0, bot: p.bot ? true : undefined,
       })),
       timer,
+      chat: this.settings.chat ? this.chatLog.slice(-6).map((m) => ({ id: m.id, pid: m.pid, text: m.text, nickname: this.players.get(m.pid)?.nickname ?? "", avatar: this.players.get(m.pid)?.avatar })) : [],
       solo: this.solo ? { game: this.solo.game, difficulty: this.solo.difficulty } : undefined,
       teams: this.teamBoard(),
     };

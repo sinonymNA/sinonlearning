@@ -2,6 +2,7 @@ import { botDoodle } from "./drawing.mjs";
 import { wordsContaining } from "./dictionary.mjs";
 import { IMPOSTER_FALLBACK_QUESTIONS, DEFAULT_TELEPHONE_PROMPTS } from "./content.mjs";
 import { pick, randInt, shuffle } from "./util.mjs";
+import { phrasesFor } from "./chat.mjs";
 
 export const BEHAVIORS = {
   smart: { speed: 0.7, accuracy: 0.95, errorRate: 0.05 },
@@ -62,6 +63,7 @@ export class Bots {
         bot.actions++;
         try { room.act(id, action); } catch (e) { bot.errors++; if (e?.code === "stale") bot.queue.length = 0; }
       }
+      if (!bot.chaos && room.settings.chat && randInt(1400) === 0) { try { room.chat(id, pick(phrasesFor(room.playlist[room.gameIndex])).id); } catch { /* cooldown */ } }
       if (bot.chaos && randInt(20) === 0) { try { room.act(id, pick([{ type: "word", word: "zzzz" }, { type: "answer", choice: 99 }, { type: "guess", text: "" }, { type: "vote", target: id }, { type: "nope" }])); } catch { bot.errors++; } }
     }
   }
@@ -100,6 +102,21 @@ export class Bots {
           const choice = randInt(1000) < bot.accuracy * 1000 ? correct : (correct + 1 + randInt(n - 1)) % n;
           return { type: "answer", choice };
         } }] };
+      }
+      case "piggy_bank": {
+        if (g.phase === "ready" || g.phase === "question") {
+          const ms = room.t() < g.q.openAt ? g.q.openAt - room.t() : 0;
+          return { key: `pbq:${g.round}:${pid}`, queue: [{ delay: Math.round(ms / room.settings.timeScale) + d(800, 6500), run: () => { const c = g.botHint(); const n = g.q.choices.length; return { type: "answer", choice: randInt(1000) < bot.accuracy * 1000 ? c : (c + 1 + randInt(n - 1)) % n }; } }] };
+        }
+        if (g.phase === "chest" && !g.picks.has(pid)) {
+          return { key: `pbc:${g.round}:${pid}`, queue: [{ delay: d(700, 4500), run: () => {
+            const allowed = g.correctSet.has(pid) ? ["safe", "spicy", "wild"] : ["safe", "spicy"];
+            const leading = [...g.bank.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] === pid;
+            const chest = bot.accuracy > 0.9 ? (leading ? "safe" : allowed.includes("wild") ? "wild" : "spicy") : pick(allowed);
+            return { type: "pick", chest };
+          } }] };
+        }
+        return null;
       }
       case "quick_draw": {
         const grp = g.byPlayer.get(pid);

@@ -149,6 +149,7 @@ export const GAME_NEEDS = {
   hot_potato: { key: "vocab", min: 3, optional: true, label: "vocabulary words" },
   quick_draw: { key: "drawPrompts", min: 3, label: "drawing prompts" },
   last_one_standing: { key: "questions", min: 5, label: "multiple-choice questions" },
+  piggy_bank: { key: "questions", min: 5, label: "multiple-choice questions" },
   telephone: { key: "telephonePrompts", min: 3, label: "telephone prompts" },
   imposter: { key: "imposterWords", min: 3, label: "secret words" },
 };
