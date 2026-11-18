@@ -97,7 +97,7 @@ test("potato explodes server-side: holder loses a heart, eliminated players beco
   assert.equal(grp.hearts.get(victim), 0);
   const late = tryAct(victim, { type: "word", word: "station" });
   assert.equal(late.ok, false);
-  advance(3500);
+  advance(4700);
   assert.equal(grp.status, "live");
   assert.ok(!g.alive(grp).includes(victim));
   assert.notEqual(grp.holder, victim);

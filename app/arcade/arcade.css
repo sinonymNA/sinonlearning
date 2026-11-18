@@ -109,3 +109,17 @@
 .draft { min-height: 3.4rem; font-size: clamp(1.8rem, 7vw, 3rem); font-weight: 700; letter-spacing: .06em; color: var(--sun); text-align: center; }
 .draft i { display: inline-block; width: .12em; height: .9em; background: var(--sun); vertical-align: -0.1em; animation: ar-throb .8s steps(2) infinite; }
 .award { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 18px; background: rgba(255,255,255,.1); border: 3px solid rgba(255,255,255,.18); }
+/* ---- pack opening ---- */
+@keyframes pack-idle { 0%,100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-8px) rotate(2deg) } }
+@keyframes pack-shake { 0% { transform: translate(0,0) rotate(0) scale(1) } 10% { transform: translate(-4px,2px) rotate(-3deg) } 20% { transform: translate(5px,-2px) rotate(3deg) } 30% { transform: translate(-6px,3px) rotate(-5deg) scale(1.03) } 40% { transform: translate(7px,-3px) rotate(5deg) } 55% { transform: translate(-9px,4px) rotate(-7deg) scale(1.07) } 70% { transform: translate(10px,-4px) rotate(7deg) } 85% { transform: translate(-12px,5px) rotate(-9deg) scale(1.12) } 100% { transform: translate(12px,-5px) rotate(9deg) scale(1.16) } }
+@keyframes pack-shine { 0% { transform: translateX(0) } 100% { transform: translateX(260px) } }
+@keyframes pack-burst { 0% { transform: scale(.1); opacity: 1 } 100% { transform: scale(5); opacity: 0 } }
+@keyframes card-flip { 0% { transform: perspective(900px) rotateY(90deg) scale(.7) } 60% { transform: perspective(900px) rotateY(-12deg) scale(1.05) } 100% { transform: perspective(900px) rotateY(0) scale(1) } }
+@keyframes pack-sparkle { 0%,100% { filter: drop-shadow(0 0 0 transparent) } 50% { filter: drop-shadow(0 0 18px #ffe066) } }
+.pack-idle { animation: pack-idle 2.6s ease-in-out infinite; }
+.pack-shake { animation: pack-shake 1.9s cubic-bezier(.4,0,.6,1) both; }
+.pack-shine { animation: pack-shine 2.4s linear infinite; }
+.pack-burst { width: 120px; height: 120px; border-radius: 50%; animation: pack-burst .65s ease-out both; }
+.card-flip { animation: card-flip .6s cubic-bezier(.2,.9,.3,1.2) both; }
+.card-face { display: grid; justify-items: center; gap: 6px; padding: 18px 14px; text-align: center; background: var(--paper); color: var(--ink); border: 4px solid; border-radius: 26px; }
+.pack-sparkle { animation: pack-sparkle 1.4s ease-in-out infinite, ar-float 2.4s ease-in-out infinite; }

@@ -1,3 +1,4 @@
+import { CHARACTERS, STARTER_AVATARS } from "./characters.mjs";
 /** Static game metadata shared by the server (min players, score normalisation) and the UI. */
 export const GAME_CATALOG = {
   hot_potato: { id: "hot_potato", name: "Hot Potato", icon: "🥔", color: "#ff7a3d", min: 2, ref: 130, minutes: "2-3", blurb: "Type a word with the letters shown to pass the potato. Whoever is holding it when it blows loses a heart!" },
@@ -9,10 +10,7 @@ export const GAME_CATALOG = {
 export const GAME_IDS = Object.keys(GAME_CATALOG);
 export const MAX_PLAYERS = 40;
 
-export const AVATARS = [
-  "rk-sun", "rk-moon", "rk-leaf", "rk-wave",
-  "c-blip", "c-mossy", "c-pepper", "c-boop", "c-fizz", "c-wisp", "c-biscuit", "c-zap", "c-nova", "c-gizmo", "c-pearl", "c-ember",
-];
+export const AVATARS = [...STARTER_AVATARS.map((a) => a.id), ...CHARACTERS.map((c) => c.id)];
 export const TEAMS = [
   { id: 0, name: "Red Rockets", color: "#ef476f" }, { id: 1, name: "Blue Bolts", color: "#4d8dff" },
   { id: 2, name: "Green Gliders", color: "#2fbf9b" }, { id: 3, name: "Gold Giants", color: "#ffb02e" },

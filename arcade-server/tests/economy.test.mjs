@@ -5,9 +5,10 @@ import { MemoryStore } from "../store.mjs";
 import { CHARACTERS, PACKS, packOdds, rollPack, RARITIES } from "../characters.mjs";
 import { handleEconomy } from "../api.mjs";
 
-test("12 original characters across five rarities; odds sum to 100%", () => {
-  assert.equal(CHARACTERS.length, 12);
-  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 12);
+test("40 original characters across five rarities, all drawable; odds sum to 100%", () => {
+  assert.equal(CHARACTERS.length, 40);
+  assert.equal(new Set(CHARACTERS.map((c) => c.id)).size, 40);
+  assert.ok(CHARACTERS.every((c) => c.tagline.length > 10));
   for (const c of CHARACTERS) assert.ok(RARITIES[c.rarity]);
   const odds = packOdds("basic");
   assert.equal(odds.pack.cost, 150);

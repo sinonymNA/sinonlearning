@@ -19,6 +19,7 @@ export default async function ArcadePage() {
         <nav className="flex flex-wrap gap-2" aria-label="Arcade">
           <Link className="ar-btn sm paper" href="/arcade/characters">🧸 Characters</Link>
           <Link className="ar-btn sm paper" href="/arcade/shop">🪙 Shop</Link>
+          <Link className="ar-btn sm lime" href="/arcade/shop/demo">🎁 Pack demo</Link>
           {user?.role === "teacher" && <Link className="ar-btn sm paper" href="/arcade/content">📚 My content</Link>}
           {dev && <Link className="ar-btn sm grape" href="/arcade/test-lab">🧪 Test lab</Link>}
         </nav>

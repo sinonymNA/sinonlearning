@@ -105,7 +105,7 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
       {grp.status === "live" && grp.heat >= 3 && <div className="heatglow" />}
       <div className="grid grid-cols-2 items-end gap-4">
         <div className="font-bold">Round {grp.round}/{grp.maxRounds}</div>
-        <Timer ms={g.endsIn} stamp={stamp} total={170000} label="Game" />
+        <Timer ms={g.endsIn} stamp={stamp} total={210000} label="Game" />
       </div>
       <div className="ar-panel"><PotatoGroup grp={grp} meId={meId} /></div>
 

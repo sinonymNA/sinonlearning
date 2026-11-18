@@ -11,7 +11,7 @@ import { CHARACTERS, STARTER_AVATARS } from "@/lib/arcadeCatalog";
 export function AvatarPicker({ value, onChange, owned }: { value: string; onChange: (id: string) => void; owned: string[] }) {
   const options = [...STARTER_AVATARS.map((a: any) => ({ id: a.id, name: a.name, locked: false })), ...CHARACTERS.map((c: any) => ({ id: c.id, name: c.name, locked: !owned.includes(c.id) }))];
   return (
-    <div role="radiogroup" aria-label="Choose your avatar" className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+    <div role="radiogroup" aria-label="Choose your avatar" className="grid max-h-72 grid-cols-4 gap-2 overflow-auto sm:grid-cols-8">
       {options.map((o) => (
         <button key={o.id} type="button" role="radio" aria-checked={value === o.id} disabled={o.locked} onClick={() => onChange(o.id)} title={o.locked ? `${o.name} (unlock in the shop)` : o.name}
           className="grid place-items-center rounded-2xl border-[3px] p-1" style={{ borderColor: value === o.id ? "var(--sun)" : "transparent", background: value === o.id ? "rgba(255,194,51,.25)" : "rgba(255,255,255,.06)", opacity: o.locked ? 0.3 : 1, filter: o.locked ? "grayscale(1)" : undefined, minHeight: 64 }}>

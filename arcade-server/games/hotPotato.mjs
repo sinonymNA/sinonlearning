@@ -3,7 +3,7 @@ import { chooseSequence, isWord, vocabSequence } from "../dictionary.mjs";
 import { fail, partition, pick, randInt, normalizeWord } from "../util.mjs";
 import { isClean } from "../moderation.mjs";
 
-const HEARTS = 3, FUSE_MIN = 8000, FUSE_SPREAD = 7000, BOOM_MS = 3200, GAME_MS = 170000, MAX_ROUNDS = 8;
+const HEARTS = 3, FUSE_MIN = 14000, FUSE_SPREAD = 10000, BOOM_MS = 4500, GAME_MS = 210000, MAX_ROUNDS = 7;
 const ASSIST_MS = 700, ASSIST_CAP = 2800;
 export const REACTIONS = ["😂", "😱", "🔥", "👏", "🥔"];
 

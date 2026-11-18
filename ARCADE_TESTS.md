@@ -45,3 +45,6 @@ Run against **both `next dev` and the production build (`next build` + `next sta
 
 ## 7. Polish pass (Phase 1 of ARCADE_POLISH_PLAN.md)
 Added tests: Hot Potato live-typing moderation/privacy, boom-guess scoring, quick bonus + awards; Quick Draw word choice (options never leak to guessers, auto-pick). Re-ran the two-browser sync test (13/13 pass, now includes the word-choice phase) and a real-browser Hot Potato + Quick Draw party (no console errors). Awards and BOOM visuals confirmed from screenshots. The full 5-game browser e2e and the 35-client load test were NOT re-run after this pass.
+
+## 8. Hot Potato pacing + characters/packs
+Hot Potato slowed (fuse 14–24 s, 4.5 s boom pause, 7 rounds, ~3 min with 35 bots). Characters grew 12 → 40; economy test now asserts 40 unique drawable characters and odds still sum to 100 %. Pack-opening demo (`/arcade/shop/demo`) and the real shop share `PackOpener`; verified in Chromium (shake/reveal/confetti, 40-character sheet, no console errors). Unit tests: 93/93. The real (paid) opening path through `PackOpener` was not re-run against Postgres after this UI change.
