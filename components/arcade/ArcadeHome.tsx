@@ -7,8 +7,9 @@ import QuickJoin from "./QuickJoin";
 import { GAME_CATALOG, GAME_IDS } from "@/lib/arcadeCatalog";
 
 const MODES = [
-  { href: "/arcade/join", icon: "🎮", name: "Join a game", note: "Got a code?", cls: "mint" },
-  { href: "/arcade/solo", icon: "🕹️", name: "Solo practice", note: "Beat the bots", cls: "sky" },
+  { href: "/arcade/abyss", icon: "🌊", name: "Abyss", note: "Rare answers, deeper dives", cls: "sky" },
+  { href: "/arcade/join", icon: "🎮", name: "Join a game", note: "Got a code?", cls: "sun" },
+  { href: "/arcade/solo", icon: "🕹️", name: "Solo practice", note: "Beat the bots", cls: "mint" },
   { href: "/arcade/peak", icon: "⛰️", name: "Mastery Peak", note: "Climb to the top", cls: "grape" },
   { href: "/arcade/shop", icon: "🛍️", name: "Today's shop", note: "New deals daily", cls: "coral" },
   { href: "/arcade/characters", icon: "🧸", name: "Collection", note: "Your characters", cls: "lime" },

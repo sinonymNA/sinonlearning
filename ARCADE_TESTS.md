@@ -89,3 +89,5 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Added mastery.test.mjs (9 tests). Suite: 142 passing.
 
 - Added daily.test.mjs (determinism, solvability, no answer leaks, tries/reveal/streaks, API guest + signed-in, coins once/day). Suite: 149 passing. Browser-checked (dev auth): boot intro, home at 1366x768 (page does not scroll), phone 390x844, wrong-answer flash.
+
+- Added abyss.test.mjs (prompt-bank validation incl. startsWith/endsWith rules, matching, daily determinism, scoring/timing, unlimited, signed-in API, archive/guest, pearls/fish/streak fish/account deletion). Suite: 158 passing.

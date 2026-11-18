@@ -105,6 +105,44 @@ CR("k-aplus", "A+ Aria", "legendary", "Appears when the whole class aces the tes
 const IMG = (id, name, rarity, tagline) => CHARACTERS.push({ id, name, rarity, tagline, image: `/characters/${id}.png` });
 void IMG;
 
+
+// ---- Abyss fish: a separate collection for the Abyss mode (never mixed with the Party characters) -------------------
+// Drawn by components/arcade/FishArt.tsx from `look`. Streak fish (`streak: true`) are never in packs.
+const FL = (body, color, color2, pattern, fin, extra = "none") => ({ look: { body, color, color2, pattern, fin, extra } });
+export const FISH = [];
+const F = (id, name, rarity, tagline, look, streak = false) => FISH.push({ id, name, rarity, tagline, ...look, ...(streak ? { streak: true } : {}), set: "abyss" });
+F("f-bubbles", "Bubbles", "common", "Blows a bubble for every thought. Most are about lunch.", FL("round", "#7fd6ff", "#3aa7e6", "none", "round"));
+F("f-goldie", "Goldie", "common", "Insists the bowl was a promotion.", FL("round", "#ffb347", "#ff8a1e", "stripes", "round"));
+F("f-nibble", "Nibble", "common", "Will nibble anything. Has regrets.", FL("long", "#9be39b", "#4cc36b", "spots", "round"));
+F("f-pebble", "Pebble", "common", "Looks exactly like the seabed. On purpose.", FL("flat", "#c9b8a6", "#8f7c68", "spots", "round"));
+F("f-sunny", "Sunny Sole", "common", "Flat out the happiest fish in the sea.", FL("flat", "#ffe066", "#ffb02e", "none", "round"));
+F("f-dash", "Dash", "common", "Late for everything, somehow still first.", FL("long", "#6ab0ff", "#2f6fe0", "stripes", "spiky"));
+F("f-puff", "Puff", "common", "Panics beautifully.", FL("puffer", "#ffd0a8", "#ff9f6b", "spots", "none"));
+F("f-tango", "Tango", "common", "Two steps forward, one step sideways.", FL("tall", "#ff8a5c", "#ffffff", "bands", "round"));
+F("f-zebra", "Zebra Zed", "uncommon", "Has been mistaken for a barcode.", FL("tall", "#ffffff", "#14163a", "bands", "spiky"));
+F("f-coralkid", "Coral Kid", "uncommon", "Lives in a very small, very pink castle.", FL("round", "#ff9bd0", "#ff5d9e", "spots", "spiky"));
+F("f-blinky", "Blinky", "uncommon", "Glows when someone says the word 'quiz'.", FL("long", "#b58aff", "#7a4fe0", "gradient", "round", "glow"));
+F("f-kelp", "Kelpie", "uncommon", "An eel that thinks it is seaweed.", FL("eel", "#6fd58a", "#2c9a55", "stripes", "none"));
+F("f-ray", "Little Ray", "uncommon", "Glides. Does not walk. Never walks.", FL("flat", "#a98bff", "#6b4fd0", "spots", "long"));
+F("f-pipsqueak", "Pipsqueak", "uncommon", "Puffs up to the size of a slightly larger pipsqueak.", FL("puffer", "#8ad7ff", "#2f8fd0", "stripes", "round"));
+F("f-lantern", "Lantern Lou", "rare", "Carries a light and a grudge.", FL("tall", "#3d4a9a", "#ffe066", "none", "round", "lure"));
+F("f-swordy", "Sir Swordy", "rare", "Knighted for services to pointing.", FL("long", "#4cc3ff", "#1f6fb0", "gradient", "spiky", "sword"));
+F("f-sparky", "Sparky", "rare", "Fully charged. Do not hug.", FL("eel", "#ffe066", "#ff9d2e", "bands", "none", "glow"));
+F("f-opal", "Opal", "rare", "Shimmers differently depending on who is looking.", FL("round", "#cfe8ff", "#ff9bd0", "gradient", "long", "glow"));
+F("f-angelo", "Angelo", "rare", "Fabulous fins, impeccable posture.", FL("tall", "#ffd23d", "#14163a", "bands", "long"));
+F("f-glowmaw", "Glowmaw", "epic", "Smiles with way too many teeth. Very friendly.", FL("tall", "#2a2f6e", "#7dffd8", "spots", "spiky", "lure"));
+F("f-royalray", "Royal Ray", "epic", "Rules the sandy kingdom from a very flat throne.", FL("flat", "#ff9bd0", "#ffd23d", "gradient", "long", "crown"));
+F("f-shadowfin", "Shadowfin", "epic", "You never see it coming. You never see it leave.", FL("long", "#1e2150", "#8a6bff", "gradient", "spiky", "glow"));
+F("f-empress", "Abyssal Empress", "legendary", "Lives where the light gives up. Brought her own.", FL("tall", "#2a2f6e", "#ff5d73", "gradient", "long", "crown"));
+F("f-sovereign", "Sunken Sovereign", "legendary", "A golden relic nobody dares to catch.", FL("long", "#ffd23d", "#ff8a1e", "gradient", "long", "crown"));
+// Streak rewards (Abyss daily-dive streak milestones; not sold in packs)
+F("f-pearl-guppy", "Pearl Guppy", "uncommon", "Reward: 5-day streak. Carries a tiny pearl everywhere.", FL("round", "#fff0f6", "#ff9bd0", "spots", "round", "glow"), true);
+F("f-lantern-eel", "Lantern Eel", "rare", "Reward: 14-day streak. Lights the way down.", FL("eel", "#3d4a9a", "#ffe066", "spots", "none", "lure"), true);
+F("f-moon-jelly", "Moon Jelly", "epic", "Reward: 30-day streak. Drifts, glows, judges quietly.", FL("round", "#e6e9ff", "#a98bff", "gradient", "long", "glow"), true);
+F("f-anglerlord", "Anglerlord", "epic", "Reward: 60-day streak. Has a lot of lights and a lot of opinions.", FL("tall", "#1e2150", "#7dffd8", "spots", "spiky", "lure"), true);
+F("f-old-kraken", "Old Kraken", "legendary", "Reward: 100-day streak. Dives deeper than the maps go.", FL("round", "#8a1f4a", "#ff5d73", "spots", "spiky", "crown"), true);
+export const FISH_BY_ID = new Map(FISH.map((f) => [f.id, f]));
+
 export const STARTER_AVATARS = [
   { id: "rk-sun", name: "Sunny" }, { id: "rk-moon", name: "Moony" }, { id: "rk-leaf", name: "Leafy" }, { id: "rk-wave", name: "Wavy" },
 ];
@@ -116,12 +154,16 @@ export const PACKS = {
   super: { id: "super", name: "Super Pack", cost: 250, color: "#8a6bff", blurb: "No commons! Every card is uncommon or better.", rarityWeights: W(0, 55, 33, 10, 2) },
   snack: { id: "snack", name: "Snack Pack", cost: 120, color: "#ff8fc7", set: "snack", blurb: "Only Snack Squad food friends! 16 to collect, including a legendary sundae.", rarityWeights: W(55, 28, 12, 4, 1) },
   crew: { id: "crew", name: "Crew Pack", cost: 130, color: "#59c56a", set: "crew", blurb: "Only Classroom Crew school-supply pals! 16 to collect, including a legendary A+.", rarityWeights: W(55, 28, 12, 4, 1) },
+  abyss_shallows: { id: "abyss_shallows", game: "abyss", name: "Shallows Pack", cost: 40, color: "#4cc3ff", blurb: "Cheap and cheerful. Mostly common fish, with a small shot at something better.", rarityWeights: W(78, 18, 3.5, 0.5, 0) },
+  abyss_reef: { id: "abyss_reef", game: "abyss", name: "Reef Pack", cost: 100, color: "#2fd1a5", blurb: "A real chance at rares, with epics and the odd legendary.", rarityWeights: W(55, 28, 12, 4, 1) },
+  abyss_deep: { id: "abyss_deep", game: "abyss", name: "Deep Pack", cost: 250, color: "#8a6bff", blurb: "No commons. Every fish is uncommon or better, with the best shot at legendaries.", rarityWeights: W(0, 45, 38, 14, 3) },
   legend: { id: "legend", name: "Legend Pack", cost: 600, color: "#ff5d73", blurb: "Rare or better every time, with the best shot at epics and legendaries.", rarityWeights: W(0, 0, 55, 37, 8) },
 };
-export const PACK_IDS = Object.keys(PACKS).sort((a, b) => PACKS[a].cost - PACKS[b].cost);
+export const PACK_IDS = Object.keys(PACKS).filter((id) => PACKS[id].game !== "abyss").sort((a, b) => PACKS[a].cost - PACKS[b].cost);
+export const ABYSS_PACK_IDS = Object.keys(PACKS).filter((id) => PACKS[id].game === "abyss").sort((a, b) => PACKS[a].cost - PACKS[b].cost);
 
 /** A pack with a `set` drops only that set; every other pack drops only the original (un-setted) characters. */
-export const poolFor = (pack) => CHARACTERS.filter((c) => (pack.set ? c.set === pack.set : !c.set));
+export const poolFor = (pack) => (pack.game === "abyss" ? FISH.filter((f) => !f.streak) : CHARACTERS.filter((c) => (pack.set ? c.set === pack.set : !c.set)));
 
 export function packOdds(packId = "basic", spotlight = null) {
   const pack = PACKS[packId];
@@ -137,6 +179,7 @@ export function packOdds(packId = "basic", spotlight = null) {
 }
 
 export const allPackOdds = (spotlight = null) => PACK_IDS.map((id) => packOdds(id, spotlight));
+export const allAbyssPackOdds = () => ABYSS_PACK_IDS.map((id) => packOdds(id));
 
 export const SPOTLIGHT_BOOST = 3;
 const rand01 = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32;

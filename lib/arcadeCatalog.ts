@@ -21,3 +21,8 @@ export const SETS: Record<string, { id: string; name: string; blurb: string }> =
 export type PackOdds = { pack: { id: string; name: string; cost: number; color: string; blurb: string }; rarities: { id: string; label: string; percent: number }[]; characters: { id: string; name: string; rarity: string; percent: number }[] };
 export const packOdds = rawPackOdds as (id?: string) => PackOdds;
 export const allPackOdds = rawAllPackOdds as () => PackOdds[];
+
+import { FISH as RAW_FISH, allAbyssPackOdds as rawAbyssOdds } from "../arcade-server/characters.mjs";
+export type FishInfo = { id: string; name: string; rarity: string; tagline: string; streak?: boolean; look: { body: string; color: string; color2: string; pattern: string; fin: string; extra: string } };
+export const FISH: FishInfo[] = RAW_FISH;
+export const allAbyssPackOdds = rawAbyssOdds as () => PackOdds[];

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import ProcAvatar from "./ProcAvatar";
 import SnackArt, { isSnackId } from "./SnackArt";
-import { CHARACTERS } from "@/lib/arcadeCatalog";
+import FishArt, { isFishId } from "./FishArt";
+import { CHARACTERS, FISH } from "@/lib/arcadeCatalog";
 
 /** Original SVG characters. 4 free "rookie" avatars + 12 collectibles. Everything is drawn in a 100x100 box. */
 const INK = "#14163a";
@@ -41,6 +42,7 @@ const ART: Record<string, () => ReactNode> = {
 export const avatarName = (id: string) => id;
 
 export default function Avatar({ id, size = 64, className = "", title }: { id?: string; size?: number; className?: string; title?: string }) {
+  if (isFishId(id)) { const f = FISH.find((x) => x.id === id); return <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? f?.name ?? "fish"} style={{ flex: "none", overflow: "visible" }}>{f?.look ? <FishArt look={f.look} /> : null}</svg>; }
   const ch = !ART[id ?? ""] ? CHARACTERS.find((c) => c.id === id) : undefined;
   const look = ch?.look;
   if (isSnackId(id)) return <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? ch?.name ?? "snack"} style={{ flex: "none", overflow: "visible" }}><SnackArt id={id as string} /></svg>;

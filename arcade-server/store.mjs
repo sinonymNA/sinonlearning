@@ -80,6 +80,16 @@ export class MemoryStore {
     return result;
   }
 
+  /** Add a character/fish straight to a collection (streak rewards). Idempotent per (user, character, key). */
+  async grantCharacter(userId, characterId, key) {
+    const dedupe = `${userId}:grant:${key}`;
+    if (this.awards.has(dedupe)) return { granted: false };
+    this.awards.add(dedupe);
+    const col = this.collections.get(userId) ?? new Map();
+    col.set(characterId, (col.get(characterId) ?? 0) + 1); this.collections.set(userId, col);
+    return { granted: true };
+  }
+
   // ----- Mastery Peak progress (one JSON blob per account + set) -----
   async getMastery(userId, setId) { const v = this.mastery.get(`${userId}|${setId}`); return v ? structuredClone(v) : null; }
   async saveMastery(userId, setId, state) { this.mastery.set(`${userId}|${setId}`, structuredClone(state)); }
@@ -97,6 +107,7 @@ export class MemoryStore {
   }
   async deleteSet(id, ownerId) { const s = this.sets.get(id); if (s && s.ownerId === ownerId) this.sets.delete(id); }
   async deleteUserData(userId) {
+    if (!String(userId).startsWith("abyss:")) await this.deleteUserData(`abyss:${userId}`);   // Abyss pearls + fish live under a namespaced id
     this.wallets.delete(userId); this.collections.delete(userId);
     for (const k of [...this.mastery.keys()]) if (k.startsWith(userId + "|")) this.mastery.delete(k);
     for (const [id, s] of this.sets) if (s.ownerId === userId) this.sets.delete(id);

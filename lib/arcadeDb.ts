@@ -117,10 +117,10 @@ export class PgStore {
       // row lock serialises concurrent requests from the same user (double clicks, retries)
       const wallet = await run(`SELECT coins FROM arcade_wallets WHERE user_id = $1 FOR UPDATE`, [userId]);
       const prior = await run(`SELECT character_id, duplicate, coins_after FROM arcade_pack_opens WHERE user_id = $1 AND request_id = $2`, [userId, requestId]);
-      const { CHARACTERS } = await import("../arcade-server/characters.mjs");
+      const { CHARACTERS, FISH } = await import("../arcade-server/characters.mjs");
       if (prior.rows.length) {
         const r = prior.rows[0];
-        return { character: CHARACTERS.find((c) => c.id === r.character_id), duplicate: r.duplicate, coins: r.coins_after, repeated: true };
+        return { character: [...CHARACTERS, ...FISH].find((c) => c.id === r.character_id), duplicate: r.duplicate, coins: r.coins_after, repeated: true };
       }
       const coins = wallet.rows[0].coins;
       const price = deal.price ?? pack.cost;
@@ -133,6 +133,16 @@ export class PgStore {
       const duplicate = had.rows.length > 0;
       await run(`INSERT INTO arcade_pack_opens (user_id, request_id, character_id, duplicate, coins_after) VALUES ($1,$2,$3,$4,$5)`, [userId, requestId, character.id, duplicate, coins - price]);
       return { character, duplicate, coins: coins - price };
+    });
+  }
+
+  async grantCharacter(userId: string, characterId: string, key: string) {
+    await ensureArcadeSchema();
+    return transaction(async (run) => {
+      const ins = await run(`INSERT INTO arcade_awards (user_id, award_key, coins, reason) VALUES ($1,$2,0,'grant') ON CONFLICT DO NOTHING RETURNING 1`, [userId, `grant:${key}`]);
+      if (!ins.rows.length) return { granted: false };
+      await run(`INSERT INTO arcade_collection (user_id, character_id) VALUES ($1,$2) ON CONFLICT (user_id, character_id) DO UPDATE SET count = arcade_collection.count + 1`, [userId, characterId]);
+      return { granted: true };
     });
   }
 
@@ -177,6 +187,7 @@ export class PgStore {
   }
   async deleteUserData(userId: string) {
     await ensureArcadeSchema();
+    if (!userId.startsWith("abyss:")) await this.deleteUserData(`abyss:${userId}`);
     await transaction(async (run) => {
       for (const t of ["arcade_wallets", "arcade_awards", "arcade_collection", "arcade_pack_opens", "arcade_mastery"]) await run(`DELETE FROM ${t} WHERE user_id = $1`, [userId]);
       await run(`DELETE FROM arcade_content_sets WHERE owner_id = $1`, [userId]);

@@ -12,14 +12,14 @@ type Stage = "idle" | "shake" | "burst" | "revealed";
 const MIN_SHAKE_MS = 1900;
 const CONF: Record<string, { n: number; spread: number }> = { common: { n: 0, spread: 0 }, uncommon: { n: 40, spread: 60 }, rare: { n: 90, spread: 80 }, epic: { n: 160, spread: 100 }, legendary: { n: 320, spread: 140 } };
 
-function PackArt({ glow, color = "#ffc233", label = "CHARACTER PACK" }: { glow: string; color?: string; label?: string }) {
+function PackArt({ glow, color = "#ffc233", label = "CHARACTER PACK", brand = ["CLASSROOM", "ARCADE"] }: { glow: string; color?: string; label?: string; brand?: [string, string] }) {
   return (
     <svg viewBox="0 0 200 280" width="100%" role="img" aria-label="Character pack" style={{ filter: `drop-shadow(0 0 ${glow === "none" ? 0 : 26}px ${glow === "none" ? "transparent" : glow})`, transition: "filter .3s" }}>
       <path d="M14 18 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 l8 -8 l8 8 V262 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 l-8 8 l-8 -8 Z" fill={color} stroke="#14163a" strokeWidth="6" strokeLinejoin="round" />
       <rect x="28" y="40" width="144" height="200" rx="14" fill="#fff8ea" stroke="#14163a" strokeWidth="5" />
       <path d="M28 150 L172 90 V130 L28 190Z" fill="#fff" opacity=".22" />
-      <text x="100" y="86" textAnchor="middle" fontSize="22" fontWeight="700" fill="#14163a" fontFamily="inherit">CLASSROOM</text>
-      <text x="100" y="114" textAnchor="middle" fontSize="22" fontWeight="700" fill="#14163a" fontFamily="inherit">ARCADE</text>
+      <text x="100" y="86" textAnchor="middle" fontSize="22" fontWeight="700" fill="#14163a" fontFamily="inherit">{brand[0]}</text>
+      <text x="100" y="114" textAnchor="middle" fontSize="22" fontWeight="700" fill="#14163a" fontFamily="inherit">{brand[1]}</text>
       <path d="M100 138 l12 26 l28 3 l-21 19 l7 28 l-26 -15 l-26 15 l7 -28 l-21 -19 l28 -3Z" fill={color} stroke="#14163a" strokeWidth="5" strokeLinejoin="round" />
       <text x="100" y="228" textAnchor="middle" fontSize="15" fontWeight="700" fill="#14163a" fontFamily="inherit">{label.toUpperCase()}</text>
       <clipPath id="packclip"><rect x="28" y="40" width="144" height="200" rx="14" /></clipPath>
@@ -29,7 +29,7 @@ function PackArt({ glow, color = "#ffc233", label = "CHARACTER PACK" }: { glow: 
 }
 
 /** Animated pack opening: idle → shake (rarity tease) → burst → card flip with confetti. Used by the real shop and the free demo. */
-export default function PackOpener({ onOpen, canOpen = true, label = "Open pack", hint, pack }: { onOpen: () => Promise<Result>; canOpen?: boolean; label?: string; hint?: string; pack?: { name: string; color: string } }) {
+export default function PackOpener({ onOpen, canOpen = true, label = "Open pack", hint, pack, brand }: { onOpen: () => Promise<Result>; canOpen?: boolean; label?: string; hint?: string; brand?: [string, string]; pack?: { name: string; color: string } }) {
   const [stage, setStage] = useState<Stage>("idle");
   const [res, setRes] = useState<Result | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export default function PackOpener({ onOpen, canOpen = true, label = "Open pack"
     <div className="grid justify-items-center gap-4" aria-live="polite">
       <div className="relative" style={{ width: "min(300px, 78vw)", minHeight: 330 }}>
         {(stage === "idle" || stage === "shake") && (
-          <div className={stage === "shake" ? "pack-shake" : "pack-idle"} style={{ width: "100%" }}><PackArt glow={glow} color={pack?.color} label={(pack?.name ?? "Character pack").replace(/ pack$/i, " pack")} /></div>
+          <div className={stage === "shake" ? "pack-shake" : "pack-idle"} style={{ width: "100%" }}><PackArt glow={glow} brand={brand} color={pack?.color} label={(pack?.name ?? "Character pack").replace(/ pack$/i, " pack")} /></div>
         )}
         {stage === "burst" && (
           <div className="absolute inset-0 grid place-items-center"><div className="pack-burst" style={{ background: r?.color }} /></div>
