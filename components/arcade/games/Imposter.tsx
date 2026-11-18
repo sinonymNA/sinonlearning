@@ -32,11 +32,21 @@ function Table({ grp, meId, bubbles, highlight }: { grp: any; meId?: string; bub
   );
 }
 
+/** Shoulder-surfing protection: the secret role/word is hidden until tapped, then re-hides itself. */
+function SecretChip({ you }: { you: any }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (!open) return; const t = setTimeout(() => setOpen(false), 6000); return () => clearTimeout(t); }, [open]);
+  const imposter = you.role === "imposter";
+  if (!open) return <button className="ar-chip" style={{ background: "var(--sun)", cursor: "pointer" }} onClick={() => setOpen(true)} aria-label="Show my secret role or word">🤫 Tap to peek at your secret</button>;
+  return <button className="ar-chip" style={{ background: imposter ? "var(--coral)" : "var(--mint)", color: imposter ? "#fff" : "var(--ink)", cursor: "pointer" }} onClick={() => setOpen(false)} aria-label="Hide my secret">{imposter ? "🕵️ You are the imposter" : <>🤫 Secret word: <b>{you.word}</b></>} · 🙈 hide</button>;
+}
+
 export default function Imposter({ view, stamp, send, meId, projector = false }: any) {
   const g = view.game, grp = g.group;
   const [text, setText] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const keyRef = useRef("");
+  const [roleHidden, setRoleHidden] = useState(false);
   const key = grp ? `${grp.phase}:${grp.turn}:${grp.vote?.runoff?.length ?? 0}` : "";
   useEffect(() => { if (keyRef.current !== key) { keyRef.current = key; setText(""); setErr(null); if (grp?.phase === "voteShow" || grp?.phase === "final") sfx("reveal"); if (grp?.phase === "role") sfx("pop"); } }, [key, grp?.phase]);
 
@@ -44,7 +54,7 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
   const you = grp.you;
   const name = (id: string) => grp.members.find((m: any) => m.id === id)?.nickname ?? "?";
   const submit = async (type: string, extra: any = {}) => { try { await send({ type, ...extra }); setErr(null); } catch (e: any) { setErr(e.message); sfx("bad"); } };
-  const secretChip = you && (you.role === "imposter" ? <span className="ar-chip" style={{ background: "var(--coral)", color: "#fff" }}>🕵️ You are the imposter</span> : <span className="ar-chip" style={{ background: "var(--mint)" }}>🤫 Secret word: <b>{you.word}</b></span>);
+  const secretChip = you && <SecretChip you={you} />;
   const isAsker = grp.questioner === meId;
 
   const answerForm = (label: string, type: string, placeholder: string, max: number) => (
@@ -61,9 +71,11 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
   switch (grp.phase) {
     case "role":
       body = !you ? <div className="ar-panel text-center ar-h2">Secret roles are being handed out…</div> : (
+        roleHidden ? <div className="ar-card text-center"><p className="ar-h2">🙈 Your secret is hidden</p><button className="ar-btn mt-2" onClick={() => setRoleHidden(false)}>👁 Show it</button></div> :
         <div className={`ar-card pop text-center ${you.role === "imposter" ? "shake" : ""}`} style={{ background: you.role === "imposter" ? "var(--coral)" : "var(--paper)", color: you.role === "imposter" ? "#fff" : "var(--ink)" }}>
           {you.role === "imposter" ? <p className="ar-h1">YOU ARE THE IMPOSTER.</p> : <><p className="font-bold opacity-70">The secret word is</p><p className="ar-h1">{you.word}</p><p className="mt-1 font-bold">One of you doesn&apos;t know it. Don&apos;t say it!</p></>}
           {you.role === "imposter" && <p className="mt-2 font-bold">Blend in. You must not give yourself away.</p>}
+          <button className="ar-btn sm paper mt-3" onClick={() => setRoleHidden(true)}>🙈 Hide this so nobody can peek</button>
         </div>
       );
       break;
@@ -71,7 +83,7 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
       body = isAsker && !projector ? (
         <div className="ar-card grid gap-3">
           <p className="font-bold">Your turn to ask! Click a question or type your own.</p>
-          <div className="grid gap-2 sm:grid-cols-2">{(you?.presets ?? []).map((q: string, i: number) => <button key={q} className="choice pop" style={{ minHeight: 0, padding: "10px 14px", fontSize: "1rem", animationDelay: `${i * 0.05}s` }} onClick={() => submit("question", { preset: i })}>{q}</button>)}</div>
+          <div className="imp-presets grid gap-2 sm:grid-cols-2">{(you?.presets ?? []).map((q: string, i: number) => <button key={q} className="choice pop" style={{ minHeight: 0, padding: "10px 14px", fontSize: "1rem", animationDelay: `${i * 0.05}s` }} onClick={() => submit("question", { preset: i })}>{q}</button>)}</div>
           {you?.canReroll && <button className="ar-btn sm paper w-fit" onClick={() => submit("reroll")}>🔀 Show different questions</button>}
           <form className="grid gap-2" onSubmit={(e) => { e.preventDefault(); if (text.trim()) submit("question", { text }); }}>
             <label className="font-bold" htmlFor="imp-input">…or write your own</label>

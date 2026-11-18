@@ -99,7 +99,7 @@ export default function PiggyBank({ view, stamp, send, meId, projector = false }
           {you.picked ? (
             <div className="ar-card pop text-center"><p className="text-xl font-bold">{resultText(you.result, name)}</p><p className="ar-muted text-sm">Waiting for the others…</p></div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="chest-row grid gap-3 sm:grid-cols-3">
               <button className="chest" style={{ background: "#9fe3b1" }} onClick={() => pick("safe")}><span className="big">🔒</span>SAFE<small>+{you.correct ? 120 : 60} coins, maybe a shield</small></button>
               <button className="chest" style={{ background: "#ffb27a" }} onClick={() => pick("spicy")}><span className="big">🌶️</span>SPICY<small>Try to steal {you.correct ? "20%" : "10%"} from a rival</small></button>
               <button className="chest" style={{ background: "#c9a6ff" }} disabled={!you.canWild} onClick={() => pick("wild")}><span className="big">{you.canWild ? "🎰" : "🔐"}</span>WILD<small>{you.canWild ? "Jackpot · steal from the leader · swap banks · or oops" : "Answer correctly to unlock"}</small></button>

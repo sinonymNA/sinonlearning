@@ -210,3 +210,30 @@ test("quick-pass bonus and end-of-game awards are produced", () => {
   assert.ok(room.history.at(-1).awards.length >= 1);
   assert.ok(room.history.at(-1).awards[0].nickname);
 });
+
+test("hot hands: nobody can sit on the potato - after 8 s it jumps to someone else, the holder loses points and the fuse shrinks", () => {
+  const { begin, room, advance } = makeRoom({ n: 5 });
+  const g = begin(); const grp = g.groups[0];
+  const first = grp.holder;
+  grp.fuseAt = room.t() + 60000;                       // plenty of fuse so only the hold limit matters
+  g.points.set(first, 20);
+  const fuseBefore = grp.fuseAt;
+  advance(7000);
+  assert.equal(grp.holder, first, "still theirs inside the limit");
+  assert.ok(room.view({ playerId: first }).game.group.holdIn > 0);
+  advance(1500);
+  assert.notEqual(grp.holder, first, "potato jumped");
+  assert.equal(grp.lastPass.stalled, true);
+  assert.equal(grp.lastPass.from, first);
+  assert.equal(grp.lastPass.to, grp.holder);
+  assert.equal(g.points.get(first), 15, "5 point penalty");
+  assert.ok(grp.fuseAt < fuseBefore, "fuse got shorter");
+  assert.notEqual(grp.prev, grp.holder);
+  // the new holder gets a fresh hold clock
+  assert.ok(room.view({ playerId: grp.holder }).game.group.holdIn > 7000);
+  // a pass inside the window resets the clock and avoids the penalty
+  const ok = wordsContaining(grp.sequence).find((w) => !grp.used.has(w));
+  const holder = grp.holder; advance(3000);
+  assert.ok(room.act(holder, { type: "word", word: ok }).ok);
+  assert.equal(g.stats.stalls, 1);
+});

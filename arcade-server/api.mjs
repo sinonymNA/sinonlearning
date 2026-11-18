@@ -19,6 +19,7 @@ const SAFE_OPTS = (o) => {
     if (o.draw && typeof o.draw === "object") out.draw = { key: Number(o.draw.key) || 0, from: Math.max(0, Number(o.draw.from) || 0) };
     if (o.tel && typeof o.tel === "object") out.tel = { ci: Math.max(0, Number(o.tel.ci) || 0), st: Number.isInteger(o.tel.st) ? o.tel.st : -1, src: typeof o.tel.src === "string" ? o.tel.src.slice(0, 40) : undefined };
     if (Number.isInteger(o.group) && o.group >= 0 && o.group < 100) out.group = o.group;
+    if (Number.isInteger(o.gal) && o.gal >= 0 && o.gal < 100) out.gal = o.gal;
   }
   return out;
 };

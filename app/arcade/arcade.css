@@ -241,3 +241,126 @@
 .chat-palette .phr:disabled { opacity: .45; cursor: not-allowed; }
 .proj .chat-pop { font-size: 1.5rem; padding: 12px 22px 12px 12px; }
 .proj .chat-pops { max-width: 640px; }
+
+@media (min-width: 900px) and (min-height: 520px) {
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gallery-grid .canvas-wrap { width: min(100%, calc((100dvh - 330px) / 2 * 1.3333)); }
+  .gallery-grid figure { padding: 8px 10px; }
+}
+
+/* ===== Phone / small-tablet "fit the screen" layout =====
+   Same idea as desktop: one full-height shell, slim top bar, the game fills the rest, tight spacing.
+   The score sidebar is hidden on phones (your total is in the top bar; full standings show between games). */
+@media (max-width: 899px) {
+  html, body { overflow-x: hidden; }
+  .room-shell { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  .room-shell .ar-topbar { position: static; flex: none; padding: 4px 8px; gap: 6px; }
+  .room-shell .ar-topbar .ar-btn.sm { min-height: 34px; min-width: 34px; padding: 2px 8px; font-size: .9rem; border-radius: 10px; box-shadow: 0 2px 0 var(--ink); }
+  .room-shell .ar-topbar .ar-pill { padding: 2px 8px; font-size: .78rem; }
+  .room-shell .ar-topbar svg { width: 30px; height: 30px; }
+  .room-shell .ar-banner { flex: none; padding: 3px; font-size: .85rem; }
+  .room-shell > main.ar-wrap { flex: 1; min-height: 0; padding: 6px 8px 8px; max-width: none; display: flex; flex-direction: column; overflow: hidden; }
+  .fit-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .fit-main { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; border-radius: 18px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .fit-side { display: none; }
+  .fit-main > .stage { min-height: 100%; padding: 8px; border-radius: 18px; }
+  .fit-main .ar-panel { padding: 8px 10px; border-radius: 16px; box-shadow: 0 3px 0 #0e1030; }
+  .fit-main .ar-card { padding: 8px 12px; border-radius: 16px; box-shadow: 0 3px 0 var(--ink); }
+  .fit-main .ar-h1 { font-size: clamp(1.6rem, 6.5vw, 2.4rem); }
+  .fit-main .ar-h2 { font-size: clamp(1.1rem, 4.8vw, 1.5rem); }
+  .fit-main .ar-btn { min-height: 40px; padding: 4px 14px; font-size: 1rem; }
+  .fit-main .ar-btn.xl { min-height: 46px; font-size: 1.1rem; padding: 6px 18px; }
+  .fit-main .ar-input { min-height: 42px; padding: 4px 12px; font-size: 1rem; }
+  .fit-main .grid.gap-4, .fit-main .grid.gap-5, .fit-main .grid.gap-3 { gap: 8px; }
+  .ar-code { font-size: clamp(2rem, 11vw, 3.4rem); }
+  /* chat: small button, pop-ups move to the top so they never cover the controls */
+  .chat-btn { right: 8px; bottom: 8px; padding: 4px 12px; min-height: 38px; font-size: .9rem; }
+  .chat-pops { left: 8px; right: 8px; top: 56px; bottom: auto; max-width: none; }
+  .chat-pop { font-size: .9rem; padding: 6px 12px 6px 6px; }
+  .chat-palette { right: 8px; left: 8px; width: auto; bottom: 54px; max-height: 48vh; }
+  /* Hot Potato */
+  .hp-potato svg { width: min(24vh, 190px); height: auto; }
+  .hp-potato { min-height: 0 !important; }
+  .hp-tile { width: 46px !important; height: 54px !important; font-size: 1.9rem !important; }
+  .hp-members { grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)) !important; gap: 4px !important; margin-top: 4px !important; }
+  .hp-members svg { width: 38px; height: 38px; }
+  .hp-members .nm { font-size: .72rem; }
+  .draft { min-height: 2rem; font-size: 1.5rem; }
+  .stamp { font-size: 2.2rem; border-width: 5px; }
+  /* Last One Standing / Piggy Bank */
+  .arena { min-height: 70px; padding-top: 2px; border-bottom-width: 8px; }
+  .arena svg { width: 26px !important; height: 26px !important; }
+  .fit-2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choice { min-height: 46px; padding: 6px 10px; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); gap: 8px; }
+  .choice .k { width: 28px; height: 28px; font-size: .85rem; }
+  .cons-leaders { display: none; }
+  .chest { padding: 8px 4px; font-size: .9rem; border-radius: 16px; box-shadow: 0 4px 0 var(--ink); }
+  .chest .big { font-size: 1.7rem; }
+  .chest small { font-size: .62rem; line-height: 1.15; }
+  .chest-row { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; }
+  /* drawing: canvas sized from the height that remains (4:3), toolbar compact */
+  .canvas-wrap { width: min(100%, calc((100dvh - var(--cvoff, 360px)) * 1.3333)); margin-inline: auto; border-radius: 12px; border-width: 3px; box-shadow: 0 3px 0 var(--ink); }
+  .cv-qd { --cvoff: 370px; } .cv-tel { --cvoff: 400px; } .cv-rev { --cvoff: 300px; }
+  .swatch { width: 28px; height: 28px; }
+  .gallery-grid .canvas-wrap { width: min(100%, calc((100dvh - 320px) / 2 * 1.3333)); }
+  .rev-canvases .canvas-wrap { width: min(100%, calc((100dvh - 330px) / 2 * 1.3333)); }
+  .rev-cards { grid-template-columns: 1fr 1fr; }
+  .vote-grid { grid-template-columns: 1fr 1fr; }
+  .vote-grid .choice { min-height: 0; padding: 6px 8px; font-size: .85rem; }
+  /* Imposter */
+  .imp-layout { gap: 8px; }
+  .ar-table { width: min(100%, calc((100dvh - 430px) * 1.25), 340px); }
+  .table-seat { width: 70px; }
+  .table-seat svg { width: 38px; height: 38px; }
+  .table-seat .text-sm { font-size: .72rem; }
+  /* results / final / intro / lobby */
+  .res-grid { gap: 8px; }
+  .podium { min-height: 170px; }
+  .podium svg { width: 46px; height: auto; }
+  .fit-main { --ph: .5; }
+  .podium .step { min-height: 64px; }
+  .intro-card { gap: 6px; padding: 8px; }
+  .intro-card svg { width: 72px; height: auto; }
+  .intro-card ul { gap: 4px; font-size: .9rem; }
+  .intro-card li { padding: 4px 10px !important; }
+  .award { padding: 4px 8px; } .award svg { width: 30px; height: 30px; }
+  .ar-grid-avatars { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 4px; }
+  .ar-grid-avatars svg { width: 42px; height: 42px; }
+  .lb-scroll { max-height: 40vh; overflow: auto; }
+}
+@media (max-width: 899px) {
+  .hp-potato svg { width: min(17vh, 150px); }
+  .hp-tile { width: 40px !important; height: 46px !important; font-size: 1.6rem !important; }
+  .hp-stage-label { font-size: .8rem; }
+  .hp-members svg { width: 32px; height: 32px; }
+  .hp-members .ar-av { gap: 0; font-size: .7rem; }
+  .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .gallery-grid figure { padding: 4px 6px; gap: 4px; }
+  .gallery-grid figcaption { font-size: .72rem; }
+  .gallery-grid figcaption b { font-size: .95rem; }
+  .gallery-grid .ar-btn.sm { min-height: 28px; padding: 0 8px; font-size: .75rem; }
+  .gallery-grid .canvas-wrap { width: 100%; }
+}
+@media (max-width: 899px) {
+  /* Imposter on phones: the round table becomes a compact row of seats so the inputs stay on screen */
+  .ar-table { width: 100% !important; aspect-ratio: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 0; }
+  .ar-table::before { display: none; }
+  .table-seat { position: static; transform: none; width: 64px; }
+  .table-seat svg { width: 34px; height: 34px; }
+  .table-seat .pop { display: none; }
+  .imp-presets { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .imp-presets .choice { min-height: 0; padding: 6px 8px; font-size: .82rem; }
+  /* results */
+  .res-side .lb-scroll { max-height: 22vh; }
+  .res-grid .ar-h1 { font-size: 1.5rem; }
+  .res-grid .award { display: none; }
+}
+
+/* phone: Quick Draw group list becomes a compact chip row */
+@media (max-width: 899px) {
+  .qd-group { padding: 6px 8px; }
+  .qd-group h3 { display: none; }
+  .qd-members { display: flex; flex-wrap: wrap; gap: 4px; }
+  .qd-members .lb-row { padding: 2px 8px 2px 4px; font-size: 12px; gap: 4px; min-height: 0; }
+  .qd-members .lb-row .truncate { max-width: 64px; }
+}

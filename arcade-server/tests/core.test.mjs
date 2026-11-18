@@ -157,3 +157,27 @@ test("needs enough players for the chosen playlist", () => {
   const { room } = makeRoom({ n: 2, playlist: ["imposter"] });
   assert.throws(() => room.start(), /at least 3 players/);
 });
+
+test("groups are always balanced (never more than 1 apart, never over the game's maximum) for every room size", () => {
+  const cfg = { hot_potato: { max: 7, floor: 4 }, quick_draw: { max: 7, floor: 3 }, telephone: { max: 7, floor: 3 }, imposter: { max: 5, floor: 3 } };
+  for (const [game, c] of Object.entries(cfg)) for (let n = 2; n <= 40; n++) {
+    const sizes = partition(Array.from({ length: n }, (_, i) => i), c).map((x) => x.length);
+    assert.ok(Math.max(...sizes) <= c.max, `${game} n=${n} sizes ${sizes}`);
+    assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 1, `${game} n=${n} unbalanced ${sizes}`);
+  }
+});
+
+test("players whose tab has been gone for a while sit the game out, so groups are balanced among people who are present", () => {
+  const ctx = makeRoom({ n: 12, playlist: ["hot_potato"] });
+  ctx.room.start();
+  const gone = ctx.players.slice(0, 4);
+  ctx.clock.now += 25000;                                    // intro still running; 4 players never poll again
+  for (const p of ctx.players.slice(4)) ctx.room.touch(p.id);
+  ctx.room.phaseEnds = 0; ctx.room.tick();
+  assert.equal(ctx.room.phase, "playing");
+  assert.equal(ctx.room.game.players.length, 8);
+  for (const p of gone) assert.ok(!ctx.room.game.players.includes(p.id));
+  const sizes = ctx.room.game.groups.map((g) => g.members.length);
+  assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 1, `balanced ${sizes}`);
+  assert.equal(ctx.room.players.get(gone[0].id).waiting, true, "they rejoin the next game");
+});

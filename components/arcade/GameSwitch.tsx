@@ -2,7 +2,8 @@
 
  
 
-import HotPotato, { PotatoMembers, PotatoStage } from "./games/HotPotato";
+import HotPotato, { PotatoMembers, PotatoStage, usePotatoFlight } from "./games/HotPotato";
+import { usePrefs } from "./prefs";
 import LastOne from "./games/LastOne";
 import QuickDraw from "./games/QuickDraw";
 import Telephone from "./games/Telephone";
@@ -28,11 +29,13 @@ function Game(props: any) {
   }
 }
 
-function HotPotatoProjector({ view }: any) {
+function HotPotatoProjector({ view, stamp }: any) {
   const g = view.game;
+  const { prefs } = usePrefs();
+  usePotatoFlight(g.group, prefs.calm);
   return (
     <div className="hp-layout">
-      {g.group && <div className="ar-panel"><PotatoStage grp={g.group} big /></div>}
+      {g.group && <div className="ar-panel"><PotatoStage grp={g.group} big stamp={stamp} /></div>}
       <div className="grid content-start gap-2">
         {g.group && <div className="ar-panel"><PotatoMembers grp={g.group} big /></div>}
         <div className="grid grid-cols-3 gap-2 lg:grid-cols-5">

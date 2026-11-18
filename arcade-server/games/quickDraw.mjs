@@ -1,8 +1,8 @@
 import { BaseGame } from "./base.mjs";
-import { appendSegs, newLog } from "../drawing.mjs";
+import { appendSegs, compact, newLog } from "../drawing.mjs";
 import { editDistance, fail, normalizeWord, partition, shuffle } from "../util.mjs";
 
-const TURN_MS = 55000, REVEAL_MS = 4200, MAX_TURNS = 4, PICK_MS = 5000;
+const TURN_MS = 55000, REVEAL_MS = 4200, MAX_TURNS = 4, PICK_MS = 5000, GALLERY_BASE_MS = 8000, GALLERY_PER_MS = 5000;
 
 export class QuickDraw extends BaseGame {
   start() {
@@ -24,13 +24,13 @@ export class QuickDraw extends BaseGame {
   }
 
   beginTurn(g, t) {
-    if (g.turn >= g.turns) return this.finishGroup(g);
+    if (g.turn >= g.turns) return this.finishGroup(g, t);
     let artist = null;
     for (let i = 0; i < g.order.length; i++) {
       const cand = g.order[(g.cursor + i) % g.order.length];
       if (this.here(cand) && this.connected(cand)) { artist = cand; g.cursor = (g.cursor + i + 1) % g.order.length; break; }
     }
-    if (!artist) return this.finishGroup(g);
+    if (!artist) return this.finishGroup(g, t);
     g.turn++;
     // the artist picks one of three words (skribbl-style) before the clock starts
     const options = [];
@@ -46,12 +46,18 @@ export class QuickDraw extends BaseGame {
     this.room.log("qd_turn", { group: g.id, turn: g.turn, artist: this.nick(g.artist) });
   }
 
-  finishGroup(g) { g.status = "done"; }
+  /** After the last drawing the group sees a gallery of everything that was drawn, with the words. */
+  finishGroup(g, t = this.room.t()) {
+    if (g.status === "gallery" || g.status === "done") return;
+    if (!g.gallery?.length) { g.status = "done"; return; }
+    g.status = "gallery"; g.until = t + this.D(GALLERY_BASE_MS + GALLERY_PER_MS * g.gallery.length);
+  }
 
   endTurn(g, t, why = "time") {
     if (g.status !== "draw") return;
     const guessers = g.guessed.size;
     if (guessers) this.add(g.artist, guessers * 30 + (guessers >= g.members.length - 1 ? 25 : 0));
+    (g.gallery ??= []).push({ turn: g.turn, artist: g.artist, word: g.word, guessers: guessers, segs: compact(g.log), size: g.members.length - 1 });
     g.status = "reveal"; g.until = t + this.D(REVEAL_MS); g.note = why === "artist_left" ? "The artist left - no points this round." : guessers === 0 ? "Nobody guessed it!" : "";
     this.room.log("qd_end", { group: g.id, word: g.word, guessers, why });
   }
@@ -66,6 +72,7 @@ export class QuickDraw extends BaseGame {
         if (g.offlineSince !== null && t - g.offlineSince > this.D(6000)) this.endTurn(g, t, "artist_left");
         else if (t >= g.endsAt || (others.length > 0 && others.every((m) => g.guessed.has(m)))) this.endTurn(g, t);
       } else if (g.status === "reveal" && t >= g.until) this.beginTurn(g, t);
+      else if (g.status === "gallery" && t >= g.until) g.status = "done";
     }
     if (this.groups.every((g) => g.status === "done")) this.done = true;
   }
@@ -130,6 +137,8 @@ export class QuickDraw extends BaseGame {
       artistName: g.artist ? this.nick(g.artist) : null, endsIn: Math.max(0, (g.status === "draw" ? g.endsAt : g.until) - t), totalMs: g.endsAt - g.startedAt,
       mask: g.status === "draw" ? this.mask(g, t) : null, word: showWord ? g.word : null, note: g.note,
       options: g.status === "pick" && isArtist ? g.options : null,
+      gallery: g.status === "gallery" && opts?.gal !== g.id ? g.gallery.filter((d) => d.segs.length > 0).map((d) => ({ turn: d.turn, artistName: this.nick(d.artist), word: d.word, guessers: d.guessers, size: d.size, segs: d.segs })) : undefined,
+      galleryCount: g.gallery?.length ?? 0,
       members: g.members.map((m) => ({ id: m, nickname: this.nick(m), avatar: this.room.players.get(m)?.avatar, points: this.points.get(m) ?? 0, guessed: g.guessed.has(m), artist: m === g.artist, connected: this.connected(m) })),
       draw: { key: g.key, from, segs: wantSegs ? g.log.segs.slice(from) : [], total: g.log.segs.length },
       you: pid ? { artist: !!isArtist, guessed: g.guessed.has(pid), points: g.guessed.get(pid)?.pts ?? 0 } : undefined,

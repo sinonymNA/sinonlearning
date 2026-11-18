@@ -98,7 +98,7 @@ test("artists rotate automatically and nobody draws twice in a group; round ends
     ctx.advance(4500);
   }
   assert.equal(new Set(artists).size, 4);
-  ctx.advance(10000);
+  ctx.advance(40000);
   assert.equal(ctx.room.history.length, 1);
 });
 
@@ -116,7 +116,7 @@ test("full 35-bot Quick Draw round completes with scores", () => {
   const ctx = makeRoom({ n: 0, playlist: ["quick_draw"] });
   ctx.svc.addBots(ctx.room, 35, "mixed");
   ctx.room.start();
-  ctx.advance(260000, 250);
+  ctx.advance(500000, 250);
   assert.equal(ctx.room.history.length, 1);
   assert.ok(ctx.room.history[0].rows.some((r) => r.points > 0));
 });
@@ -158,4 +158,30 @@ test("paint bucket: a fill is one validated point, synced like any stroke, count
   assert.equal(draw.segs.filter((s) => s.t === 3).length, 2, "guessers receive the fills");
   for (let i = 0; i < 70; i++) { const r = ctx.tryAct(grp.artist, { type: "draw", segs: [{ k: 100 + i, t: 3, c: 1, p: [10, 10] }] }); if (!r.ok) { assert.match(r.error, /lot of fills/); assert.ok(i >= 55); return; } ctx.clock.now += 50; }
   assert.fail("fill cap not enforced");
+});
+
+test("gallery: every finished drawing is saved with its word; the group sees them all at the end; sent once via the cursor", () => {
+  const ctx = makeRoom({ n: 4, playlist: ["quick_draw"], content });
+  const g = ctx.begin();
+  const grp = g.groups[0];
+  const words = [];
+  for (let turn = 0; turn < 4; turn++) {
+    ctx.advance(1700); pickAll(g, ctx);
+    words.push(grp.word);
+    ctx.act(grp.artist, { type: "draw", segs: [seg(turn), seg(turn + 10)] });
+    for (const m of grp.members) if (m !== grp.artist) ctx.tryAct(m, { type: "guess", text: grp.word });
+    ctx.advance(100); assert.equal(grp.status, "reveal");
+    ctx.advance(4500);
+  }
+  assert.equal(grp.status, "gallery", "after the last turn the group enters the gallery");
+  const viewer = grp.members[0];
+  const v1 = ctx.room.view({ playerId: viewer, opts: {} }).game.group;
+  assert.equal(v1.gallery.length, 4);
+  assert.deepEqual(v1.gallery.map((d) => d.word), words, "the gallery says what each drawing was supposed to be");
+  assert.ok(v1.gallery.every((d) => d.segs.length >= 2 && d.artistName && d.guessers === 3));
+  const v2 = ctx.room.view({ playerId: viewer, opts: { gal: grp.id } }).game.group;
+  assert.equal(v2.gallery, undefined, "already-delivered galleries are not re-sent on every poll");
+  ctx.advance(40000);
+  assert.equal(grp.status, "done");
+  assert.equal(ctx.room.history.length, 1);
 });

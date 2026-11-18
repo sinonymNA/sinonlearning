@@ -181,6 +181,10 @@ export class Room {
 
   launchGame() {
     const gameId = this.introGame;
+    // Players whose tab has been closed/offline for a while sit this game out, so groups are balanced among
+    // the people who are actually here (they rejoin the next game by reopening the page).
+    const gone = this.activePlayers().filter((p) => !p.bot && this.clock() - p.lastSeen > 20000);
+    if (this.activePlayers().length - gone.length >= GAME_CATALOG[gameId].min) for (const p of gone) { p.waiting = true; this.log("sit_out", { player: p.nickname }); }
     const players = this.activePlayers().map((p) => p.id);
     const Game = GAMES[gameId];
     this.game = new Game(this, players, contentFor(gameId, this.content));

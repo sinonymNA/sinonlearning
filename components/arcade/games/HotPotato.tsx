@@ -3,18 +3,52 @@
 /* eslint-disable react/no-unescaped-entities, react-hooks/set-state-in-effect, react-hooks/immutability, react-hooks/refs */
 import { useEffect, useRef, useState } from "react";
 import Avatar from "../Avatar";
+import { usePrefs } from "../prefs";
 import PotatoSvg from "../PotatoSvg";
 import { sfx } from "../prefs";
 import { Timer } from "../ui";
+import { useRemaining } from "../useRoom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const HEAT_LABEL = ["Warm", "Getting hot!", "HOT!!", "ABOUT TO BLOW!!!"];
+
+/** The potato visibly flies from the old holder's avatar to the new holder's avatar whenever it is passed. */
+export function usePotatoFlight(grp: any, calm: boolean) {
+  const lastN = useRef<number | null>(null);
+  useEffect(() => {
+    const lp = grp?.lastPass;
+    if (!lp) { lastN.current = null; return; }
+    const key = grp.round * 1000 + lp.n;
+    if (lastN.current === null) { lastN.current = key; return; }
+    if (lastN.current === key) return;
+    lastN.current = key;
+    if (calm || typeof document === "undefined") return;
+    const a = document.querySelector(`[data-pid="${lp.from}"]`) as HTMLElement | null, b = document.querySelector(`[data-pid="${lp.to}"]`) as HTMLElement | null;
+    if (!a || !b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const el = document.createElement("div");
+    el.textContent = "🥔"; el.setAttribute("aria-hidden", "true");
+    el.style.cssText = "position:fixed;left:0;top:0;z-index:60;font-size:52px;line-height:1;pointer-events:none;filter:drop-shadow(0 4px 0 rgba(0,0,0,.35))";
+    document.body.appendChild(el);
+    const x0 = ra.left + ra.width / 2 - 26, y0 = ra.top + ra.height / 2 - 26, x1 = rb.left + rb.width / 2 - 26, y1 = rb.top + rb.height / 2 - 26;
+    const lift = Math.min(140, Math.max(60, Math.hypot(x1 - x0, y1 - y0) * 0.35));
+    const anim = el.animate([
+      { transform: `translate(${x0}px,${y0}px) scale(.8) rotate(0deg)` },
+      { transform: `translate(${(x0 + x1) / 2}px,${Math.min(y0, y1) - lift}px) scale(1.5) rotate(200deg)`, offset: 0.5 },
+      { transform: `translate(${x1}px,${y1}px) scale(1) rotate(400deg)` },
+    ], { duration: 650, easing: "cubic-bezier(.4,0,.3,1)" });
+    anim.onfinish = () => el.remove();
+    setTimeout(() => el.remove(), 900);
+    sfx("whoosh");
+  }, [grp?.lastPass?.n, grp?.round, calm]); // eslint-disable-line react-hooks/exhaustive-deps
+}
 
 export function PotatoGroup({ grp, meId, big = false }: { grp: any; meId?: string; big?: boolean }) {
   return <><PotatoStage grp={grp} meId={meId} big={big} /><PotatoMembers grp={grp} meId={meId} big={big} /></>;
 }
 
-export function PotatoStage({ grp, meId, big = false }: { grp: any; meId?: string; big?: boolean }) {
+export function PotatoStage({ grp, meId, big = false, stamp }: { grp: any; meId?: string; big?: boolean; stamp?: number }) {
+  const holdLeft = useRemaining(stamp !== undefined ? grp.holdIn : null, stamp ?? 0);
   const holder = grp.members.find((m: any) => m.id === grp.holder);
   const boom = grp.status === "boom";
   const victim = grp.members.find((m: any) => m.id === grp.boomVictim);
@@ -36,6 +70,12 @@ export function PotatoStage({ grp, meId, big = false }: { grp: any; meId?: strin
         </div>
         {grp.status === "live" && <div className="font-bold" style={{ color: grp.heat >= 2 ? "var(--coral)" : "var(--muted)" }}>{HEAT_LABEL[grp.heat]}</div>}
         {grp.status === "live" && holder && <div className="mt-1 text-lg font-bold">{holder.id === meId ? "YOU have the potato!" : `${holder.nickname} has the potato`}</div>}
+        {grp.status === "live" && holder && stamp !== undefined && holdLeft !== null && (
+          <div className="mt-1 w-full max-w-xs" aria-label="Hot hands timer">
+            <div className="ar-timer" style={{ height: 10 }}><i style={{ width: `${Math.max(0, Math.min(100, (holdLeft / Math.max(1, grp.holdMs)) * 100))}%`, background: holdLeft < 2500 ? "var(--coral)" : "var(--sun)" }} /></div>
+            <div className="text-xs font-bold" style={{ color: holdLeft < 2500 ? "var(--coral)" : "var(--muted)" }}>{holder.id === meId ? `Hot hands! Pass it in ${Math.ceil(holdLeft / 1000)}s or it jumps!` : `${holder.nickname} must pass in ${Math.ceil(holdLeft / 1000)}s`}</div>
+          </div>
+        )}
         {grp.status === "live" && holder && holder.id !== meId && (
           <div className="draft" aria-live="off" aria-label="What they're typing">{grp.draft}<i /></div>
         )}
@@ -54,7 +94,7 @@ export function PotatoMembers({ grp, meId, big = false }: { grp: any; meId?: str
         {grp.members.map((m: any) => {
           const isHolder = grp.status === "live" && m.id === grp.holder;
           return (
-            <div key={m.id} className={`ar-av ${m.hearts <= 0 ? "off" : ""} ${m.connected ? "" : "off"}`}>
+            <div key={m.id} data-pid={m.id} className={`ar-av ${m.hearts <= 0 ? "off" : ""} ${m.connected ? "" : "off"}`}>
               <div className={`relative ${isHolder ? "float" : ""}`} style={{ outline: isHolder ? "4px solid var(--sun)" : undefined, borderRadius: 18, padding: 4, background: isHolder ? "rgba(255,194,51,.25)" : undefined }}>
                 <Avatar id={m.avatar} size={big ? 72 : 56} />
                 {isHolder && <span className="absolute -top-3 -right-2 text-2xl">🥔</span>}
@@ -76,6 +116,8 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
   const [shake, setShake] = useState(0);
   const [fx, setFx] = useState(0);
   const input = useRef<HTMLInputElement>(null);
+  const { prefs } = usePrefs();
+  usePotatoFlight(grp, prefs.calm);
   const lastDraft = useRef({ at: 0, text: "" });
   const prev = useRef<{ boom?: boolean; holder?: boolean }>({});
 
@@ -120,7 +162,7 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
         <div className="font-bold">Round {grp.round}/{grp.maxRounds}</div>
         <Timer ms={g.endsIn} stamp={stamp} total={210000} label="Game" />
       </div>
-      <div className="ar-panel"><PotatoStage grp={grp} meId={meId} /></div>
+      <div className="ar-panel"><PotatoStage grp={grp} meId={meId} stamp={stamp} /></div>
       </div>
       <div className="grid gap-3 content-start">
       <div className="ar-panel"><PotatoMembers grp={grp} meId={meId} /></div>
@@ -147,7 +189,7 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
         </div>
       )}
       <div className="flex min-h-10 flex-wrap items-center gap-3" aria-live="polite">
-        {grp.lastPass && <span key={grp.lastPass.n} className="slide ar-pill">🥔 {grp.members.find((m: any) => m.id === grp.lastPass.from)?.nickname} → {grp.members.find((m: any) => m.id === grp.lastPass.to)?.nickname}: <b>{grp.lastPass.word}</b></span>}
+        {grp.lastPass && <span key={grp.lastPass.n} className="slide ar-pill">🥔 {grp.members.find((m: any) => m.id === grp.lastPass.from)?.nickname} → {grp.members.find((m: any) => m.id === grp.lastPass.to)?.nickname}: {grp.lastPass.stalled ? <b>too slow! (-5, shorter fuse)</b> : <b>{grp.lastPass.word}</b>}</span>}
         {grp.reactions.map((r: any) => <span key={r.at + r.from} className="pop text-2xl">{r.emoji}</span>)}
       </div>
       </div>

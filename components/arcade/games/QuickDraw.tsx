@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Avatar from "../Avatar";
-import { DrawPad, StrokeViewer } from "../DrawingCanvas";
+import { DrawPad, Replay, StrokeViewer } from "../DrawingCanvas";
 import { sfx } from "../prefs";
 import { Timer } from "../ui";
 
@@ -26,6 +26,7 @@ export default function QuickDraw({ view, stamp, send, meId, optsRef, projector 
 
   const onSegs = useCallback((segs: any[]) => send({ type: "draw", segs }), [send]);
   if (!grp) return <div className="ar-panel text-center">Getting your group ready…</div>;
+  if (grp.status === "gallery") return <Gallery grp={grp} stamp={stamp} optsRef={optsRef} />;
   if (grp.status === "done") return <div className="ar-panel text-center"><p className="ar-h2">🎨 Your group is done!</p><p className="ar-muted mt-2">Waiting for the other groups to finish…</p></div>;
   const isArtist = grp.you?.artist;
   if (grp.status === "pick") {
@@ -82,9 +83,9 @@ export default function QuickDraw({ view, stamp, send, meId, optsRef, projector 
           )
         )}
       </div>
-      <div className="ar-panel">
+      <div className="ar-panel qd-group">
         <h3 className="mb-2 font-bold">Your group</h3>
-        <ul className="grid gap-2">
+        <ul className="grid gap-2 qd-members">
           {[...grp.members].sort((a: any, b: any) => b.points - a.points).map((m: any) => (
             <li key={m.id} className={`lb-row ${m.id === meId ? "me" : ""}`}>
               <Avatar id={m.avatar} size={30} /><span className="flex-1 truncate">{m.nickname}{m.artist ? " ✏️" : ""}</span>
@@ -92,6 +93,38 @@ export default function QuickDraw({ view, stamp, send, meId, optsRef, projector 
             </li>
           ))}
         </ul>
+      </div>
+    </div>
+  );
+}
+
+/** End-of-game gallery: every drawing from the group, labelled with the word it was supposed to be. */
+function Gallery({ grp, stamp, optsRef }: { grp: any; stamp: number; optsRef: any }) {
+  const [items, setItems] = useState<any[]>([]);
+  const grpId = useRef<number | null>(null);
+  useEffect(() => {
+    if (grpId.current !== grp.id) { grpId.current = grp.id; setItems([]); }
+    if (grp.gallery) { setItems(grp.gallery); optsRef.current = { ...optsRef.current, gal: grp.id }; }
+  }, [grp.gallery, grp.id, optsRef]);
+  function save(e: React.MouseEvent, word: string) {
+    const canvas = (e.currentTarget as HTMLElement).closest("[data-card]")?.querySelector("canvas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const a = document.createElement("a"); a.href = canvas.toDataURL("image/png"); a.download = `${word.replace(/[^a-z0-9]+/gi, "-")}.png`; a.click();
+  }
+  return (
+    <div className="grid gap-3">
+      <div className="ar-panel grid gap-2 text-center"><h2 className="ar-h2">🖼️ The gallery</h2><p className="ar-muted font-bold">Every masterpiece from your group - and what it was supposed to be!</p><Timer ms={grp.endsIn} stamp={stamp} total={Math.max(1, grp.endsIn)} label="Gallery" /></div>
+      <div className="gallery-grid grid gap-3 sm:grid-cols-2">
+        {items.map((d, i) => (
+          <figure key={d.turn} data-card className="ar-card slide grid gap-2" style={{ animationDelay: `${i * 0.12}s` }}>
+            <Replay segs={d.segs} play={false} />
+            <figcaption className="flex flex-wrap items-center justify-between gap-2">
+              <span><span className="text-sm font-bold opacity-60">It was: </span><b className="rounded-lg bg-[var(--sun)] px-2 text-lg">{d.word}</b><span className="block text-sm font-semibold opacity-70">drawn by {d.artistName} · {d.guessers}/{d.size} guessed it</span></span>
+              <button className="ar-btn sm paper" onClick={(e) => save(e, d.word)} aria-label={`Save the drawing of ${d.word}`}>💾 Save</button>
+            </figcaption>
+          </figure>
+        ))}
+        {items.length === 0 && <div className="ar-panel text-center">Loading the gallery…</div>}
       </div>
     </div>
   );

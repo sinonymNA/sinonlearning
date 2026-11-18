@@ -4,7 +4,7 @@ import { fail, partition, pick, randInt, normalizeWord } from "../util.mjs";
 import { isClean } from "../moderation.mjs";
 
 const HEARTS = 3, FUSE_MIN = 14000, FUSE_SPREAD = 10000, BOOM_MS = 4500, GAME_MS = 210000, MAX_ROUNDS = 7;
-const ASSIST_MS = 700, ASSIST_CAP = 2800;
+const ASSIST_MS = 700, ASSIST_CAP = 2800, HOLD_MS = 8000, STALL_FUSE_MS = 2000, STALL_PENALTY = 5;
 export const REACTIONS = ["😂", "😱", "🔥", "👏", "🥔"];
 
 export class HotPotato extends BaseGame {
@@ -73,11 +73,25 @@ export class HotPotato extends BaseGame {
           g.offlineSince ??= t;
           if (t - g.offlineSince > this.D(2000)) { this.movePotato(g, g.holder); g.offlineSince = null; }
         } else g.offlineSince = null;
-        if (t >= g.fuseAt + g.bonusMs) this.explode(g, t);
+        // Hot hands: nobody can sit on the potato. If the holder doesn't pass within HOLD_MS it jumps to someone
+        // else, the holder loses points and the fuse gets shorter.
+        if (g.status === "live" && g.holder && this.connected(g.holder) && t - g.heldSince >= this.D(HOLD_MS)) this.stall(g, t);
+        if (g.status === "live" && t >= g.fuseAt + g.bonusMs) this.explode(g, t);
       } else if (g.status === "boom" && t >= g.boomUntil) this.beginRound(g, t);
     }
     if (t >= this.endsAt) { for (const g of this.groups) this.finishGroup(g); }
     if (this.groups.every((g) => g.status === "done")) this.done = true;
+  }
+
+  stall(g, t) {
+    const from = g.holder;
+    this.add(from, -STALL_PENALTY);
+    g.fuseAt -= this.D(STALL_FUSE_MS);
+    const to = this.movePotato(g, from);
+    g.draft = ""; g.heldSince = t;
+    g.lastPass = { from, to, word: null, stalled: true, n: g.passes };
+    this.stats.stalls = (this.stats.stalls ?? 0) + 1;
+    this.room.log("hp_stall", { group: g.id, from: this.nick(from), to: this.nick(to) });
   }
 
   explode(g, t) {
@@ -184,6 +198,7 @@ export class HotPotato extends BaseGame {
       holder: g.holder, heat: this.heat(g, t), boomVictim: g.boomVictim, winner: g.winner,
       members: g.members.map((m) => ({ id: m, hearts: g.hearts.get(m) ?? 0, nickname: this.nick(m), avatar: this.room.players.get(m)?.avatar, connected: this.connected(m), gone: !this.here(m) })),
       lastPass: g.lastPass, reactions: g.reactions.slice(-5), words: g.words,
+      holdMs: this.D(HOLD_MS), holdIn: g.status === "live" ? Math.max(0, Math.round(this.D(HOLD_MS) - (this.room.t() - g.heldSince))) : 0,
       draft: g.status === "live" ? (isClean(g.draft) ? g.draft : "•••") : "", boomResults: g.status === "boom" ? g.boomResults.map((r) => ({ ...r, nickname: this.nick(r.id) })) : [],
       you: pid ? { boomGuessed: g.boomGuesses.has(pid), hearts: g.hearts.get(pid) ?? 0, holder: g.holder === pid && g.status === "live", ghost: (g.hearts.get(pid) ?? 0) <= 0, assistLeft: g.bonusMs < ASSIST_CAP } : undefined,
     };
