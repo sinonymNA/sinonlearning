@@ -155,7 +155,9 @@ test("piggy bank is playable with the teacher's question set and counts toward A
 test("quick chat: curated phrases only, cooldown, game-specific phrases, teacher switch, names in the view", async () => {
   const ctx = makeRoom({ n: 3, playlist: ["hot_potato"] });
   const [a, b] = ctx.players;
-  assert.ok(PHRASES.length > 40 && PHRASES.every((p) => !/[<>]/.test(p.text)));
+  assert.ok(PHRASES.length > 200 && PHRASES.every((p) => !/[<>]/.test(p.text) && p.text.length <= 100));
+  assert.equal(new Set(PHRASES.map((p) => p.text)).size, PHRASES.length, "no duplicate phrases");
+  assert.ok(PHRASES.filter((p) => p.tab === "corny").length >= 80, "plenty of corny jokes");
   const gg = PHRASES.find((p) => p.text.startsWith("GG")).id;
   ctx.room.chat(a.id, gg);
   assert.throws(() => ctx.room.chat(a.id, gg), /Hold on/);

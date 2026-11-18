@@ -62,3 +62,6 @@ Unit/integration: **111 tests, all pass** (new `piggyBank.test.mjs` covers scori
 
 ## 12. Imposter pacing + preset questions
 113 unit tests pass (new: slower timers asserted exactly; presets are private/safe, reshuffle limit, preset vs typed, asked questions are not offered again). Real browser (1366x768, lab room): the asker sees 6 presets + shuffle + "write your own", clicking a preset starts the answer phase, page overflow 0 px, no console errors. Not re-run: the full browser party or the load test after the new timers.
+
+## 13. Corny chat expansion
+Quick chat grew from ~65 to 222 unique phrases (84 corny jokes/puns, more cheers, 15 lines per game incl. Piggy Bank) plus a "🎲 Surprise me!" button; a test asserts uniqueness, length and the corny count. 113 unit tests pass; chat e2e (6 PASS) re-run; palette checked in a screenshot.

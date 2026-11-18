@@ -8,7 +8,7 @@ import { api } from "./useRoom";
 import { PHRASES } from "@/lib/arcadeCatalog";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const TABS = [{ id: "funny", label: "😂 Jokes" }, { id: "cheer", label: "🎉 Cheer" }, { id: "react", label: "🤪 Emoji" }, { id: "game", label: "🎮 This game" }];
+const TABS = [{ id: "corny", label: "🧀 Corny" }, { id: "funny", label: "😂 Jokes" }, { id: "cheer", label: "🎉 Cheer" }, { id: "react", label: "🤪 Emoji" }, { id: "game", label: "🎮 This game" }];
 
 /**
  * Quick chat: curated phrases only (no typing). Messages pop up over everyone's screen. `readOnly` = projector
@@ -17,7 +17,7 @@ const TABS = [{ id: "funny", label: "😂 Jokes" }, { id: "cheer", label: "🎉 
 export default function ChatDock({ view, code, creds, readOnly = false }: { view: any; code: string; creds?: { playerId: string; token: string } | null; readOnly?: boolean }) {
   const { prefs } = usePrefs();
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState("funny");
+  const [tab, setTab] = useState("corny");
   const [cool, setCool] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pops, setPops] = useState<any[]>([]);
@@ -56,7 +56,7 @@ export default function ChatDock({ view, code, creds, readOnly = false }: { view
           {open && (
             <div className="chat-palette" role="dialog" aria-label="Quick chat">
               <div className="mb-2 flex flex-wrap gap-1">{TABS.filter((t) => t.id !== "game" || game).map((t) => <button key={t.id} className={`ar-btn sm ${tab === t.id ? "" : "paper"}`} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>
-              <div>{list.map((p) => <button key={p.id} className="phr" disabled={cool} onClick={() => send(p.id)}>{p.text}</button>)}{list.length === 0 && <p className="text-sm opacity-70">Nothing here yet.</p>}</div>
+              <div><button className="phr" style={{ background: "var(--sun)" }} disabled={cool || list.length === 0} onClick={() => send(list[Math.floor(Math.random() * list.length)].id)}>🎲 Surprise me!</button>{list.map((p) => <button key={p.id} className="phr" disabled={cool} onClick={() => send(p.id)}>{p.text}</button>)}{list.length === 0 && <p className="text-sm opacity-70">Nothing here yet.</p>}</div>
             </div>
           )}
           <button className="ar-btn coral chat-btn" onClick={() => setOpen(!open)} disabled={cool && !open} aria-expanded={open}>{cool ? "💬 …" : "💬 Chat"}</button>
