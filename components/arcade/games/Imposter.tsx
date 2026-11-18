@@ -146,7 +146,8 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
 
   const timerTotal = { ask: 10000, answer: 20000, show: 5000, vote: 15000, voteShow: 6000, runoff: 10000, runoffShow: 5000, guess: 10000, role: 5000, final: 9000 }[grp.phase as string] ?? 10000;
   return (
-    <div className="grid gap-3">
+    <div className="imp-layout grid gap-3">
+      <div className="imp-left grid content-start gap-3">
       <div className="ar-panel grid gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2 font-bold">
           <span>{grp.phase === "role" ? "Secret roles" : grp.phase.startsWith("vote") || grp.phase.startsWith("runoff") ? "Voting" : grp.phase === "guess" ? "Final guess" : grp.phase === "final" || grp.phase === "finished" ? "The reveal" : `Question ${grp.turn} of ${grp.turns}`}</span>
@@ -155,12 +156,15 @@ export default function Imposter({ view, stamp, send, meId, projector = false }:
         {grp.phase !== "finished" && <Timer ms={grp.endsIn} stamp={stamp} total={timerTotal} />}
       </div>
       <Table grp={grp} meId={meId} bubbles={bubbles} highlight={grp.tally?.accused ?? grp.final?.imposter} />
+      </div>
+      <div className="imp-right grid content-start gap-3">
       {body}
       {grp.history.length > 0 && !["show", "final", "finished"].includes(grp.phase) && (
         <details className="ar-panel"><summary className="cursor-pointer font-bold">📜 Earlier questions &amp; answers</summary>
           {grp.history.map((h: any) => <div key={h.turn} className="mt-3"><p className="font-bold">{name(h.from)}: {h.question}</p><ul className="ml-4 list-disc">{h.answers.map((a: any) => <li key={a.id}>{name(a.id)}: {a.text ?? "No answer."}</li>)}</ul></div>)}
         </details>
       )}
+      </div>
     </div>
   );
 }

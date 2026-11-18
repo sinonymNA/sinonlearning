@@ -74,7 +74,7 @@ export default function LastOne({ view, stamp, send, meId, projector = false }: 
         <div className="grid gap-3">
           <div className="ar-card"><h2 className="ar-h2" style={{ fontSize: projector ? "2.6rem" : undefined }}>{g.question.q}</h2></div>
           {g.phase === "question" && <Timer ms={g.closeIn} stamp={stamp} total={g.windowMs} label={you?.alive === false ? "Consolation round" : "Answer window"} />}
-          <div className={`grid gap-3 ${projector ? "grid-cols-2" : ""}`}>
+          <div className={`fit-2col grid gap-3 ${projector ? "grid-cols-2" : ""}`}>
             {g.question.choices.map((c: string, i: number) => {
               const isRight = reveal && g.correct === i;
               const isWrongPick = reveal && you?.choice === i && g.correct !== i;
@@ -106,7 +106,7 @@ export default function LastOne({ view, stamp, send, meId, projector = false }: 
         </div>
       )}
       {g.consolation?.length > 0 && !projector && (
-        <div className="ar-panel"><h3 className="font-bold">🪂 Consolation leaders</h3><ol className="mt-1">{g.consolation.map((c: any, i: number) => <li key={c.id}>{i + 1}. {c.nickname} <b>{c.score}</b></li>)}</ol></div>
+        <div className="cons-leaders ar-panel"><h3 className="font-bold">🪂 Consolation leaders</h3><ol className="mt-1">{g.consolation.map((c: any, i: number) => <li key={c.id}>{i + 1}. {c.nickname} <b>{c.score}</b></li>)}</ol></div>
       )}
     </div>
   );

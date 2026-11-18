@@ -123,3 +123,98 @@
 .card-flip { animation: card-flip .6s cubic-bezier(.2,.9,.3,1.2) both; }
 .card-face { display: grid; justify-items: center; gap: 6px; padding: 18px 14px; text-align: center; background: var(--paper); color: var(--ink); border: 4px solid; border-radius: 26px; }
 .pack-sparkle { animation: pack-sparkle 1.4s ease-in-out infinite, ar-float 2.4s ease-in-out infinite; }
+
+/* ===== Desktop "fit the screen" layout: no page scrolling while playing =====
+   Phones/tablets keep the normal scrolling layout. On desktop the room is a full-height shell: slim top bar,
+   a main stage that fills the rest, and a score sidebar. Anything that still doesn't fit scrolls INSIDE its panel. */
+@media (min-width: 900px) and (min-height: 520px) {
+  .room-shell { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  .room-shell .ar-topbar { position: static; flex: none; padding: 6px 16px; }
+  .room-shell .ar-topbar .ar-btn.sm { min-height: 34px; padding: 4px 12px; }
+  .room-shell .ar-banner { flex: none; padding: 4px; }
+  .room-shell > main.ar-wrap { flex: 1; min-height: 0; max-width: none; width: 100%; padding: 8px 14px 10px; display: flex; flex-direction: column; overflow: hidden; }
+  .fit-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 12px; }
+  .fit-body.no-side { grid-template-columns: minmax(0, 1fr); }
+  .fit-main { min-height: 0; overflow: auto; border-radius: 22px; scrollbar-width: thin; }
+  .fit-main > .stage, .fit-main > .ar-panel, .fit-main > div { min-height: 100%; }
+  .fit-side { min-height: 0; overflow: auto; scrollbar-width: thin; margin-top: 0 !important; }
+  .fit-side .lb-row { padding: 4px 10px; font-size: .9rem; }
+  .fit-side .ar-panel { padding: 10px; }
+  .fit-main .stage { padding: 10px; border-radius: 22px; }
+  .fit-main .ar-panel { padding: 10px 12px; border-radius: 18px; box-shadow: 0 3px 0 #0e1030; }
+  .fit-main .ar-card { padding: 10px 14px; border-radius: 18px; box-shadow: 0 3px 0 var(--ink); }
+  .fit-main .ar-h1 { font-size: clamp(1.8rem, 5vh, 3rem); }
+  .fit-main .ar-h2 { font-size: clamp(1.2rem, 3.4vh, 1.8rem); }
+  .fit-main .ar-input { min-height: 44px; padding: 6px 12px; font-size: 1.05rem; }
+  .fit-main .ar-btn { min-height: 42px; padding: 6px 16px; }
+  .fit-main .ar-btn.xl { min-height: 50px; font-size: 1.15rem; padding: 8px 20px; }
+  .fit-main .grid.gap-4, .fit-main .grid.gap-5, .fit-main .grid.gap-3 { gap: 10px; }
+
+  /* Hot Potato: potato + letters left, players + controls right */
+  .hp-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 12px; align-items: start; height: 100%; }
+  .hp-potato svg { width: min(30vh, 250px); height: auto; }
+  .hp-potato { min-height: 0 !important; }
+  .hp-tile { width: clamp(46px, 8vh, 74px) !important; height: clamp(54px, 9.5vh, 86px) !important; font-size: clamp(1.8rem, 5.5vh, 2.8rem) !important; }
+  .hp-members { grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)) !important; gap: 6px !important; margin-top: 6px !important; }
+  .hp-members svg { width: 44px; height: 44px; }
+  .draft { min-height: 2.4rem; font-size: clamp(1.4rem, 4.4vh, 2.2rem); }
+}
+
+@media (min-width: 900px) and (min-height: 520px) {
+  .fit-main > .stage { height: 100%; }
+  /* Last One Standing */
+  .arena { min-height: 84px; padding-top: 4px; border-bottom-width: 10px; }
+  .arena svg { width: 34px !important; height: 34px !important; }
+  .fit-2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choice { min-height: 52px; padding: 6px 12px; font-size: 1.05rem; box-shadow: 0 3px 0 var(--ink); }
+  .choice .k { width: 32px; height: 32px; }
+  /* drawing: canvas width follows the height that is left on screen (4:3) */
+  .canvas-wrap { width: min(100%, calc((100dvh - var(--cvoff, 390px)) * 1.3333)); margin-inline: auto; }
+  .cv-qd { --cvoff: 400px; } .cv-tel { --cvoff: 440px; } .cv-rev { --cvoff: 330px; }
+  .swatch { width: 30px; height: 30px; }
+  .rev-canvases { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rev-canvases .canvas-wrap { width: min(100%, calc((100dvh - 330px) * 1.3333)); }
+  .rev-cards .ar-card { padding: 8px 12px; }
+  .vote-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vote-grid .choice { min-height: 0; padding: 8px 12px; }
+  /* Imposter: table left, interaction right */
+  .imp-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .ar-table { width: min(100%, calc((100dvh - 230px) * 1.25)); }
+  .table-seat { width: 84px; }
+  .table-seat svg { width: 46px; height: 46px; }
+  /* results / final */
+  .res-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
+  .podium { min-height: min(240px, 30vh); }
+  .podium svg { width: min(70px, 8vh); height: auto; }
+  .fit-main { --ph: .62; }
+  .award { padding: 6px 10px; } .award svg { width: 36px; height: 36px; }
+  .ar-code { font-size: clamp(2.2rem, 9vh, 5rem); }
+  .ar-grid-avatars { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+  .ar-grid-avatars svg { width: 48px; height: 48px; }
+  .intro-card svg { width: 100px; height: auto; }
+}
+
+@media (min-width: 900px) and (min-height: 520px) {
+  .lb-scroll { max-height: calc(100dvh - 190px); overflow: auto; scrollbar-width: thin; }
+  .fit-side .lb-scroll { max-height: calc(100dvh - 150px); }
+  .hp-layout { overflow: hidden; }
+  .stamp { font-size: clamp(2rem, 8vh, 4rem); border-width: 6px; }
+  .intro-card { align-content: center; gap: 8px; padding: 10px; }
+  .intro-card .ar-h1 { font-size: clamp(2rem, 6vh, 3.4rem); }
+  .intro-card ul { gap: 6px; font-size: 1rem; }
+  .intro-card li { padding: 6px 12px !important; }
+  .intro-card svg { width: 84px; }
+}
+@media (min-width: 900px) and (min-height: 520px) {
+  .podium .step { min-height: 84px; }
+  .res-side .lb-scroll { max-height: calc(100dvh - 200px); }
+}
+@media (min-width: 900px) and (min-height: 520px) {
+  .room-shell > .proj-main { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; padding-bottom: 10px; }
+  .proj .fit-body { grid-template-columns: minmax(0, 1fr) 300px; }
+  .proj .fit-body.no-side { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 900px) and (min-height: 520px) {
+  .cons-leaders { display: none; }
+  .intro-card, .res-grid .award { overflow: hidden; }
+}

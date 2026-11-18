@@ -41,7 +41,7 @@ export function LobbyScreen({ view, meId }: { view: any; meId?: string }) {
 export function IntroScreen({ view, stamp }: { view: any; stamp: number }) {
   const n = view.next;
   return (
-    <div className="ar-panel pop grid gap-4 text-center" style={{ borderColor: n.color }}>
+    <div className="intro-card ar-panel pop grid gap-3 text-center" style={{ borderColor: n.color }}>
       <p className="ar-muted font-bold">Game {n.index + 1} of {n.of}</p>
       <div className="float mx-auto" aria-hidden><GameArt id={n.id ?? n.gameId} size={140} /></div>
       <h2 className="ar-h1" style={{ color: n.color }}>{n.name}</h2>
@@ -57,7 +57,7 @@ export function ResultsScreen({ view, stamp, meId, projector }: { view: any; sta
   const mine = r?.rows.find((x: any) => x.id === meId);
   const more = view.gameIndex + 1 < view.playlist.length;
   return (
-    <div className="grid gap-5">
+    <div className="res-grid grid gap-5">
       <div className="ar-panel text-center">
         <p className="ar-muted font-bold">{r?.name} results</p>
         <h2 className="ar-h1">{r?.rows[0] ? `${r.rows[0].nickname} wins!` : "Round over"}</h2>
@@ -75,9 +75,9 @@ export function ResultsScreen({ view, stamp, meId, projector }: { view: any; sta
         {r?.highlights?.map((h: string, i: number) => <p key={i} className="mt-1 font-bold">✨ {h}</p>)}
         {mine && !projector && <p className="mt-3 text-xl font-bold">You scored <span className="text-[var(--sun)]">{mine.points}</span> points → <span className="text-[var(--mint)]">+{mine.norm}</span> to your arcade total</p>}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Leaderboard rows={board} meId={meId} limit={projector ? 10 : 8} title="Arcade total" />
+      <div className="res-side grid content-start gap-4">
         <div className="ar-panel grid place-items-center text-center"><p className="ar-muted font-bold">{more ? "Next game in" : "Final results in"}</p><BigCountdown ms={view.timer?.ms} stamp={stamp} /></div>
+        <Leaderboard rows={board} meId={meId} limit={projector ? 10 : 8} title="Arcade total" />
       </div>
       {view.teams && <TeamBoard teams={view.teams} />}
     </div>
@@ -94,13 +94,14 @@ export function FinalScreen({ view, meId, projector }: { view: any; meId?: strin
   useEffect(() => { if (!projector) { const t = setTimeout(() => api("/api/arcade/economy", { type: "me" }).then(setWallet).catch(() => undefined), 800); return () => clearTimeout(t); } }, [projector]);
   const me = board.findIndex((r: any) => r.id === meId);
   return (
-    <div className="grid gap-5">
-      <div className="ar-panel text-center"><p className="ar-muted font-bold">Arcade Party complete!</p><h2 className="ar-h1">🏆 {board[0]?.nickname ?? "Nobody"} takes the crown</h2><Podium rows={board} /></div>
+    <div className="res-grid grid gap-5">
+      <div className="res-main grid content-start gap-4"><div className="ar-panel text-center"><p className="ar-muted font-bold">Arcade Party complete!</p><h2 className="ar-h1">🏆 {board[0]?.nickname ?? "Nobody"} takes the crown</h2><Podium rows={board} /></div>
       {me >= 0 && !projector && <div className="ar-card text-center"><p className="text-xl font-bold">You finished #{me + 1} with {board[me].total} points!</p>
         {wallet?.signedIn ? <p className="mt-1 font-bold">🪙 You have {wallet.coins} coins. <Link className="underline" href="/arcade/shop">Open a pack →</Link></p> : <p className="mt-1 font-bold">Guests don&apos;t keep coins. <Link className="underline" href="/arcade/account">Sign in</Link> to earn coins and unlock characters.</p>}</div>}
-      <div className="grid gap-4 md:grid-cols-2"><Leaderboard rows={board} meId={meId} limit={projector ? 10 : 12} title="Final standings" />
-        <div className="grid gap-4">{view.teams && <TeamBoard teams={view.teams} />}
-          <div className="ar-panel"><h3 className="mb-2 font-bold">Game winners</h3><ul className="grid gap-1">{view.history?.map((h: any, i: number) => <li key={i}>{GAME_CATALOG[h.gameId].icon} <b>{h.name}</b>: {h.top[0]?.nickname ?? "-"}</li>)}</ul></div></div></div>
+        {view.teams && <TeamBoard teams={view.teams} />}
+        <div className="ar-panel"><h3 className="mb-2 font-bold">Game winners</h3><ul className="grid gap-1 sm:grid-cols-2">{view.history?.map((h: any, i: number) => <li key={i}>{GAME_CATALOG[h.gameId].icon} <b>{h.name}</b>: {h.top[0]?.nickname ?? "-"}</li>)}</ul></div>
+      </div>
+      <div className="res-side grid content-start gap-4"><Leaderboard rows={board} meId={meId} limit={projector ? 10 : 12} title="Final standings" /></div>
     </div>
   );
 }
@@ -113,21 +114,25 @@ export function SoloFinal({ view, meId, onAgain }: { view: any; meId?: string; o
   const place = solo?.place ?? rows.findIndex((x: any) => x.id === meId) + 1;
   const won = place === 1;
   return (
-    <div className="grid gap-5">
+    <div className="res-grid grid gap-5">
       <div className="ar-panel text-center">
         <p className="ar-muted font-bold">{r?.name ?? "Practice"} · {view.solo?.difficulty}</p>
         <h2 className="ar-h1">{won ? "🏆 You won!" : `You finished #${place}`}</h2>
         {rows.length > 0 && <Podium rows={rows} />}
-        <div className="mx-auto mt-4 max-w-md rounded-2xl bg-[var(--bg)] p-4">
+      </div>
+      <div className="res-side grid content-start gap-4">
+      <div className="ar-panel text-center">
+        <div className="mx-auto max-w-md rounded-2xl bg-[var(--bg)] p-4">
           {solo?.signedIn ? (
             solo.coins == null ? <p className="font-bold">Counting your coins…</p>
               : solo.coins > 0 ? <p className="pop text-2xl font-bold text-[var(--sun)]">+{solo.coins} 🪙 coins!{solo.capped ? " (hit today's practice limit)" : ""}</p>
               : <p className="font-bold">No coins this time - you've hit today's 150-coin practice limit. Come back tomorrow, or play a class game!</p>
           ) : <p className="font-bold">Guests don&apos;t keep coins. <Link className="underline" href="/arcade/account">Make a free account</Link> to earn them.</p>}
         </div>
-        {r?.awards?.length > 0 && <div className="mx-auto mt-4 grid max-w-3xl gap-3 text-left sm:grid-cols-2">{r.awards.map((a: any) => <div key={a.id} className="award"><span className="text-3xl">{a.icon}</span><Avatar id={a.avatar} size={40} /><div className="min-w-0"><div className="text-sm font-bold uppercase text-[var(--sun)]">{a.title}</div><div className="truncate font-bold">{a.nickname}</div></div></div>)}</div>}
+        {r?.awards?.length > 0 && <div className="mx-auto mt-4 grid max-w-3xl gap-3 text-left">{r.awards.map((a: any) => <div key={a.id} className="award"><span className="text-3xl">{a.icon}</span><Avatar id={a.avatar} size={40} /><div className="min-w-0"><div className="text-sm font-bold uppercase text-[var(--sun)]">{a.title}</div><div className="truncate font-bold">{a.nickname}</div></div></div>)}</div>}
       </div>
       <div className="flex flex-wrap justify-center gap-3"><button className="ar-btn xl coral" onClick={onAgain}>Play again</button><Link className="ar-btn xl mint" href="/arcade/solo">Pick another game</Link><Link className="ar-btn xl" href="/arcade/shop">Open packs 🎁</Link></div>
+      </div>
     </div>
   );
 }

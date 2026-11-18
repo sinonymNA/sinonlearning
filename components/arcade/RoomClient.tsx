@@ -46,8 +46,9 @@ function Inner({ code }: { code: string }) {
     window.location.assign(`/arcade/room/${d.code}`);
   };
 
+  const sideBoard = view.phase === "playing" && !me?.waiting && view.leaderboard;
   return (
-    <>
+    <div className="room-shell">
       <header className="ar-topbar">
         <div className="flex min-w-0 items-center gap-2"><Avatar id={me?.avatar ?? creds.avatar} size={40} /><div className="min-w-0"><div className="truncate font-bold">{me?.nickname ?? creds.nickname}</div><div className="text-xs opacity-80">Room {view.code}{me?.team != null && view.teams ? ` · ${view.teams.find((t: any) => t.id === me.team)?.name}` : ""}</div></div></div>
         <div className="flex items-center gap-3"><span className="ar-pill" title="Arcade total plus this game's points">⭐ {(me?.total ?? 0) + (me?.points ?? 0)}</span>{solo && view.phase !== "final" && view.phase !== "ended" && (
@@ -59,6 +60,8 @@ function Inner({ code }: { code: string }) {
       {offline && <Banner>📡 Connection lost - trying to reconnect…</Banner>}
       {view.paused && <Banner>⏸ Your teacher paused the game</Banner>}
       <main className="ar-wrap">
+        <div className={`fit-body ${sideBoard ? "" : "no-side"}`}>
+        <div className="fit-main">
         {view.phase === "lobby" && !solo && <LobbyScreen view={view} meId={meId} />}
         {view.phase === "intro" && <IntroScreen view={view} stamp={stamp} />}
         {view.phase === "playing" && (me?.waiting
@@ -67,8 +70,10 @@ function Inner({ code }: { code: string }) {
         {view.phase === "results" && <ResultsScreen view={view} stamp={stamp} meId={meId} />}
         {view.phase === "final" && (solo ? <SoloFinal view={view} meId={meId} onAgain={playAgain} /> : <FinalScreen view={view} meId={meId} />)}
         {view.phase === "ended" && <div className="ar-panel text-center"><h2 className="ar-h1">{solo ? "Practice ended" : "Session ended"}</h2><p className="mt-2 text-lg">Thanks for playing!</p><div className="mt-4 flex flex-wrap justify-center gap-3">{solo && <Link className="ar-btn mint" href="/arcade/solo">Solo menu</Link>}<Link className="ar-btn" href="/arcade/shop">Visit the shop</Link></div></div>}
-        {view.phase === "playing" && !me?.waiting && view.leaderboard && view.game?.kind !== "last_one_standing" && <div className="mt-6"><Leaderboard rows={view.leaderboard} meId={meId} limit={5} title="Live leaderboard" showPoints /></div>}
+        </div>
+        {sideBoard && <aside className="fit-side mt-6 lg:mt-0"><Leaderboard rows={view.leaderboard} meId={meId} limit={10} title="Live leaderboard" showPoints /></aside>}
+        </div>
       </main>
-    </>
+    </div>
   );
 }

@@ -53,7 +53,7 @@ export default function QuickDraw({ view, stamp, send, meId, optsRef, projector 
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <div className="cv-qd grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div className="grid gap-3">
         <div className="ar-panel grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2 font-bold">

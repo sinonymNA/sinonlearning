@@ -31,28 +31,29 @@ function Inner({ code }: { code: string }) {
   if (!view) return <div className="ar-wrap ar-h2">Connecting…</div>;
 
   return (
-    <div className="proj" style={{ padding: "16px 28px 40px" }}>
-      <header className="mb-4 flex items-center justify-between gap-4">
+    <div className="proj room-shell" style={{ padding: "10px 20px 0" }}>
+      <header className="mb-2 flex flex-none items-center justify-between gap-4">
         <div className="flex items-baseline gap-4"><span className="ar-h2">🕹 Classroom Arcade</span><span className="ar-muted font-bold">{view.phase === "playing" ? GAME_CATALOG[view.gameId]?.name : ""}</span></div>
         <div className="flex items-center gap-3"><span className="ar-pill" style={{ fontSize: "1.1em" }}>Join: {origin.replace(/^https?:\/\//, "")}/arcade/join · <b className="tracking-widest">{view.code}</b></span><PrefsButtons /></div>
       </header>
-      {view.paused && <div className="ar-banner mb-3" style={{ fontSize: "1.4em" }}>⏸ PAUSED</div>}
+      {view.paused && <div className="ar-banner mb-2" style={{ fontSize: "1.2em" }}>⏸ PAUSED</div>}
+      <div className="proj-main">
+      <div className={`fit-body ${view.phase === "playing" ? "" : "no-side"}`}><div className="fit-main">
       {view.phase === "lobby" && (
         <div className="grid gap-6 text-center">
-          <div><p className="ar-muted text-2xl font-bold">Go to <b className="text-[var(--sun)]">{origin.replace(/^https?:\/\//, "")}/arcade/join</b> and enter</p><p className="ar-code" style={{ fontSize: "min(18vw, 12rem)" }}>{view.code}</p></div>
+          <div><p className="ar-muted text-2xl font-bold">Go to <b className="text-[var(--sun)]">{origin.replace(/^https?:\/\//, "")}/arcade/join</b> and enter</p><p className="ar-code" style={{ fontSize: "min(14vw, 18vh)" }}>{view.code}</p></div>
           <div className="ar-panel"><p className="mb-4 text-3xl font-bold">{view.players.length} players ready</p><div className="ar-grid-avatars" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))" }}>{view.players.map((p: any, i: number) => <div key={p.id} className="ar-av pop"><div className="float" style={{ animationDelay: `${(i % 8) * 0.12}s` }}><Avatar id={p.avatar} size={84} /></div><span className="nm" style={{ fontSize: "1.1em" }}>{p.nickname}</span></div>)}</div></div>
         </div>
       )}
       {view.phase === "intro" && <IntroScreen view={view} stamp={stamp} />}
-      {view.phase === "playing" && (
-        <div className="grid gap-4 xl:grid-cols-[3fr_1fr]">
-          <GameSwitch view={view} stamp={stamp} send={async () => undefined} optsRef={room.optsRef} projector />
-          <div className="grid content-start gap-4"><Leaderboard rows={view.leaderboard ?? []} limit={8} title="Leaderboard" showPoints />{view.teams && <TeamBoard teams={view.teams} />}</div>
-        </div>
-      )}
+      {view.phase === "playing" && <GameSwitch view={view} stamp={stamp} send={async () => undefined} optsRef={room.optsRef} projector />}
       {view.phase === "results" && <ResultsScreen view={view} stamp={stamp} projector />}
       {view.phase === "final" && <FinalScreen view={view} projector />}
       {view.phase === "ended" && <div className="ar-panel text-center ar-h1">Thanks for playing!</div>}
+      </div>
+      {view.phase === "playing" && <aside className="fit-side"><Leaderboard rows={view.leaderboard ?? []} limit={10} title="Leaderboard" showPoints />{view.teams && <div className="mt-3"><TeamBoard teams={view.teams} /></div>}</aside>}
+      </div>
+      </div>
     </div>
   );
 }

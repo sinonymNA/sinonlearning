@@ -11,6 +11,10 @@ import { Timer } from "../ui";
 const HEAT_LABEL = ["Warm", "Getting hot!", "HOT!!", "ABOUT TO BLOW!!!"];
 
 export function PotatoGroup({ grp, meId, big = false }: { grp: any; meId?: string; big?: boolean }) {
+  return <><PotatoStage grp={grp} meId={meId} big={big} /><PotatoMembers grp={grp} meId={meId} big={big} /></>;
+}
+
+export function PotatoStage({ grp, meId, big = false }: { grp: any; meId?: string; big?: boolean }) {
   const holder = grp.members.find((m: any) => m.id === grp.holder);
   const boom = grp.status === "boom";
   const victim = grp.members.find((m: any) => m.id === grp.boomVictim);
@@ -20,11 +24,11 @@ export function PotatoGroup({ grp, meId, big = false }: { grp: any; meId?: strin
         {grp.status === "live" && (
           <div className="mb-2 flex gap-2" aria-label={`Letters: ${grp.sequence}`}>
             {String(grp.sequence).split("").map((ch: string, i: number) => (
-              <span key={`${grp.turn}-${i}`} className="pop grid place-items-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] font-bold text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" style={{ width: big ? 96 : 64, height: big ? 110 : 74, fontSize: big ? "3.8rem" : "2.6rem", animationDelay: `${i * 0.05}s` }}>{ch}</span>
+              <span key={`${grp.turn}-${i}`} className="hp-tile pop grid place-items-center rounded-xl border-[3px] border-[var(--ink)] bg-[var(--sun)] font-bold text-[var(--ink)] shadow-[0_5px_0_var(--ink)]" style={{ width: big ? 96 : 64, height: big ? 110 : 74, fontSize: big ? "3.8rem" : "2.6rem", animationDelay: `${i * 0.05}s` }}>{ch}</span>
             ))}
           </div>
         )}
-        <div className="relative" style={{ minHeight: big ? 280 : 210 }}>
+        <div className="hp-potato relative" style={{ minHeight: big ? 280 : 210 }}>
           {boom && <span className="boom-ring" />}
           <div className={`potato h${grp.heat}`} style={{ fontSize: 0 }} key={`${grp.turn}-${grp.status}`}>
             <PotatoSvg heat={grp.heat} mode={boom ? "boom" : grp.status === "done" ? "done" : "live"} size={big ? 230 : 180} />
@@ -39,7 +43,14 @@ export function PotatoGroup({ grp, meId, big = false }: { grp: any; meId?: strin
         {boom && grp.boomResults?.length > 0 && <div className="mt-2 flex flex-wrap justify-center gap-2">{grp.boomResults.map((r: any) => <span key={r.id} className="slide ar-pill">🎯 {r.nickname} +{r.pts}</span>)}</div>}
         {grp.status === "done" && <div className="pop mt-1 text-xl font-bold text-[var(--sun)]">{grp.winner ? `${grp.members.find((m: any) => m.id === grp.winner)?.nickname} survived!` : "Group finished"}</div>}
       </div>
-      <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(86px,1fr))] gap-3">
+    </div>
+  );
+}
+
+export function PotatoMembers({ grp, meId, big = false }: { grp: any; meId?: string; big?: boolean }) {
+  return (
+    <div className="relative">
+      <div className="hp-members mt-4 grid grid-cols-[repeat(auto-fit,minmax(86px,1fr))] gap-3">
         {grp.members.map((m: any) => {
           const isHolder = grp.status === "live" && m.id === grp.holder;
           return (
@@ -103,11 +114,16 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
     <div className={`grid gap-4 ${grp.status === "boom" ? "bigshake" : ""}`} key={grp.status === "boom" ? `b${fx}` : "n"}>
       {fx > 0 && grp.status === "boom" && <div className="flashfx" key={fx} />}
       {grp.status === "live" && grp.heat >= 3 && <div className="heatglow" />}
+      <div className="hp-layout">
+      <div className="grid gap-3 content-start">
       <div className="grid grid-cols-2 items-end gap-4">
         <div className="font-bold">Round {grp.round}/{grp.maxRounds}</div>
         <Timer ms={g.endsIn} stamp={stamp} total={210000} label="Game" />
       </div>
-      <div className="ar-panel"><PotatoGroup grp={grp} meId={meId} /></div>
+      <div className="ar-panel"><PotatoStage grp={grp} meId={meId} /></div>
+      </div>
+      <div className="grid gap-3 content-start">
+      <div className="ar-panel"><PotatoMembers grp={grp} meId={meId} /></div>
 
       {canType && (
         <form onSubmit={submit} key={shake} className={`ar-card ${shake ? "shake" : ""}`}>
@@ -133,6 +149,8 @@ export default function HotPotato({ view, stamp, send, meId }: any) {
       <div className="flex min-h-10 flex-wrap items-center gap-3" aria-live="polite">
         {grp.lastPass && <span key={grp.lastPass.n} className="slide ar-pill">🥔 {grp.members.find((m: any) => m.id === grp.lastPass.from)?.nickname} → {grp.members.find((m: any) => m.id === grp.lastPass.to)?.nickname}: <b>{grp.lastPass.word}</b></span>}
         {grp.reactions.map((r: any) => <span key={r.at + r.from} className="pop text-2xl">{r.emoji}</span>)}
+      </div>
+      </div>
       </div>
     </div>
   );

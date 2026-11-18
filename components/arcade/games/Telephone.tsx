@@ -16,11 +16,11 @@ function Chain({ entry, step, projector, stepMs }: { entry: any; step: number; p
   return (
     <div className="grid gap-3">
       <p className="ar-muted font-bold">Started by {entry.owner}</p>
-      <div className="grid gap-3 md:grid-cols-[1fr_1fr]">
+      <div className="rev-cards grid gap-3 md:grid-cols-[1fr_1fr]">
         <div className={`ar-card pop ${step === 0 ? "flash" : ""}`}><div className="text-sm font-bold opacity-60">ORIGINAL PROMPT</div><div className={projector ? "text-4xl font-bold" : "text-2xl font-bold"}>{entry.prompt}</div></div>
         {step >= 2 && entry.desc != null && <div className="ar-card slide"><div className="text-sm font-bold opacity-60">{entry.descBy} DESCRIBED IT AS</div><div className={projector ? "text-4xl font-bold" : "text-2xl font-bold"}>&ldquo;{entry.desc}&rdquo;</div></div>}
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="rev-canvases grid gap-3 md:grid-cols-2">
         {step >= 1 && entry.d1 && <div className="slide"><p className="mb-1 font-bold">🎨 First drawing</p><Replay segs={entry.d1} play={step === 1} durationMs={dur} /></div>}
         {step >= 3 && entry.d2 && <div className="slide"><p className="mb-1 font-bold">🎨 Final drawing</p><Replay segs={entry.d2} play={step === 3} durationMs={dur} /></div>}
       </div>
@@ -62,7 +62,7 @@ export default function Telephone({ view, stamp, send, meId, optsRef, projector 
 
   if (grp.status === "stage") {
     return (
-      <div className="grid gap-3">
+      <div className="cv-tel grid gap-3">
         <div className="ar-panel grid gap-2"><div className="flex flex-wrap items-center justify-between font-bold"><span>{label}</span><span className="ar-chip">{grp.submitted}/{grp.size} done</span></div><Timer ms={grp.endsIn} stamp={stamp} total={grp.stageTotal} /></div>
         {!task ? <div className="ar-panel text-center">Spectating group…</div> : task.kind === "draw" ? (
           <div className="grid gap-3">
@@ -90,7 +90,7 @@ export default function Telephone({ view, stamp, send, meId, optsRef, projector 
   if (grp.status === "reveal") {
     const rv = g.reveal; const cur = chains[rv.ri];
     return (
-      <div className="grid gap-3">
+      <div className="cv-rev grid gap-3">
         <div className="ar-panel flex flex-wrap items-center justify-between font-bold"><span>📞 The big reveal - chain {rv.ri + 1} of {grp.n}</span><span>{STEP_TITLES[rv.step] ?? "…"}</span></div>
         {cur ? <Chain key={rv.ri} entry={cur} step={rv.step} projector={projector} stepMs={stepLen} /> : <div className="ar-panel text-center">Loading chain…</div>}
       </div>
@@ -101,7 +101,7 @@ export default function Telephone({ view, stamp, send, meId, optsRef, projector 
   return (
     <div className="grid gap-3">
       <div className="ar-panel text-center"><p className="ar-h2">{grp.status === "vote" ? "😂 Vote for the funniest chain!" : "Results are in!"}</p>{grp.status === "vote" && <Timer ms={grp.endsIn} stamp={stamp} total={10000} />}</div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="vote-grid grid gap-3 md:grid-cols-2">
         {vote?.options.map((o: any) => {
           const win = vote.funniest?.includes(o.ci);
           return (

@@ -45,7 +45,7 @@ export function Leaderboard({ rows, meId, limit = 8, title = "Leaderboard", show
   return (
     <div className="ar-panel">
       <h3 className="mb-2 font-bold">{title}</h3>
-      <ol className="grid gap-2">
+      <ol className="lb-scroll grid gap-2">
         {top.map((r, i) => (
           <li key={r.id} className={`lb-row ${r.id === meId ? "me" : ""}`}>
             <span className="w-6 text-center tabular-nums">{i + 1}</span><Avatar id={r.avatar} size={30} />
@@ -61,7 +61,7 @@ export function Leaderboard({ rows, meId, limit = 8, title = "Leaderboard", show
 
 export function Podium({ rows, valueKey = "total" }: { rows: any[]; valueKey?: string }) {
   const order = [rows[1], rows[0], rows[2]];
-  const heights = ["150px", "210px", "110px"], colors = ["#cfd8ff", "#ffd23d", "#f0a36b"], places = [2, 1, 3];
+  const heights = ["calc(150px * var(--ph, 1))", "calc(210px * var(--ph, 1))", "calc(110px * var(--ph, 1))"], colors = ["#cfd8ff", "#ffd23d", "#f0a36b"], places = [2, 1, 3];
   const { prefs } = usePrefs();
   useEffect(() => {
     if (prefs.calm) return;
