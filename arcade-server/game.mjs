@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 
 const WORDS = new Set(["action","station","motion","nation","fiction","caption","option","connection","creation","education","rotation","question","attention","direction","condition","solution","tradition","vacation"]);
-const SEQUENCES = ["TION","ATION","CTION","MENT","ING","ABLE","OUS"];
+const SEQUENCES = ["TION","ATION","CTION"];
 
 function code() { return crypto.randomBytes(3).toString("hex").toUpperCase(); }
 function id() { return crypto.randomUUID(); }
@@ -30,7 +30,9 @@ export class ArcadeRoom {
     if (reconnectToken) {
       const existing = [...this.players.values()].find((p) => p.reconnectToken === reconnectToken);
       if (existing) { existing.connected = true; return existing; }
+      throw new Error("Reconnect token is invalid");
     }
+    if (this.phase !== "lobby") throw new Error("Game started; join the next session");
     if (this.players.size >= 40) throw new Error("Room is full");
     const clean = String(nickname || "Player").replace(/[^a-zA-Z0-9 _-]/g, "").trim().slice(0, 18) || "Player";
     const player = { id: id(), nickname: clean, avatar: String(avatar).slice(0, 20), reconnectToken: crypto.randomBytes(18).toString("hex"), connected: true, hearts: 3, score: 0, eliminated: false };
@@ -49,20 +51,23 @@ export class ArcadeRoom {
     const previous = this.potato?.holderId;
     const choices = eligible.filter((p) => p.id !== previous);
     const holder = (choices.length ? choices : eligible)[Math.floor(Math.random() * (choices.length ? choices : eligible).length)];
-    this.potato = { holderId: holder.id, expiresAt: Date.now() + 12000 };
+    this.potato = { holderId: holder.id, previousHolderId: this.potato?.previousHolderId, expiresAt: this.potato?.expiresAt ?? Date.now() + 12000 + crypto.randomInt(8000) };
     this.deadline = this.potato.expiresAt;
-    this.usedWords = new Set();
   }
   submitWord(playerId, rawWord) {
     if (this.potato && Date.now() >= this.potato.expiresAt) { this.tick(); throw new Error("Potato expired"); }
     if (this.phase !== "playing" || this.game !== "hot_potato") throw new Error("This round is not accepting words");
     const player = this.players.get(playerId);
     if (!player || player.eliminated || this.potato?.holderId !== playerId) throw new Error("Only the potato holder can submit");
-    if (this.lastAction.get(playerId) === this.round) throw new Error("Action already submitted");
     const word = String(rawWord || "").toLowerCase().replace(/[^a-z]/g, "");
     if (!word || !word.includes(this.sequence.toLowerCase()) || !WORDS.has(word) || this.usedWords.has(word)) throw new Error("Use a new valid word containing " + this.sequence);
     this.usedWords.add(word); this.lastAction.set(playerId, this.round); player.score += 10; this.score.set(playerId, player.score);
-    this.beginHotPotato();
+    const eligible = [...this.players.values()].filter(p => !p.eliminated && p.id !== playerId);
+    const candidates = eligible.filter(p => p.id !== this.potato.previousHolderId);
+    const pool = candidates.length ? candidates : eligible;
+    if (pool.length) this.potato.holderId = pool[crypto.randomInt(pool.length)].id;
+    this.potato.previousHolderId = playerId;
+    this.sequence = SEQUENCES[crypto.randomInt(SEQUENCES.length)];
   }
   tick() {
     if (this.phase !== "playing") return;
@@ -70,6 +75,7 @@ export class ArcadeRoom {
       const holder = this.players.get(this.potato.holderId);
       if (holder) { holder.hearts -= 1; holder.score = Math.max(0, holder.score - 5); if (holder.hearts <= 0) holder.eliminated = true; }
       this.round += 1;
+      this.potato = null;
       if (this.round > 12 || [...this.players.values()].every((p) => p.eliminated)) this.end(); else this.beginHotPotato();
     }
   }
