@@ -67,7 +67,7 @@ test("run: scoring, depth, timing and the answer clock", () => {
   t += 40_000; AB.question(run, t);
   const ok = AB.submit(run, AB.getPrompt(run.ids[2]).tiers.shoal[0].split("=")[0], t + 27_000);
   assert.equal(ok.result.points, 30);
-  for (let i = 3; i < 7; i++) { t += 40_000; AB.question(run, t); AB.submit(run, "nonsense zz", t + 100); }
+  for (let i = 3; i < 7; i++) { t += 40_000; AB.question(run, t); AB.submit(run, "nonsense zz", t + 26_000, Math.random, { expired: true }); }
   assert.equal(run.done, true); assert.equal(run.points, 90);
   assert.match(AB.shareText(run, "2032-02-01"), /90\/700 · 900 m deep/);
 });
@@ -78,7 +78,7 @@ test("unlimited: three misses end the dive, prompts don't repeat, cash-out keeps
   while (!run.done && hits < 100) {
     const q = AB.question(run, t); const p = AB.getPrompt(run.ids[run.i]);
     assert.ok(q);
-    AB.submit(run, hits % 2 === 0 ? p.tiers.bubble[0].split("=")[0] : "zzzz", t + 100); hits++; t += 1000;
+    if (hits % 2 === 0) AB.submit(run, p.tiers.bubble[0].split("=")[0], t + 100); else AB.submit(run, "zzzz", t + 26_000, Math.random, { expired: true }); hits++; t += 30_000;
   }
   assert.equal(run.done, true); assert.equal(run.lives, 0);
   assert.equal(new Set(run.ids).size, run.ids.length, "no repeats while unseen prompts remain");
@@ -190,4 +190,49 @@ test("fish: separate collection + currency from Party; packs charge pearls; stre
   await store.deleteUserData("diver-4");
   assert.equal((await store.getWallet("abyss:diver-4")).coins, 0);
   assert.equal((await store.getCollection("abyss:diver-4")).length, 0);
+});
+
+test("unlisted answers do NOT end the question: keep guessing until one scores, time runs out, or guesses run out", () => {
+  const run = AB.newRun("daily", { date: "2032-09-01" });
+  let t = 9_000_000; AB.question(run, t);
+  const p = AB.getPrompt(run.ids[0]);
+  let r = AB.submit(run, "definitely not listed", t + 2000);
+  assert.equal(r.retry, true); assert.equal(run.i, 0); assert.equal(run.points, 0);
+  r = AB.submit(run, "also not listed", t + 4000);
+  assert.deepEqual(r.guesses, ["definitely not listed", "also not listed"]);
+  assert.equal(AB.question(run, t + 5000).guesses.length, 2, "question view shows guesses so a refresh keeps them");
+  assert.ok(AB.submit(run, "   ", t + 5000).error, "empty guesses are rejected, not counted");
+  r = AB.submit(run, p.tiers.trench[0].split("=")[0], t + 9000);
+  assert.equal(r.result.points, 85); assert.deepEqual(r.result.wrong, ["definitely not listed", "also not listed"]);
+  assert.equal(run.i, 1); assert.deepEqual(run.guesses, []);
+  // clock runs out while unlisted: miss, and the guesses come back for reporting
+  t += 40_000; AB.question(run, t);
+  AB.submit(run, "nope", t + 3000);
+  r = AB.submit(run, "nope again", t + 25_200, Math.random, { expired: true });
+  assert.equal(r.result.points, 0); assert.equal(r.result.timedOut, true); assert.equal(r.result.wrong.length, 2);
+  // a client claiming "expired" early is ignored (still a retry)
+  t += 40_000; AB.question(run, t);
+  assert.equal(AB.submit(run, "nope", t + 5000, Math.random, { expired: true }).retry, true);
+  // a correct answer right at the buzzer still scores
+  const buzzer = AB.submit(run, AB.getPrompt(run.ids[run.i]).tiers.reef[0].split("=")[0], t + 25_100, Math.random, { expired: true });
+  assert.equal(buzzer.result.points, 60);
+  // out of guesses = miss (can't brute-force the list)
+  t += 40_000; AB.question(run, t);
+  let last;
+  for (let i = 0; i < AB.MAX_GUESSES; i++) last = AB.submit(run, `guess ${i}`, t + 1000 + i);
+  assert.equal(last.result.points, 0); assert.equal(last.result.outOfGuesses, true);
+});
+
+test("API: retries keep the question open and the clock running; expired flag closes it", async () => {
+  const store = new MemoryStore(); const ctx = { ...studentCtx(store, "diver-9"), now: Date.UTC(2032, 8, 5, 9) };
+  await handleAbyss(ctx, { type: "start", mode: "daily" });
+  ctx.now += 3000;
+  const r = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: "not a real answer" });
+  assert.equal(r.retry, true); assert.equal(r.question.n, 0); assert.equal(r.question.msLeft, 22000); assert.equal(r.run.points, 0);
+  const again = await handleAbyss(ctx, { type: "start", mode: "daily" });
+  assert.deepEqual(again.question.guesses, ["not a real answer"]);
+  ctx.now += 22_500;
+  const out = await handleAbyss(ctx, { type: "answer", mode: "daily", answer: "", expired: true });
+  assert.equal(out.result.timedOut, true); assert.equal(out.question.n, 1);
+  assert.deepEqual(out.result.wrong, ["not a real answer"]);
 });

@@ -6,6 +6,7 @@ export const TIME_LIMIT_MS = 25_000;
 export const GRACE_MS = 3_000;       // network latency allowance on top of the limit
 export const DAILY_COUNT = 7;
 export const LIVES = 3;
+export const MAX_GUESSES = 12;     // per question: enough for typos, too few to brute-force an answer list
 export const METRES_PER_POINT = 10;
 
 export const TIERS = {
@@ -101,7 +102,7 @@ export function dailyIds(date = dayKey()) {
 
 export function newRun(mode, { date = null, id = null } = {}) {
   return {
-    v: 1, mode, date, id, i: 0, points: 0, lives: mode === "unlimited" ? LIVES : null, done: false,
+    v: 1, mode, date, id, i: 0, guesses: [], points: 0, lives: mode === "unlimited" ? LIVES : null, done: false,
     ids: mode === "unlimited" ? [] : dailyIds(date), results: [], qStartedAt: null, finishedAt: null,
   };
 }
@@ -122,24 +123,39 @@ export function question(run, now) {
   if (run.mode === "unlimited" && run.ids.length === run.i) run.ids.push(pickUnlimited(run));
   const p = getPrompt(run.ids[run.i]);
   if (run.qStartedAt == null) run.qStartedAt = now;
-  return { n: run.i, total: total(run), cat: p.cat, prompt: p.prompt, limit: TIME_LIMIT_MS, startedAt: run.qStartedAt, msLeft: Math.max(0, TIME_LIMIT_MS - (now - run.qStartedAt)) };
+  return { n: run.i, total: total(run), cat: p.cat, prompt: p.prompt, limit: TIME_LIMIT_MS, startedAt: run.qStartedAt, msLeft: Math.max(0, TIME_LIMIT_MS - (now - run.qStartedAt)), guesses: run.guesses ?? [], guessesLeft: Math.max(0, MAX_GUESSES - (run.guesses?.length ?? 0)) };
 }
 
-export function submit(run, answer, now, rand = Math.random) {
+/**
+ * Answers that are not on the list do NOT end the question: the player keeps guessing until something scores, the clock
+ * runs out (`opts.expired` is the client's "time's up" auto-submit), or they run out of guesses.
+ */
+export function submit(run, answer, now, rand = Math.random, opts = {}) {
   if (run.done) return { error: "This dive is over." };
   if (run.qStartedAt == null) return { error: "Ask for the question first." };
   const p = getPrompt(run.ids[run.i]);
-  const late = now - run.qStartedAt > TIME_LIMIT_MS + GRACE_MS;
-  const m = late ? null : matchAnswer(p, answer);
+  const text = String(answer ?? "").trim();
+  const elapsed = now - run.qStartedAt;
+  const late = elapsed > TIME_LIMIT_MS + GRACE_MS;
+  const expired = !!opts.expired && elapsed >= TIME_LIMIT_MS - 1500;
+  const m = late || !text ? null : matchAnswer(p, text);
+  run.guesses ??= [];
+  if (!m && !late && !expired) {
+    if (!text) return { error: "Type an answer first." };
+    run.guesses.push(text.slice(0, 60));
+    if (run.guesses.length < MAX_GUESSES) return { retry: true, guess: text.slice(0, 60), guesses: run.guesses, guessesLeft: MAX_GUESSES - run.guesses.length };
+  }
   const tier = m?.tier ?? null;
   const points = tier ? TIERS[tier].points : 0;
+  if (!m && expired && text) run.guesses.push(text.slice(0, 60));   // the buzzer-beater guess counts too (so it can be reported)
+  const wrong = [...run.guesses];
   const res = {
-    n: run.i, promptId: p.id, prompt: p.prompt, answer: String(answer ?? "").slice(0, 60), matched: m?.name ?? null, tier, points,
-    timedOut: late || !String(answer ?? "").trim(), fuzzy: !!m?.fuzzy,
+    n: run.i, promptId: p.id, prompt: p.prompt, answer: text.slice(0, 60), matched: m?.name ?? null, tier, points,
+    timedOut: late || expired, outOfGuesses: !m && !late && !expired, fuzzy: !!m?.fuzzy, wrong,
   };
-  run.points += points; run.results.push(res);
+  run.points += points; run.results.push({ ...res, wrong: wrong.slice(0, 12) });
   if (run.mode === "unlimited" && !points) run.lives--;
-  run.i++; run.qStartedAt = null;
+  run.i++; run.qStartedAt = null; run.guesses = [];
   if (run.mode === "unlimited" ? run.lives <= 0 : run.i >= run.ids.length) { run.done = true; run.finishedAt = now; }
   return { result: { ...res, tierInfo: tier ? TIERS[tier] : null, examples: examples(p, tier, rand), depth: run.points * METRES_PER_POINT }, done: run.done };
 }
@@ -150,7 +166,7 @@ export function finish(run, now) { if (!run.done) { run.done = true; run.finishe
 export function publicRun(run) {
   return {
     mode: run.mode, date: run.date, i: run.i, total: total(run), points: run.points, depth: run.points * METRES_PER_POINT, lives: run.lives, done: run.done,
-    results: run.results.map((r) => ({ n: r.n, prompt: r.prompt, answer: r.answer, matched: r.matched, tier: r.tier, points: r.points, timedOut: r.timedOut })),
+    results: run.results.map((r) => ({ n: r.n, prompt: r.prompt, answer: r.answer, matched: r.matched, tier: r.tier, points: r.points, timedOut: r.timedOut, wrong: (r.wrong ?? []).slice(0, 12) })),
   };
 }
 
@@ -164,6 +180,7 @@ export function sanitizeRun(raw) {
   run.lives = run.mode === "unlimited" ? Math.max(0, Math.min(Number(raw.lives) || 0, LIVES)) : null;
   run.done = !!raw.done; run.qStartedAt = Number.isFinite(raw.qStartedAt) ? raw.qStartedAt : null;
   run.results = Array.isArray(raw.results) ? raw.results.slice(0, 500) : [];
+  run.guesses = Array.isArray(raw.guesses) ? raw.guesses.slice(0, MAX_GUESSES).map((g) => String(g).slice(0, 60)) : [];
   return run;
 }
 

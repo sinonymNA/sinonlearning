@@ -61,3 +61,7 @@ See ARCADE_MASTERY_PEAK.md ("Status"). Tests: `arcade-server/tests/mastery.test.
 
 ## Abyss mode + Party/Abyss mode switch
 See ARCADE_ABYSS.md. App shell has a Party | Abyss switch; Abyss has its own ocean theme and tab bar (Dive, Unlimited, Fish, Log). Browser-checked (dev auth): Abyss home, question, miss reveal, fish pack page, fish art grid, phone layout. Not browser-checked: finishing a dive (unit-tested), opening a fish pack, archive, Safari/real devices.
+
+## Abyss v2 (user feedback)
+- Rule fix: unlisted answers no longer consume the prompt (retry until a match, the clock expires, or 12 guesses). Client sends `expired: true` at 0 s; the server only honours it near the real limit.
+- Visual rebuild: centred fish + timer ring in an animated depth-reactive underwater scene, title-screen home with dock + sheets. Browser-checked (dev auth): home, wrong guesses, reveal, a full 7-prompt dive to the done screen (pearls + streak awarded), phone sizes 390x844 and 360x640 fit without scrolling. Not checked: Safari/real devices, Unlimited death/cash-out in browser.

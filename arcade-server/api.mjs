@@ -579,7 +579,8 @@ export async function handleAbyss(ctx, body) {
         if (!run) run = AB.newRun(mode, { date: mode === "unlimited" ? null : d, id: mode === "unlimited" ? crypto.randomUUID().slice(0, 12) : null });
         const q = AB.question(run, now);
         if (user) await store.saveMastery(user.id, key, run);
-        return { run: AB.publicRun(run), question: q, guestRun: user ? undefined : run };
+        const fish = user ? (await loadProfile()).fish : null;
+        return { run: AB.publicRun(run), question: q, fish, guestRun: user ? undefined : run };
       });
     }
 
@@ -590,8 +591,12 @@ export async function handleAbyss(ctx, body) {
       return abyssLock(`${user?.id ?? "g"}|${key}`, async () => {
         const run = user ? await store.getMastery(user.id, key) : AB.sanitizeRun(body.run);
         if (!run || run.mode !== mode) fail("Start the dive first.");
-        const r = AB.submit(run, String(body.answer ?? "").slice(0, 80), now);
+        const r = AB.submit(run, String(body.answer ?? "").slice(0, 80), now, Math.random, { expired: body.expired === true });
         if (r.error) fail(r.error);
+        if (r.retry) {   // not on the list: keep the question open, remember the guess
+          if (user) await store.saveMastery(user.id, key, run);
+          return { retry: true, guess: r.guess, guesses: r.guesses, guessesLeft: r.guessesLeft, question: AB.question(run, now), run: AB.publicRun(run), guestRun: user ? undefined : run };
+        }
         let finish = null;
         if (r.done) finish = await abyssFinish({ store, user, wid, run, mode, date: d, loadProfile });
         else AB.question(run, now);

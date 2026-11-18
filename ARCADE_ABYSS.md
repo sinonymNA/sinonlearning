@@ -6,6 +6,7 @@ Inspired by the mechanic of a rarity-scored daily trivia game. Names, tiers, fis
 
 ## What exists
 - **Daily Dive**: 7 prompts (same for everyone per UTC date, never two of one category), 25 s each, typed answers, 6 tiers: Bubble 10, Show-off 15, Shoal 30, Reef 60, Trench 85, Abyss Pearl 100 (max 700 = 7,000 m). Wrong/late = 0. Server starts and enforces the clock (25 s + 3 s grace); a page refresh keeps the same question and clock.
+- **Guessing rule**: a guess that isn't on the list does NOT end the prompt. Keep guessing until one scores, the clock runs out (miss), or you've used 12 guesses (miss; the cap stops people brute-forcing the answer list). Unlisted guesses are remembered for the prompt and can be reported afterwards.
 - **Unlimited**: endless prompts, 3 air tanks (a 0-point answer costs one), or "surface" to cash out.
 - **Archive**: replay the last 14 days (no streak, no pearls).
 - **Answer engine** (`arcade-server/abyss.mjs`): normalisation (accents, "the", punctuation), aliases, typo tolerance (1 edit for 5-8 letters, 2 for 9+, swapped letters count as one), ambiguous typos score nothing. If an answer is listed in two tiers the lower tier wins.
@@ -29,3 +30,6 @@ Inspired by the mechanic of a rarity-scored daily trivia game. Names, tiers, fis
 
 ## Files
 `arcade-server/abyss.mjs` (engine), `arcade-server/data/abyssPrompts.mjs` (prompt bank), `handleAbyss` in `arcade-server/api.mjs` (`/api/arcade/abyss`), `components/arcade/AbyssClient.tsx` + `FishArt.tsx`, pages under `app/arcade/abyss/`, tests in `arcade-server/tests/abyss.test.mjs`.
+
+## v2 look (animations + centred fish)
+Full-screen underwater scene (`Scene` in `AbyssClient.tsx`): water darkens with depth, light rays fade, plankton drifts (and rushes past when you dive), glowing creatures appear in the deep, seaweed sways. Your selected fish sits in the centre of the screen with a timer ring around it and reacts (head-shake on an unlisted guess, hop on a score, spin + shockwave on Trench/Pearl, sinks on a miss). Depth counts up with a rolling number and zone names (Sunlight, Twilight, Midnight, Abyssal, Hadal). Home is a title screen with the fish, a big Daily Dive button and a dock (Unlimited, Archive, Fish, How to play). Written from a verbal description of the reference game's look; I could not see the reference screenshot.
