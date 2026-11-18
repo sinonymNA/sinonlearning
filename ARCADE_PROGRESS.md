@@ -48,3 +48,8 @@ None for development. Needs from the owner: production `DATABASE_URL` (already r
 
 ## Mastery Peak v1
 See ARCADE_MASTERY_PEAK.md ("Status"). Tests: `arcade-server/tests/mastery.test.mjs` (engine, API, rewards, double-submit, report, AI variants with a fake generator). Browser-checked (dev auth): start, answer, slip + explanation, map. Not browser-checked: summit screen, teacher report, variants button, phone layout.
+
+## AI builder: coverage + forgiving save (user feedback)
+- Saving used strict validation: one bad row (e.g. duplicate choices, over-long text, flagged word) rejected the whole set. `save` now uses `sanitizeLoose` (drops bad rows, reports counts + reasons). Content route body limit raised to 400 KB (a big AI set can exceed the old 90 KB).
+- The AI builder asked for ~30 items per type in ONE call. Now: per-type parallel calls (25 questions per batch), `RECOMMENDED` targets per game (60 questions, 60 draw prompts, 40 vocab, 40 telephone, 30 secret words), "fill to recommended" / "big (2x)" modes that ask only for the shortfall and pass existing items so the AI avoids repeats. Content manager shows per-game coverage bars.
+- I could not see the user's actual save error, so the cause is inferred, not confirmed.

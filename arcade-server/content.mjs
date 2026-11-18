@@ -158,6 +158,10 @@ export const DEFAULT_SET = {
   },
 };
 
+/** How much content a game really wants so a full class never sees repeats (minimum is just "it runs"). */
+export const RECOMMENDED = { vocab: 40, drawPrompts: 60, questions: 60, telephonePrompts: 40, imposterWords: 30 };
+export const CONTENT_KEYS = Object.keys(RECOMMENDED);
+
 export const GAME_NEEDS = {
   hot_potato: { key: "vocab", min: 3, optional: true, label: "vocabulary words" },
   quick_draw: { key: "drawPrompts", min: 3, label: "drawing prompts" },
@@ -171,7 +175,8 @@ export function compatibility(set) {
   const out = {};
   for (const [game, need] of Object.entries(GAME_NEEDS)) {
     const count = set?.items?.[need.key]?.length ?? 0;
-    out[game] = { ok: need.optional || count >= need.min, count, need: need.min, label: need.label };
+    const recommended = RECOMMENDED[need.key];
+    out[game] = { ok: need.optional || count >= need.min, count, need: need.min, recommended, plenty: count >= recommended, label: need.label };
   }
   return out;
 }
@@ -296,17 +301,21 @@ export function itemsFromGameShow(payload) {
   return out;
 }
 
-/** Like sanitizeItems but drops individual bad items instead of throwing (for AI output). Returns { items, dropped }. */
+/** Like sanitizeItems but drops individual bad items instead of throwing. Returns { items, dropped, reasons }. */
 export function sanitizeLoose(items = {}) {
   const arr = (v) => (Array.isArray(v) ? v : []);
-  let dropped = 0;
-  const each = (list, f, cap) => arr(list).slice(0, cap).flatMap((x) => { try { return [f(x)]; } catch { dropped++; return []; } });
+  let dropped = 0; const reasons = new Map();
+  const each = (list, f, cap, label) => arr(list).slice(0, cap).flatMap((x) => {
+    try { return [f(x)]; } catch (e) { dropped++; const r = `${label}: ${e.message}`; reasons.set(r, (reasons.get(r) ?? 0) + 1); return []; }
+  });
+  const seenQ = new Set();
+  const questions = each(items.questions, sanitizeQuestion, 400, "question").filter((q) => { const k = q.q.toLowerCase(); if (seenQ.has(k)) { dropped++; return false; } seenQ.add(k); return true; });
   const out = {
-    questions: each(items.questions, sanitizeQuestion, 200),
-    vocab: [...new Set(each(items.vocab, (w) => cleanWord(w, 30).toLowerCase(), 300))],
-    drawPrompts: [...new Set(each(items.drawPrompts, (w) => cleanWord(w).toLowerCase(), 300))],
-    telephonePrompts: [...new Set(each(items.telephonePrompts, (w) => cleanWord(w, 80), 300))],
-    imposterWords: each(items.imposterWords, (w) => ({ word: cleanWord(w.word, 30).toUpperCase(), related: arr(w.related).slice(0, 12).map((r) => cleanWord(r, 30).toLowerCase()) }), 200),
+    questions,
+    vocab: [...new Set(each(items.vocab, (w) => cleanWord(w, 30).toLowerCase(), 400, "vocab word"))],
+    drawPrompts: [...new Set(each(items.drawPrompts, (w) => cleanWord(w).toLowerCase(), 400, "drawing prompt"))],
+    telephonePrompts: [...new Set(each(items.telephonePrompts, (w) => cleanWord(w, 80), 400, "telephone prompt"))],
+    imposterWords: each(items.imposterWords, (w) => ({ word: cleanWord(w.word, 30).toUpperCase(), related: arr(w.related).slice(0, 12).flatMap((r) => { try { return [cleanWord(r, 30).toLowerCase()]; } catch { return []; } }) }), 300, "secret word"),
   };
-  return { items: out, dropped };
+  return { items: out, dropped, reasons: [...reasons.entries()].slice(0, 4).map(([r, n]) => `${r} (${n}x)`) };
 }

@@ -36,12 +36,12 @@ export default function ContentManager() {
     setForm({ questions: s.items.questions, vocab: s.items.vocab.join("\n"), drawPrompts: s.items.drawPrompts.join("\n"), telephonePrompts: s.items.telephonePrompts.join("\n"), imposterWords: s.items.imposterWords.map((w: any) => `${w.word} | ${w.related.join("; ")}`).join("\n") });
   }
   async function save() {
-    try { const d = await api("/api/arcade/content", { type: "save", id, title, items: items() }); setId(d.id); setMsg("Saved!"); load(); } catch (e: any) { setMsg(e.message); }
+    try { const d = await api("/api/arcade/content", { type: "save", id, title, items: items() }); setId(d.id); setMsg(d.dropped ? `Saved! ${d.dropped} item${d.dropped === 1 ? " was" : "s were"} left out: ${(d.reasons ?? []).join("; ")}` : "Saved!"); load(); } catch (e: any) { setMsg(e.message); }
   }
   const [showId, setShowId] = useState("");
   const [aiText, setAiText] = useState("");
   const [aiGrade, setAiGrade] = useState("");
-  const [aiAmount, setAiAmount] = useState("medium");
+  const [aiAmount, setAiAmount] = useState("fill");
   const [aiBusy, setAiBusy] = useState(false);
   const [variantBusy, setVariantBusy] = useState(false);
   async function makeVariants() {
@@ -52,7 +52,10 @@ export default function ContentManager() {
   async function aiBuild() {
     setAiBusy(true); setMsg("The AI is reading your material… this can take up to a minute.");
     try {
-      const d = await api("/api/arcade/content", { type: "ai_generate", text: aiText, grade: aiGrade || "any grade", amount: aiAmount });
+      const cur = items();
+      const have = { questions: cur.questions.length, vocab: cur.vocab.length, drawPrompts: cur.drawPrompts.length, telephonePrompts: cur.telephonePrompts.length, imposterWords: cur.imposterWords.length };
+      const avoid = { questions: cur.questions.slice(0, 60).map((x: Q) => x.q), vocab: cur.vocab.slice(0, 60), drawPrompts: cur.drawPrompts.slice(0, 60), telephonePrompts: cur.telephonePrompts.slice(0, 40), imposterWords: cur.imposterWords.slice(0, 40).map((w: any) => w.word) };
+      const d = await api("/api/arcade/content", { type: "ai_generate", text: aiText, grade: aiGrade || "any grade", mode: aiAmount, have, avoid });
       const it = d.items;
       setForm((f: any) => ({
         questions: [...f.questions, ...it.questions], vocab: [f.vocab, ...it.vocab].filter(Boolean).join("\n"),
@@ -60,6 +63,7 @@ export default function ContentManager() {
         imposterWords: [f.imposterWords, ...it.imposterWords.map((w: any) => `${w.word} | ${w.related.join("; ")}`)].filter(Boolean).join("\n"),
       }));
       setMsg(`AI added ${it.questions.length} questions, ${it.vocab.length} words, ${it.drawPrompts.length} drawing prompts, ${it.telephonePrompts.length} telephone prompts and ${it.imposterWords.length} secret words${d.dropped ? ` (${d.dropped} filtered out)` : ""}. Review them, then save.`);
+      setTimeout(() => setMsg((m) => m), 0);
     } catch (e: any) { setMsg(e.message); } finally { setAiBusy(false); }
   }
   async function importShow() {
@@ -98,12 +102,21 @@ export default function ContentManager() {
         <button className="ar-btn sm coral" disabled={!id} onClick={async () => { if (id && confirm("Delete this set?")) { await api("/api/arcade/content", { type: "delete", id }); setId(undefined); setTitle(""); setForm(EMPTY); load(); } }}>Delete this set</button></aside>
       <div className="grid gap-4">
         <div className="ar-panel grid gap-3"><label className="grid gap-1 font-bold">Set title<input className="ar-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Unit 4 Review" /></label>
-          {compat && <div className="flex flex-wrap gap-2" aria-label="Compatibility">{Object.entries(compat).map(([g, v]: any) => <span key={g} className="ar-pill" style={{ background: v.ok ? "rgba(47,209,165,.3)" : "rgba(255,255,255,.1)" }}>{GAME_CATALOG[g].icon} {GAME_CATALOG[g].name}: {v.ok ? `ready (${v.count})` : `needs ${v.need}+ ${v.label} (${v.count})`}</span>)}</div>}</div>
+          {compat && <div className="grid gap-2 sm:grid-cols-2" aria-label="Content coverage">{Object.entries(compat).map(([g, v]: any) => {
+            const pct = Math.min(100, Math.round((v.count / v.recommended) * 100));
+            const level = v.plenty ? "plenty" : v.ok ? "thin" : "short";
+            return (
+              <div key={g} className="ar-card" style={{ padding: 8 }} title={level === "plenty" ? "Plenty - no repeats in a full class" : level === "thin" ? "Works, but students will see repeats" : `Needs at least ${v.need}`}>
+                <div className="flex items-center justify-between text-sm font-bold"><span>{GAME_CATALOG[g].icon} {GAME_CATALOG[g].name}</span><span>{v.count}/{v.recommended} {v.label}</span></div>
+                <div className="ar-timer" style={{ height: 8, marginTop: 4 }}><i style={{ width: `${pct}%`, background: level === "plenty" ? "var(--mint)" : level === "thin" ? "var(--sun)" : "var(--coral)" }} /></div>
+                <div className="mt-1 text-xs font-semibold">{level === "plenty" ? "✅ Plenty" : level === "thin" ? `⚠️ Works but will repeat - add ${v.recommended - v.count} more` : `⛔ Needs ${v.need - v.count} more to play`}</div>
+              </div>);
+          })}</div>}</div>
         <div className="ar-panel grid gap-3"><h2 className="ar-h2">✨ Build a set with AI</h2>
           <p className="ar-muted text-sm">Paste your notes, a vocab list, a textbook section or a lesson plan. The AI makes questions (with explanations), vocabulary, drawing prompts, telephone prompts and secret words for every game. Nothing is saved until you review it and press Save. Don&apos;t paste student names or personal info.</p>
           <textarea className="ar-input" style={{ minHeight: 140, fontSize: "1rem" }} value={aiText} onChange={(e) => setAiText(e.target.value)} maxLength={60000} placeholder="Paste your unit material here…" aria-label="Material for the AI" />
           <div className="flex flex-wrap items-center gap-2"><input className="ar-input" style={{ maxWidth: 180 }} value={aiGrade} onChange={(e) => setAiGrade(e.target.value)} placeholder="Grade (e.g. 6th)" aria-label="Grade level" />
-            <select className="ar-input" style={{ maxWidth: 200 }} value={aiAmount} onChange={(e) => setAiAmount(e.target.value)} aria-label="How much to make"><option value="small">Small (~15 each)</option><option value="medium">Medium (~30 each)</option><option value="large">Large (~50 each)</option></select>
+            <select className="ar-input" style={{ maxWidth: 340 }} value={aiAmount} onChange={(e) => setAiAmount(e.target.value)} aria-label="How much to make"><option value="fill">Fill every game to the recommended amount</option><option value="big">Big set (double the recommended amount)</option></select>
             <button className="ar-btn mint" onClick={aiBuild} disabled={aiBusy || aiText.trim().length < 80}>{aiBusy ? "Building…" : "✨ Build with AI"}</button></div></div>
         <div className="ar-panel grid gap-2"><h2 className="font-bold">♻️ Reuse a Game Show you already made</h2><p className="ar-muted text-sm">Paste its play link or ID. Race becomes multiple-choice questions, Memory becomes vocabulary / drawing prompts / secret words, Wheel becomes telephone prompts.</p>
           <div className="flex gap-2"><input className="ar-input" value={showId} onChange={(e) => setShowId(e.target.value)} placeholder="https://…/play/game-shows/…" aria-label="Game show link or ID" /><button className="ar-btn sm mint" onClick={importShow} disabled={!showId.trim()}>Import</button></div></div>

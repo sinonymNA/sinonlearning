@@ -1,5 +1,5 @@
 import { GAME_CATALOG, GAME_IDS, MAX_PLAYERS } from "./catalog.mjs";
-import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeItems, sanitizeLoose, sanitizeQuestion } from "./content.mjs";
+import { DEFAULT_SET, compatibility, importCsv, itemsFromGameShow, sanitizeLoose, sanitizeQuestion, RECOMMENDED, CONTENT_KEYS } from "./content.mjs";
 import { CHARACTERS, PACKS, STARTER_AVATARS, allPackOdds } from "./characters.mjs";
 import { DAILY_BONUS, dailyShop, dayKey, dealFor } from "./shop.mjs";
 import { GameError, RateLimiter, fail } from "./util.mjs";
@@ -206,11 +206,12 @@ export async function handleContent(ctx, body) {
     }
     case "save": {
       const title = cleanText(body.title, { min: 2, max: 60, label: "Title" });
-      const items = sanitizeItems(body.items);
+      // Forgiving: one bad row (too long, flagged, duplicate choices...) must never block saving the rest.
+      const { items, dropped, reasons } = sanitizeLoose(body.items);
       const total = Object.values(items).reduce((a, v) => a + v.length, 0);
-      if (!total) fail("Add at least one item.");
+      if (!total) fail(reasons.length ? `Nothing could be saved. ${reasons.join("; ")}` : "Add at least one item.");
       const saved = await store.saveSet({ id: body.id && body.id !== "builtin" ? String(body.id) : undefined, ownerId: user.id, title, items });
-      return { id: saved.id, compatibility: compatibility(saved) };
+      return { id: saved.id, compatibility: compatibility(saved), dropped, reasons };
     }
     case "delete": await store.deleteSet(String(body.id), user.id); return { ok: true };
     case "import_csv": {
@@ -226,7 +227,7 @@ export async function handleContent(ctx, body) {
       if (!id) fail("Paste the game show's play link or ID.");
       const show = await ctx.gameShows?.getById(id);
       if (!show) fail("Game show not found.", "not_found");
-      const items = sanitizeItems(itemsFromGameShow(show.payload));
+      const items = sanitizeLoose(itemsFromGameShow(show.payload)).items;
       return { title: show.title, items, compatibility: compatibility({ items }) };
     }
     case "ai_generate": {
@@ -236,13 +237,23 @@ export async function handleContent(ctx, body) {
       if (text.length < AI_LIMIT.minChars) fail("Paste a bit more material (a few sentences at least) so the AI has something to work from.");
       if (text.length > AI_LIMIT.maxChars) fail("That's too much for one go. Split it into chunks under 60,000 characters.");
       const grade = cleanText(body.grade || "any grade", { min: 1, max: 40, label: "Grade" });
-      const amount = ["small", "medium", "large"].includes(body.amount) ? body.amount : "medium";
+      // "fill" tops every game up to its recommended amount; "big" aims for double that. Counts already in the set are
+      // sent by the client so we only ask for the shortfall, and a sample of existing items so the AI doesn't repeat them.
+      const mode = body.mode === "big" ? "big" : "fill";
+      const have = body.have && typeof body.have === "object" ? body.have : {};
+      const counts = {}, avoid = {};
+      for (const k of CONTENT_KEYS) {
+        const target = RECOMMENDED[k] * (mode === "big" ? 2 : 1);
+        counts[k] = Math.max(0, target - (Math.min(Number(have[k]) || 0, 1000)));
+        avoid[k] = (Array.isArray(body.avoid?.[k]) ? body.avoid[k] : []).slice(0, 80).map((x) => String(x).slice(0, 100));
+      }
+      if (!CONTENT_KEYS.some((k) => counts[k] > 0)) fail("This set already has plenty for every game. Choose \"Big set\" to add even more.");
       if (aiLimiter.limited(`ai:${user.id}`, AI_LIMIT.windowMs, AI_LIMIT.max)) fail("You've used the AI builder a lot this hour. Try again a bit later.", "rate");
-      const raw = await ctx.generate({ text, grade, amount });
+      const raw = await ctx.generate({ text, grade, counts, avoid });
       const { items, dropped } = sanitizeLoose(raw);
       const total = Object.values(items).reduce((a, v) => a + v.length, 0);
       if (!total) fail("The AI couldn't make anything usable from that. Try pasting clearer notes.");
-      return { items, dropped, compatibility: compatibility({ items }) };
+      return { items, dropped, requested: counts, compatibility: compatibility({ items }) };
     }
     case "ai_variants": {
       // Mastery Peak: pre-generate sibling questions (same concept, different form) and save them on the set.
@@ -264,7 +275,7 @@ export async function handleContent(ctx, body) {
       await store.saveSet({ id: set.id, ownerId: set.ownerId, title: set.title, items: { ...set.items, questions } });
       return { added, remaining: Math.max(0, set.items.questions.filter((q) => !q.variants?.length).length - targets.length) };
     }
-    case "compat": return { compatibility: compatibility({ items: sanitizeItems(body.items) }) };
+    case "compat": return { compatibility: compatibility({ items: sanitizeLoose(body.items).items }) };
     default: fail("Unknown request.");
   }
 }
