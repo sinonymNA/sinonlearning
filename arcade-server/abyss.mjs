@@ -1,5 +1,7 @@
 // Abyss engine: rarity-scored open-answer trivia. Pure functions (no I/O) so the API and the tests share them.
-import { ABYSS_PROMPTS } from "./data/abyssPrompts.mjs";
+import { ABYSS_PROMPTS as P1 } from "./data/abyssPrompts.mjs";
+import { ABYSS_PROMPTS_2 as P2 } from "./data/abyssPrompts2.mjs";
+import { ABYSS_PROMPTS_3 as P3 } from "./data/abyssPrompts3.mjs";
 import { dayKey, hash, rng } from "./shop.mjs";
 
 export const TIME_LIMIT_MS = 25_000;
@@ -20,7 +22,7 @@ export const TIERS = {
 };
 export const TIER_ORDER = ["bubble", "clever", "shoal", "reef", "trench", "pearl"];
 
-export const PROMPTS = ABYSS_PROMPTS;
+export const PROMPTS = [...P1, ...P2, ...P3];
 const BY_ID = new Map(PROMPTS.map((p) => [p.id, p]));
 export const getPrompt = (id) => BY_ID.get(id) ?? null;
 

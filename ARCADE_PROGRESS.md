@@ -68,3 +68,9 @@ See ARCADE_ABYSS.md. App shell has a Party | Abyss switch; Abyss has its own oce
 
 ## Abyss v3 (pixel art, from reference screenshots)
 Pixel canvas ocean + pixel HUD/menus, lead-in countdown, DOM labels for crisp text. Browser-checked (dev auth): home, lead-in, question, wrong guess, sink + tier banner, full 7-prompt dive to results at 390x780, 360x640, desktop. Not checked: real iOS Safari (canvas text/pixelation, safe areas), performance on low-end phones.
+
+## Content round 3 (user: "way more questions and word banks")
+- Abyss: 23 -> 58 prompts (~5,500 answers, 17 categories): + US states, Europe/Asia/Africa, rivers, islands, deserts, presidents, bones, gems, constellations, trees, flowers, insects, safari animals, reptiles, weather, vegetables, spices, pizza toppings, desserts, candy, breakfast, drinks, NBA/NFL teams, Pixar, superheroes, video games, cartoons, bands, colours, jobs, animals/countries starting with S. `npm run abyss:audit`. `npm run abyss:draft` (untested, needs a key) drafts more for review.
+- Party banks (`data/extraContent2.mjs`): draw prompts 251 -> 612, telephone 127 -> 229, imposter words 70 -> 115, quiz questions 138 -> 277. The 139 new questions carry concept labels (Fractions, Geometry, Living things, US history ...), so Mastery Peak's built-in set now has real subject camps; the 138 older ones are still grouped as generic camps. Hot Potato Brain Pass and Last One Standing draw from the bigger pool.
+- Not done: Hot Potato vocab list (still dictionary + teacher vocab), per-grade tagging of questions, more imposter "related word" depth.
+- Known risk: answer correctness of deep-tier Abyss entries is unverified by a second person.

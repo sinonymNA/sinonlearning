@@ -1,5 +1,6 @@
 import { GameError, shuffle } from "./util.mjs";
 import { cleanText } from "./moderation.mjs";
+import { EXTRA2_DRAW_PROMPTS, EXTRA2_TELEPHONE_PROMPTS, EXTRA2_IMPOSTER_WORDS, EXTRA2_QUESTIONS } from "./data/extraContent2.mjs";
 import { EXTRA_DRAW_PROMPTS, EXTRA_TELEPHONE_PROMPTS, EXTRA_IMPOSTER_WORDS, EXTRA_QUESTIONS } from "./data/extraContent.mjs";
 
 /** Content sets: { id, title, items: { questions, vocab, drawPrompts, telephonePrompts, imposterWords } } */
@@ -52,7 +53,7 @@ export const DEFAULT_QUESTIONS = [
   Q("How many legs does a spider have?", "6", "8", "10", "12", 1),
   Q("What is the process of water turning into vapor?", "Condensation", "Evaporation", "Freezing", "Erosion", 1),
   Q("Which ocean is between Africa and Australia?", "Atlantic", "Indian", "Arctic", "Pacific", 1),
-  Q("Which sentence uses a capital letter correctly?", "my dog is big", "MY DOG is big.", "My dog is big.", "my Dog is Big!", 2),
+  Q("Which sentence starts with a capital letter AND ends with a period?", "my cat sleeps.", "Our dog barks", "The bird sings.", "the fish swims", 2),
   Q("What is 1/4 as a decimal?", "0.14", "0.25", "0.4", "0.75", 1),
   Q("Which animal is a reptile?", "Frog", "Snake", "Whale", "Bat", 1),
   Q("What is the center of an atom called?", "Shell", "Nucleus", "Cell", "Orbit", 1),
@@ -144,6 +145,10 @@ mergeUnique(DRAW_PROMPTS, EXTRA_DRAW_PROMPTS);
 mergeUnique(DEFAULT_TELEPHONE_PROMPTS, EXTRA_TELEPHONE_PROMPTS);
 mergeUnique(DEFAULT_IMPOSTER_WORDS, EXTRA_IMPOSTER_WORDS, (w) => w.word);
 mergeUnique(DEFAULT_QUESTIONS, EXTRA_QUESTIONS, (q) => q.q);
+mergeUnique(DRAW_PROMPTS, EXTRA2_DRAW_PROMPTS);
+mergeUnique(DEFAULT_TELEPHONE_PROMPTS, EXTRA2_TELEPHONE_PROMPTS);
+mergeUnique(DEFAULT_IMPOSTER_WORDS, EXTRA2_IMPOSTER_WORDS, (w) => w.word);
+mergeUnique(DEFAULT_QUESTIONS, EXTRA2_QUESTIONS, (q) => q.q);
 
 export const DEFAULT_SET = {
   id: "builtin",

@@ -10,7 +10,7 @@
 
 import { shuffle } from "./util.mjs";
 
-export const MAX_CONCEPTS = 20;
+export const MAX_CONCEPTS = 24;
 export const NEEDED = 3;
 export const GAP = 3;
 
@@ -33,7 +33,7 @@ export function buildPool(set) {
   // Questions without a concept label are grouped into "Camp N" - at least 4 base questions per camp, and few enough
   // camps to fit on the mountain. (Labelled sets - e.g. from the AI builder - give much more meaningful camps.)
   const baseCount = new Set(unlabelled.map((u) => u.group)).size;
-  const per = Math.max(4, Math.ceil(baseCount / 12));
+  const per = Math.max(4, Math.ceil(baseCount / 8));
   const groups = new Map();
   for (const it of unlabelled) { const k = Math.floor(it.group / per); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(it); }
   let n = 1;

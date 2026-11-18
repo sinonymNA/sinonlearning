@@ -27,7 +27,8 @@ test("pool groups by concept case-insensitively; unlabelled questions fall into 
   const pool = buildPool(SET);
   assert.deepEqual(pool.concepts.map((c) => [c.name, c.items.length]), [["Photosynthesis", 4], ["Cells", 3]]);
   const builtin = buildPool(DEFAULT_SET);
-  assert.ok(builtin.concepts.length >= 10 && builtin.concepts.every((c) => /^Camp \d+$/.test(c.name)));
+  assert.ok(builtin.concepts.length >= 10 && builtin.concepts.length <= 24 && !builtin.truncated);
+  assert.ok(builtin.concepts.some((c) => /^Camp \d+$/.test(c.name)) && builtin.concepts.some((c) => c.name === "Fractions"), "labelled questions get real camps, the rest are grouped");
 });
 
 test("three DIFFERENT correct answers secure a camp; repeating one question never counts twice", () => {

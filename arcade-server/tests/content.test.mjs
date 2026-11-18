@@ -77,3 +77,26 @@ test("existing Game Shows are reused: Race -> questions, Memory -> vocab/prompts
   assert.equal(res.compatibility.imposter.ok, true);
   await assert.rejects(() => handleContent(ctx, { type: "import_game_show", id: "not an id" }), /play link or ID/);
 });
+
+import { DEFAULT_SET as BUILTIN, RECOMMENDED as REC, sanitizeLoose as loose } from "../content.mjs";
+import { PROMPTS as ABYSS_BANK } from "../abyss.mjs";
+
+test("built-in banks meet the recommended size for every game and contain only valid, clean items", () => {
+  const it = BUILTIN.items;
+  assert.ok(it.questions.length >= REC.questions * 4, `questions ${it.questions.length}`);
+  assert.ok(it.drawPrompts.length >= REC.drawPrompts * 8, `draw ${it.drawPrompts.length}`);
+  assert.ok(it.telephonePrompts.length >= REC.telephonePrompts * 4, `telephone ${it.telephonePrompts.length}`);
+  assert.ok(it.imposterWords.length >= REC.imposterWords * 3, `imposter ${it.imposterWords.length}`);
+  const { dropped } = loose(it);
+  assert.equal(dropped, 0, "nothing in the built-in banks may be rejected by our own validator");
+  assert.equal(new Set(it.drawPrompts.map((x) => x.toLowerCase())).size, it.drawPrompts.length, "no duplicate draw prompts");
+  assert.equal(new Set(it.questions.map((q) => q.q.toLowerCase())).size, it.questions.length, "no duplicate questions");
+  assert.ok(it.questions.every((q) => q.answer >= 0 && q.answer < q.choices.length));
+  const positions = new Set(it.questions.map((q) => q.answer));
+  assert.ok(positions.size >= 4, "correct answers are spread across positions");
+});
+
+test("Abyss bank size", () => {
+  assert.ok(ABYSS_BANK.length >= 55, `${ABYSS_BANK.length} prompts`);
+  assert.ok(new Set(ABYSS_BANK.map((p) => p.cat)).size >= 12, "enough categories for varied daily dives");
+});

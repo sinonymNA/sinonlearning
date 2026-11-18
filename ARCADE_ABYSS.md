@@ -18,7 +18,7 @@ Inspired by the mechanic of a rarity-scored daily trivia game. Names, tiers, fis
 - "Report a valid answer" stores the report (per account, last 50).
 
 ## Honest limits
-- **Content is the whole game and there is little of it yet**: 23 prompts, ~1,900 answers, tiers assigned by one editor's judgement (me). Daily dives repeat prompts across weeks. Valid answers I did not list score 0 until added. There is no review UI for reports and no bulk-import tool yet.
+- **Content is the whole game and there is still not much of it**: 58 prompts, ~5,500 answers (was 23 / ~1,900), tiers assigned by one editor's judgement (me). A full-time trivia game would want several hundred. Check any batch with `npm run abyss:audit`. Daily dives repeat prompts across weeks. Valid answers I did not list score 0 until added. There is no review UI for reports and no bulk-import tool yet.
 - Rarity here is editorial, not measured from players. Tier assignments will feel wrong sometimes; the report path exists to find those.
 - Not built: Friends, themed packs, ads/premium unlocks, merch, cross-device accounts beyond the existing arcade accounts.
 - Fish packs have no daily deals/spotlight (Party shop only).
@@ -40,3 +40,8 @@ After seeing screenshots of the reference game's look, Abyss was rebuilt as a re
 - Abyss home/play screens are full-bleed (no app bars); a pixel menu button opens the menu; sound toggle uses the shared prefs.
 - Desktop shows the game as a centred phone-width column (mobile-first design).
 Not done: the reference's puffer-party/themed-pack/merch menus; hand-drawn sprites (the diver is the procedural fish, pixelated).
+
+## Growing the bank
+- Hand-written banks live in `arcade-server/data/abyssPrompts.mjs`, `abyssPrompts2.mjs`, `abyssPrompts3.mjs`. `npm run abyss:audit` and the test-suite check ids, all six tiers, repeats, answers in two tiers and "starts/ends with" rules.
+- `npm run abyss:draft -- "Name a type of knot"` asks the model for a DRAFT prompt in the same format (needs `ANTHROPIC_API_KEY`; never run in this build environment). Review every answer and tier by hand before pasting it in. Model output is a draft, not truth.
+- I removed answers I wasn't confident were real before shipping, but the deepest tiers (trench/pearl) of the large lists are the most likely to contain mistakes. Use the in-game "report" button on misses to find the gaps.

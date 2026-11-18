@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "arcade:test": "node --test \"arcade-server/tests/*.test.mjs\"",
-    "arcade:load": "node scripts/arcade-load-test.mjs"
+    "arcade:load": "node scripts/arcade-load-test.mjs",
+    "abyss:audit": "node scripts/abyss-audit.mjs",
+    "abyss:draft": "node scripts/abyss-draft.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",

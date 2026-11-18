@@ -1,0 +1,121 @@
+// Abyss prompt bank, part 2: geography, science, history, language. Same format and tier meanings as abyssPrompts.mjs.
+const t = (s) => s.split("|").map((x) => x.trim()).filter(Boolean);
+const P = (id, cat, prompt, tiers, rule = null) => ({ id, cat, prompt, rule, tiers: Object.fromEntries(Object.entries(tiers).map(([k, v]) => [k, t(v)])) });
+
+export const ABYSS_PROMPTS_2 = [
+  P("us-state", "Geography", "Name a US state or territory", {
+    bubble: "california|texas|florida|new york", clever: "alaska|hawaii",
+    shoal: "ohio|nevada|arizona|colorado|georgia|illinois|michigan|washington|oregon|utah|virginia|pennsylvania|massachusetts|louisiana|kentucky|montana|wyoming|tennessee|new jersey|iowa|indiana|maine",
+    reef: "alabama|arkansas|connecticut|delaware|idaho|kansas|maryland|minnesota|mississippi|missouri|nebraska|new hampshire|new mexico|north carolina|north dakota|oklahoma|rhode island|south carolina|south dakota|vermont|west virginia|wisconsin",
+    trench: "puerto rico|district of columbia=washington dc=dc", pearl: "guam|american samoa|northern mariana islands|us virgin islands=united states virgin islands",
+  }),
+  P("europe", "Geography", "Name a country or territory in Europe", {
+    bubble: "france|germany|italy|spain|united kingdom=uk=england", clever: "liechtenstein|andorra|san marino",
+    shoal: "portugal|netherlands=holland|belgium|switzerland|austria|sweden|norway|denmark|finland|ireland|greece|poland|russia|ukraine|czech republic=czechia|hungary|romania|iceland",
+    reef: "bulgaria|croatia|serbia|slovakia|slovenia|lithuania|latvia|estonia|belarus|luxembourg|malta|cyprus|albania|monaco|moldova",
+    trench: "bosnia and herzegovina=bosnia|montenegro|north macedonia=macedonia|kosovo|vatican city=holy see", pearl: "faroe islands|gibraltar|jersey|guernsey|isle of man|aland islands|svalbard",
+  }),
+  P("asia", "Geography", "Name a country or territory in Asia", {
+    bubble: "china|japan|india|south korea=korea|thailand", clever: "bhutan|mongolia|nepal|brunei",
+    shoal: "vietnam|indonesia|philippines|malaysia|singapore|pakistan|bangladesh|sri lanka|saudi arabia|iran|iraq|israel|turkey|north korea|afghanistan|taiwan|cambodia|laos|myanmar=burma|kazakhstan|uzbekistan|jordan|lebanon|syria|united arab emirates=uae|qatar|kuwait",
+    reef: "oman|yemen|bahrain|maldives|armenia|azerbaijan|georgia",
+    trench: "macau|hong kong", pearl: "northern cyprus",
+  }),
+  P("africa", "Geography", "Name a country or territory in Africa", {
+    bubble: "egypt|nigeria|south africa|kenya|morocco", clever: "madagascar|ethiopia|ghana|tanzania",
+    shoal: "algeria|libya|tunisia|sudan|uganda|senegal|angola|zimbabwe|zambia|namibia|botswana|mozambique|cameroon|ivory coast=cote d'ivoire|democratic republic of the congo=drc=congo|mali|niger|chad|somalia|rwanda|mauritius|liberia|sierra leone",
+    reef: "benin|togo|burkina faso|burundi|malawi|lesotho|eswatini=swaziland|gabon|equatorial guinea|gambia=the gambia|guinea|guinea-bissau|mauritania|eritrea|djibouti|central african republic|republic of the congo|south sudan|seychelles|comoros",
+    trench: "cape verde=cabo verde|sao tome and principe", pearl: "western sahara|somaliland|reunion|mayotte|saint helena",
+  }),
+  P("river", "Geography", "Name a river", {
+    bubble: "nile|amazon|mississippi|thames|yangtze", clever: "congo|ganges|rhine|danube",
+    shoal: "missouri river=missouri|colorado river=colorado|hudson|seine|volga|mekong|tigris|euphrates|indus|zambezi|niger|yellow river=huang he|rio grande|columbia river|ohio river|potomac|tiber|rhone|loire|elbe|po|ural|orinoco|murray",
+    reef: "yukon|mackenzie|st lawrence=saint lawrence|snake river|arkansas river|red river|tennessee river|delaware river|susquehanna|connecticut river|oder|vistula|dnieper|don|neva|ob|lena|yenisei|amur|irrawaddy|salween|brahmaputra|limpopo|okavango|orange river|senegal river|parana|uruguay river|sao francisco|magdalena|darling|tagus|ebro|douro|garonne|moselle",
+    trench: "kolyma|indigirka|tarim|helmand|amu darya|syr darya|dniester|prut|sava|drava|tisza|shannon|severn|trent|tyne|clyde|liffey|pearl river|han river|chao phraya|kagera|ubangi|kasai|sankuru",
+    pearl: "lualaba|chambeshi|atrato|essequibo|courantyne|paraguay river|pilcomayo|madeira|tapajos|xingu|putumayo|ucayali",
+  }),
+  P("island", "Geography", "Name an island or island nation", {
+    bubble: "hawaii|greenland|australia|cuba|iceland|jamaica", clever: "madagascar|borneo|bali|fiji",
+    shoal: "ireland|great britain|new zealand|tasmania|sicily|sardinia|crete|cyprus|malta|puerto rico|bahamas|hispaniola|sri lanka|japan|taiwan|singapore|maldives|mauritius|seychelles|zanzibar|tahiti|samoa|tonga|guam|manhattan|long island|corsica|mallorca|ibiza|santorini|rhodes|capri",
+    reef: "sumatra|java|sulawesi|new guinea|luzon|mindanao|hokkaido|honshu|kyushu|shikoku|baffin island|ellesmere island|victoria island|newfoundland|cape breton|vancouver island|prince edward island|faroe islands|shetland|orkney|hebrides|isle of wight|anglesey|jersey|guernsey|isle of man|madeira|canary islands|azores|bermuda|barbados|trinidad|martinique|aruba|curacao|st lucia=saint lucia",
+    trench: "tierra del fuego|chiloe|galapagos|easter island|pitcairn|norfolk island|lord howe island|kangaroo island|fraser island|bougainville|new caledonia|vanuatu|solomon islands|kiribati|tuvalu|nauru|palau|marshall islands|cook islands|niue|tokelau|wallis and futuna",
+    pearl: "tristan da cunha|saint helena|ascension island|bouvet island|heard island|kerguelen|south georgia|svalbard|jan mayen|socotra|rapa nui|clipperton island",
+  }),
+  P("desert", "Geography", "Name a desert", {
+    bubble: "sahara|gobi|mojave|kalahari|arabian", clever: "antarctica|atacama|sonoran",
+    shoal: "namib|negev|sinai|thar|great victoria desert=victoria|simpson|gibson|great basin|chihuahuan|painted desert|death valley|syrian|taklamakan|karakum|kyzylkum",
+    reef: "patagonian|colorado desert|black rock|rub' al khali=empty quarter|nafud|dasht-e kavir|dasht-e lut|lut|great sandy|tanami|strzelecki|sturt stony|nubian|libyan|ogaden|danakil|karoo|sechura|monte desert",
+    trench: "ordos|badain jaran|tengger|kumtag|cholistan|registan|betpak-dala|ustyurt|gurbantunggut|thal|little sandy",
+    pearl: "tabernas|bardenas reales|oltenia sahara|monegros|dzungarian",
+  }),
+  P("president", "History", "Name a US president", {
+    bubble: "george washington=washington|abraham lincoln=lincoln|donald trump=trump|barack obama=obama|joe biden=biden|john f kennedy=kennedy=jfk", clever: "franklin roosevelt=fdr|theodore roosevelt=teddy roosevelt|thomas jefferson=jefferson|ronald reagan=reagan",
+    shoal: "george bush=george w bush=bush|bill clinton=clinton|richard nixon=nixon|jimmy carter=carter|gerald ford=ford|lyndon johnson=lbj|dwight eisenhower=eisenhower|harry truman=truman|john adams|james madison|james monroe|andrew jackson|ulysses grant=grant|woodrow wilson|herbert hoover|calvin coolidge",
+    reef: "john quincy adams|martin van buren|rutherford hayes=hayes|grover cleveland=cleveland|benjamin harrison|william mckinley=mckinley|william taft=taft|warren harding=harding|james polk|andrew johnson|zachary taylor",
+    trench: "millard fillmore=fillmore|franklin pierce=pierce|james buchanan=buchanan|chester arthur=arthur|john tyler=tyler",
+    pearl: "william henry harrison=harrison|james garfield=garfield",
+  }),
+  P("bone", "Science", "Name a bone in the human body", {
+    bubble: "skull|femur|rib|spine=spinal column", clever: "tailbone=coccyx|collarbone=clavicle",
+    shoal: "humerus|radius|ulna|tibia|fibula|pelvis|sternum|scapula=shoulder blade|vertebra|patella=kneecap|jawbone=mandible|carpals|metacarpals|phalanges|tarsals|metatarsals|ribcage",
+    reef: "sacrum|cranium|maxilla|zygomatic=cheekbone|nasal bone|temporal bone|parietal bone|frontal bone|occipital bone|sphenoid|ethmoid|hyoid|calcaneus=heel bone|talus|cuboid|navicular|cuneiform",
+    trench: "scaphoid|lunate|triquetrum|pisiform|trapezium|trapezoid|capitate|hamate|malleus|incus|stapes|vomer|lacrimal|palatine|inferior nasal concha|atlas|axis",
+    pearl: "os coxae|sesamoid|os trigonum|fabella|wormian bone|os acromiale|accessory navicular",
+  }),
+  P("gemstone", "Science", "Name a gemstone or mineral", {
+    bubble: "diamond|ruby|emerald|sapphire|gold|silver", clever: "opal|amethyst|topaz|pearl",
+    shoal: "quartz|garnet|jade|turquoise|aquamarine|peridot|citrine|onyx|obsidian|lapis lazuli=lapis|moonstone|amber|coral|agate|jasper|malachite|tourmaline|zircon|tanzanite|hematite|pyrite|fluorite|calcite|graphite|talc|gypsum|salt=halite",
+    reef: "alexandrite|bloodstone|carnelian|chalcedony|chrysoprase|cordierite|hiddenite|iolite|kunzite|labradorite|morganite|rhodochrosite|rhodonite|sodalite|spinel|sunstone|tiger's eye=tigers eye|beryl|apatite|azurite|barite|bauxite|cinnabar|corundum|feldspar|galena|magnetite|mica|olivine|rhodolite",
+    trench: "benitoite|painite|taaffeite|musgravite|grandidierite|jeremejevite|poudretteite|red beryl|bixbite|demantoid|tsavorite|paraiba tourmaline|padparadscha|larimar|charoite|sugilite|ammolite|sphene|axinite|zoisite",
+    pearl: "serendibite|black opal|hackmanite|clinohedrite|cuprite|crocoite|sphalerite|stibnite|wulfenite",
+  }),
+  P("constellation", "Science", "Name a constellation", {
+    bubble: "orion|big dipper=ursa major|ursa major|little dipper=ursa minor|cassiopeia|scorpius=scorpio", clever: "leo|gemini|taurus|pegasus",
+    shoal: "andromeda|cygnus|lyra|aquila|sagittarius|capricornus|aquarius|pisces|aries|cancer|virgo|libra|canis major|canis minor|draco|hercules|perseus|centaurus|crux=southern cross|cepheus|bootes|auriga",
+    reef: "ophiuchus|hydra|corvus|crater|lepus|columba|eridanus|cetus|fornax|sculptor|phoenix|grus|tucana|pavo|indus|ara|norma|lupus|circinus|musca|volans|dorado|mensa|pictor|carina|puppis|vela|pyxis|antlia",
+    trench: "camelopardalis|lynx|leo minor|canes venatici|coma berenices|corona borealis|corona australis|delphinus|equuleus|sagitta|scutum|serpens|triangulum|vulpecula|lacerta|sextans|telescopium|microscopium|horologium|reticulum|caelum|octans|apus|chamaeleon",
+    pearl: "hydrus|monoceros|piscis austrinus|triangulum australe|argo navis|quadrans muralis",
+  }),
+  P("tree", "Nature", "Name a type of tree", {
+    bubble: "oak|pine|maple|palm|birch|willow", clever: "redwood|baobab|bonsai|christmas tree",
+    shoal: "elm|cedar|spruce|fir|ash|beech|cherry|apple tree|walnut|cypress|poplar|aspen|sycamore|hickory|chestnut|magnolia|eucalyptus|acacia|banyan|mahogany|teak|bamboo|olive|fig|mulberry|dogwood|hemlock|juniper|sequoia",
+    reef: "alder|hazel|hornbeam|linden=lime tree|rowan|yew|larch|tamarack|hawthorn|buckeye|catalpa|ginkgo|gum tree|jacaranda|tulip tree|sassafras|persimmon|pecan|plane tree|locust|mesquite|joshua tree|monkey puzzle|tamarind|cork oak|rubber tree|ebony|rosewood|sandalwood|balsa",
+    trench: "dawn redwood|wollemi pine|bristlecone pine|kauri|totara|rimu|jarrah|karri|mallee|bunya pine|huon pine|lignum vitae|pau brasil|brazil nut tree|kapok|ceiba|dragon blood tree|socotra dragon tree|sausage tree|cannonball tree",
+    pearl: "lacebark pine|lodgepole|jelecote pine|torreya|franklinia|metasequoia|araucaria|coco de mer",
+  }),
+  P("flower", "Nature", "Name a flower", {
+    bubble: "rose|tulip|daisy|sunflower|lily|orchid", clever: "lotus|dandelion|cherry blossom|poppy",
+    shoal: "daffodil|carnation|violet|lavender|marigold|iris|peony|hyacinth|pansy|petunia|geranium|chrysanthemum|jasmine|lilac|snapdragon|zinnia|hibiscus|begonia|azalea|camellia|gardenia|magnolia|primrose|buttercup|bluebell|foxglove|forget-me-not=forget me not|morning glory|sweet pea",
+    reef: "anemone|aster|amaryllis|calla lily|clematis|cosmos|crocus|delphinium|freesia|gladiolus|gypsophila=baby's breath|hollyhock|hydrangea|larkspur|lupin|nasturtium|oleander|phlox|ranunculus|rhododendron|salvia|snowdrop|stock|verbena|wisteria|yarrow|edelweiss|protea|bird of paradise",
+    trench: "agapanthus|alstroemeria|anthurium|astilbe|bergenia|bleeding heart|campanula|celosia|columbine|coreopsis|dahlia|echinacea|eryngium|fuchsia|gerbera|heliotrope|impatiens|kniphofia|liatris|lobelia|nigella|penstemon|scabiosa|sedum|statice|trillium|tuberose|veronica",
+    pearl: "corpse flower=titan arum|rafflesia|ghost orchid|kadupul|moonflower|queen of the night|cattleya|vanda|paphiopedilum|lady's slipper=ladys slipper|monkshood|datura|brugmansia",
+  }),
+  P("insect", "Nature", "Name an insect", {
+    bubble: "ant|bee|butterfly|fly|mosquito|ladybug=ladybird", clever: "dragonfly|praying mantis|firefly=lightning bug|cicada",
+    shoal: "beetle|wasp|grasshopper|cricket|moth|caterpillar|termite|cockroach|flea|louse|aphid|hornet|bumblebee|locust|earwig|stick insect=walking stick|mayfly|damselfly|katydid|weevil|silverfish|housefly|fruit fly|honeybee|dung beetle|stag beetle",
+    reef: "lacewing|antlion|cuckoo wasp|sawfly|horsefly|deer fly|crane fly|hoverfly|robber fly|midge|gnat|thrips|whitefly|stink bug|assassin bug|cicada killer|leafhopper|treehopper|planthopper|froghopper|water strider|backswimmer|boatman|scarab|longhorn beetle|click beetle|firefly beetle|bombardier beetle|rhinoceros beetle|goliath beetle",
+    trench: "mantidfly|snakefly|alderfly|dobsonfly|scorpionfly|webspinner|bristletail|giant weta|tree lobster|peacock mantis|orchid mantis|spiny flower mantis|atlas moth|hercules beetle",
+    pearl: "titan beetle|hercules moth|queen alexandra's birdwing=queen alexandras birdwing|giant water bug|toebiter|trap-jaw ant|bullet ant|army ant|leafcutter ant|weaver ant|honeypot ant",
+  }),
+  P("african-mammal", "Nature", "Name an animal you could see on an African safari", {
+    bubble: "lion|elephant|giraffe|zebra|rhino=rhinoceros|hippo=hippopotamus", clever: "cheetah|leopard|gorilla|meerkat",
+    shoal: "buffalo=cape buffalo|hyena=spotted hyena|warthog|baboon|wildebeest=gnu|gazelle|impala|antelope|crocodile|ostrich|flamingo|vulture|chimpanzee|jackal|mongoose|aardvark|hartebeest|kudu|eland|oryx|springbok|african wild dog=wild dog|porcupine",
+    reef: "serval|caracal|honey badger|civet|genet|pangolin|bushbaby=galago|vervet monkey|colobus monkey|mandrill|okapi|bongo|sable antelope|roan antelope|waterbuck|topi|dik-dik|duiker|bushbuck|nyala|sitatunga|klipspringer|oribi|steenbok|grysbok|gerenuk|secretary bird|marabou stork|hornbill|lilac-breasted roller|fish eagle|bateleur|shoebill",
+    trench: "aardwolf|cape fox|african civet|striped hyena|brown hyena|black-footed cat|sand cat|african golden cat|forest elephant|bonobo|drill|l'hoest's monkey|de brazza's monkey|pygmy hippo|giant forest hog|bushpig|red river hog|lechwe|puku|reedbuck|bontebok|blesbok|gemsbok",
+    pearl: "zorilla|dwarf crocodile|golden mole|elephant shrew|hyrax=rock hyrax|pel's fishing owl|shoebill stork|saddle-billed stork|bat hawk|honeyguide|oxpecker",
+  }),
+  P("reptile", "Nature", "Name a reptile", {
+    bubble: "snake|lizard|turtle|crocodile|alligator|tortoise", clever: "komodo dragon|chameleon|gecko|iguana",
+    shoal: "cobra|python|boa constrictor=boa|rattlesnake|anaconda|viper|gila monster|bearded dragon|monitor lizard|skink|anole|horned lizard|sea turtle|snapping turtle|box turtle|garter snake|king cobra|black mamba|copperhead|cottonmouth|coral snake|corn snake|ball python|green iguana|frilled lizard|basilisk|tuatara|caiman|gharial",
+    reef: "adder|asp|bushmaster|fer-de-lance|taipan|boomslang|sidewinder|sea snake|tree python|emerald tree boa|rainbow boa|milk snake|king snake|hognose snake|rat snake|racer|whip snake|glass lizard|slow worm|legless lizard|thorny devil|marine iguana|leopard gecko|crested gecko|tokay gecko|panther chameleon|veiled chameleon|savannah monitor|nile monitor|leatherback|loggerhead|hawksbill|green sea turtle|painted turtle|red-eared slider|softshell turtle|matamata|alligator snapping turtle",
+    trench: "amphisbaenian|worm lizard|blind snake|thread snake|file snake|elephant trunk snake|pipe snake|sunbeam snake|shieldtail|mudsnake|cantil|puff adder|gaboon viper|saw-scaled viper|eyelash viper|bothrops|lancehead|jararaca|urutu|mamushi|habu|krait|kraits|coastal taipan|inland taipan|death adder|tiger snake|brown snake",
+    pearl: "chuckwalla|uromastyx|tegu|caiman lizard|water dragon|flying dragon|sailfin lizard|jesus lizard|pig-nosed turtle|bog turtle|ploughshare tortoise|pancake tortoise|radiated tortoise|aldabra tortoise|galapagos tortoise",
+  }),
+  P("weather", "Science", "Name a type of weather or weather event", {
+    bubble: "rain|snow|thunderstorm=storm|hurricane|tornado|wind", clever: "sunny|cloudy|fog|hail",
+    shoal: "blizzard|drought|flood|heat wave|cold snap|sleet|drizzle|lightning|thunder|typhoon|cyclone|monsoon|tsunami|frost|mist|overcast|breeze|gale|squall|downpour|freezing rain|ice storm|dust storm|sandstorm|heatwave|rainbow|hailstorm|el nino|la nina",
+    reef: "derecho|haboob|microburst|waterspout|dust devil|nor'easter=nor easter|polar vortex|whiteout|graupel|rime|hoarfrost|black ice|virga|fog bank|sea fog|sun dog|halo|aurora|st elmo's fire|ball lightning|bomb cyclone|atmospheric river|pineapple express|chinook|foehn|santa ana winds|mistral|sirocco|simoom|khamsin|harmattan",
+    trench: "bora|tramontane|levanter|meltemi|etesian|zonda|pampero|williwaw|helm wind|brickfielder|southerly buster|fremantle doctor|cape doctor|berg wind|gregale|libeccio|scirocco|haar|pogonip|diamond dust|firewhirl|gustnado|landspout|supercell|mesocyclone|shelf cloud|wall cloud",
+    pearl: "thundersnow|snow roller|moon dog|circumhorizontal arc|fire rainbow|fogbow|glory|brocken spectre|noctilucent clouds|nacreous clouds|lenticular clouds|mammatus clouds|kelvin-helmholtz|morning glory cloud|volcanic lightning|red sprite|blue jet",
+  }),
+];
