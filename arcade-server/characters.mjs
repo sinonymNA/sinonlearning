@@ -55,6 +55,12 @@ CHARACTERS.push(
   { id: "c-aurora", name: "Aurora", rarity: "legendary", tagline: "Appears once in a blue moon, wearing the sky.", ...L("tall", "#7be0ff", "happy", "smile", "crown", "#ff9bd0") },
 );
 
+// ---- Uploaded (AI-generated / hand-drawn) characters -------------------------------------------------------
+// Put a transparent PNG at public/characters/<id>.png and add ONE line here. See ARCADE_ICON_GUIDE.md.
+//   IMG("i-blorp", "Blorp", "rare", "Tagline shown on the card.")
+const IMG = (id, name, rarity, tagline) => CHARACTERS.push({ id, name, rarity, tagline, image: `/characters/${id}.png` });
+void IMG;
+
 export const STARTER_AVATARS = [
   { id: "rk-sun", name: "Sunny" }, { id: "rk-moon", name: "Moony" }, { id: "rk-leaf", name: "Leafy" }, { id: "rk-wave", name: "Wavy" },
 ];

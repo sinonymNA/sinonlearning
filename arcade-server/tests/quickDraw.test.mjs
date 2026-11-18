@@ -141,3 +141,21 @@ test("artist chooses one of three words; guessers cannot see the options; auto-p
   c2.advance(6000);
   assert.equal(g2.groups[0].status, "draw");
 });
+
+test("paint bucket: a fill is one validated point, synced like any stroke, counted as ink, and capped", () => {
+  const ctx = makeRoom({ n: 3, playlist: ["quick_draw"], content });
+  const g = ctx.begin(); ctx.advance(2000); pickAll(g, ctx);
+  const grp = g.groups[0];
+  const viewer = grp.members.find((m) => m !== grp.artist);
+  assert.ok(ctx.tryAct(grp.artist, { type: "draw", segs: [{ k: 1, t: 3, c: 4, p: [500, 300] }] }).ok);
+  assert.equal(ctx.tryAct(grp.artist, { type: "draw", segs: [{ k: 2, t: 3, c: 4, p: [500, 300, 600, 200] }] }).ok, false, "fill must be exactly one point");
+  assert.equal(ctx.tryAct(grp.artist, { type: "draw", segs: [{ k: 3, t: 3, c: 4 }] }).ok, false);
+  assert.equal(ctx.tryAct(viewer, { type: "draw", segs: [{ k: 4, t: 3, c: 1, p: [1, 1] }] }).ok, false, "only the artist can fill");
+  ctx.act(grp.artist, { type: "draw", segs: [{ k: 5, t: 3, c: 99, p: [-50, 99999] }] });
+  const last = grp.log.segs.at(-1);
+  assert.deepEqual([last.t, last.c, last.p], [3, 7, [0, 750]], "colour and point are clamped");
+  const draw = ctx.room.view({ playerId: viewer }).game.group.draw;
+  assert.equal(draw.segs.filter((s) => s.t === 3).length, 2, "guessers receive the fills");
+  for (let i = 0; i < 70; i++) { const r = ctx.tryAct(grp.artist, { type: "draw", segs: [{ k: 100 + i, t: 3, c: 1, p: [10, 10] }] }); if (!r.ok) { assert.match(r.error, /lot of fills/); assert.ok(i >= 55); return; } ctx.clock.now += 50; }
+  assert.fail("fill cap not enforced");
+});

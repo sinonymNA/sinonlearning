@@ -40,7 +40,9 @@ const ART: Record<string, () => ReactNode> = {
 export const avatarName = (id: string) => id;
 
 export default function Avatar({ id, size = 64, className = "", title }: { id?: string; size?: number; className?: string; title?: string }) {
-  const look = !ART[id ?? ""] ? CHARACTERS.find((c) => c.id === id)?.look : undefined;
+  const ch = !ART[id ?? ""] ? CHARACTERS.find((c) => c.id === id) : undefined;
+  const look = ch?.look;
+  if (ch?.image) return <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? ch.name} style={{ flex: "none", overflow: "visible" }}><image href={ch.image} x="0" y="0" width="100" height="100" preserveAspectRatio="xMidYMid meet" /></svg>;
   const art = look ? () => <ProcAvatar look={look} /> : ART[id ?? "rk-sun"] ?? ART["rk-sun"];
   return (
     <svg viewBox="0 0 100 100" width={size} height={size} className={className} role="img" aria-label={title ?? "avatar"} style={{ flex: "none", overflow: "visible" }}>

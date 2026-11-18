@@ -7,7 +7,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState, forwardR
 /**
  * The single drawing engine for Quick Draw AND Telephone.
  * Protocol (shared with arcade-server/drawing.mjs): segments {k,t,c,w,p[]}, canvas 1000x750.
- *   t: 0 pen, 1 eraser, 2 clear.
+ *   t: 0 pen, 1 eraser, 2 clear, 3 paint-bucket fill (one point).
  */
 export type Seg = { k: number; t: number; c: number; w: number; p: number[] };
 export const PALETTE = ["#14163a", "#ff5d73", "#ff9d2e", "#ffd23d", "#2fd1a5", "#4cc3ff", "#8a6bff", "#8a5d3f"];
@@ -19,9 +19,38 @@ export class Renderer {
   last = new Map<number, [number, number]>();
   constructor(ctx: CanvasRenderingContext2D) { this.ctx = ctx; this.reset(); }
   reset() { this.ctx.fillStyle = "#fff"; this.ctx.fillRect(0, 0, W, H); this.last.clear(); }
+  /** Scanline flood fill (paint bucket). Fills the region around (x,y) whose colour is close to the clicked pixel. */
+  fill(x: number, y: number, hex: string) {
+    const { ctx } = this;
+    const img = ctx.getImageData(0, 0, W, H), d = img.data;
+    x = Math.max(0, Math.min(W - 1, x | 0)); y = Math.max(0, Math.min(H - 1, y | 0));
+    const i0 = (y * W + x) * 4;
+    const tr = d[i0], tg = d[i0 + 1], tb = d[i0 + 2];
+    const fr = parseInt(hex.slice(1, 3), 16), fg = parseInt(hex.slice(3, 5), 16), fb = parseInt(hex.slice(5, 7), 16);
+    if (Math.abs(tr - fr) + Math.abs(tg - fg) + Math.abs(tb - fb) < 12) return;
+    const TOL = 90;                                   // soaks up anti-aliased edge pixels
+    const near = (i: number) => Math.abs(d[i] - tr) + Math.abs(d[i + 1] - tg) + Math.abs(d[i + 2] - tb) <= TOL;
+    const seen = new Uint8Array(W * H);
+    const stack: number[] = [x, y];
+    while (stack.length) {
+      const sy = stack.pop()!, sx = stack.pop()!;
+      let lx = sx;
+      while (lx >= 0 && !seen[sy * W + lx] && near((sy * W + lx) * 4)) lx--;
+      lx++;
+      let up = false, down = false;
+      for (let cx = lx; cx < W && !seen[sy * W + cx] && near((sy * W + cx) * 4); cx++) {
+        const p = sy * W + cx; seen[p] = 1; const i = p * 4;
+        d[i] = fr; d[i + 1] = fg; d[i + 2] = fb; d[i + 3] = 255;
+        if (sy > 0) { const q = (sy - 1) * W + cx; const ok = !seen[q] && near(q * 4); if (ok && !up) { stack.push(cx, sy - 1); up = true; } else if (!ok) up = false; }
+        if (sy < H - 1) { const q = (sy + 1) * W + cx; const ok = !seen[q] && near(q * 4); if (ok && !down) { stack.push(cx, sy + 1); down = true; } else if (!ok) down = false; }
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
   seg(s: Seg) {
     const { ctx } = this;
     if (s.t === 2) { this.reset(); return; }
+    if (s.t === 3) { this.fill(s.p[0], s.p[1], PALETTE[s.c] ?? PALETTE[0]); return; }
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.strokeStyle = s.t === 1 ? "#fff" : PALETTE[s.c] ?? PALETTE[0];
     ctx.fillStyle = ctx.strokeStyle;
@@ -90,7 +119,7 @@ export type PadHandle = { clear: () => void };
 /** Interactive pad: smooth pointer drawing (mouse/touch/pen), pen+eraser, palette, sizes, clear. Streams compact segments. */
 export const DrawPad = forwardRef<PadHandle, { onSegs: (segs: Seg[]) => Promise<unknown> | void; disabled?: boolean; resetKey?: string | number }>(function DrawPad({ onSegs, disabled, resetKey }, handle) {
   const { ref, get, reset } = useRenderer();
-  const [tool, setTool] = useState<0 | 1>(0);
+  const [tool, setTool] = useState<0 | 1 | 3>(0);
   const [color, setColor] = useState(0);
   const [size, setSize] = useState(1);
   const stroke = useRef<{ k: number; pts: number[]; sent: number } | null>(null);
@@ -143,6 +172,11 @@ export const DrawPad = forwardRef<PadHandle, { onSegs: (segs: Seg[]) => Promise<
     e.preventDefault();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     const [x, y] = toCanvas(e);
+    if (tool === 3) {   // paint bucket: one click, one compact fill segment
+      const seg = { k: ++kCounter.current, t: 3, c: color, w: 0, p: [x, y] };
+      get()!.seg(seg); queue.current.push(seg); void pump();
+      return;
+    }
     stroke.current = { k: ++kCounter.current, pts: [x, y], sent: 0 };
     const r = get()!;
     r.seg({ k: stroke.current.k, t: tool, c: color, w: size, p: [x, y] });
@@ -169,11 +203,12 @@ export const DrawPad = forwardRef<PadHandle, { onSegs: (segs: Seg[]) => Promise<
 
   return (
     <div className="grid gap-3">
-      <div className="canvas-wrap" style={{ cursor: disabled ? "not-allowed" : "crosshair", opacity: disabled ? 0.6 : 1 }}>
+      <div className="canvas-wrap" style={{ cursor: disabled ? "not-allowed" : tool === 3 ? "copy" : "crosshair", opacity: disabled ? 0.6 : 1 }}>
         <canvas ref={ref} width={W} height={H} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={up} aria-label="Drawing canvas" role="img" />
       </div>
       <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="Drawing tools">
-        {PALETTE.map((c, i) => <button key={c} className={`swatch ${tool === 0 && color === i ? "on" : ""}`} style={{ background: c }} onClick={() => { setTool(0); setColor(i); }} aria-label={`Color ${i + 1}`} />)}
+        {PALETTE.map((c, i) => <button key={c} className={`swatch ${tool !== 1 && color === i ? "on" : ""}`} style={{ background: c }} onClick={() => { setTool(tool === 3 ? 3 : 0); setColor(i); }} aria-label={`Color ${i + 1}`} />)}
+        <button className={`ar-btn sm ${tool === 3 ? "sky" : "paper"}`} onClick={() => setTool(tool === 3 ? 0 : 3)} aria-pressed={tool === 3} title="Click inside a shape to fill it">🪣 Fill</button>
         <button className={`ar-btn sm ${tool === 1 ? "sky" : "paper"}`} onClick={() => setTool(tool === 1 ? 0 : 1)} aria-pressed={tool === 1}>🧽 Eraser</button>
         {SIZES.map((s, i) => <button key={s} onClick={() => setSize(i)} aria-label={`Brush size ${i + 1}`} aria-pressed={size === i} className={`ar-btn sm ${size === i ? "sky" : "paper"}`} style={{ minWidth: 44, padding: 0 }}><span style={{ width: 6 + i * 5, height: 6 + i * 5, borderRadius: "50%", background: "#14163a", display: "block" }} /></button>)}
         <button className="ar-btn sm coral" onClick={doClear} disabled={disabled}>🗑 Clear</button>

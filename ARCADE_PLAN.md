@@ -50,3 +50,7 @@ Legend: [x] implemented AND verified (see ARCADE_TESTS.md for how) · [~] implem
 
 ## Imposter pacing change (owner request, overrides the original 10/20/5 s spec)
 Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (runoff 12 s), final guess 15 s. The asker can click one of six private preset questions (shuffle up to 3 times) or type their own; fallback questions still cover silence. A typical 5-player group now takes ~5-6 minutes if everyone uses the full time.
+
+## Drawing + icons
+- [x] Paint bucket fill in Quick Draw and Telephone (one shared tool: protocol segment t=3, validated, capped at 60 fills/drawing, flood-filled identically on every client).
+- [x] Uploaded-image characters supported (`IMG(...)` in `characters.mjs`, files in `public/characters/`), documented in ARCADE_ICON_GUIDE.md. No custom icons have been added yet.

@@ -56,6 +56,24 @@ seen = await pixels(guesser);
 const mine = await pixels(artist);
 check(Math.abs(mine - seen) / mine < 0.25, `both canvases match closely (${mine} vs ${seen})`);
 
+// paint bucket: close a circle, fill it green, check inside is filled and outside is not - on BOTH browsers
+await artist.getByRole("button", { name: "🗑 Clear" }).click(); await guesser.waitForTimeout(800);
+const cb = await artist.locator('canvas[aria-label="Drawing canvas"]').boundingBox();
+const cx = cb.x + cb.width / 2, cy = cb.y + cb.height / 2, R = cb.width * 0.2;
+await artist.mouse.move(cx + R, cy); await artist.mouse.down();
+for (let i = 1; i <= 48; i++) await artist.mouse.move(cx + Math.cos((i / 48) * Math.PI * 2) * R, cy + Math.sin((i / 48) * Math.PI * 2) * R, { steps: 2 });
+await artist.mouse.up();
+await artist.getByRole("button", { name: "🪣 Fill" }).click();
+await artist.getByRole("button", { name: "Color 5" }).click();
+await artist.mouse.click(cx, cy);
+const px = (page, x, y) => page.evaluate(([x, y]) => { const c = document.querySelector(".canvas-wrap canvas"); return [...c.getContext("2d").getImageData(x, y, 1, 1).data].slice(0, 3); }, [x, y]);
+await guesser.waitForTimeout(2500);
+for (const [label, page] of [["artist", artist], ["guesser", guesser]]) {
+  const inside = await px(page, 500, 375), outside = await px(page, 60, 60);
+  check(inside[1] > 180 && inside[0] < 90 && inside[2] > 130, `${label}: circle interior filled green (${inside})`);
+  check(outside.every((v) => v > 240), `${label}: outside the circle stays white (${outside})`);
+}
+await artist.getByRole("button", { name: "🪣 Fill" }).click();   // back to pen
 if (process.env.DEBUG_NET) guesser.on("response", async (r) => { if (r.url().endsWith("/api/arcade") && r.request().method() === "POST") { const b = r.request().postData() ?? ""; if (b.includes('"act"')) console.log("  act", Date.now() % 100000, r.status(), b.slice(0, 120), (await r.text()).slice(0, 100)); } });
 // wrong guess then reconnect by reload, then correct guess
 await guesser.fill('input[aria-label="Your guess"]', "definitely wrong"); await guesser.keyboard.press("Enter");

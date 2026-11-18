@@ -65,3 +65,6 @@ Unit/integration: **111 tests, all pass** (new `piggyBank.test.mjs` covers scori
 
 ## 13. Corny chat expansion
 Quick chat grew from ~65 to 222 unique phrases (84 corny jokes/puns, more cheers, 15 lines per game incl. Piggy Bank) plus a "🎲 Surprise me!" button; a test asserts uniqueness, length and the corny count. 113 unit tests pass; chat e2e (6 PASS) re-run; palette checked in a screenshot.
+
+## 14. Paint bucket + image icons
+114 unit tests pass (new: fill validation/clamp/only-artist/synced/cap). Real browsers: the two-browser sync test now also draws a closed circle, picks the fill tool and a colour, clicks inside, and asserts the interior is filled (47,209,165) and the outside stays white on BOTH the artist and guesser canvases (17 PASS). Image icons: verified once with a temporary SVG character (rendered in the avatar grid), then removed - no real image icons exist yet. Not verified: fill on Safari/Firefox (anti-aliasing could change the filled edge slightly), fill inside a Telephone reveal replay in a browser (shares the same renderer).
