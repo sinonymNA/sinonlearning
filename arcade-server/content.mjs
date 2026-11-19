@@ -174,11 +174,13 @@ export const GAME_NEEDS = {
   piggy_bank: { key: "questions", min: 5, label: "multiple-choice questions" },
   telephone: { key: "telephonePrompts", min: 3, label: "telephone prompts" },
   imposter: { key: "imposterWords", min: 3, label: "secret words" },
+  puffer_party: { key: "pufferCategories", min: 0, optional: true, hidden: true, label: "categories" },
 };
 
 export function compatibility(set) {
   const out = {};
   for (const [game, need] of Object.entries(GAME_NEEDS)) {
+    if (need.hidden) continue;   // built-in only (Puffer Party uses the Abyss answer bank)
     const count = set?.items?.[need.key]?.length ?? 0;
     const recommended = RECOMMENDED[need.key];
     out[game] = { ok: need.optional || count >= need.min, count, need: need.min, recommended, plenty: count >= recommended, label: need.label };

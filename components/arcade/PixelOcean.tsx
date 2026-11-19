@@ -23,7 +23,7 @@ type Props = {
   arriveKey?: number;            // bump to re-trigger onArrive for zero-distance moves
 };
 
-const W = 150, PPM = 0.7;
+const PPM = 0.7;
 const LINES: [number, string][] = [[60, "warm water ends here"], [200, "sunlight is running out"], [500, "the blue turns to black"], [1000, "quiet down here"], [1600, "things glow now"], [2500, "the pressure builds"], [3500, "no sun has ever been here"], [5000, "the old trench"], [6800, "hadal zone - few have seen it"]];
 const rnd = (i: number, salt = 0) => { const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -72,9 +72,16 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
 
   useEffect(() => {
     const canvas = ref.current!; const ctx = canvas.getContext("2d")!;
-    let raf = 0, H = 300, dpr = 1;
+    let raf = 0, H = 300, dpr = 1, W = 150, ox = 0, colW = 150;
     const calm = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const resize = () => { const r = canvas.getBoundingClientRect(); const scale = r.width / W; H = Math.max(120, Math.ceil(r.height / scale)); canvas.width = W; canvas.height = H; dpr = scale; };
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      const scale = Math.min(4.6, Math.max(2.6, r.height / 300));       // bigger pixels on tall screens (iPad), same chunky look on phones
+      W = Math.max(120, Math.round(r.width / scale)); H = Math.max(120, Math.ceil(r.height / scale));
+      canvas.width = W; canvas.height = H; dpr = r.width / W;
+      colW = Math.min(W, Math.round(620 / scale)); ox = Math.round((W - colW) / 2);   // the UI column; the scene itself fills the screen
+      const lab = labelsRef.current; if (lab) { lab.style.left = `${ox * dpr}px`; lab.style.width = `${colW * dpr}px`; lab.style.right = "auto"; }
+    };
     resize(); const ro = new ResizeObserver(resize); ro.observe(canvas);
     try { void document.fonts?.load("8px VT323"); } catch { /* fonts optional */ }
 
@@ -98,7 +105,7 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
       // sky
       if (surf > 0) {
         for (let y = 0; y < Math.min(H, surf); y += 2) { ctx.fillStyle = mix("#8fd0f2", "#dff3fb", Math.min(1, Math.floor((y / surf) * 12) / 12)); ctx.fillRect(0, y, W, 2); }
-        const sunX = W * 0.78, sunY = surf - 46;
+        const sunX = ox + colW * 0.78, sunY = surf - 46;
         for (let r = 12; r > 0; r -= 3) { ctx.fillStyle = r > 7 ? "rgba(255,244,190,.35)" : "#ffe985"; for (let yy = -r; yy <= r; yy++) { const w = Math.floor(Math.sqrt(r * r - yy * yy)); ctx.fillRect(sunX - w, sunY + yy, w * 2, 1); } }
         for (let i = 0; i < 5; i++) {
           const cw = 22 + rnd(i, 1) * 22, cx = ((rnd(i, 2) * (W + 60) + t * (1.5 + rnd(i, 3) * 2.5)) % (W + 60)) - 30, cy = surf - 30 - rnd(i, 4) * (surf * 0.7);
@@ -106,7 +113,7 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
           ctx.fillStyle = "rgba(180,215,240,.9)"; ctx.fillRect(cx + 2, cy + 6, cw - 4, 1);
         }
         // boat
-        const bx = W * 0.3, bob = Math.round(Math.sin(t * 1.4) * 1);
+        const bx = ox + colW * 0.3, bob = Math.round(Math.sin(t * 1.4) * 1);
         ctx.fillStyle = "#1a2b45"; ctx.fillRect(bx, surf - 3 + bob, 18, 3); ctx.fillRect(bx + 2, surf + bob, 14, 1);
         ctx.fillRect(bx + 4, surf - 7 + bob, 6, 4); ctx.fillStyle = "#c9d6e8"; ctx.fillRect(bx + 5, surf - 6 + bob, 2, 1);
         ctx.fillStyle = "#1a2b45"; ctx.fillRect(bx + 12, surf - 13 + bob, 1, 10); ctx.fillStyle = "#ff5d73"; ctx.fillRect(bx + 13, surf - 13 + bob, 5, 3);
@@ -151,7 +158,7 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
       // ruler + tier markers + flavour text (text itself is DOM so it stays crisp)
       const labels: { y: number; text: string; kind: string; color: string }[] = [];
       if (s.ruler) {
-        const rx = W - 7; ctx.fillStyle = "rgba(190,225,250,.5)"; ctx.fillRect(rx, Math.max(0, surf), 1, H);
+        const rx = ox + colW - 7; ctx.fillStyle = "rgba(190,225,250,.5)"; ctx.fillRect(rx, Math.max(0, surf), 1, H);
         for (let m = Math.max(0, Math.floor(m0 / 10) * 10); m < m1; m += 10) {
           const y = Math.round(sy(m)); if (y < 0 || y > H) continue;
           const big = m % 100 === 0, mid = m % 50 === 0;
@@ -162,7 +169,7 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
       for (const [m, text] of LINES) { const y = Math.round(sy(m)); if (y < 4 || y > H - 4) continue; labels.push({ y, text: `— ${text}`, kind: "flavor", color: "rgba(200,230,250,.5)" }); }
       for (const mk of s.markers) {
         const y = Math.round(sy(mk.depth)); if (y < surf + 4 || y > H + 4) continue;
-        ctx.fillStyle = "rgba(220,240,255,.35)"; for (let x = 4; x < W - 10; x += 6) ctx.fillRect(x, y, 3, 1);
+        ctx.fillStyle = "rgba(220,240,255,.35)"; for (let x = ox + 4; x < ox + colW - 10; x += 6) ctx.fillRect(x, y, 3, 1);
         labels.push({ y, text: mk.label, kind: "marker", color: mk.color });
       }
 

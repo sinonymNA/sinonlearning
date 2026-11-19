@@ -756,3 +756,45 @@
 .app-shell:not(.immersive) { background-size: auto, auto; background-repeat: no-repeat; }
 .art-wave { display: none; }
 .hb-game-body { padding-bottom: 34px; }
+
+/* ================= Puffer Party ================= */
+.theme-puffer_party { --accent: #ffcf5a; background: linear-gradient(#0d3b52, #0a2a44 45%, #0c2036); background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 2px, transparent 2px 6px), linear-gradient(#0d4a66, #0a2a44 50%, #081a2e); border: 3px solid #04121f; }
+.pp { font-family: 'VT323', ui-monospace, monospace; color: #d6ecff; display: grid; gap: 8px; height: 100%; grid-template-rows: auto minmax(0, 1fr) auto; }
+.pp-sign { padding: 8px 18px; background: rgba(4,14,30,.88); box-shadow: inset 0 0 0 3px #2a5d8a; text-align: left; } .pp-sign small { display: block; font-size: 1.05rem; letter-spacing: .3em; color: #ff7aa8; } .pp-sign b { display: block; font-weight: 400; font-size: clamp(1.7rem, 4vw, 2.6rem); line-height: 1; color: #fff; }
+.pp-table { position: relative; min-height: 220px; background: radial-gradient(ellipse at 50% 55%, rgba(255,255,255,.1), transparent 62%); overflow: hidden; }
+.pp-seat { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 1px; width: 90px; transition: filter .3s; z-index: 2; }
+.pp.big .pp-seat { width: 130px; }
+.pp-stone { display: grid; place-items: center; width: 62px; height: 40px; background: linear-gradient(#5a6f86, #3b4c61); border: 3px solid #0b1626; border-radius: 50% 50% 46% 46% / 62% 62% 38% 38%; box-shadow: 0 5px 0 rgba(0,0,0,.35); margin-top: -4px; position: relative; }
+.pp.big .pp-stone { width: 92px; height: 60px; } .pp-stone > svg { margin-top: -22px; }
+.pp-seat.hold .pp-stone { background: linear-gradient(#7f93ad, #55677f); box-shadow: 0 0 0 3px #ffcf5a, 0 0 18px #ffcf5a; animation: pp-pulse 1s ease-in-out infinite; } .pp-seat.me .pp-name { color: #6ee7ff; } .pp-seat.dead { filter: grayscale(1) brightness(.55); }
+@keyframes pp-pulse { 50% { box-shadow: 0 0 0 3px #ffcf5a, 0 0 28px #ffcf5a; } }
+.pp-name { font-weight: 400; font-size: 1.2rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 0 rgba(0,0,0,.6); } .pp.big .pp-name { font-size: 1.7rem; max-width: 130px; }
+.pp-hearts { display: flex; gap: 1px; font-size: 1.05rem; line-height: 1; } .pp.big .pp-hearts { font-size: 1.5rem; } .pp-hearts i { font-style: normal; } .pp-hearts .on { color: #ff5d73; text-shadow: 0 0 6px rgba(255,93,115,.7); } .pp-hearts .off { color: #3a4a66; }
+.pp-seat.hit { animation: pp-shake .5s both; } @keyframes pp-shake { 0%,100% { transform: translate(-50%,-50%) } 20% { transform: translate(-56%,-50%) rotate(-6deg) } 45% { transform: translate(-44%,-50%) rotate(6deg) } 70% { transform: translate(-54%,-50%) } }
+.pp-said { position: absolute; bottom: 100%; margin-bottom: 4px; padding: 1px 10px; background: rgba(4,14,30,.95); border: 3px solid; font-size: 1.25rem; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; animation: pp-said 3.4s both; z-index: 4; } .pp-said em { font-style: normal; margin-left: 6px; }
+@keyframes pp-said { 0% { transform: translateY(10px) scale(.6); opacity: 0 } 10% { transform: none; opacity: 1 } 80% { opacity: 1 } 100% { opacity: 0; transform: translateY(-8px) } }
+.pp-puffer { position: absolute; transform: translate(-50%, -50%); transition: left .6s cubic-bezier(.3,1.4,.5,1), top .6s cubic-bezier(.3,1.4,.5,1); z-index: 3; pointer-events: none; }
+.pp-puffer-in { transform: scale(var(--inflate, 1)); transition: transform .3s; animation: pp-hop .6s both, pp-bob 1.6s .6s ease-in-out infinite; filter: drop-shadow(0 6px 0 rgba(0,0,0,.3)); } .pp-puffer.pop .pp-puffer-in { animation: pp-boom .5s both; }
+@keyframes pp-hop { 0% { translate: -30px 14px } 45% { translate: 0 -30px } 100% { translate: 0 0 } } @keyframes pp-bob { 50% { translate: 0 -6px } } @keyframes pp-boom { 0% { transform: scale(1.5) } 60% { transform: scale(2.4); opacity: .6 } 100% { transform: scale(0); opacity: 0 } }
+.pp-pop { position: absolute; transform: translate(-50%, -50%); z-index: 5; pointer-events: none; } .pp-pop span { display: block; padding: 4px 22px; font-size: 3.2rem; line-height: 1; background: #ff5d73; color: #fff; border: 4px solid #14163a; animation: pp-popin .5s cubic-bezier(.2,1.6,.4,1) both; text-shadow: 0 4px 0 #14163a; } @keyframes pp-popin { 0% { transform: scale(.2) rotate(-14deg) } 100% { transform: scale(1) rotate(-6deg) } }
+.pp-up { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); padding: 2px 16px; background: rgba(4,14,30,.9); box-shadow: inset 0 0 0 3px #ffcf5a; font-size: 1.5rem; z-index: 4; white-space: nowrap; max-width: 90%; overflow: hidden; text-overflow: ellipsis; } .pp-draft { margin-left: 10px; color: #7affd6; }
+.pp-bottom { display: grid; gap: 6px; }
+.pp-clock { display: flex; align-items: center; gap: 8px; } .pp-clock b { font-weight: 400; font-size: 1.6rem; min-width: 44px; text-align: right; color: #6ee7ff; } .pp-clock.low b { color: #ff5d73; }
+.pp-clockbar { flex: 1; display: flex; gap: 2px; padding: 3px; background: #02060f; } .pp-clockbar i { flex: 1; height: 12px; background: #0c1a33; } .pp-clockbar i.on { background: #2fd1a5; } .pp-clock.low .pp-clockbar i.on { background: #ff5d73; }
+.pp-form { display: flex; gap: 8px; align-items: stretch; } .pp-lives { display: inline-flex; align-items: center; padding: 0 12px; background: rgba(4,14,30,.9); box-shadow: inset 0 0 0 3px #ff5d73; color: #ff7a8a; font-size: 1.6rem; }
+.pp-input { flex: 1; min-width: 0; padding: 8px 14px; background: #06122a; color: #fff; border: 0; outline: none; font: inherit; font-size: 1.8rem; box-shadow: inset 0 0 0 3px #4cc3ff; } .pp-input:focus { box-shadow: inset 0 0 0 3px #ffcf5a; } .pp-input::placeholder { color: #4d6a96; }
+.pp-send { padding: 0 20px; background: #ff5d9e; color: #14163a; border: 0; font: inherit; font-size: 1.7rem; letter-spacing: .1em; cursor: pointer; box-shadow: 0 4px 0 #8a1f55; } .pp-send:active { transform: translateY(3px); box-shadow: none; }
+.pp-wait { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 1.4rem; color: #9fc0e8; }
+.pp-err { color: #ff7a8a; font-size: 1.3rem; } .pp-react { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .pp-react button { background: rgba(4,14,30,.85); border: 0; box-shadow: inset 0 0 0 2px #2a5d8a; font-size: 1.4rem; padding: 2px 10px; cursor: pointer; }
+.pp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; } .pp-groupchip { padding: 4px 10px; background: rgba(4,14,30,.85); box-shadow: inset 0 0 0 2px #2a5d8a; display: grid; font-size: 1.2rem; line-height: 1.05; } .pp-groupchip small { color: #7f9fc8; }
+@media (max-width: 899px) { .pp-table { min-height: 250px; } .pp-seat { width: 74px; } .pp-name { font-size: 1.1rem; max-width: 74px; } .pp-stone { width: 52px; height: 34px; } .pp-input { font-size: 1.5rem; } }
+@media (prefers-reduced-motion: reduce) { .pp-puffer-in, .pp-seat.hold .pp-stone, .pp-said, .pp-pop span { animation: none !important; } .pp-puffer { transition: none; } }
+.pp { grid-template-columns: minmax(0, 1fr); max-width: 100%; }
+.pp-said.edge-r { left: auto; right: -6px; } .pp-said.edge-l { left: -6px; }
+.pp-table { min-width: 0; }
+/* Abyss fills any screen; the HUD/prompt/input live in a centred column */
+.px-play { max-width: none; box-shadow: none; clip-path: none; margin: 0; }
+.px-col { position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: min(100%, 620px); z-index: 4; pointer-events: none; }
+.px-col > * { pointer-events: auto; }
+.px-col .px-hud { pointer-events: none; }
+.pp-bottom { grid-template-columns: minmax(0, 1fr); min-width: 0; } .pp-form, .pp-clock, .pp-wait { min-width: 0; max-width: 100%; } .pp-lives { flex: none; } .pp-send { flex: none; padding: 0 16px; }

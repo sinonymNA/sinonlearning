@@ -82,6 +82,7 @@ export function AbyssHome() {
       <div className="px-play home">
         <PixelOcean depth={0} surfaceFrac={0.64} ruler={false} />
         <div className="px-crt" />
+        <div className="px-col">
         <TopButtons onMenu={() => setSheet("menu")} />
         {!d ? <p className="px-loading">LOADING…</p> : d.error ? <p className="px-loading">COULDN&apos;T REACH THE DEEP</p> : (
           <>
@@ -102,6 +103,7 @@ export function AbyssHome() {
             </div>
           </>
         )}
+        </div>
         {sheet === "menu" && <PixelMenu onClose={() => setSheet(null)} signedIn={!!d?.signedIn} />}
         {sheet === "how" && d && (
           <Sheet title="HOW TO PLAY" onClose={() => setSheet(null)}>
@@ -239,6 +241,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
     <div className="px-play">
       <PixelOcean depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
       <div className="px-crt" />
+      <div className="px-col">
       <header className="px-hud">
         <div className="px-plate px-stat"><small>DEPTH</small><b>{fmt(shown)}m</b></div>
         <div className="px-progress" aria-label="Progress">
@@ -305,6 +308,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
         </>
       )}
 
+      </div>
       {phase === "done" && (
         <div className="px-done">
           {run ? (

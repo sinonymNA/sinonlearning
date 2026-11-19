@@ -100,7 +100,7 @@ export function HubHome() {
           </TiltCard></Stagger>
           <Stagger i={2}><TiltCard href="/arcade/multiplayer" className="hb-portal multi" label="Multiplayer games">
             <MultiArt />
-            <div className="hb-portal-text"><small>PLAY WITH THE CLASS</small><h2>MULTIPLAYER</h2><p>Join a room with a code. Six party games, one winner.</p></div>
+            <div className="hb-portal-text"><small>PLAY WITH THE CLASS</small><h2>MULTIPLAYER</h2><p>Join a room with a code. Seven party games, one winner.</p></div>
             <span className="hb-go">ENTER ▶</span>
           </TiltCard></Stagger>
           <Stagger i={3}><TiltCard href="/arcade/shop" className="hb-portal shop" label="Shop">

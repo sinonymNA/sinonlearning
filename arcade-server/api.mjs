@@ -361,7 +361,7 @@ export async function handleAccount(service, ctx, body) {
 
 // ---------- solo practice (real engine, bot opponents, capped coins) ----------
 export const SOLO = {
-  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4, piggy_bank: 7 },
+  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4, piggy_bank: 7, puffer_party: 4 },
   difficulty: { easy: { behavior: "sloppy", mult: 0.6 }, medium: { behavior: "average", mult: 1 }, hard: { behavior: "smart", mult: 1.4 } },
   dailyCap: 150,
 };

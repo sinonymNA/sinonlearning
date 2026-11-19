@@ -4,5 +4,6 @@ import { LastOneStanding } from "./lastOneStanding.mjs";
 import { Telephone } from "./telephone.mjs";
 import { Imposter } from "./imposter.mjs";
 import { PiggyBank } from "./piggyBank.mjs";
+import { PufferParty } from "./pufferParty.mjs";
 
-export const GAMES = { hot_potato: HotPotato, quick_draw: QuickDraw, last_one_standing: LastOneStanding, telephone: Telephone, imposter: Imposter, piggy_bank: PiggyBank };
+export const GAMES = { hot_potato: HotPotato, quick_draw: QuickDraw, last_one_standing: LastOneStanding, telephone: Telephone, imposter: Imposter, piggy_bank: PiggyBank, puffer_party: PufferParty };

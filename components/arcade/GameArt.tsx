@@ -1,4 +1,5 @@
 import PotatoSvg from "./PotatoSvg";
+import { PufferSvg } from "./games/PufferParty";
 
 const INK = "#14163a";
 /** Hand-built SVG mark for each game (used on tiles/headers instead of emoji). */
@@ -16,6 +17,8 @@ export default function GameArt({ id, size = 96 }: { id: string; size?: number }
       return <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden><ellipse cx="50" cy="58" rx="36" ry="28" fill="#ff9bc4" {...s} /><path d="M24 38 l-4 -16 l16 8Z M66 30 l8 -14 l6 18Z" fill="#ff7ab0" {...s} strokeWidth="4" /><ellipse cx="82" cy="60" rx="9" ry="12" fill="#ff7ab0" {...s} strokeWidth="4" /><circle cx="84" cy="58" r="2.2" fill={INK} /><circle cx="84" cy="64" r="2.2" fill={INK} /><circle cx="64" cy="48" r="4" fill={INK} /><rect x="40" y="28" width="22" height="6" rx="3" fill={INK} /><rect x="30" y="82" width="10" height="10" rx="3" fill="#ff7ab0" {...s} strokeWidth="4" /><rect x="60" y="82" width="10" height="10" rx="3" fill="#ff7ab0" {...s} strokeWidth="4" /><circle cx="51" cy="14" r="9" fill="#ffd23d" {...s} strokeWidth="4" /></svg>;
     case "imposter":
       return <svg viewBox="0 0 100 100" width={size} height={size} aria-hidden><path d="M14 52 H86 L78 40 C76 20 24 20 22 40Z" fill="#3b3f6b" {...s} /><rect x="8" y="50" width="84" height="8" rx="4" fill="#14163a" /><circle cx="42" cy="74" r="12" fill="#fff" {...s} /><path d="M52 83 l16 12" stroke={INK} strokeWidth="7" strokeLinecap="round" /><circle cx="42" cy="74" r="4" fill="#ef476f" /></svg>;
+    case "puffer_party":
+      return <PufferSvg size={size} />;
     default: return null;
   }
 }

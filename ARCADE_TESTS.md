@@ -94,3 +94,4 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Abyss v2: +2 tests (retry-until-match, API retries). Suite: 160 passing.
 - Abyss v3: LEAD_MS lead-in, tests adjusted for the 2.5 s lead. Suite: 160 passing.
 - Content tests: built-in bank sizes/validity, Abyss bank size. Suite: 162 passing.
+- Puffer Party: 8 tests (registration, scoring by rarity, dup/unlisted keep the turn, no answer-key leak, pop/lives/new category, disconnect, 35 players, bot picks). Suite: 170 passing.

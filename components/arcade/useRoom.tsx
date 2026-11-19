@@ -67,7 +67,7 @@ export function useRoom(code: string, opts: { host?: boolean; mode?: string } = 
       if (stopped.current) return;
       await poll();
       const g = (view as View)?.game;
-      const fast = g?.group?.status === "draw" || g?.phase === "question" || g?.kind === "hot_potato" || g?.kind === "imposter";
+      const fast = g?.group?.status === "draw" || g?.phase === "question" || g?.kind === "hot_potato" || g?.kind === "puffer_party" || g?.kind === "imposter";
       const base = document.hidden ? 2500 : fast ? 650 : 1000;
       timer = setTimeout(loop, base * (0.9 + Math.random() * 0.25));
     };

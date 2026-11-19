@@ -97,6 +97,16 @@ export class Bots {
         q.push({ delay: at, run: () => ({ type: "word", word: word(), turn: grp.turn }) });
         return { key, queue: q };
       }
+      case "puffer_party": {
+        const grp = g.byPlayer.get(pid);
+        if (!grp || grp.status !== "live" || grp.holder !== pid) return null;
+        const key = `pp:${grp.id}:${grp.turn}:${pid}`;
+        const q = [];
+        let at = d(1500, 7000);
+        if (randInt(100) < bot.errorRate * 100) { q.push({ delay: at, run: { type: "answer", text: "zzzq", turn: grp.turn } }); at += d(900, 2000); }
+        q.push({ delay: at, run: () => { const text = g.botPick(grp, bot.accuracy); return text ? { type: "answer", text, turn: grp.turn } : null; } });
+        return { key, queue: q };
+      }
       case "last_one_standing": {
         if (g.phase !== "ready" && g.phase !== "question") return null;
         const key = `los:${g.asked}:${pid}`;

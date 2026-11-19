@@ -1,7 +1,7 @@
 // Audits the Abyss prompt bank: ids, all six tiers present, no repeats inside a tier, no answer in two tiers, rules hold.
 // Run: npm run abyss:audit
 import * as AB from "../arcade-server/abyss.mjs";
-const issues = [], ids = new Set();
+const issues = [...AB.DROPPED.map((d) => `rule violation dropped: ${d}`)], ids = new Set();
 for (const p of AB.PROMPTS) {
   if (ids.has(p.id)) issues.push(`duplicate id ${p.id}`); ids.add(p.id);
   const all = new Map();
@@ -18,6 +18,7 @@ for (const p of AB.PROMPTS) {
     }
   }
 }
+console.log(`Puffer Party can use ${AB.PUFFER_PROMPTS.length} categories`);
 const answers = AB.PROMPTS.reduce((n, p) => n + AB.TIER_ORDER.reduce((m, t) => m + p.tiers[t].length, 0), 0);
 console.log(`${AB.PROMPTS.length} prompts, ${answers} answers, ${new Set(AB.PROMPTS.map((p) => p.cat)).size} categories, ${issues.length} issues`);
 if (issues.length) { console.log(issues.join("\n")); process.exit(1); }

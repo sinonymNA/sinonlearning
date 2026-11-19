@@ -1,5 +1,6 @@
 // Abyss engine: rarity-scored open-answer trivia. Pure functions (no I/O) so the API and the tests share them.
 import { ABYSS_PROMPTS as P1 } from "./data/abyssPrompts.mjs";
+import { CATEGORIES } from "./data/categories.mjs";
 import { ABYSS_PROMPTS_2 as P2 } from "./data/abyssPrompts2.mjs";
 import { ABYSS_PROMPTS_3 as P3 } from "./data/abyssPrompts3.mjs";
 import { dayKey, hash, rng } from "./shop.mjs";
@@ -22,16 +23,47 @@ export const TIERS = {
 };
 export const TIER_ORDER = ["bubble", "clever", "shoal", "reef", "trench", "pearl"];
 
-export const PROMPTS = [...P1, ...P2, ...P3];
-const BY_ID = new Map(PROMPTS.map((p) => [p.id, p]));
-export const getPrompt = (id) => BY_ID.get(id) ?? null;
+const HAND = [...P1, ...P2, ...P3];
 
-// ---------- answer matching ----------
+// ---- answer matching helpers (declared early: the auto-tiered bank below needs norm) ----
 export function norm(s) {
-  return String(s ?? "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+  return String(s ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
     .replace(/&/g, " and ").replace(/['’`]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\b(the|a|an)\b/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/** Flat lists (most obvious first) are split into the six tiers by position: ~6 bubble, ~3 show-off, then roughly 30% shoal, 28% reef, 17% trench, 7% pearl. */
+export const DROPPED = [];
+function fromCategory(c) {
+  const seen = new Set(), list = [];
+  for (const e of c.list) {
+    const forms = e.split("=").map((x) => x.trim());
+    const key = norm(forms[0]);
+    if (!key || seen.has(key)) continue;
+    let bad = false;
+    if (c.rule) for (const f of forms) { const n = norm(f).replace(/ /g, ""); if ((c.rule.startsWith && !n.startsWith(c.rule.startsWith)) || (c.rule.endsWith && !n.endsWith(c.rule.endsWith))) bad = true; }
+    if (bad) { DROPPED.push(`${c.id}: ${forms[0]}`); continue; }
+    for (const f of forms) seen.add(norm(f));
+    list.push(e);
+  }
+  const n = list.length;
+  const pearl = Math.max(1, Math.round(n * 0.07)), trench = Math.max(1, Math.round(n * 0.17)), reef = Math.max(1, Math.round(n * 0.28));
+  const clever = n >= 30 ? 3 : 2, bubble = n >= 30 ? 6 : 4;
+  const shoal = Math.max(1, n - bubble - clever - reef - trench - pearl);
+  let i = 0; const take = (k) => { const out = list.slice(i, i + k); i += k; return out; };
+  const tiers = { bubble: take(bubble), clever: take(clever), shoal: take(shoal), reef: take(reef), trench: take(trench), pearl: take(pearl) };
+  return { id: c.id, cat: c.cat, prompt: c.prompt, rule: c.rule, auto: true, count: n, tiers };
+}
+const handIds = new Set(HAND.map((p) => p.id));
+const AUTO_ALL = CATEGORIES.filter((c) => !handIds.has(c.id)).map(fromCategory).filter((p) => p.count >= 12);
+const AUTO = AUTO_ALL.filter((p) => p.count >= 30);
+/** The Abyss bank: hand-tiered prompts plus auto-tiered categories with enough answers to make rarity meaningful. */
+export const PROMPTS = [...HAND, ...AUTO];
+/** Everything playable in Puffer Party (validity only): the Abyss bank plus the smaller categories. */
+export const PUFFER_PROMPTS = [...PROMPTS, ...AUTO_ALL.filter((p) => p.count < 30)];
+const BY_ID = new Map(PUFFER_PROMPTS.map((p) => [p.id, p]));
+export const getPrompt = (id) => BY_ID.get(id) ?? null;
+
+// ---------- answer matching ----------
 function lev(a, b, max) {
   if (Math.abs(a.length - b.length) > max) return max + 1;
   const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
