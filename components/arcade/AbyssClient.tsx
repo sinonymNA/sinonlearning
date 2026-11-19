@@ -50,7 +50,7 @@ function PixelMenu({ onClose, signedIn }: { onClose: () => void; signedIn: boole
         <Link className="px-btn" href="/arcade/abyss">▸ HOME</Link>
         <Link className="px-btn" href="/arcade/abyss/play?mode=daily">▸ DAILY DIVE</Link>
         <Link className="px-btn" href="/arcade/abyss/unlimited">▸ UNLIMITED</Link>
-        <Link className="px-btn" href="/arcade/abyss/fish">▸ FISH PACKS</Link>
+        <Link className="px-btn" href="/arcade/shop?tab=fish">▸ FISH PACKS</Link>
         <Link className="px-btn" href="/arcade/abyss/me">▸ DIVE LOG</Link>
         <Link className="px-btn" href="/arcade">▸ PARTY MODE</Link>
         {!signedIn && <Link className="px-btn" href="/arcade/account">▸ SIGN IN (SAVE STREAKS)</Link>}
@@ -96,7 +96,7 @@ export function AbyssHome() {
               <div className="px-row">
                 <button className="px-btn sm" disabled={!d.signedIn} onClick={() => setSheet("archive")}>ARCHIVE ↺</button>
                 <Link className="px-btn sm" href="/arcade/abyss/unlimited">UNLIMITED ∞</Link>
-                <Link className="px-btn sm" href="/arcade/abyss/fish">FISH 🐠</Link>
+                <Link className="px-btn sm" href="/arcade/shop?tab=fish">FISH 🐠</Link>
                 <button className="px-btn sm" onClick={() => setSheet("how")}>HOW TO PLAY</button>
               </div>
             </div>

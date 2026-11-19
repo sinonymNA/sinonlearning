@@ -38,7 +38,7 @@ export default function AccountClient() {
       <div className="grid max-w-2xl gap-5">
         <div className="ar-panel"><p className="ar-muted font-bold">{arcade ? "Signed in as" : "Signed in with your Sinon account"}</p>
           <p className="ar-h1" style={{ fontSize: "2.6rem" }}>{me.name}</p><p className="mt-2 text-xl font-bold">🪙 {me.coins} coins · {me.owned?.length ?? 0} characters</p></div>
-        <div className="flex flex-wrap gap-3"><Link className="ar-btn mint" href="/arcade/solo">Solo practice</Link><Link className="ar-btn" href="/arcade/shop">Open packs</Link><Link className="ar-btn paper" href="/arcade/characters">My characters</Link></div>
+        <div className="flex flex-wrap gap-3"><Link className="ar-btn mint" href="/arcade/solo/practice">Solo practice</Link><Link className="ar-btn" href="/arcade/shop">Open packs</Link><Link className="ar-btn paper" href="/arcade/characters">My characters</Link></div>
         {arcade && <div className="ar-panel grid gap-2"><p className="ar-muted text-sm">Your account only stores your username, a scrambled password, your coins and your characters. Names you type when joining a game are never saved.</p>
           <div className="flex flex-wrap gap-2"><button className="ar-btn sm paper" onClick={logout}>Log out</button><button className="ar-btn sm coral" onClick={del}>Delete my account</button></div></div>}
       </div>

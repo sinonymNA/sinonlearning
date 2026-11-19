@@ -7,19 +7,13 @@ import PotatoSvg from "./PotatoSvg";
 import { api } from "./useRoom";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const ABYSS_TABS = [
-  { href: "/arcade/abyss", icon: "🌊", label: "Dive", exact: true },
-  { href: "/arcade/abyss/unlimited", icon: "♾️", label: "Unlimited" },
-  { href: "/arcade/abyss/fish", icon: "🐠", label: "Fish" },
-  { href: "/arcade/abyss/me", icon: "📜", label: "Log" },
-];
+// Five doors, nothing else: everything in the arcade lives under one of these.
 const TABS = [
-  { href: "/arcade", icon: "🏠", label: "Home", exact: true },
-  { href: "/arcade/join", icon: "🎮", label: "Play" },
-  { href: "/arcade/solo", icon: "🕹️", label: "Solo" },
-  { href: "/arcade/peak", icon: "⛰️", label: "Peak" },
-  { href: "/arcade/shop", icon: "🛍️", label: "Shop" },
-  { href: "/arcade/account", icon: "👤", label: "Me" },
+  { href: "/arcade", icon: "🏠", label: "Home", exact: true, match: [] as string[] },
+  { href: "/arcade/solo", icon: "🕹️", label: "Solo", match: ["/arcade/solo", "/arcade/peak", "/arcade/daily", "/arcade/abyss"] },
+  { href: "/arcade/multiplayer", icon: "👥", label: "Multiplayer", match: ["/arcade/multiplayer", "/arcade/join", "/arcade/host", "/arcade/content", "/arcade/test-lab"] },
+  { href: "/arcade/shop", icon: "🛍️", label: "Shop", match: ["/arcade/shop", "/arcade/characters"] },
+  { href: "/arcade/account", icon: "👤", label: "Me", match: ["/arcade/account"] },
 ];
 
 function Boot({ onDone }: { onDone: () => void }) {
@@ -54,7 +48,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [streak, setStreak] = useState(0);
   const [pearls, setPearls] = useState(0);
   const [abyssStreak, setAbyssStreak] = useState(0);
-  const abyss = path.startsWith("/arcade/abyss");
   const [boot, setBoot] = useState(false);
 
   const refresh = useCallback(() => {
@@ -80,29 +73,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // Abyss's play screens are full-bleed pixel scenes with their own HUD: no app bars
   const immersive = path === "/arcade/abyss" || path.startsWith("/arcade/abyss/play") || path.startsWith("/arcade/abyss/unlimited");
   if (immersive) return <div className="app-shell abyss immersive"><div className="app-body" key={path}>{children}</div></div>;
-  const tabs = abyss ? ABYSS_TABS : me?.role === "teacher" ? [TABS[0], { href: "/arcade/host", icon: "📺", label: "Host" }, ...TABS.slice(1)] : TABS;
-  const active = (t: any) => (t.exact ? path === t.href : path.startsWith(t.match ?? t.href));
+  const active = (t: (typeof TABS)[number]) => (t.exact ? path === t.href : t.match.some((m) => path === m || path.startsWith(m + "/")));
+  const bestStreak = Math.max(streak, abyssStreak);
   return (
-    <div className={`app-shell ${abyss ? "abyss" : ""}`}>
+    <div className="app-shell">
       {boot && <Boot onDone={() => setBoot(false)} />}
+      <div className="app-stars" aria-hidden><i /><i /><i /></div>
       <header className="app-top">
-        <Link href={abyss ? "/arcade/abyss" : "/arcade"} className="app-logo" aria-label={abyss ? "Abyss home" : "Arcade home"}><span className="app-logo-mark">{abyss ? "🌊" : "🥔"}</span><span className="app-logo-text">{abyss ? "ABYSS" : "ARCADE"}</span></Link>
-        <div className="mode-switch" role="tablist" aria-label="Game mode">
-          <Link href="/arcade" role="tab" aria-selected={!abyss} className={`mode-opt ${!abyss ? "on" : ""}`}>🎉 <span>Party</span></Link>
-          <Link href="/arcade/abyss" role="tab" aria-selected={abyss} className={`mode-opt ${abyss ? "on" : ""}`}>🌊 <span>Abyss</span></Link>
-        </div>
+        <Link href="/arcade" className="app-logo" aria-label="Arcade home"><span className="app-logo-mark">🥔</span><span className="app-logo-text">ARCADE</span></Link>
         <div className="app-top-right">
-          {abyss
-            ? <>{abyssStreak > 0 && <Link href="/arcade/abyss/me" className="app-chip flame" title="Daily Dive streak">🔥 {abyssStreak}</Link>}
-              <Link href="/arcade/abyss/fish" className="app-chip" title="Pearls">🦪 {pearls}</Link></>
-            : <>{streak > 0 && <Link href="/arcade" className="app-chip flame" title="Daily puzzle streak">🔥 {streak}</Link>}
-              <Link href="/arcade/shop" className="app-chip" title="Coins">🪙 {me?.signedIn ? me.coins : 0}</Link></>}
+          {bestStreak > 0 && <Link href="/arcade/solo" className="app-chip flame" title="Your best daily streak">🔥 {bestStreak}</Link>}
+          <Link href="/arcade/shop" className="app-chip" title="Coins">🪙 {me?.signedIn ? me.coins : 0}</Link>
+          <Link href="/arcade/shop?tab=fish" className="app-chip" title="Pearls">🦪 {pearls}</Link>
           <Link href="/arcade/account" className="app-chip me" aria-label="Account">{me?.signedIn ? (me.name ?? "Me").slice(0, 10) : "Sign in"}</Link>
         </div>
       </header>
       <div className="app-body" key={path}>{children}</div>
       <nav className="app-bottom" aria-label="Arcade menu">
-        {tabs.map((t, i) => <Link key={t.href} href={t.href} className={`app-tab ${active(t) ? "on" : ""}`} aria-current={active(t) ? "page" : undefined} style={{ animationDelay: `${i * 60}ms` }}><span className="app-tab-icon">{t.icon}</span><span className="app-tab-label">{t.label}</span></Link>)}
+        {TABS.map((t, i) => <Link key={t.href} href={t.href} className={`app-tab ${active(t) ? "on" : ""}`} aria-current={active(t) ? "page" : undefined} style={{ animationDelay: `${i * 60}ms` }}><span className="app-tab-icon">{t.icon}</span><span className="app-tab-label">{t.label}</span></Link>)}
       </nav>
     </div>
   );

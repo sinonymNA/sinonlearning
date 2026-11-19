@@ -22,7 +22,7 @@ await page.waitForSelector(`text=${username}`);
 check(true, `account created (${username}) and signed in`);
 await page.screenshot({ path: "/tmp/arcade-solo-account.png" });
 
-await page.goto(`${BASE}/arcade/solo`);
+await page.goto(`${BASE}/arcade/solo/practice`);
 await page.waitForSelector("text=playing as");
 await page.getByRole("button", { name: /Last One Standing/ }).first().click();
 await page.getByRole("button", { name: /Medium/ }).click();
