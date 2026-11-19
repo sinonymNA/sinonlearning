@@ -180,7 +180,7 @@ export const GAME_NEEDS = {
 export function compatibility(set) {
   const out = {};
   for (const [game, need] of Object.entries(GAME_NEEDS)) {
-    if (need.hidden) continue;   // built-in only (Puffer Party uses the Abyss answer bank)
+    if (need.hidden) { out[game] = { ok: true, hidden: true, count: 0, need: 0, recommended: 0, plenty: true, label: need.label }; continue; }   // built-in only (Puffer Party uses the Abyss answer bank)
     const count = set?.items?.[need.key]?.length ?? 0;
     const recommended = RECOMMENDED[need.key];
     out[game] = { ok: need.optional || count >= need.min, count, need: need.min, recommended, plenty: count >= recommended, label: need.label };

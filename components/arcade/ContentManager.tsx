@@ -102,7 +102,7 @@ export default function ContentManager() {
         <button className="ar-btn sm coral" disabled={!id} onClick={async () => { if (id && confirm("Delete this set?")) { await api("/api/arcade/content", { type: "delete", id }); setId(undefined); setTitle(""); setForm(EMPTY); load(); } }}>Delete this set</button></aside>
       <div className="grid gap-4">
         <div className="ar-panel grid gap-3"><label className="grid gap-1 font-bold">Set title<input className="ar-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Unit 4 Review" /></label>
-          {compat && <div className="grid gap-2 sm:grid-cols-2" aria-label="Content coverage">{Object.entries(compat).map(([g, v]: any) => {
+          {compat && <div className="grid gap-2 sm:grid-cols-2" aria-label="Content coverage">{Object.entries(compat).filter(([, v]: any) => !v.hidden).map(([g, v]: any) => {
             const pct = Math.min(100, Math.round((v.count / v.recommended) * 100));
             const level = v.plenty ? "plenty" : v.ok ? "thin" : "short";
             return (

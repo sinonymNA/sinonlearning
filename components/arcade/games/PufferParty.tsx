@@ -124,8 +124,8 @@ export default function PufferParty({ view, stamp, send, meId, projector = false
           </form>
         ) : (
           <div className="pp-wait">
-            <span className="pp-lives">♥ {me?.lives ?? 0}</span>
-            <span>{grp.status === "pop" ? "💥 The puffer popped! New category coming…" : grp.status === "done" ? "This table is finished." : me && me.lives <= 0 ? "You're out - cheer everyone on!" : "Wait for the puffer to reach you. Pass it fast!"}</span>
+            {me && <span className="pp-lives">♥ {me.lives}</span>}
+            <span>{grp.status === "pop" ? "💥 The puffer popped! New category coming…" : grp.status === "done" ? "This table is finished." : me && me.lives <= 0 ? "You're out - cheer everyone on!" : projector ? "Say it out loud - the puffer is moving!" : "Wait for the puffer to reach you. Pass it fast!"}</span>
           </div>
         )}
         {err && canType && <p role="alert" className="pp-err">{err.msg}</p>}

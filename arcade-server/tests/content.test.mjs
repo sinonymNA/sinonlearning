@@ -100,3 +100,12 @@ test("Abyss bank size", () => {
   assert.ok(ABYSS_BANK.length >= 55, `${ABYSS_BANK.length} prompts`);
   assert.ok(new Set(ABYSS_BANK.map((p) => p.cat)).size >= 12, "enough categories for varied daily dives");
 });
+
+import { GAME_IDS as ALL_GAMES } from "../catalog.mjs";
+test("compatibility has an entry for EVERY game (the host screens index it by game id; a missing one crashed Puffer Party)", () => {
+  for (const set of [null, { items: { questions: [], vocab: [], drawPrompts: [], telephonePrompts: [], imposterWords: [] } }, BUILTIN]) {
+    const c = compatibility(set);
+    for (const g of ALL_GAMES) { assert.ok(c[g], `missing compat for ${g}`); assert.equal(typeof c[g].ok, "boolean"); }
+  }
+  assert.equal(compatibility(null).puffer_party.hidden, true);
+});

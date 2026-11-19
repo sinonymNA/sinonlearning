@@ -96,7 +96,7 @@ function Inner({ code }: { code: string }) {
                   <button className="ar-btn sm paper" disabled={!view.players.some((p: any) => p.bot)} onClick={() => cmd("clearbots")}>Remove all bots ({view.players.filter((p: any) => p.bot).length})</button>
                 </div>
               </div>
-              {compat && <div className="flex flex-wrap gap-2" aria-label="Content compatibility">{sel.map((g) => <span key={g} className="ar-pill" style={{ background: compat[g]?.ok ? "rgba(47,209,165,.25)" : "rgba(255,93,115,.3)" }}>{GAME_CATALOG[g].icon} {compat[g]?.ok ? `${compat[g].count} ${compat[g].label}` : `Not enough ${compat[g]?.label} - using built-in`}</span>)}</div>}
+              {compat && <div className="flex flex-wrap gap-2" aria-label="Content compatibility">{sel.map((g) => <span key={g} className="ar-pill" style={{ background: compat[g]?.ok ? "rgba(47,209,165,.25)" : "rgba(255,93,115,.3)" }}>{GAME_CATALOG[g].icon} {compat[g]?.hidden ? "built-in categories" : compat[g]?.ok ? `${compat[g].count} ${compat[g].label}` : `Not enough ${compat[g]?.label} - using built-in`}</span>)}</div>}
               <div className="flex flex-wrap items-center gap-3">
                 <button className="ar-btn coral xl" disabled={!canStart} onClick={() => cmd("start")}>▶ Start {sel.length > 1 ? "playlist" : GAME_CATALOG[sel[0]].name}</button>
                 {!canStart && <span className="font-bold text-[var(--sun)]">Need at least {needed} players to start.</span>}
