@@ -66,6 +66,9 @@ export default function HeroIntro() {
         <Button href="/teachers" variant="secondary">
           Teacher Apps
         </Button>
+        <Button href="/arcade" variant="secondary">
+          Arcade
+        </Button>
         <Link
           href="/research/kora-model"
           className="group inline-flex items-center gap-1.5 px-2 py-3 text-sm font-medium text-navy-700/70 transition-colors hover:text-teal-700"

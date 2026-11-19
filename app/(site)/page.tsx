@@ -248,6 +248,9 @@ export default function Home() {
               <Button href="/teachers" variant="secondary">
                 Teacher Apps
               </Button>
+              <Button href="/arcade" variant="secondary">
+                Arcade
+              </Button>
             </div>
           </div>
         </FadeIn>
