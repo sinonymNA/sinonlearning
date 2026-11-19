@@ -149,3 +149,19 @@ input[type="range"] {
     break-after: page;
   }
 }
+
+/* Arcade button: a rainbow "snake" that circles the outline */
+@property --snake-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.rainbow-snake {
+  position: relative; display: inline-flex; border-radius: 9999px; padding: 2.5px; isolation: isolate;
+  background:
+    conic-gradient(from var(--snake-a), transparent 0deg 150deg, #ff4d6d 190deg, #ff9f1c 220deg, #ffe66d 250deg, #2ec4b6 285deg, #3a86ff 315deg, #8338ec 340deg, #ff4d6d 360deg),
+    rgba(13, 27, 46, 0.12);
+  animation: snake-spin 2.6s linear infinite;
+  transition: transform .2s, box-shadow .2s;
+}
+.rainbow-snake::after { content: ""; position: absolute; inset: -5px; border-radius: inherit; z-index: -1; background: inherit; filter: blur(9px); opacity: .45; }
+.rainbow-snake:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(131, 56, 236, 0.18); }
+.rainbow-snake > span { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border-radius: 9999px; background: #fff; color: #0d1b2e; padding: .75rem 1.5rem; font-weight: 500; white-space: nowrap; }
+@keyframes snake-spin { to { --snake-a: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .rainbow-snake { animation: none; } }

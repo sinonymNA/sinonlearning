@@ -5,6 +5,7 @@ import {
   GraduationCap,
   Microscope,
 } from "lucide-react";
+import ArcadeButton from "@/components/ArcadeButton";
 import Button from "@/components/Button";
 import SectionHeader from "@/components/SectionHeader";
 import HeroIntro from "@/components/HeroIntro";
@@ -248,9 +249,7 @@ export default function Home() {
               <Button href="/teachers" variant="secondary">
                 Teacher Apps
               </Button>
-              <Button href="/arcade" variant="secondary">
-                Arcade
-              </Button>
+              <ArcadeButton />
             </div>
           </div>
         </FadeIn>
