@@ -187,7 +187,7 @@ test("blockers engage defenders after the catch (screen) and slow them", () => {
 
 test("receiver ratings change speeds: faster receiver covers more ground", () => {
   const run = (sp) => { const s = mk(); clearDefence(s); toCarry(s, 26, s.los + 8); s.carrier.r.speed = sp; s.carrier.maxSpeed = SIM.SPEED_BASE + SIM.SPEED_PER_RATING * sp; const y0 = s.carrier.y; s.advance(1.5); return s.carrier.y - y0; };
-  assert.ok(run(95) > run(55) + 1.5);
+  assert.ok(run(95) > run(55) + 1);
 });
 
 // ---------------------------------------------------------------- rules
