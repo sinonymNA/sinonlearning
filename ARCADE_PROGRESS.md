@@ -95,3 +95,6 @@ User: still "doesn't feel like a good football game", asked for a Retro-Bowl-sty
 
 ## Round: Gridiron drag/swipe controls + any-size layout
 User feedback: much better; wanted Retro-Bowl-style drag/swipe strafing, a visible running back, and portrait/any resolution. Added tap-to-throw on the field, drag steering (up boost / down brake), flick-to-juke, a PASS/RUN toggle with an RB label, and a canvas whose logical height follows the container. Browser-verified: 11/11 tap throws, drag steering, boost via drag, flick juke, nine viewport sizes without overflow. 228 engine tests.
+
+## Round: Gridiron drag-and-place passing
+User: wanted to drag and place the ball instead of pressing receiver buttons. `PlaySim.throwAt(x,y)` (aim assist, free throws, nearest-receiver catch), reticle + arc UI, tap still throws to a receiver. Browser-verified (assist 4/5, free throws 5/5, no errors). 232 engine tests.

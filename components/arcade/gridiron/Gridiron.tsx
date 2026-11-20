@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, PlaySim, PLAYBOOK, SIM, FIELD, OPPONENT, TEAMS } from "../../../arcade-server/gridiron/index.mjs";
 import { PrefsProvider, PrefsButtons, sfx } from "../prefs";
-import { CW, CH, VIEW, VW, PPY, setViewHeight, LABEL_COLORS, drawField, drawPlayer, drawBall, drawRing, drawRoutes, drawLanding, drawEdgeMarkers, drawParticles, stepParticles, type Cam, type Particle } from "./render";
+import { CW, CH, VIEW, VW, PPY, setViewHeight, LABEL_COLORS, drawField, drawPlayer, drawBall, drawRing, drawRoutes, drawLanding, drawEdgeMarkers, drawAim, drawParticles, stepParticles, type Cam, type Particle } from "./render";
 import "./gridiron.css";
 
 type Screen = "menu" | "plays" | "fourth" | "presnap" | "live" | "fg" | "cpu" | "final";
@@ -49,7 +49,7 @@ function GridironInner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLElement>(null);
   const R = useRef<any>({
-    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, input: { l: false, r: false, pl: false, pr: false, pu: false, pd: false, bp: false, ax: 0, py: 0 },
+    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, aim: null as null | { x: number; y: number }, input: { l: false, r: false, pl: false, pr: false, pu: false, pd: false, bp: false, ax: 0, py: 0 },
     trail: [] as { x: number; y: number }[], sepShown: [3, 3, 3, 3], sepAt: -9, bannerTimer: 0, fg: { pos: 0, locked: false, t0: 0 }, fgTimer: 0, mode: "quick", diff: "normal", after: null as null | (() => void), heldScore: null as any,
   });
   const [screen, setScreenState] = useState<Screen>("menu");
@@ -291,6 +291,7 @@ function GridironInner() {
         if (sim.phase === "dead" && res && res.incomplete && sim.target && r.deadAt) { const tt = (ts - r.deadAt) / 1000; ball = { x: sim.target.x + tt * 1.2, y: sim.target.y - tt * 0.6, z: Math.abs(Math.sin(tt * 8.5)) * 2.6 * Math.exp(-tt * 2.4) }; }
         if (sim.phase === "flight") { r.trail.push({ x: snapS.ball.x, y: snapS.ball.y }); if (r.trail.length > 7) r.trail.shift(); } else r.trail.length = 0;
         drawBall(ctx, ball, cam, sim.phase === "flight" ? r.trail : undefined);
+        if (r.aim && sim.phase === "pocket") drawAim(ctx, sim.qb, r.aim, cam, r.tick);
         drawParticles(ctx, r.parts, cam);
         if (!r.preview && ["pocket", "windup", "presnap"].includes(sim.phase)) drawEdgeMarkers(ctx, sim.wr, cam);
         ctx.restore();
@@ -324,15 +325,17 @@ function GridironInner() {
   const stageDown = (e: React.PointerEvent) => {
     const r = R.current, sim = r.sim; if (r.screen !== "live" || r.paused || !sim || (e.target as HTMLElement).closest("button")) return;
     if (sim.phase === "pocket" && !sim.isRun) {
-      const w = toWorld(e); let best = -1, bd = 5.5;
-      sim.wr.forEach((rc: any, i: number) => { const d = Math.hypot(rc.x - w.x, (rc.y - w.y) * 0.8); if (d < bd) { bd = d; best = i; } });
-      if (best >= 0) doThrow(best);
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      const w = toWorld(e); r.aim = { x: w.x, y: w.y }; aimRef.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, moved: false };
     } else if (sim.phase === "carry") {
       (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
       dragRef.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, hist: [{ x: e.clientX, t: performance.now() }] };
     }
   };
+  const aimRef = useRef<{ id: number; x0: number; y0: number; moved: boolean } | null>(null);
   const stageMove = (e: React.PointerEvent) => {
+    const am = aimRef.current;
+    if (am && am.id === e.pointerId) { const w = toWorld(e); R.current.aim = { x: w.x, y: w.y }; if (Math.hypot(e.clientX - am.x0, e.clientY - am.y0) > 14) am.moved = true; return; }
     const d = dragRef.current, r = R.current; if (!d || d.id !== e.pointerId || !r.sim || r.sim.phase !== "carry") return;
     const w = (e.currentTarget as HTMLElement).getBoundingClientRect().width, unit = Math.max(36, w * 0.09), now = performance.now();
     d.hist.push({ x: e.clientX, t: now }); while (d.hist.length > 2 && now - d.hist[0].t > 140) d.hist.shift();
@@ -342,7 +345,19 @@ function GridironInner() {
     r.input.ax = Math.abs(dx) < 0.12 ? 0 : clamp(dx, -1, 1);
     r.input.py = dy < -0.7 ? 1 : dy > 0.7 ? -1 : 0;
   };
-  const stageUp = (e: React.PointerEvent) => { const d = dragRef.current; if (d && d.id === e.pointerId) { dragRef.current = null; R.current.input.ax = 0; R.current.input.py = 0; } };
+  const stageUp = (e: React.PointerEvent) => {
+    const am = aimRef.current;
+    if (am && am.id === e.pointerId) {
+      aimRef.current = null; const r = R.current, aim = r.aim; r.aim = null;
+      if (r.screen === "live" && !r.paused && r.sim?.phase === "pocket" && aim) {
+        if (am.moved) r.sim.throwAt(aim.x, aim.y);
+        else { // a quick tap throws to the nearest receiver
+          let best = -1, bd = 5.5; r.sim.wr.forEach((rc: any, i: number) => { const d = Math.hypot(rc.x - aim.x, (rc.y - aim.y) * 0.8); if (d < bd) { bd = d; best = i; } });
+          if (best >= 0) doThrow(best);
+        }
+      }
+      return;
+    } const d = dragRef.current; if (d && d.id === e.pointerId) { dragRef.current = null; R.current.input.ax = 0; R.current.input.py = 0; } };
 
   const padProps = (side: "pl" | "pr") => ({
     onPointerDown: (e: React.PointerEvent) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); R.current.input[side] = true; },
@@ -487,7 +502,7 @@ function GridironInner() {
             ))}
           </div>
           )}
-          <small className="gr-hint">{hud?.carrying ? "JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "TAP A RECEIVER" : "PICK A TARGET"}<span className="kb"><br />{hud?.carrying ? "or press Space" : "A B C D · 1–4"}</span></small>
+          <small className="gr-hint">{hud?.carrying ? "JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "DRAG THE BALL WHERE YOU WANT IT" : "PICK A TARGET"}<span className="kb"><br />{hud?.carrying ? "or press Space" : "or tap A B C D · 1–4"}</span></small>
         </aside>
       </main>
     </div>

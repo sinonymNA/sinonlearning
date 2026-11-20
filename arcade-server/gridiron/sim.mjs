@@ -142,13 +142,34 @@ export class PlaySim {
   /** Quarterback throws to receiver idx 0..3 (A..D). Returns false if throwing is not possible now. */
   throwTo(idx) {
     if (this.phase !== "pocket" || this.isRun || idx < 0 || idx > 3) return false;
-    const w = this.wr[idx];
-    this.phase = "windup"; this.windT = SIM.RELEASE_DELAY; this.thrownTo = idx; this.throwT = this.t;
-    const qb = this.qb;
-    const speed = SIM.BALL_SPEED_BASE + SIM.BALL_SPEED_PER_ARM * qb.r.arm + 0.04 * qb.r.throwSpeed;
+    const w = this.wr[idx], qb = this.qb, speed = this._ballSpeed();
     // solve for the interception point: a ball launched after RELEASE_DELAY must meet the receiver's projected position
     let T = 0.6, p = this.projectReceiver(w, T + SIM.RELEASE_DELAY);
     for (let i = 0; i < 8; i++) { p = this.projectReceiver(w, T + SIM.RELEASE_DELAY); T = Math.hypot(p.x - qb.x, p.y - qb.y) / speed; }
+    return this._launch(p, idx, T, speed);
+  }
+
+  /**
+   * Drag-and-place: throw to an exact spot on the field. If the spot is close to where a receiver will be when the ball
+   * lands, the throw snaps to him (aim assist); otherwise the ball goes exactly where it was placed, and whoever is
+   * there (or nobody) gets it.
+   */
+  throwAt(px, py) {
+    if (this.phase !== "pocket" || this.isRun) return false;
+    const qb = this.qb, speed = this._ballSpeed();
+    const x = clamp(px, 0.8, FIELD.W - 0.8), y = clamp(py, qb.y + 1.5, FIELD.LEN - 1.5);
+    const T0 = Math.hypot(x - qb.x, y - qb.y) / speed;
+    let best = -1, bd = SIM.AIM_ASSIST;
+    this.wr.forEach((w, i) => { const pr = this.projectReceiver(w, T0 + SIM.RELEASE_DELAY); const d = Math.hypot(pr.x - x, pr.y - y); if (d < bd) { bd = d; best = i; } });
+    if (best >= 0) return this.throwTo(best);
+    return this._launch({ x, y }, null, T0, speed);
+  }
+
+  _ballSpeed() { const q = this.qb; return SIM.BALL_SPEED_BASE + SIM.BALL_SPEED_PER_ARM * q.r.arm + 0.04 * q.r.throwSpeed; }
+
+  _launch(p, idx, T, speed) {
+    const qb = this.qb;
+    this.phase = "windup"; this.windT = SIM.RELEASE_DELAY; this.thrownTo = idx; this.throwT = this.t;
     // accuracy: ratings, pressure, a rushed/off-balance throw and flight time all grow the miss radius
     let pressured = false;
     for (const e of this.defenders) if ((e.state === "RUSH") && dist(e, qb) < SIM.PRESSURE_RADIUS) pressured = true;
@@ -159,7 +180,7 @@ export class PlaySim {
     const ex = this.rng.normal() * sigma, ey = this.rng.normal() * sigma;
     this.target = { x: p.x + ex, y: p.y + ey, ideal: p, sigma, pressured };
     this.flight = { t0: 0, dur: Math.max(0.25, T), from: { x: qb.x, y: qb.y }, speed, arc: clamp(Math.hypot(p.x - qb.x, p.y - qb.y) * 0.11, 0.6, 4.5) };
-    this.ev("throw", { idx, dur: this.flight.dur });
+    this.ev("throw", { idx, dur: this.flight.dur, free: idx == null });
     return true;
   }
 
@@ -294,10 +315,11 @@ export class PlaySim {
     const t = this.target; if (!t) return;
     // only men with a realistic chance dive for the ball; everyone else pursues the receiver
     const d = Math.hypot(e.x - t.x, e.y - t.y);
-    const w = this.wr[this.thrownTo];
+    const w = this.thrownTo != null ? this.wr[this.thrownTo] : null;
     if (e.role === "DL" && this.t > e.breakAt) move(e, t.x, t.y, 0.8 * slow, dt);
     else if (d < 12 || e.cover === this.thrownTo) move(e, t.x, t.y, 1 * slow, dt);
-    else move(e, w.x, w.y, 0.95 * slow, dt);
+    else if (w) move(e, w.x, w.y, 0.95 * slow, dt);
+    else move(e, t.x, t.y, 0.95 * slow, dt);
   }
 
   _pursue(e, dt, slow) {
@@ -355,7 +377,9 @@ export class PlaySim {
    * actually on top of the throw (the closer he is, the bigger the chance of a break-up, a drop or a pick).
    */
   _arrive() {
-    const t = this.target, w = this.wr[this.thrownTo];
+    const t = this.target;
+    let w = this.thrownTo != null ? this.wr[this.thrownTo] : null;
+    if (!w) { let bd = 99; for (const r of this.wr) { const d = dist(r, t); if (d < bd) { bd = d; w = r; } } }
     const land = { x: t.x, y: t.y };
     const out = land.x < 0.2 || land.x > FIELD.W - 0.2 || land.y > FIELD.LEN - 0.2;
     const rd = dist(w, land);
@@ -393,7 +417,7 @@ export class PlaySim {
   _caught(w, land) {
     this.phase = "carry"; this.carrier = w; this.catchY = land.y; this.catchX = land.x;
     w.x = land.x; w.y = land.y;
-    this.ev("catch", { idx: w.idx, y: land.y });
+    this.thrownTo = w.idx; this.ev("catch", { idx: w.idx, y: land.y });
     for (const e of this.defenders) e.state = "PURSUE";
   }
 

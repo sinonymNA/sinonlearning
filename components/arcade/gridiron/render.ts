@@ -206,6 +206,16 @@ export function drawEdgeMarkers(ctx: CanvasRenderingContext2D, wr: { x: number; 
   }
 }
 
+/** Drag-to-throw aiming: an arcing guide from the QB and a reticle where the ball will be placed. */
+export function drawAim(ctx: CanvasRenderingContext2D, qb: { x: number; y: number }, aim: { x: number; y: number }, cam: Cam, tick: number) {
+  const ax = sx(cam, aim.x), ay = sy(cam, aim.y), qx = sx(cam, qb.x), qy = sy(cam, qb.y) - 18, d = Math.hypot(ax - qx, ay - qy);
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  for (let i = 0; i <= 26; i++) { const t = i / 26; if (i % 2) continue; dot(ctx, qx + (ax - qx) * t - 1, qy + (ay - qy) * t - Math.sin(Math.PI * t) * d * 0.22 - 1, 3, 3); }
+  const r = 11 + ((tick >> 3) % 2) * 2; ctx.fillStyle = "#ffd23f";
+  for (let a = 0; a < 20; a++) { const t = (a / 20) * Math.PI * 2; dot(ctx, ax + Math.cos(t) * r - 1, ay + Math.sin(t) * r * 0.6 - 1, 3, 3); }
+  ctx.fillStyle = "#fff"; ctx.fillRect(ax - 1, ay - 5, 3, 11); ctx.fillRect(ax - 6, ay - 1, 13, 3);
+}
+
 // ---- particles ---------------------------------------------------------------------------------------------------
 export type Particle = { x: number; y: number; z: number; vx: number; vy: number; vz: number; life: number; max: number; c: string; s: number; g: number };
 export function stepParticles(ps: Particle[], dt: number) {

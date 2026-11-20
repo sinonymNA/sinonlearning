@@ -379,3 +379,23 @@ test("juke can be aimed (swipe direction overrides steering)", () => {
 test("the running back is labelled RB on run plays and not on pass plays", () => {
   assert.equal(mk("dive").rb.label, "RB"); assert.equal(mk("slants").rb.label, null);
 });
+
+// ---------------------------------------------------------------- drag-and-place throws
+test("throwAt: dropping the ball near where a receiver will be snaps to him (aim assist)", () => {
+  const s = mk("curls"); s.advance(1.4); const w = s.wr[1]; const pr = s.projectReceiver(w, 0.8);
+  assert.equal(s.throwAt(pr.x + 1, pr.y - 1), true); assert.equal(s.thrownTo, 1);
+});
+test("throwAt: a spot with no receiver is a free throw (nobody targeted) and can fall incomplete", () => {
+  const s = mk("curls"); s.advance(1.0); assert.equal(s.throwAt(5, s.los + 30), true); assert.equal(s.thrownTo, null);
+  let g = 0; while (s.phase !== "dead" && g++ < 800) s.step(SIM.DT);
+  assert.equal(s.result.incomplete || s.result.interception, true);
+});
+test("throwAt: a free throw lands where it was aimed (error stays bounded) and a receiver standing there catches it", () => {
+  const s = mk("curls", { seed: 21 }); s.advance(1.0); const x = 26, y = s.los + 14;
+  for (const d of s.defenders) { d.x = 2; d.y = 110; } const w = s.wr[1]; w.x = x + 0.4; w.y = y; w.wp = w.path.length;
+  s.throwAt(x, y); s.wr.forEach((r, i) => { if (i !== 1) { r.x = 3; r.y = s.los + 2; } });
+  assert.equal(s.thrownTo, 1, "close enough to snap"); assert.ok(Math.hypot(s.target.x - x, s.target.y - y) < 4);
+});
+test("throwAt can't be used on a run play or before the snap", () => {
+  assert.equal(mk("dive").throwAt(26, 50), false); assert.equal(new PlaySim({ play: "curls", los: 40, seed: 1 }).throwAt(26, 50), false);
+});
