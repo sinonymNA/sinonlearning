@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BOARD, CAT_IDS, CATEGORIES, JUNCTIONS } from "../dacula/traced.mjs";
+import { BOARD, CAT_IDS, CATEGORIES, JUNCTIONS } from "../dacula/board.mjs";
 import { buildGraph, shortestPath, reachable, stillConnected, edgeKey } from "../dacula/graph.mjs";
 
 const g = buildGraph(BOARD);
 
 test("board data: provenance is declared, six distinct categories, six distinct checkpoint landmarks, school is separate", () => {
-  assert.equal(BOARD.source.kind, "hand-traced"); assert.match(BOARD.source.replaceWith, /import/);
+  assert.ok(["hand-traced", "osm"].includes(BOARD.source.kind), "provenance kind is declared"); assert.ok(BOARD.source.attribution && BOARD.source.provenance, "attribution and provenance are present");
   assert.equal(CATEGORIES.length, 6); assert.equal(new Set(CAT_IDS).size, 6);
   assert.equal(BOARD.checkpoints.length, 6); assert.equal(new Set(BOARD.checkpoints.map((c) => c.cat)).size, 6); assert.equal(new Set(BOARD.checkpoints.map((c) => c.landmark)).size, 6);
   assert.ok(!BOARD.checkpoints.some((c) => c.landmark === "school"));

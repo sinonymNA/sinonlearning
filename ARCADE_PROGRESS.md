@@ -105,3 +105,5 @@ User: drag-and-place passing in Gridiron; make Abyss better with animations, mor
 ## Round: Abyss rarity + performance fixes
 User: themed button lags badly; "not niche" answers (Hulk) rated as the most niche. Rarity is now fame-aware (cross-bank caps, sequel/extension rule, alias-merge data fix; 244 tests), and the themed scenes were rebuilt around cached strips (draw calls per frame: sports 2,724 -> 31, TV 3,953 -> 369, movies 3,153 -> 567) with a 30 fps cap and pausing behind sheets. Not verified on a physical iPhone (measured by draw-call counts and 4x CPU throttle in headless Chrome).
 
+## Round: Dacula Dash
+Built a complete multiplayer trivia board game (see ARCADE_DACULA.md). Because every map service was unreachable, the playable board is a hand trace of the user's two Apple Maps screenshots (clearly labelled approximate), with a tested OSM importer ready to replace it. Engine, bots, simulations, 40+ tests (287 total passing), pixel client, browser verification at desktop and phone sizes.

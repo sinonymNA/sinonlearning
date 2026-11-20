@@ -1,0 +1,9 @@
+{ "_comment": "SYNTHETIC test fixture (not real Dacula data): two crossing roads that share a node, an overpass that does not, a school and a park. Used only to test the importer.",
+  "elements": [
+    { "type": "way", "id": 1, "tags": { "highway": "primary", "name": "Test Rd" }, "nodes": [10, 11, 12], "geometry": [{ "lat": 33.9800, "lon": -83.9000 }, { "lat": 33.9800, "lon": -83.8990 }, { "lat": 33.9800, "lon": -83.8980 }] },
+    { "type": "way", "id": 2, "tags": { "highway": "residential", "name": "Cross St" }, "nodes": [20, 11, 22], "geometry": [{ "lat": 33.9790, "lon": -83.8990 }, { "lat": 33.9800, "lon": -83.8990 }, { "lat": 33.9810, "lon": -83.8990 }] },
+    { "type": "way", "id": 3, "tags": { "highway": "tertiary", "name": "Overpass Ave", "bridge": "yes", "layer": "1" }, "nodes": [30, 31], "geometry": [{ "lat": 33.9795, "lon": -83.8995 }, { "lat": 33.9795, "lon": -83.8985 }] },
+    { "type": "way", "id": 4, "tags": { "highway": "footway" }, "nodes": [40, 41], "geometry": [{ "lat": 33.9805, "lon": -83.8995 }, { "lat": 33.9805, "lon": -83.8992 }] },
+    { "type": "way", "id": 5, "tags": { "amenity": "school", "name": "Dacula High School" }, "geometry": [{ "lat": 33.9801, "lon": -83.9001 }, { "lat": 33.9803, "lon": -83.9001 }, { "lat": 33.9803, "lon": -83.8999 }] },
+    { "type": "way", "id": 6, "tags": { "leisure": "park", "name": "Dacula Park" }, "geometry": [{ "lat": 33.9810, "lon": -83.8982 }, { "lat": 33.9812, "lon": -83.8982 }, { "lat": 33.9812, "lon": -83.8980 }] }
+  ] }

@@ -79,3 +79,12 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 - [x] Ocean polish: sea creatures, reaction bursts, speed lines.
 - [x] Browser-verified: a full themed dive and a daily dive on a phone viewport, no console errors.
 - [ ] Not verified: physical phones, human review of the new answer lists, rarity tuning from real play data.
+
+## Dacula Dash (turn-based trivia board game)
+- [x] Hand-traced Dacula board (from user reference screenshots) with explicit junction connectivity, 67 movement spaces, six checkpoints + school; all reachable both ways (tests).
+- [x] Server-authoritative turn engine: dice, route validation, wedges (one per category), final question, events (green light / shortcut / construction), catch-up, 75% home-stretch bell, 20-minute cap with defined ranking, idle/disconnect auto-play, host skip, boards of <=6.
+- [x] 182 original questions + validated CSV/JSON teacher import (module + tests).
+- [x] Pixel-art map client (pre-rendered map, cars, wedge pins, route preview, dice, question card, intro/finish overlays), integrated with rooms, bots, solo practice, catalog, chat phrases.
+- [x] Simulations (2/4/6 players x 3 accuracies), 40+ new tests, browser runs at desktop and phone size.
+- [x] OSM importer (retryable, provenance, GeoJSON) tested on a synthetic fixture; not run against real OSM (network refused).
+- [ ] Not done / unverified: real OSM geometry, verified school address, three requested landmarks (substituted), teacher upload UI, host minutes UI, physical-device and audio checks, a full human match in a browser. See ARCADE_DACULA.md.

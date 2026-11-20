@@ -1,6 +1,6 @@
 // Road graph for Dacula Dash. Builds movement SPACES from road polylines and answers reachability / shortest-path questions.
 // Pure functions, no I/O. Connectivity comes ONLY from shared junction ids (never from lines that merely cross).
-import { CAT_IDS } from "./traced.mjs";
+import { CAT_IDS } from "./board.mjs";
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
@@ -21,7 +21,7 @@ const hashStr = (s) => { let h = 2166136261; for (const c of s) { h ^= c.charCod
  * @param opts   { spacing: metres between movement spaces, snapMax: metres a landmark may be from its road }
  */
 export function buildGraph(board, opts = {}) {
-  const spacing = opts.spacing ?? 85, snapMax = opts.snapMax ?? 160;
+  const spacing = opts.spacing ?? board.meta?.spacing ?? 85, snapMax = opts.snapMax ?? board.meta?.snapMax ?? 160;
   const J = board.junctions;
   // 1. resolve each road into concrete vertices: { xy, jid? }
   const roads = board.roads.map((r) => ({ ...r, v: r.pts.map((p) => (typeof p === "string" ? { xy: J[p], jid: p } : { xy: p })) }));

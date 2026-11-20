@@ -1,5 +1,5 @@
 import { BaseGame } from "./base.mjs";
-import { BOARD, CATEGORIES, CAT_IDS } from "../dacula/traced.mjs";
+import { BOARD, CATEGORIES, CAT_IDS } from "../dacula/board.mjs";
 import { buildGraph, reachable, shortestPath, stillConnected } from "../dacula/graph.mjs";
 import { DACULA_QUESTIONS } from "../data/daculaQuestions.mjs";
 import { validateQuestion } from "../dacula/questionIO.mjs";

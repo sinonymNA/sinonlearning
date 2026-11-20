@@ -18,6 +18,7 @@ export const HOW_TO: Record<string, string[]> = {
   telephone: ["Draw your prompt. Then describe someone else's drawing. Then draw that description.", "You never get your own chain back.", "Watch the big reveal and vote for the funniest."],
   piggy_bank: ["Everyone answers the same question. Right answers fill your piggy bank - faster is more.", "Then pick a chest: SAFE for steady coins, SPICY to steal from a rival, WILD (unlocked by a right answer) for jackpots and heists.", "Shields block thieves. Nobody is ever knocked out - biggest piggy wins!"],
   puffer_party: ["A category appears, like \"Name a fruit\". The puffer sits on one player.", "Type something on the list before your turn timer runs out, then the puffer moves on. Repeats don't count!", "Run out of time and the puffer pops: you lose a life. Rarer answers score more. Last one standing wins."],
+  dacula_dash: ["Roll the die, then pick a route along the real roads of Dacula. Tap a glowing space or choose a destination.", "Land on a landmark to answer its colour question and win a wedge. Six landmarks, six wedges. You never need an exact roll to stop at one.", "Collect all six, race back to Dacula High School and answer the FINAL question to win. When the 20-minute bell rings, most wedges wins."],
   imposter: ["Everyone knows the secret word except ONE imposter.", "Take turns asking questions. Everyone answers at once, then answers are revealed.", "Vote out the imposter. If you ARE the imposter, guess the word at the end!"],
 };
 

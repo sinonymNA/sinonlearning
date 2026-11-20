@@ -1,6 +1,6 @@
 // Teacher question import for Dacula Dash: CSV or JSON -> validated questions. No HTML is ever stored or rendered: text is plain.
 // Columns (CSV header, case-insensitive): category, question, correct, wrong1, wrong2, wrong3, explanation, difficulty
-import { CAT_IDS } from "./traced.mjs";
+import { CAT_IDS } from "./board.mjs";
 
 export const LIMITS = { question: 220, answer: 80, explanation: 240, max: 600 };
 const ALIASES = {

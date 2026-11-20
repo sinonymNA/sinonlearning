@@ -109,3 +109,6 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Unit: `abyssThemes.test.mjs` fame-aware rarity tests; `abyss.test.mjs`/`pufferParty.test.mjs` use each prompt's deepest available tier.
 - Perf: `node scripts/abyss-draw-calls.mjs` (production build) prints canvas draw calls per frame for home, ocean and the five themed scenes.
 
+## 22. Dacula Dash
+- Unit: `daculaGraph` (connectivity from junction ids only, all checkpoints reachable both ways, movement bounds, early stop, construction safety), `daculaQuestions` (bank integrity, answer-not-in-question, CSV/JSON import, duplicates, sanitising), `daculaDash` (state machine, dice bounds, wedge rules, final, timeout ranking + ties, server authority, no answer leaks, idle/disconnect, boards of <=6, simulations), `daculaImporter` (projection, junction splitting, bridges, query).
+- Simulation: `node scripts/dacula-sim.mjs --games 30`. Browser: `node scripts/dacula-e2e.mjs --url http://localhost:3100 --size 1366x768 | 390x844`.

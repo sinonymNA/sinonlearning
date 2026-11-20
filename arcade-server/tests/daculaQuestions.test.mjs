@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { DACULA_QUESTIONS, questionsByCat } from "../data/daculaQuestions.mjs";
 import { importQuestions, parseCsv, validateQuestion, normCategory, coverage, clean } from "../dacula/questionIO.mjs";
-import { CAT_IDS } from "../dacula/traced.mjs";
+import { CAT_IDS } from "../dacula/board.mjs";
 
 test("bank: 25+ original questions in every category, four distinct answers each, unique ids and unique questions", () => {
   const by = questionsByCat();

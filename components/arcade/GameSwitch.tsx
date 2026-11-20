@@ -10,6 +10,7 @@ import Telephone from "./games/Telephone";
 import Imposter from "./games/Imposter";
 import PiggyBank from "./games/PiggyBank";
 import PufferParty from "./games/PufferParty";
+import DaculaDash from "./games/DaculaDash";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function GameSwitch(props: any) {
@@ -27,6 +28,7 @@ function Game(props: any) {
     case "imposter": return <Imposter {...props} />;
     case "piggy_bank": return <PiggyBank {...props} />;
     case "puffer_party": return <PufferParty {...props} />;
+    case "dacula_dash": return <DaculaDash {...props} />;
     default: return <div className="ar-panel">Loading game…</div>;
   }
 }
