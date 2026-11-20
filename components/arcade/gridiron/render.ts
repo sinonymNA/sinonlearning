@@ -5,9 +5,11 @@ import { FIELD, TEAMS, getPlay } from "../../../arcade-server/gridiron/index.mjs
 
 export const PPY = 6;            // logical pixels per yard
 export const VW = 46;            // yards visible across (wide receivers still fit)
-export const VIEW = 30;          // yards visible downfield: a tight, Retro-Bowl-style camera
-export const CW = VW * PPY;      // 276
-export const CH = VIEW * PPY;    // 180
+export const CW = VW * PPY;      // 276: the logical width is fixed, the logical HEIGHT follows the screen shape
+export let VIEW = 30;            // yards visible downfield (live binding: changes with the window shape)
+export let CH = VIEW * PPY;      // logical height in pixels
+/** Fit the camera to the container: a tall (portrait) screen simply sees more of the field. */
+export function setViewHeight(ch: number) { CH = Math.max(120, Math.round(ch)); VIEW = CH / PPY; }
 export const SPR = 2;            // sprite pixel scale
 export const LABEL_COLORS = ["#ffb020", "#34d399", "#f472b6", "#60a5fa"];
 export type Cam = { bottom: number; left: number };
@@ -143,11 +145,11 @@ export function drawPlayer(ctx: CanvasRenderingContext2D, p: Pl, cam: Cam, tick:
   if (p.stun) { ctx.fillStyle = "#ffd23f"; ctx.fillRect(-3 + ((tick >> 2) % 6), -13, 1, 1); ctx.fillRect(2 - ((tick >> 2) % 6), -12, 1, 1); }
   ctx.restore();
   if (o.label && p.label) {
-    const idx = "ABCD".indexOf(p.label), col = LABEL_COLORS[idx] || "#fff", by = Y - 44;
-    ctx.fillStyle = "#0b1020"; ctx.fillRect(X - 7, by - 2, 15, 18); ctx.fillStyle = col; ctx.fillRect(X - 6, by - 1, 13, 16);
-    glyphs(ctx, p.label, X - 3, by + 2, "#0b1020", 2);
+    const idx = "ABCD".indexOf(p.label), col = LABEL_COLORS[idx] || "#ffffff", by = Y - 44, hw = p.label.length > 1 ? 11 : 7;
+    ctx.fillStyle = "#0b1020"; ctx.fillRect(X - hw, by - 2, hw * 2 + 1, 18); ctx.fillStyle = col; ctx.fillRect(X - hw + 1, by - 1, hw * 2 - 1, 16);
+    glyphs(ctx, p.label, Math.round(X - (p.label.length * 8 - 2) / 2), by + 2, "#0b1020", 2);
     ctx.fillStyle = col; ctx.fillRect(X - 1, by + 16, 3, 3);
-    if (o.selected) { ctx.fillStyle = "#fff"; ctx.fillRect(X - 10, by - 5, 21, 2); ctx.fillRect(X - 10, by + 19, 21, 2); }
+    if (o.selected) { ctx.fillStyle = "#fff"; ctx.fillRect(X - hw - 3, by - 5, hw * 2 + 7, 2); ctx.fillRect(X - hw - 3, by + 19, hw * 2 + 7, 2); }
   }
 }
 

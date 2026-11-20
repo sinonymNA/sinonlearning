@@ -372,3 +372,10 @@ test("run plays are counted as rushes, not passes", () => {
   const g = new Game({ seed: 3 }); g.finishPlay({ kind: "tackle", endY: g.losY + 5, elapsed: 4, caught: true, run: true });
   assert.equal(g.stats.rushes, 1); assert.equal(g.stats.passes, 0); assert.match(g.lastPlay.text, /^Run for 5/);
 });
+
+test("juke can be aimed (swipe direction overrides steering)", () => {
+  const s = mk(); clearDefence(s); toCarry(s, 26, s.los + 6); s.setLateral(1); assert.equal(s.juke(-1), true); assert.ok(s.carrier.vx < -6);
+});
+test("the running back is labelled RB on run plays and not on pass plays", () => {
+  assert.equal(mk("dive").rb.label, "RB"); assert.equal(mk("slants").rb.label, null);
+});

@@ -65,7 +65,7 @@ export class PlaySim {
     const qbR = Object.fromEntries(Object.entries(OFFENSE.qb).map(([k, v]) => [k, typeof v === "number" ? clamp(v + d, 20, 99) : v]));
     this.qb = this._mk("QB", "o", "QB", cx, this.play.kind === "run" ? los - 3 : los - 5, { ...qbR, speed: 55, accel: 60 });
     const rbR = { speed: clamp(84 + d, 20, 99), accel: clamp(82 + d, 20, 99), catching: 70, route: 70, agility: clamp(84 + d, 20, 99), blocking: 60 };
-    this.rb = this._mk("RB", "o", "RB", cx + (this.play.rbX ?? 3), this.play.kind === "run" ? los - 6 : los - 5, rbR, { label: null });
+    this.rb = this._mk("RB", "o", "RB", cx + (this.play.rbX ?? 3), this.play.kind === "run" ? los - 6 : los - 5, rbR, { label: this.play.kind === "run" ? "RB" : null });
     this.wr = this.play.receivers.map((rt, i) => {
       const r = this._rate(OFFENSE.wr[i], 0);
       for (const k of ["speed", "accel", "catching", "route", "agility", "blocking"]) r[k] = clamp(r[k] + d, 20, 99);
@@ -116,9 +116,9 @@ export class PlaySim {
   snap() { if (this.phase !== "presnap") return; this.phase = "pocket"; this.ev("snap"); for (const e of this.defenders) e.state = e.role === "DL" ? "BLOCKED" : (this.coverage === "zone" && e.role !== "LB" ? "COVER_ZONE" : e.role === "DB" && e.cover >= 0 ? "COVER_MAN" : "COVER_ZONE"); if (this.lb[1].blitz) this.lb[1].state = "BLOCKED"; }
   setPush(v) { this.input.push = clamp(v || 0, -1, 1); }
   /** Juke / spin: a burst sideways that makes close tacklers whiff for a moment. */
-  juke() {
+  juke(dirOverride = 0) {
     if (this.phase !== "carry" || !this.carrier || this.t < this.jukeCool) return false;
-    const c = this.carrier; let dir = this.input.lateral;
+    const c = this.carrier; let dir = dirOverride || this.input.lateral;
     if (!dir) { let n = null, nd = 99; for (const e of this.defenders) { const d = dist(e, c); if (e.y > c.y - 1 && d < nd) { nd = d; n = e; } } dir = n ? (n.x > c.x ? -1 : 1) : (c.x < FIELD.CX ? 1 : -1); }
     c.vx = dir * 8.5; this.jukeUntil = this.t + 0.38; this.jukeCool = this.t + 1.15; this.ev("juke", { dir });
     return true;

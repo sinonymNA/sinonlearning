@@ -92,3 +92,6 @@ User feedback: "not really playable or fun, drops the ball too much". Changes: s
 
 ## Round: Gridiron run game + juke/boost
 User: still "doesn't feel like a good football game", asked for a Retro-Bowl-style remake. Not copying any commercial files/art (not available, and copyrighted); instead added the missing arcade mechanics as original work: handoff run plays with a RB, free-feel carrying (steer, boost with stamina, brake) and a juke with a tackle-whiff window. Runs average ~2.9 yd unsteered. 226 engine tests; browser run verified a handoff, jukes and boost with no console errors. Still needs human playtesting.
+
+## Round: Gridiron drag/swipe controls + any-size layout
+User feedback: much better; wanted Retro-Bowl-style drag/swipe strafing, a visible running back, and portrait/any resolution. Added tap-to-throw on the field, drag steering (up boost / down brake), flick-to-juke, a PASS/RUN toggle with an RB label, and a canvas whose logical height follows the container. Browser-verified: 11/11 tap throws, drag steering, boost via drag, flick juke, nine viewport sizes without overflow. 228 engine tests.

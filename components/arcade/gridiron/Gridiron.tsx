@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Game, PlaySim, PLAYBOOK, SIM, FIELD, OPPONENT, TEAMS } from "../../../arcade-server/gridiron/index.mjs";
 import { PrefsProvider, PrefsButtons, sfx } from "../prefs";
-import { CW, CH, VIEW, VW, LABEL_COLORS, drawField, drawPlayer, drawBall, drawRing, drawRoutes, drawLanding, drawEdgeMarkers, drawParticles, stepParticles, type Cam, type Particle } from "./render";
+import { CW, CH, VIEW, VW, PPY, setViewHeight, LABEL_COLORS, drawField, drawPlayer, drawBall, drawRing, drawRoutes, drawLanding, drawEdgeMarkers, drawParticles, stepParticles, type Cam, type Particle } from "./render";
 import "./gridiron.css";
 
 type Screen = "menu" | "plays" | "fourth" | "presnap" | "live" | "fg" | "cpu" | "final";
@@ -47,8 +47,9 @@ function PlayDiagram({ id }: { id: string }) {
 
 function GridironInner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const R = useRef<any>({
-    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, input: { l: false, r: false, pl: false, pr: false, pu: false, pd: false, bp: false },
+    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, input: { l: false, r: false, pl: false, pr: false, pu: false, pd: false, bp: false, ax: 0, py: 0 },
     trail: [] as { x: number; y: number }[], sepShown: [3, 3, 3, 3], sepAt: -9, bannerTimer: 0, fg: { pos: 0, locked: false, t0: 0 }, fgTimer: 0, mode: "quick", diff: "normal", after: null as null | (() => void), heldScore: null as any,
   });
   const [screen, setScreenState] = useState<Screen>("menu");
@@ -131,6 +132,15 @@ function GridironInner() {
   const audible = useCallback(() => {
     const r = R.current; if (r.screen !== "presnap" || !r.suggest.length) return;
     r.sIdx = (r.sIdx + 1) % r.suggest.length; choosePlay(r.suggest[r.sIdx]); sfx("pop");
+  }, [choosePlay]);
+
+  /** Pick a run (handoff to the RB) or a pass for this snap. */
+  const callType = useCallback((type: "run" | "pass") => {
+    const r = R.current; if (r.screen !== "presnap") return;
+    const cur = r.sim?.play?.id; let id: string;
+    if (type === "run") id = cur === "dive" ? "sweep" : "dive";
+    else id = r.suggest.find((x: string) => x !== "dive" && x !== "sweep") ?? "curls";
+    choosePlay(id); sfx("pop");
   }, [choosePlay]);
 
   const snap = useCallback(() => {
@@ -238,8 +248,8 @@ function GridironInner() {
       else if (sim && g && r.screen === "live" && !r.paused && !r.after) {
         if (sim.phase !== "dead") {
           if (!frozen) r.acc += dt * SIM.GAME_SPEED; let n = 0;
-          const lat = (r.input.l ? -1 : 0) + (r.input.r ? 1 : 0) + (r.input.pl ? -1 : 0) + (r.input.pr ? 1 : 0);
-          while (!frozen && r.acc >= SIM.DT && n < 5 && sim.phase !== "dead") { sim.setLateral(clamp(lat, -1, 1)); sim.setPush((r.input.pu || r.input.bp ? 1 : 0) - (r.input.pd ? 1 : 0)); sim.step(SIM.DT); r.acc -= SIM.DT; n++; }
+          const lat = (r.input.l ? -1 : 0) + (r.input.r ? 1 : 0) + (r.input.pl ? -1 : 0) + (r.input.pr ? 1 : 0) + r.input.ax;
+          while (!frozen && r.acc >= SIM.DT && n < 5 && sim.phase !== "dead") { sim.setLateral(clamp(lat, -1, 1)); sim.setPush(clamp((r.input.pu || r.input.bp ? 1 : 0) - (r.input.pd ? 1 : 0) + r.input.py, -1, 1)); sim.step(SIM.DT); r.acc -= SIM.DT; n++; }
           for (const e of sim.drainEvents()) {
             juice(e, sim, ts);
             if (e.type === "throw" || e.type === "juke") sfx("whoosh"); else if (e.type === "handoff") sfx("pop"); else if (e.type === "catch") sfx("good"); else if (e.type === "tackle") sfx("boom"); else if (e.type === "int" || e.type === "sack") sfx("bad");
@@ -259,9 +269,9 @@ function GridironInner() {
         const cam: Cam = r.cam, los = sim.los; let tb = cam.bottom, tl = cam.left;
         if (["presnap", "pocket", "windup"].includes(sim.phase)) {
           let top = los; for (const w of sim.wr) top = Math.max(top, w.y);
-          tb = Math.min(Math.max(los - 9, top - (VIEW - 6)), sim.qb.y - 3); tl = FIELD.CX - VW / 2;
-        } else if (sim.phase === "flight") { const bp = sim.ballPos(); tb = Math.min(Math.max(los - 9, bp.y - 20), sim.qb.y - 3 + (bp.y - los) * 0.5); tl = FIELD.CX - VW / 2 + (bp.x - FIELD.CX) * 0.3; }
-        else if (sim.phase === "carry" && sim.carrier) { tb = sim.carrier.y - 9; tl = sim.carrier.x - VW / 2; }
+          tb = Math.min(Math.max(los - VIEW * 0.3, top - (VIEW - 6)), sim.qb.y - 3); tl = FIELD.CX - VW / 2;
+        } else if (sim.phase === "flight") { const bp = sim.ballPos(); tb = Math.min(Math.max(los - VIEW * 0.3, bp.y - VIEW * 0.65), sim.qb.y - 3 + (bp.y - los) * 0.5); tl = FIELD.CX - VW / 2 + (bp.x - FIELD.CX) * 0.3; }
+        else if (sim.phase === "carry" && sim.carrier) { tb = sim.carrier.y - VIEW * 0.3; tl = sim.carrier.x - VW / 2; }
         tb = clamp(tb, -3, FIELD.LEN + 3 - VIEW); tl = clamp(tl, -3, FIELD.W + 3 - VW);
         if (r.camSnap) { cam.bottom = tb; cam.left = tl; r.camSnap = false; } else { const k = 1 - Math.exp(-6 * dt); cam.bottom += (tb - cam.bottom) * k; cam.left += (tl - cam.left) * k; }
         const snapS = sim.snapshot();
@@ -291,13 +301,49 @@ function GridironInner() {
     return () => cancelAnimationFrame(raf);
   }, [finishPlay, pushHud]);
 
-  // touch steering: hold the left/right half of the field while carrying the ball
-  const stagePtr = (e: React.PointerEvent, on: boolean) => {
-    const r = R.current; if (r.screen !== "live" || r.sim?.phase !== "carry") return;
-    if (!on) { r.input.pl = r.input.pr = false; return; }
-    const b = (e.currentTarget as HTMLElement).getBoundingClientRect(); const left = e.clientX < b.left + b.width / 2;
-    r.input.pl = left; r.input.pr = !left;
+  // (old half-field touch steering replaced by drag/swipe controls below)
+  // ---- fit the game to any screen shape: the logical width is fixed, the logical height follows the container ----
+  useEffect(() => {
+    const el = stageRef.current, cv = canvasRef.current; if (!el || !cv) return;
+    const fit = () => {
+      const b = el.getBoundingClientRect(); if (b.width < 10 || b.height < 10) return;
+      const ch = clamp(Math.round((CW * b.height) / b.width), 140, 460);
+      if (ch !== CH || cv.height !== ch) { setViewHeight(ch); cv.height = ch; R.current.camSnap = true; }
+    };
+    fit(); const ro = new ResizeObserver(fit); ro.observe(el); window.addEventListener("orientationchange", fit);
+    return () => { ro.disconnect(); window.removeEventListener("orientationchange", fit); };
+  }, []);
+
+  // ---- touch / mouse: tap a receiver to throw; drag to steer the runner (up = boost, down = brake); flick sideways to juke ----
+  const dragRef = useRef<{ id: number; x0: number; y0: number; hist: { x: number; t: number }[] } | null>(null);
+  const toWorld = (e: React.PointerEvent) => {
+    const r = R.current, box = (e.currentTarget as HTMLElement).getBoundingClientRect(); const sc = Math.min(box.width / CW, box.height / CH);
+    const lx = (e.clientX - box.left - (box.width - CW * sc) / 2) / sc, ly = (e.clientY - box.top - (box.height - CH * sc) / 2) / sc;
+    return { x: lx / PPY + r.cam.left, y: r.cam.bottom + VIEW - ly / PPY, box };
   };
+  const stageDown = (e: React.PointerEvent) => {
+    const r = R.current, sim = r.sim; if (r.screen !== "live" || r.paused || !sim || (e.target as HTMLElement).closest("button")) return;
+    if (sim.phase === "pocket" && !sim.isRun) {
+      const w = toWorld(e); let best = -1, bd = 5.5;
+      sim.wr.forEach((rc: any, i: number) => { const d = Math.hypot(rc.x - w.x, (rc.y - w.y) * 0.8); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) doThrow(best);
+    } else if (sim.phase === "carry") {
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      dragRef.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, hist: [{ x: e.clientX, t: performance.now() }] };
+    }
+  };
+  const stageMove = (e: React.PointerEvent) => {
+    const d = dragRef.current, r = R.current; if (!d || d.id !== e.pointerId || !r.sim || r.sim.phase !== "carry") return;
+    const w = (e.currentTarget as HTMLElement).getBoundingClientRect().width, unit = Math.max(36, w * 0.09), now = performance.now();
+    d.hist.push({ x: e.clientX, t: now }); while (d.hist.length > 2 && now - d.hist[0].t > 140) d.hist.shift();
+    const flick = e.clientX - d.hist[0].x;
+    if (Math.abs(flick) > w * 0.085 && now - d.hist[0].t < 140 && r.sim.juke(Math.sign(flick))) { d.x0 = e.clientX; d.hist = [{ x: e.clientX, t: now }]; r.input.ax = 0; return; }
+    const dx = (e.clientX - d.x0) / unit, dy = (e.clientY - d.y0) / unit;
+    r.input.ax = Math.abs(dx) < 0.12 ? 0 : clamp(dx, -1, 1);
+    r.input.py = dy < -0.7 ? 1 : dy > 0.7 ? -1 : 0;
+  };
+  const stageUp = (e: React.PointerEvent) => { const d = dragRef.current; if (d && d.id === e.pointerId) { dragRef.current = null; R.current.input.ax = 0; R.current.input.py = 0; } };
+
   const padProps = (side: "pl" | "pr") => ({
     onPointerDown: (e: React.PointerEvent) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); R.current.input[side] = true; },
     onPointerUp: () => { R.current.input[side] = false; }, onPointerCancel: () => { R.current.input[side] = false; }, onLostPointerCapture: () => { R.current.input[side] = false; },
@@ -330,10 +376,10 @@ function GridironInner() {
           </div>
           <button className={`gr-key boost ${hud?.carrying ? "hot" : ""}`} onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); R.current.input.bp = true; }} onPointerUp={() => { R.current.input.bp = false; }} onPointerCancel={() => { R.current.input.bp = false; }} onLostPointerCapture={() => { R.current.input.bp = false; }} onContextMenu={(e) => e.preventDefault()} aria-label="Boost (hold)">BOOST</button>
           <div className="gr-stam" aria-label="Stamina"><i style={{ width: `${Math.round((hud?.stamina ?? 1) * 100)}%` }} /></div>
-          <small className="gr-hint">{hud?.carrying ? "STEER ◀ ▶ · HOLD BOOST" : "AFTER THE CATCH: STEER + BOOST"}<br />← → · ↑ boost · ↓ brake</small>
+          <small className="gr-hint">{hud?.carrying ? "DRAG TO STEER · FLICK TO JUKE" : "DRAG TO RUN AFTER THE CATCH"}<span className="kb"><br />← → · ↑ boost · ↓ brake</span></small>
         </aside>
 
-        <section className="gr-stage" onPointerDown={(e) => stagePtr(e, true)} onPointerUp={(e) => stagePtr(e, false)} onPointerLeave={(e) => stagePtr(e, false)} onPointerCancel={(e) => stagePtr(e, false)}>
+        <section ref={stageRef} className="gr-stage" onPointerDown={stageDown} onPointerMove={stageMove} onPointerUp={stageUp} onPointerCancel={stageUp}>
           <canvas ref={canvasRef} width={CW} height={CH} className="gr-canvas" aria-label="Football field" />
           <div className="gr-crt" aria-hidden />
           {hud?.pressure && <div className="gr-pressure" aria-hidden />}
@@ -342,7 +388,7 @@ function GridironInner() {
           {screen === "presnap" && hud && (
             <div className="gr-snapbar">
               <div className="gr-snapplay"><PlayDiagram id={R.current.sim?.play?.id ?? "slants"} /><div className="gr-playname"><b>{hud.playName.toUpperCase()}</b><small>{hud.blurb}</small></div></div>
-              <div className="gr-row"><button className="gr-btn" onClick={audible} title="Change the call (X)">AUDIBLE ⟳</button><button className="gr-btn go" onClick={snap}>SNAP ▶</button></div>
+              <div className="gr-row">{hud.isRun ? <button className="gr-btn" onClick={() => callType("pass")}>PASS</button> : <button className="gr-btn" onClick={() => callType("run")}>RUN 🏃</button>}<button className="gr-btn" onClick={audible} title="Change the call (X)">AUDIBLE ⟳</button><button className="gr-btn go" onClick={snap}>SNAP ▶</button></div>
             </div>
           )}
 
@@ -441,7 +487,7 @@ function GridironInner() {
             ))}
           </div>
           )}
-          <small className="gr-hint">{hud?.carrying ? "SPACE = JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "THROW NOW!" : "PICK A TARGET"}<br />{hud?.carrying ? "dodge tacklers!" : "A B C D · 1–4"}</small>
+          <small className="gr-hint">{hud?.carrying ? "JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "TAP A RECEIVER" : "PICK A TARGET"}<span className="kb"><br />{hud?.carrying ? "or press Space" : "A B C D · 1–4"}</span></small>
         </aside>
       </main>
     </div>
