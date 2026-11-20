@@ -107,3 +107,7 @@ User: themed button lags badly; "not niche" answers (Hulk) rated as the most nic
 
 ## Round: Dacula Dash
 Built a complete multiplayer trivia board game (see ARCADE_DACULA.md). Because every map service was unreachable, the playable board is a hand trace of the user's two Apple Maps screenshots (clearly labelled approximate), with a tested OSM importer ready to replace it. Engine, bots, simulations, 40+ tests (287 total passing), pixel client, browser verification at desktop and phone sizes.
+
+
+User: add coaching career mode (season, free agents), a student's nine plays, and WASD/Shift/R hotkeys to Gridiron
+- Done: nine student plays (interpreted from a drawing), hotkeys, `career.mjs` + `Career.tsx` + menu button + persistence, tests, docs. See ARCADE_GRIDIRON.md. Not playtested by a human.

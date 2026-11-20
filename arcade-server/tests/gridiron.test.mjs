@@ -11,8 +11,8 @@ const clearDefence = (s) => { for (const e of s.defenders) { e.x = 5; e.y = 118;
 const toCarry = (s, x, y, idx = 0) => { s._caught(s.wr[idx], { x, y }); s.target = { x, y }; };
 
 // ---------------------------------------------------------------- playbook / routes
-test("playbook has the eight required passing plays plus two runs, each with four labelled receivers and routes", () => {
-  assert.deepEqual(PLAYBOOK.map((p) => p.id).sort(), ["curls", "dive", "flood", "mesh", "outs", "post", "screen", "slants", "sweep", "verts"].sort());
+test("playbook has the eight required passing plays, two runs and the nine student plays, each with four labelled receivers and routes", () => {
+  assert.deepEqual(PLAYBOOK.map((p) => p.id).sort(), ["curls", "dive", "flood", "mesh", "outs", "post", "screen", "slants", "sweep", "verts", "smash", "bb", "turtle", "chicken", "turky", "dagoat", "idk", "cutter", "turky2"].sort());
   for (const p of PLAYBOOK) { assert.equal(p.receivers.length, 4); for (const r of p.receivers) assert.ok(r.route.length >= 2); }
   const s = mk("verts"); assert.deepEqual(s.wr.map((w) => w.label), ["A", "B", "C", "D"]);
   for (let i = 1; i < 4; i++) assert.ok(s.wr[i].x > s.wr[i - 1].x, "A..D run left to right");

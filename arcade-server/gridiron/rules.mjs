@@ -8,12 +8,14 @@ import { simulateDrive, fgMakeChance, xpMakeChance } from "./opponent.mjs";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 export class Game {
-  /** @param {{mode?:"quick"|"twoMinute", difficulty?:"easy"|"normal"|"hard", seed?:number}} o */
+  /** @param {{mode?:"quick"|"twoMinute", difficulty?:"easy"|"normal"|"hard", seed?:number, qSeconds?:number, roster?:{qb:number,wr:number[],rb:number,ol:number,def:number}, opp?:{off:number,def:number,name?:string,short?:string}}} o */
   constructor(o = {}) {
     this.mode = o.mode === "twoMinute" ? "twoMinute" : "quick";
     this.difficulty = OPPONENT[o.difficulty] ? o.difficulty : "normal";
     this.seed = o.seed ?? 1; this.rng = makeRng(this.seed);
-    this.qLen = RULES.QUARTER_SECONDS[this.mode];
+    this.qLen = o.qSeconds ?? RULES.QUARTER_SECONDS[this.mode];
+    // Career hooks: roster = {qb,wr[4],rb,ol,def} ratings, opp = {off,def,name,short}
+    this.roster = o.roster || null; this.opp = o.opp || null;
     this.totalQuarters = this.mode === "twoMinute" ? 1 : 4;
     this.quarter = this.mode === "twoMinute" ? 4 : 1;       // two-minute drill is "the 4th quarter"
     this.clock = this.qLen;
@@ -49,11 +51,11 @@ export class Game {
   suggestPlays() {
     const short = this.toGo <= 3, mid = this.toGo <= 7, goal = this.line >= 100 || this.yardline >= 88;
     let pool;
-    if (goal) pool = ["dive", "slants", "mesh", "sweep", "outs", "curls"];
-    else if (this.mode === "twoMinute") pool = this.toGo > 12 ? ["outs", "flood", "post", "curls"] : ["outs", "slants", "curls", "mesh", "flood"];
-    else if (short) pool = ["dive", "mesh", "slants", "sweep", "curls", "screen"];
-    else if (mid) pool = ["curls", "dive", "outs", "sweep", "slants", "mesh", "flood", "post"];
-    else pool = ["verts", "post", "flood", "curls", "sweep", "outs"];
+    if (goal) pool = ["dive", "slants", "mesh", "sweep", "outs", "curls", "smash", "bb"];
+    else if (this.mode === "twoMinute") pool = this.toGo > 12 ? ["outs", "flood", "post", "curls", "turky", "cutter"] : ["outs", "slants", "curls", "mesh", "flood", "smash", "cutter", "chicken"];
+    else if (short) pool = ["dive", "mesh", "slants", "sweep", "curls", "screen", "turtle", "bb"];
+    else if (mid) pool = ["curls", "dive", "outs", "sweep", "slants", "mesh", "flood", "post", "smash", "chicken", "idk", "cutter"];
+    else pool = ["verts", "post", "flood", "curls", "sweep", "outs", "dagoat", "turky", "turky2"];
     const out = []; const left = [...pool];
     while (out.length < 3 && left.length) out.push(left.splice(this.rng.int(left.length), 1)[0]);
     return out;
@@ -62,9 +64,9 @@ export class Game {
   /** Create the PlaySim for the chosen play. The client runs it and hands `result` back to finishPlay. */
   beginPlay(playId, opts = {}) {
     if (this.phase !== "playcall") throw new Error("not a play-call phase");
-    const dd = OPPONENT[this.difficulty].def - 70;
+    const dd = (this.opp?.def ?? OPPONENT[this.difficulty].def) - 70;
     this.plays++;
-    return new PlaySim({ play: playId, los: this.losY, rng: this.rng, defDelta: dd, coverage: opts.coverage });
+    return new PlaySim({ play: playId, los: this.losY, rng: this.rng, defDelta: dd, coverage: opts.coverage, roster: this.roster || undefined });
   }
 
   /** Apply a finished play. Returns {text, ...} describing what happened. */
@@ -178,7 +180,7 @@ export class Game {
     if (this.phase === "final") return null;
     if (this.phase !== "cpu") throw new Error("not the CPU's turn");
     const avail = this._availUntilBreak();
-    const drive = simulateDrive({ yardline: this.cpuStart ?? RULES.START_YARDLINE, clockAvail: avail, mode: this.mode, rng: this.rng, difficulty: this.difficulty });
+    const drive = simulateDrive({ yardline: this.cpuStart ?? RULES.START_YARDLINE, clockAvail: avail, mode: this.mode, rng: this.rng, difficulty: this.difficulty, off: this.opp?.off, myDef: this.roster?.def });
     this.score.cpu += drive.points;
     if (drive.result === "safety") { this.score.you += RULES.SAFETY; }
     this._tickClockAcross(drive.secs);

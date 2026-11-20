@@ -40,9 +40,16 @@ Original game, not a copy of any commercial title. Changes aimed at the arcade f
 Ratings (1-100) really change play: QB accuracy/arm/throw speed, receiver speed/accel/catching/route/agility/blocking, defender speed/coverage/awareness/tackling/rush. Each defender gets a slightly different rating sheet per snap.
 
 ## Honest limits
-- Not built (by design, per the brief; the carry is now fully steerable, which supersedes the original lateral-only brief): season mode, multiplayer, defence control, career, trading, accounts.
+- Not built (by design, per the brief; the carry is now fully steerable, which supersedes the original lateral-only brief): multiplayer, defence control, trading, accounts. (Season mode was added later as Coach Career, see below.)
 - Interceptions end at the catch spot (no return). No penalties, fumbles, kickoff returns, two-point tries (extra points are automatic).
 - CPU drives are simulated from ratings, not played out on the field.
 - Whether it is actually fun still needs human playtesting; tuning lives in `config.mjs` (e.g. `SIM.GAME_SPEED`, `CONTEST_RADIUS`, `PASS_ERR_*`).
 - Balance was tuned with a bot over a few hundred plays per play-type (see ARCADE_TESTS.md); deep routes are somewhat generous. It still needs real play time to tune the feel. Every number is in `config.mjs`.
 - Verified in headless Chromium (desktop, tablet, phone portrait/landscape, touch emulation) but not on physical devices; audio is the shared WebAudio synth and was not listened to.
+
+## Student plays, hotkeys and Coach Career (added after the first release)
+- **Student playbook:** nine plays from a student's paper playbook, names kept exactly as written: `smash`, `bb`, `turtle`, `chicken`, `turky`, `dagoat`, `idk`, `cutter`, `turky2` (flagged `student: true` in `playbook.mjs`). The routes are an interpretation of a hand drawing; if a route is wrong, edit its `W(...)` list. They are mixed into the situational suggestions in `Game.suggestPlays()`.
+- **Hotkeys:** Shift (play-call screen) toggles PASS/RUN; R audibles (X/Tab still work); A, W, S, D throw to receivers A, B, C, D in that order (also 1-4). During a run the controls are unchanged: A/D or arrows steer, W/S/Shift boost/brake, Space jukes. Buttons show their key on non-touch devices.
+- **Coach Career** (`arcade-server/gridiron/career.mjs`, UI `components/arcade/gridiron/Career.tsx`, tests `arcade-server/tests/career.test.mjs`, browser smoke `scripts/gridiron-career-e2e.mjs`): 8-team league, 7-game round-robin season, top 4 make a semifinal/final playoff, champions, then offseason (players age, rookies replace retirees, new schedule). Earn credits (win 3 / tie 2 / loss 1, playoff wins, title) to sign free agents (pool refreshes weekly, costs by rating) into your 8 starter slots (QB, WR A-D, RB, OL, DEF) or train a starter (+2 rating, 2 credits, twice a season). Your roster ratings feed the real play engine (`PlaySim` `roster`, `Game` `roster`/`opp`); the opponent's rating sets how its drives and its defence perform. SIM WEEK plays the game for you.
+- Career is saved in this browser only (`localStorage` key `gridiron:career:v1`); it is not tied to the student account and is lost if site data is cleared.
+- Limits: a game abandoned mid-way is not recorded (replay it); ties in playoffs are a coin flip (no overtime in the engine); other teams are rated numbers, not rosters; no injuries/trades/contracts; balance (credit economy, rating weights) is tuned by simulation, not by human play.

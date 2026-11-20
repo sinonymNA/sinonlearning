@@ -112,3 +112,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 ## 22. Dacula Dash
 - Unit: `daculaGraph` (connectivity from junction ids only, all checkpoints reachable both ways, movement bounds, early stop, construction safety), `daculaQuestions` (bank integrity, answer-not-in-question, CSV/JSON import, duplicates, sanitising), `daculaDash` (state machine, dice bounds, wedge rules, final, timeout ranking + ties, server authority, no answer leaks, idle/disconnect, boards of <=6, simulations), `daculaImporter` (projection, junction splitting, bridges, query).
 - Simulation: `node scripts/dacula-sim.mjs --games 30`. Browser: `node scripts/dacula-e2e.mjs --url http://localhost:3100 --size 1366x768 | 390x844`.
+
+## 20. Gridiron student plays, hotkeys, Coach Career
+- `arcade-server/tests/career.test.mjs` (round robin, full season, carry-over, free agents, training, strength matters, engine honours roster/opponent) plus the updated playbook test; 295 passing overall.
+- Browser: `node scripts/gridiron-career-e2e.mjs --url http://localhost:3100 --shots <dir>` (R/Shift/W hotkeys, new career, train, sign, sim week, reload persistence, one live game to the final, week advances).

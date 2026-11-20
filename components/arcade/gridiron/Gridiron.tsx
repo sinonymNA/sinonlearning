@@ -4,12 +4,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Game, PlaySim, PLAYBOOK, SIM, FIELD, OPPONENT, TEAMS } from "../../../arcade-server/gridiron/index.mjs";
+import { Game, PlaySim, PLAYBOOK, SIM, FIELD, OPPONENT, TEAMS, gameOptions, recordUserGame } from "../../../arcade-server/gridiron/index.mjs";
+import Career, { CAREER_KEY } from "./Career";
 import { PrefsProvider, PrefsButtons, sfx } from "../prefs";
 import { CW, CH, VIEW, VW, PPY, setViewHeight, LABEL_COLORS, drawField, drawPlayer, drawBall, drawRing, drawRoutes, drawLanding, drawEdgeMarkers, drawAim, drawParticles, stepParticles, type Cam, type Particle } from "./render";
 import "./gridiron.css";
 
-type Screen = "menu" | "plays" | "fourth" | "presnap" | "live" | "fg" | "cpu" | "final";
+type Screen = "career" | "menu" | "plays" | "fourth" | "presnap" | "live" | "fg" | "cpu" | "final";
 type Hud = {
   score: { you: number; cpu: number }; qLabel: string; clock: number; down: string; spot: string; phase: string; seps: number[]; pressure: boolean;
   stamina: number; jukeReady: boolean; isRun: boolean;
@@ -61,6 +62,14 @@ function GridironInner() {
   const [cpuView, setCpuView] = useState<{ lines: string[]; shown: number; summary: string; kind: string; halftime: boolean; scoreAfter: { you: number; cpu: number }; points: number } | null>(null);
   const [fgView, setFgView] = useState<{ dist: number; chance: number; pos: number; locked: boolean; outcome?: string } | null>(null);
   const [finalView, setFinalView] = useState<any>(null);
+  const [career, setCareerState] = useState<any>(null);
+  const careerRef = useRef<any>(null);
+  const [names, setNames] = useState({ you: TEAMS.you.short, cpu: TEAMS.cpu.short, cpuFull: TEAMS.cpu.name });
+  const commitCareer = useCallback((c: any) => {
+    careerRef.current = c; setCareerState(c);
+    try { if (c) localStorage.setItem(CAREER_KEY, JSON.stringify(c)); else localStorage.removeItem(CAREER_KEY); } catch { /* storage blocked */ }
+  }, []);
+  useEffect(() => { try { const raw = localStorage.getItem(CAREER_KEY); if (raw) { const c = JSON.parse(raw); if (c?.v === 1) { careerRef.current = c; setCareerState(c); } } } catch { /* ignore */ } }, []);
   const [flash, setFlash] = useState(false);
 
   const setScreen = useCallback((s: Screen) => { R.current.screen = s; setScreenState(s); }, []);
@@ -90,7 +99,15 @@ function GridironInner() {
   const nextCall = useCallback(() => {
     const r = R.current, g = r.game; if (!g) return;
     setBanner(null); r.heldScore = null;
-    if (g.phase === "final") { setFinalView(g.final); setScreen("final"); return; }
+    if (g.phase === "final") {
+      let cr: any = null;
+      if (r.co && careerRef.current && !r.coDone) {
+        r.coDone = true; const copy = structuredClone(careerRef.current), you = g.final.score.you, cpu = g.final.score.cpu, uFirst = r.co.fixture.a === 0;
+        const before = copy.credits;
+        try { cr = recordUserGame(copy, uFirst ? you : cpu, uFirst ? cpu : you); cr.earned = copy.credits - before; commitCareer(copy); } catch { cr = null; }
+      }
+      setFinalView({ ...g.final, career: cr }); setScreen("final"); return;
+    }
     if (g.phase === "cpu") { runCpu(); return; }
     if (g.down === 4) { preview(); setScreen("fourth"); pushHud(); } else setupPlay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,7 +118,7 @@ function GridironInner() {
     const before = { ...g.score }; const wasHalf = g.quarter;
     const drive = g.runOpponent(); if (!drive) { nextCall(); return; }
     const summary: Record<string, [string, string]> = {
-      td: [`${TEAMS.cpu.name.toUpperCase()} SCORE  +${drive.points}`, "bad"], fg: ["THEY KICK A FIELD GOAL  +3", "bad"], punt: ["THEY PUNT. YOUR BALL", "good"], turnover: ["THEY TURN IT OVER. YOUR BALL", "good"],
+      td: [`${names.cpuFull.toUpperCase()} SCORE  +${drive.points}`, "bad"], fg: ["THEY KICK A FIELD GOAL  +3", "bad"], punt: ["THEY PUNT. YOUR BALL", "good"], turnover: ["THEY TURN IT OVER. YOUR BALL", "good"],
       downs: ["TURNOVER ON DOWNS. YOUR BALL", "good"], clock: ["TIME RUNS OUT ON THE DRIVE", "neutral"], safety: ["SAFETY! +2 FOR YOU", "good"],
     };
     const [text, kind] = summary[drive.result] || ["DRIVE OVER", "neutral"];
@@ -109,11 +126,13 @@ function GridironInner() {
     const lines = drive.plays.length ? drive.plays.map((p: any) => p.text) : ["Kneel down."];
     setCpuView({ lines, shown: 0, summary: text, kind, halftime: g.phase === "cpu" || (wasHalf === 2 && g.quarter === 3), scoreAfter: { ...g.score }, points: drive.points });
     setScreen("cpu"); pushHud();
-  }, [nextCall, pushHud, setScreen]);
+  }, [names.cpuFull, nextCall, pushHud, setScreen]);
 
-  const startGame = useCallback((mode: "quick" | "twoMinute") => {
-    const r = R.current; r.mode = mode;
-    r.game = new Game({ mode, difficulty: r.diff, seed: (Math.random() * 1e9) >>> 0 });
+  const startGame = useCallback((mode: "quick" | "twoMinute", co: any = null) => {
+    const r = R.current; r.mode = mode; r.co = co; r.coDone = false;
+    if (co) { setNames({ you: (careerRef.current?.teamName ?? "YOU").slice(0, 3).toUpperCase(), cpu: co.opp.short, cpuFull: co.opp.name }); }
+    else setNames({ you: TEAMS.you.short, cpu: TEAMS.cpu.short, cpuFull: TEAMS.cpu.name });
+    r.game = new Game(co ? { mode, seed: co.seed, roster: co.roster, opp: co.opp } : { mode, difficulty: r.diff, seed: (Math.random() * 1e9) >>> 0 });
     setFinalView(null); setCpuView(null); setBanner(null); setPaused(false); r.paused = false; r.heldScore = null;
     nextCall();
   }, [nextCall]);
@@ -181,7 +200,7 @@ function GridironInner() {
   const doJuke = useCallback(() => { const r = R.current; if (r.screen === "live" && !r.paused && r.sim?.phase === "carry") r.sim.juke(); }, []);
   const pause = useCallback((p: boolean) => { R.current.paused = p; setPaused(p); }, []);
   const toMenu = useCallback(() => { const r = R.current; r.game = null; r.sim = null; setBanner(null); setCpuView(null); setFgView(null); pause(false); setScreen("menu"); }, [pause, setScreen]);
-  const restart = useCallback(() => { startGame(R.current.mode); }, [startGame]);
+  const restart = useCallback(() => { startGame(R.current.mode, R.current.co ?? null); }, [startGame]);
 
   // ---- keyboard -----------------------------------------------------------------------------------------------
   useEffect(() => {
@@ -197,18 +216,19 @@ function GridironInner() {
       }
       if (r.screen === "live") {
         const phase = r.sim?.phase;
-        if (phase === "pocket") { const idx = ["KeyA", "KeyB", "KeyC", "KeyD"].indexOf(k); const d = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(k); if (idx >= 0 || d >= 0) { e.preventDefault(); doThrow(idx >= 0 ? idx : d); } }
+        if (phase === "pocket") { const idx = ["KeyA", "KeyW", "KeyS", "KeyD"].indexOf(k); const d = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(k); const bc = k === "KeyB" ? 1 : k === "KeyC" ? 2 : -1; const t = idx >= 0 ? idx : d >= 0 ? d : bc; if (t >= 0) { e.preventDefault(); doThrow(t); } }
         if (k === "ArrowLeft") { r.input.l = true; e.preventDefault(); } if (k === "ArrowRight") { r.input.r = true; e.preventDefault(); }
-        if (k === "ArrowUp" || k === "ShiftLeft" || k === "ShiftRight" || k === "KeyW") { r.input.pu = true; e.preventDefault(); } if (k === "ArrowDown" || k === "KeyS") { r.input.pd = true; e.preventDefault(); }
+        const wsBoost = phase !== "pocket"; if (k === "ArrowUp" || k === "ShiftLeft" || k === "ShiftRight" || (wsBoost && k === "KeyW")) { r.input.pu = true; e.preventDefault(); } if (k === "ArrowDown" || (wsBoost && k === "KeyS")) { r.input.pd = true; e.preventDefault(); }
         if (phase === "carry" && k === "KeyA") r.input.l = true; if (phase === "carry" && k === "KeyD") r.input.r = true;
       }
-      if (r.screen === "presnap" && (k === "KeyX" || k === "Tab")) { e.preventDefault(); audible(); }
+      if (r.screen === "presnap" && (k === "KeyR" || k === "KeyX" || k === "Tab")) { e.preventDefault(); audible(); }
+      if (r.screen === "presnap" && (k === "ShiftLeft" || k === "ShiftRight") && !e.repeat) { e.preventDefault(); callType(r.sim?.play?.kind === "run" ? "pass" : "run"); }
     };
     const up = (e: KeyboardEvent) => { const r = R.current; if (e.code === "ArrowLeft" || e.code === "KeyA") r.input.l = false; if (e.code === "ArrowRight" || e.code === "KeyD") r.input.r = false; if (["ArrowUp", "ShiftLeft", "ShiftRight", "KeyW"].includes(e.code)) r.input.pu = false; if (["ArrowDown", "KeyS"].includes(e.code)) r.input.pd = false; };
     const vis = () => { if (document.hidden && (R.current.screen === "live")) pause(true); };
     window.addEventListener("keydown", down); window.addEventListener("keyup", up); document.addEventListener("visibilitychange", vis);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); document.removeEventListener("visibilitychange", vis); };
-  }, [audible, doThrow, lockKick, pause, snap]);
+  }, [audible, callType, doThrow, lockKick, pause, snap]);
 
   // CPU drive reveal
   useEffect(() => {
@@ -277,7 +297,7 @@ function GridironInner() {
         const snapS = sim.snapshot();
         const ox = r.shake ? Math.round((Math.random() - 0.5) * 2 * r.shake) : 0, oy = r.shake ? Math.round((Math.random() - 0.5) * 2 * r.shake) : 0;
         ctx.fillStyle = "#171a2e"; ctx.fillRect(0, 0, CW, CH); ctx.save(); ctx.translate(ox, oy);
-        drawField(ctx, cam, { losY: los, firstY: g.firstY, tick: r.tick, cheer: ts < r.cheerUntil });
+        drawField(ctx, cam, { losY: los, firstY: g.firstY, tick: r.tick, cheer: ts < r.cheerUntil, ...(r.co ? { youName: careerRef.current?.teamName, cpuName: r.co.opp.name } : {}) });
         const showRoutes = !r.preview && ["presnap", "pocket", "windup"].includes(sim.phase);
         if (showRoutes) drawRoutes(ctx, sim.wr, cam, sim.phase === "presnap" ? 0.95 : 0.4, sim.phase === "presnap", r.tick);
         const res = sim.result; const players = [...snapS.players].sort((a: any, b: any) => b.y - a.y);
@@ -375,9 +395,9 @@ function GridironInner() {
       {/* scoreboard */}
       {hud && screen !== "menu" && (
         <header className="gr-top" aria-label="Scoreboard">
-          <div className="gr-team you"><span className="gr-short">{TEAMS.you.short}</span><b>{hud.score.you}</b>{hud.possession === "you" && <i className="gr-ball" aria-label="has the ball" />}</div>
+          <div className="gr-team you"><span className="gr-short">{names.you}</span><b>{hud.score.you}</b>{hud.possession === "you" && <i className="gr-ball" aria-label="has the ball" />}</div>
           <div className="gr-clock"><span>{hud.qLabel}</span><b>{mmss(hud.clock)}</b></div>
-          <div className="gr-team cpu"><b>{hud.score.cpu}</b><span className="gr-short">{TEAMS.cpu.short}</span>{hud.possession === "cpu" && <i className="gr-ball" aria-label="has the ball" />}</div>
+          <div className="gr-team cpu"><b>{hud.score.cpu}</b><span className="gr-short">{names.cpu}</span>{hud.possession === "cpu" && <i className="gr-ball" aria-label="has the ball" />}</div>
           <div className="gr-dd">{hud.possession === "cpu" ? "OPPONENT BALL" : `${hud.down}  ·  ${hud.spot}`}</div>
           <div className="gr-tools">{inPlay && <button className="gr-mini" onClick={() => pause(true)} aria-label="Pause">II</button>}<PrefsButtons /></div>
         </header>
@@ -403,7 +423,7 @@ function GridironInner() {
           {screen === "presnap" && hud && (
             <div className="gr-snapbar">
               <div className="gr-snapplay"><PlayDiagram id={R.current.sim?.play?.id ?? "slants"} /><div className="gr-playname"><b>{hud.playName.toUpperCase()}</b><small>{hud.blurb}</small></div></div>
-              <div className="gr-row">{hud.isRun ? <button className="gr-btn" onClick={() => callType("pass")}>PASS</button> : <button className="gr-btn" onClick={() => callType("run")}>RUN 🏃</button>}<button className="gr-btn" onClick={audible} title="Change the call (X)">AUDIBLE ⟳</button><button className="gr-btn go" onClick={snap}>SNAP ▶</button></div>
+              <div className="gr-row">{hud.isRun ? <button className="gr-btn" onClick={() => callType("pass")}>PASS <kbd className="gr-kbd">⇧</kbd></button> : <button className="gr-btn" onClick={() => callType("run")}>RUN 🏃 <kbd className="gr-kbd">⇧</kbd></button>}<button className="gr-btn" onClick={audible} title="Change the call (R)">AUDIBLE ⟳ <kbd className="gr-kbd">R</kbd></button><button className="gr-btn go" onClick={snap}>SNAP ▶</button></div>
             </div>
           )}
 
@@ -440,13 +460,19 @@ function GridironInner() {
           {screen === "final" && finalView && (
             <div className="gr-panel narrow final">
               <h2>FINAL</h2>
-              <div className="gr-final-score"><span>{TEAMS.you.short} <b>{finalView.score.you}</b></span><span>{TEAMS.cpu.short} <b>{finalView.score.cpu}</b></span></div>
+              <div className="gr-final-score"><span>{names.you} <b>{finalView.score.you}</b></span><span>{names.cpu} <b>{finalView.score.cpu}</b></span></div>
               <div className={`gr-result ${finalView.result === "win" ? "good" : finalView.result === "loss" ? "bad" : "neutral"}`}>{finalView.result === "win" ? "YOU WIN!" : finalView.result === "loss" ? "YOU LOSE" : "TIE GAME"}</div>
               <ul className="gr-stats">
                 <li><span>RUSHES</span><b>{finalView.stats.rushes ?? 0}</b></li><li><span>PASSES</span><b>{finalView.stats.comps}/{finalView.stats.passes}</b></li><li><span>YARDS</span><b>{finalView.stats.yards}</b></li>
                 <li><span>TOUCHDOWNS</span><b>{finalView.stats.tds}</b></li><li><span>INTS</span><b>{finalView.stats.ints}</b></li><li><span>SACKS</span><b>{finalView.stats.sacks}</b></li>
               </ul>
-              <div className="gr-col"><button className="gr-btn big go" onClick={restart}>PLAY AGAIN</button><button className="gr-btn" onClick={toMenu}>MENU</button><Link className="gr-btn" href="/arcade/solo">BACK TO ARCADE</Link></div>
+              {finalView.career && (
+                <div className="gc-card" style={{ width: "100%" }}><small>SEASON</small>
+                  <div className="gc-line">+{finalView.career.earned}⭐ earned · {finalView.career.summary.label}</div>
+                  {finalView.career.notes.map((n: string, i: number) => <div key={i} className="gc-note">{n}</div>)}
+                </div>
+              )}
+              <div className="gr-col">{finalView.career ? <button className="gr-btn big go" onClick={() => { setFinalView(null); R.current.game = null; R.current.sim = null; R.current.co = null; setScreen("career"); }}>CONTINUE SEASON ▶</button> : <button className="gr-btn big go" onClick={restart}>PLAY AGAIN</button>}{!finalView.career && <button className="gr-btn" onClick={toMenu}>MENU</button>}<Link className="gr-btn" href="/arcade/solo">BACK TO ARCADE</Link></div>
             </div>
           )}
 
@@ -462,6 +488,11 @@ function GridironInner() {
             </div>
           )}
 
+          {screen === "career" && (
+            <Career st={career} onChange={commitCareer} onBack={toMenu}
+              onPlay={() => { const co = careerRef.current && gameOptions(careerRef.current); if (co) startGame("quick", co); }} />
+          )}
+
           {screen === "menu" && (
             <div className="gr-panel menu">
               <div className="gr-logo"><span>RETRO</span><b>GRIDIRON</b></div>
@@ -469,6 +500,7 @@ function GridironInner() {
               <div className="gr-col">
                 <button className="gr-btn big go" onClick={() => startGame("quick")}>QUICK PLAY <small>4 SHORT QUARTERS VS THE CPU</small></button>
                 <button className="gr-btn big" onClick={() => startGame("twoMinute")}>TWO-MINUTE DRILL <small>DOWN 7 · 2:00 LEFT</small></button>
+                <button className="gr-btn big career" onClick={() => setScreen("career")}>COACH CAREER <small>{career ? `${career.teamName.toUpperCase()} · SEASON ${career.season} · WK ${Math.min(career.week, 7)}` : "A FULL SEASON · SIGN PLAYERS · WIN THE TITLE"}</small></button>
               </div>
               <div className="gr-diff" role="radiogroup" aria-label="Difficulty">
                 {DIFFS.map((d) => (
@@ -497,12 +529,12 @@ function GridironInner() {
           <div className="gr-abcd" aria-label="Pick a receiver">
             {["A", "B", "C", "D"].map((l, i) => (
               <button key={l} className={`gr-key abcd ${hud?.canThrow ? "hot" : ""}`} style={{ ["--c" as any]: LABEL_COLORS[i] }} onPointerDown={(e) => { e.preventDefault(); doThrow(i); }} disabled={!hud?.canThrow} aria-label={`Throw to receiver ${l}`}>
-                <span>{l}</span><i style={{ width: `${Math.round(sepLvl(hud?.seps?.[i] ?? 3) * 100)}%` }} />
+                <span>{l}</span><em className="gr-kk">{["A", "W", "S", "D"][i]}</em><i style={{ width: `${Math.round(sepLvl(hud?.seps?.[i] ?? 3) * 100)}%` }} />
               </button>
             ))}
           </div>
           )}
-          <small className="gr-hint">{hud?.carrying ? "JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "DRAG THE BALL WHERE YOU WANT IT" : "PICK A TARGET"}<span className="kb"><br />{hud?.carrying ? "or press Space" : "or tap A B C D · 1–4"}</span></small>
+          <small className="gr-hint">{hud?.carrying ? "JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "DRAG THE BALL WHERE YOU WANT IT" : "PICK A TARGET"}<span className="kb"><br />{hud?.carrying ? "or press Space" : "keys: A W S D (or 1–4)"}</span></small>
         </aside>
       </main>
     </div>

@@ -36,6 +36,9 @@ export class PlaySim {
     this.coverage = o.coverage || this.rng.pick(["man", "man", "zone", "zone", "zone", "blitz"]);
     this.defDelta = o.defDelta ?? 0;
     this.offDelta = o.offDelta ?? 0;
+    // Career rosters: {qb, wr:[4], rb, ol} overall ratings. 75 is the stock rating, so it is a pure offset.
+    const ro = o.roster || {};
+    this.rd = { qb: (ro.qb ?? 75) - 75, wr: [0, 1, 2, 3].map((i) => (ro.wr?.[i] ?? 75) - 75), rb: (ro.rb ?? 75) - 75, ol: (ro.ol ?? 75) - 75 };
     this.t = 0; this.phase = "presnap"; this.events = []; this.result = null;
     this.input = { lateral: 0, push: 0 };
     this.isRun = this.play.kind === "run"; this.stamina = 1; this.jukeUntil = 0; this.jukeCool = 0;
@@ -62,13 +65,13 @@ export class PlaySim {
   _build() {
     const cx = FIELD.CX, los = this.los, d = this.offDelta, dd = this.defDelta;
     // ---- offence
-    const qbR = Object.fromEntries(Object.entries(OFFENSE.qb).map(([k, v]) => [k, typeof v === "number" ? clamp(v + d, 20, 99) : v]));
+    const qbR = Object.fromEntries(Object.entries(OFFENSE.qb).map(([k, v]) => [k, typeof v === "number" ? clamp(v + d + this.rd.qb, 20, 99) : v]));
     this.qb = this._mk("QB", "o", "QB", cx, this.play.kind === "run" ? los - 3 : los - 5, { ...qbR, speed: 55, accel: 60 });
-    const rbR = { speed: clamp(84 + d, 20, 99), accel: clamp(82 + d, 20, 99), catching: 70, route: 70, agility: clamp(84 + d, 20, 99), blocking: 60 };
+    const rb = d + this.rd.rb, rbR = { speed: clamp(84 + rb, 20, 99), accel: clamp(82 + rb, 20, 99), catching: clamp(70 + rb, 20, 99), route: 70, agility: clamp(84 + rb, 20, 99), blocking: 60 };
     this.rb = this._mk("RB", "o", "RB", cx + (this.play.rbX ?? 3), this.play.kind === "run" ? los - 6 : los - 5, rbR, { label: this.play.kind === "run" ? "RB" : null });
     this.wr = this.play.receivers.map((rt, i) => {
       const r = this._rate(OFFENSE.wr[i], 0);
-      for (const k of ["speed", "accel", "catching", "route", "agility", "blocking"]) r[k] = clamp(r[k] + d, 20, 99);
+      for (const k of ["speed", "accel", "catching", "route", "agility", "blocking"]) r[k] = clamp(r[k] + d + this.rd.wr[i], 20, 99);
       const e = this._mk("WR" + i, "o", "WR", cx + rt.start.x, los + rt.start.dy, r, { label: "ABCD"[i], idx: i });
       e.path = rt.route.map((p, j, a) => { const prev = j ? a[j - 1] : null; return null; });
       let px = e.x, py = e.y; e.path = [];
@@ -78,7 +81,7 @@ export class PlaySim {
       e.wp = 0; e.heading = 0; e.lagUntil = 0;
       return e;
     });
-    this.ol = FORMATION.olX.map((x, i) => this._mk("OL" + i, "o", "OL", cx + x, los - 0.95, { speed: 55, accel: 60, blocking: clamp(OFFENSE.ol.blocking + d, 20, 99) }));
+    this.ol = FORMATION.olX.map((x, i) => this._mk("OL" + i, "o", "OL", cx + x, los - 0.95, { speed: 55, accel: 60, blocking: clamp(OFFENSE.ol.blocking + d + this.rd.ol, 20, 99) }));
     // ---- defence (each defender gets a slightly different ratings sheet)
     const mkD = (id, role, x, y, base, extra) => this._mk(id, "d", role, x, y, (() => { const r = this._rate(base, 6); for (const k of Object.keys(r)) r[k] = clamp(r[k] + dd, 20, 99); return r; })(), extra);
     const man = this.coverage !== "zone";

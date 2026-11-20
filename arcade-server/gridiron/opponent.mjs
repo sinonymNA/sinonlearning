@@ -16,7 +16,8 @@ export function xpMakeChance() { return 0.94; }
  */
 export function simulateDrive(o) {
   const rng = o.rng, opp = OPPONENT[o.difficulty || "normal"];
-  const delta = (opp.off - 70) / 100;                      // stronger opponents gain more
+  const offR = o.off ?? opp.off, myDef = o.myDef ?? 70;     // career: opponent offence vs your defence rating
+  const delta = (offR - 70 + (70 - myDef) * 0.6) / 100;                      // stronger opponents gain more
   const burn = RULES.SNAP_BURN[o.mode] ?? 12;
   let yl = o.yardline, down = 1, toGo = 10, line = Math.min(100, yl + 10), secs = 0;
   const plays = [], out = (r, extra) => ({ plays, result: r, secs, points: 0, youStart: RULES.START_YARDLINE, ...extra });

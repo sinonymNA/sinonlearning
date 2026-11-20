@@ -28,6 +28,25 @@ export const PLAYBOOK = [
     receivers: [{ start: S(-20), route: W([2, 4], [4, 8]) }, { start: S(-12, -0.5), route: W([1, 3], [2, 7]) }, { start: S(12, -0.5), route: W([-1, 3], [-2, 7]) }, { start: S(20), route: W([-2, 4], [-4, 8]) }] },
   { id: "sweep", name: "Sweep", blurb: "Bounce it outside, follow your blockers, then juke.", kind: "run", depth: "short", rbX: 3,
     receivers: [{ start: S(-20), route: W([4, 3], [9, 6]) }, { start: S(-12, -0.5), route: W([4, 3], [9, 5]) }, { start: S(12, -0.5), route: W([-3, 2], [-6, 6]) }, { start: S(20), route: W([-5, 3], [-9, 7]) }] },
+  // ---- Student-designed plays (drawn by a student on paper; names kept exactly as written). Routes are our reading of the drawing.
+  { id: "smash", name: "smash", blurb: "Student play. Hitch underneath, corner over the top.", kind: "pass", depth: "mid", student: true,
+    receivers: [{ start: S(-20), route: W([0, 7], [0, 6.5]) }, { start: S(-11, -0.5), route: W([0, 8], [-7, 16]) }, { start: S(11, -0.5), route: W([0, 8], [7, 16]) }, { start: S(20), route: W([0, 7], [0, 6.5]) }] },
+  { id: "bb", name: "bb", blurb: "Student play. Quick bubble out wide, then run.", kind: "screen", depth: "short", student: true,
+    receivers: [{ start: S(-20), route: W([-3, -1], [-5, -1.5]) }, { start: S(-10, -0.5), route: W([0, 6], [-4, 12]) }, { start: S(10, -0.5), route: W([0, 6], [4, 12]) }, { start: S(20), route: W([3, -1], [5, -1.5]) }] },
+  { id: "turtle", name: "turtle", blurb: "Student play. Slow and safe: everyone sits down short.", kind: "pass", depth: "short", student: true,
+    receivers: [{ start: S(-20), route: W([2, 5], [2, 4]) }, { start: S(-8, -0.5), route: W([0, 4], [-2, 3]) }, { start: S(8, -0.5), route: W([0, 4], [2, 3]) }, { start: S(20), route: W([-2, 5], [-2, 4]) }] },
+  { id: "chicken", name: "chicken", blurb: "Student play. Zig-zag routes that make defenders flap.", kind: "pass", depth: "mid", student: true,
+    receivers: [{ start: S(-20), route: W([0, 6], [5, 9], [0, 13], [5, 17]) }, { start: S(-9, -0.5), route: W([0, 5], [-4, 8], [0, 12]) }, { start: S(9, -0.5), route: W([0, 5], [4, 8], [0, 12]) }, { start: S(20), route: W([0, 6], [-5, 9], [0, 13], [-5, 17]) }] },
+  { id: "turky", name: "turky", blurb: "Student play. Wide receivers fly, inside guys sneak out.", kind: "pass", depth: "deep", student: true,
+    receivers: [{ start: S(-20), route: W([-1, 14], [-2, 30]) }, { start: S(-9, -0.5), route: W([0, 4], [-9, 6]) }, { start: S(9, -0.5), route: W([0, 4], [9, 6]) }, { start: S(20), route: W([1, 14], [2, 30]) }] },
+  { id: "dagoat", name: "dagoat", blurb: "Student play. Two go routes and two posts. Greatest of all time or bust.", kind: "pass", depth: "deep", student: true,
+    receivers: [{ start: S(-20), route: W([0, 14], [-1, 34]) }, { start: S(-9, -0.5), route: W([0, 9], [8, 20], [10, 30]) }, { start: S(9, -0.5), route: W([0, 9], [-8, 20], [-10, 30]) }, { start: S(20), route: W([0, 14], [1, 34]) }] },
+  { id: "idk", name: "idk", blurb: "Student play. Nobody knows where they are going, including the defense.", kind: "pass", depth: "mid", student: true,
+    receivers: [{ start: S(-20), route: W([4, 5], [-2, 10], [3, 15]) }, { start: S(-9, -0.5), route: W([0, 10], [6, 8]) }, { start: S(9, -0.5), route: W([-3, 4], [4, 12], [6, 22]) }, { start: S(20), route: W([0, 12], [-8, 14]) }] },
+  { id: "cutter", name: "cutter", blurb: "Student play. Run a few yards, then cut hard across the field.", kind: "pass", depth: "mid", student: true,
+    receivers: [{ start: S(-20), route: W([0, 10], [12, 12]) }, { start: S(-9, -0.5), route: W([0, 7], [-8, 8]) }, { start: S(9, -0.5), route: W([0, 7], [8, 8]) }, { start: S(20), route: W([0, 10], [-12, 12]) }] },
+  { id: "turky2", name: "turky2", blurb: "Student play. The sequel: inside guys go deep, wide guys cross.", kind: "pass", depth: "deep", student: true,
+    receivers: [{ start: S(-20), route: W([0, 5], [12, 7]) }, { start: S(-9, -0.5), route: W([0, 14], [-2, 32]) }, { start: S(9, -0.5), route: W([0, 14], [2, 32]) }, { start: S(20), route: W([0, 5], [-12, 7]) }] },
 ];
 export const getPlay = (id) => PLAYBOOK.find((p) => p.id === id);
 
