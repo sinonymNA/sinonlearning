@@ -20,11 +20,12 @@ test("themes: five themes, each with a healthy bank that is also part of the gen
   assert.ok(AB.THEME_PROMPTS.length >= 50);
 });
 
-test("theme banks: all six tiers filled, no duplicate answers across tiers, and nothing blank", () => {
+test("theme banks: common tiers filled, something rarer exists, no duplicate answers across tiers, and nothing blank", () => {
   for (const p of AB.THEME_PROMPTS) {
     const seen = new Map();
+    assert.ok(p.tiers.reef.length + p.tiers.trench.length + p.tiers.pearl.length >= 1, `${p.id} has a rarer tier`);
     for (const tier of AB.TIER_ORDER) {
-      assert.ok(p.tiers[tier].length >= 1, `${p.id} has ${tier}`);
+      if (["bubble", "clever", "shoal"].includes(tier)) assert.ok(p.tiers[tier].length >= 1, `${p.id} has ${tier}`);
       for (const e of p.tiers[tier]) for (const f of e.split("=")) {
         const n = AB.norm(f); if (!n) continue;
         const prev = seen.get(n); if (prev && prev !== e) assert.fail(`${p.id}: "${f}" appears in two entries`);
@@ -97,4 +98,33 @@ test("theme answers never leak the answer key before a prompt is answered", asyn
   const store = new MemoryStore(); const ctx = { ...studentCtx(store, "diver-leak"), now: Date.UTC(2032, 6, 6, 12) };
   const r = await handleAbyss(ctx, { type: "start", mode: "theme", theme: "games" });
   const json = JSON.stringify(r); assert.ok(!json.includes("tiers")); assert.ok(!/pikachu/i.test(json) || !/pokemon/i.test(r.question.prompt));
+});
+
+// ---------------------------------------------------------------- fame-aware rarity (famous answers are never "deep cuts")
+const tiersOf = (name) => { const hits = []; for (const p of AB.PROMPTS) for (const t of AB.TIER_ORDER) for (const e of p.tiers[t]) if (AB.norm(e.split("=")[0]) === AB.norm(name)) hits.push({ id: p.id, tier: t, auto: !!p.auto || !!p.theme }); return hits; };
+
+test("household names are never rated reef, trench or pearl in an auto-tiered prompt (hulk, elephant, shrek, pikachu ...)", () => {
+  for (const name of ["hulk", "elephant", "shrek", "yoda", "kermit", "pikachu", "mario", "batman", "pizza", "dog", "cat", "iron man 3", "iron man 2"]) {
+    for (const h of tiersOf(name)) if (h.auto) assert.ok(["bubble", "clever", "shoal"].includes(h.tier), `${name} is ${h.tier} in ${h.id}`);
+  }
+});
+
+test("an entry that just extends a famous name is not a deep cut (sequels, full team names, 'X and Y')", () => {
+  const rank = (id, name) => AB.TIER_ORDER.indexOf(AB.matchAnswer(AB.getPrompt(id), name)?.tier ?? "pearl");
+  assert.ok(rank("t-movies-marvel", "Iron Man 3") <= AB.TIER_ORDER.indexOf("shoal"));
+  assert.ok(rank("t-movies-marvel", "Deadpool and Wolverine") <= AB.TIER_ORDER.indexOf("reef"));
+});
+
+test("aliases listed with a pipe are merged into their entry, so a full team name scores the same as the short name", () => {
+  const p = AB.getPrompt("t-sports-nba");
+  assert.equal(AB.matchAnswer(p, "cleveland cavaliers").tier, AB.matchAnswer(p, "cavaliers").tier);
+  assert.equal(AB.matchAnswer(p, "los angeles lakers").tier, AB.matchAnswer(p, "lakers").tier);
+  assert.equal(AB.matchAnswer(p, "okc").name, "Thunder");
+});
+
+test("rarity still means something: deep tiers exist in most prompts and only hold less-famous answers", () => {
+  const withDeep = AB.PROMPTS.filter((p) => p.tiers.trench.length + p.tiers.pearl.length > 0).length;
+  assert.ok(withDeep / AB.PROMPTS.length > 0.9, "deep tier present in " + withDeep + "/" + AB.PROMPTS.length);
+  const withPearl = AB.PROMPTS.filter((p) => p.tiers.pearl.length > 0).length;
+  assert.ok(withPearl / AB.PROMPTS.length > 0.6, "pearls present in " + withPearl + "/" + AB.PROMPTS.length);
 });

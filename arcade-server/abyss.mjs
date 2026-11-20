@@ -55,12 +55,72 @@ function fromCategory(c) {
   const tiers = { bubble: take(bubble), clever: take(clever), shoal: take(shoal), reef: take(reef), trench: take(trench), pearl: take(pearl) };
   return { id: c.id, cat: c.cat, prompt: c.prompt, rule: c.rule, auto: true, count: n, tiers };
 }
+// ---- fame-aware tiering -------------------------------------------------------------------------------------------------
+// Flat lists are written in topical or chronological groups, so "position in the list" is a weak rarity signal on its own (a cartoon
+// character, a mainstream sequel or last year's blockbuster at the END of a list is not a deep cut). Pass 2 uses what the rest of the
+// bank already knows: how common an answer was judged anywhere else, how many prompts mention it, and whether it just extends a famous
+// name ("Iron Man 3", "Deadpool and Wolverine"). Famous entries are re-ranked EARLIER in their list and the six tiers are then
+// re-split from the new order, so every tier still holds genuinely obscure answers instead of collapsing.
+const TIER_IDX = Object.fromEntries(TIER_ORDER.map((t, i) => [t, i]));
+const STOP_TOKENS = new Set("with from that this city united town club film movie game games show name time love girl boy king queen lord lady miss mister doctor captain black white green blue gold silver super mega mini little great grand royal baby dark light night world star stars land park street house home water fire".split(" "));
+const formsOf = (e) => e.split("=").map((x) => norm(x)).filter(Boolean);
+const keyToken = (n) => { const t = n.split(" ").filter((w) => w.length >= 4 && !STOP_TOKENS.has(w)); return n.split(" ").length <= 2 && t.length === 1 ? t[0] : null; };
+function buildFame(prompts) {
+  const best = new Map(), seen = new Map(), tok = new Map();
+  for (const p of prompts) for (const tier of TIER_ORDER) for (const e of p.tiers[tier] ?? []) {
+    const ti = TIER_IDX[tier];
+    for (const f of formsOf(e)) {
+      best.set(f, Math.min(best.get(f) ?? 9, ti));
+      (seen.get(f) ?? seen.set(f, new Set()).get(f)).add(p.id);
+      const k = keyToken(f); if (k) (tok.get(k) ?? tok.set(k, new Set()).get(k)).add(p.id);
+    }
+  }
+  // famous multi-word / single-word names indexed by their first word, to spot "iron man 3" or "deadpool and wolverine" quickly
+  const famous = new Map();
+  for (const [name, ti] of best) if (ti <= 2 && name.length >= 4 && !STOP_TOKENS.has(name)) { const w = name.split(" ")[0]; (famous.get(w) ?? famous.set(w, []).get(w)).push({ name, ti }); }
+  return { best, seen, tok, famous };
+}
+/** Highest (most obscure) tier index an entry may keep, from cross-bank evidence. 5 = no cap. */
+function fameCap(entry, fame) {
+  let cap = 5;
+  for (const f of formsOf(entry)) {
+    const b = fame.best.get(f); if (b !== undefined) cap = Math.min(cap, b <= 2 ? 2 : b);            // judged common anywhere -> at most "shoal" (hulk, elephant ...)
+    const n = fame.seen.get(f)?.size ?? 0; if (n >= 6) cap = Math.min(cap, 2); else if (n >= 4) cap = Math.min(cap, 3); else if (n >= 3) cap = Math.min(cap, 4);
+    const k = keyToken(f), kn = k ? (fame.tok.get(k)?.size ?? 0) : 0; if (kn >= 6) cap = Math.min(cap, 2); else if (kn >= 4) cap = Math.min(cap, 3);
+    const words = f.split(" ");                                                                       // extends a famous name: "iron man 3", "deadpool and wolverine"
+    for (let i = 0; i < words.length; i++) for (const c of fame.famous.get(words[i]) ?? []) {
+      if (c.name === f) continue;
+      const tail = words.slice(i).join(" "); if (tail === c.name || tail.startsWith(c.name + " ")) cap = Math.min(cap, Math.max(2, c.ti + 1));
+    }
+  }
+  return cap;
+}
+const FRACTIONS = ["bubble", "clever", "shoal", "reef", "trench", "pearl"];
+function refine(p, fame) {
+  const entries = []; let pos = 0; const n = TIER_ORDER.reduce((a, t) => a + p.tiers[t].length, 0);
+  const sizes = TIER_ORDER.map((t) => p.tiers[t].length);
+  for (const t of TIER_ORDER) for (const e of p.tiers[t]) entries.push({ e, pos: pos++ / Math.max(1, n - 1), cap: Math.min(fameCap(e, fame), 5) });
+  // upper edge (as a fraction of the list) of each tier, used to pull famous entries earlier
+  const edge = []; { let acc = 0; for (const sz of sizes) { acc += sz; edge.push(acc / n); } }
+  for (const x of entries) x.adj = x.cap >= 5 ? x.pos : Math.min(x.pos, (edge[x.cap] ?? 1) - 1e-3 + x.pos * 1e-4);
+  entries.sort((a, b) => a.adj - b.adj);
+  const out = Object.fromEntries(FRACTIONS.map((t) => [t, []]));
+  let i = 0;
+  for (let ti = 0; ti < sizes.length; ti++) for (let k = 0; k < sizes[ti]; k++, i++) { const x = entries[i]; out[FRACTIONS[Math.min(ti, x.cap)]].push(x.e); }
+  // never leave a prompt without anything rarer than "shoal": its most obscure answer stays at reef
+  if (!out.reef.length && !out.trench.length && !out.pearl.length && out.shoal.length) { const last = entries[entries.length - 1].e; out.shoal = out.shoal.filter((e) => e !== last); out.reef.push(last); }
+  return { ...p, tiers: out, refined: true };
+}
+
 const handIds = new Set(HAND.map((p) => p.id));
-const AUTO_ALL = CATEGORIES.filter((c) => !handIds.has(c.id)).map(fromCategory).filter((p) => p.count >= 12);
+const RAW_AUTO = CATEGORIES.filter((c) => !handIds.has(c.id)).map(fromCategory).filter((p) => p.count >= 12);
+const RAW_THEME = THEME_PROMPT_DATA.map((c) => ({ ...fromCategory(c), theme: c.theme })).filter((p) => p.count >= 12);
+const FAME = buildFame([...HAND, ...RAW_AUTO, ...RAW_THEME]);
+const AUTO_ALL = RAW_AUTO.map((p) => refine(p, FAME));
 const AUTO = AUTO_ALL.filter((p) => p.count >= 30);
 /** The Abyss bank: hand-tiered prompts plus auto-tiered categories with enough answers to make rarity meaningful. */
 /** Themed banks (movies, sports, music, TV, games): auto-tiered like the categories, tagged with their theme. */
-export const THEME_PROMPTS = THEME_PROMPT_DATA.map((c) => ({ ...fromCategory(c), theme: c.theme })).filter((p) => p.count >= 12);
+export const THEME_PROMPTS = RAW_THEME.map((p) => refine(p, FAME));
 export { THEME_META };
 export const THEME_BY_ID = Object.fromEntries(THEME_META.map((t) => [t.id, t]));
 export const THEME_COUNT = 7;

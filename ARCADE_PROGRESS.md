@@ -101,3 +101,7 @@ User: wanted to drag and place the ball instead of pressing receiver buttons. `P
 
 ## Round: Gridiron drag-and-place + Abyss themed dives
 User: drag-and-place passing in Gridiron; make Abyss better with animations, more questions and specialty themed modes with themed backgrounds (like movie / sports trivia in a competitor). Built original equivalents: `throwAt` drag-and-place passing with aim assist, and Abyss themed dives (5 themes, 58 prompts, themed animated scenes, ocean creatures + reaction effects). 240 engine tests (new `abyssThemes.test.mjs`); browser e2e for a full themed dive.
+
+## Round: Abyss rarity + performance fixes
+User: themed button lags badly; "not niche" answers (Hulk) rated as the most niche. Rarity is now fame-aware (cross-bank caps, sequel/extension rule, alias-merge data fix; 244 tests), and the themed scenes were rebuilt around cached strips (draw calls per frame: sports 2,724 -> 31, TV 3,953 -> 369, movies 3,153 -> 567) with a 30 fps cap and pausing behind sheets. Not verified on a physical iPhone (measured by draw-call counts and 4x CPU throttle in headless Chrome).
+

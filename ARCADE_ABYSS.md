@@ -58,3 +58,15 @@ Not done: the reference's puffer-party/themed-pack/merch menus; hand-drawn sprit
 - **Ocean polish:** big creatures cross the water column (whales, manta rays, jellyfish), reaction bursts (bubbles / golden shockwave / ink cloud) and speed lines while diving.
 - **Limits:** lists were written from general knowledge and are not human-reviewed; rarity is the list order, not measured data. Use the existing report button (and `npm run abyss:audit`) to find bad entries. Scene art is original but the pixel look was not tuned on real phones.
 
+## Rarity is fame-aware (fix for "Hulk is a deep cut")
+- **Problem:** auto-tiered lists used the answer's POSITION in the list as its rarity. Lists were written in topical/chronological groups, so household names at the end (Hulk, Shrek, *Iron Man 3*, last year's blockbuster) were scored as deep cuts.
+- **Fix (`refine()` in `abyss.mjs`):** every auto-tiered entry is capped using what the whole bank already knows: (1) judged bubble/clever/shoal anywhere else -> never rarer than shoal; (2) appears in many prompts (6+ -> shoal, 4+ -> reef, 3+ -> trench) or its single key word does; (3) it extends a famous name ("Iron Man 3", "Deadpool and Wolverine", full team names). Capped entries are re-ranked EARLIER in their list and the six tiers are re-split from the new order, so tiers still hold genuinely obscure answers. Hand-tiered prompts are untouched.
+- **Consequences:** closed sets of famous things (NBA/NFL/MLB/NHL teams, Pixar films) honestly have no trench/pearl answers, so a prompt may top out at reef (every prompt keeps at least one answer above shoal). About 81% of prompts still have a pearl tier. Tests that need "the deepest answer" use `deepAns()`.
+- **Data fix:** in the themed banks a lowercase segment after an aliased entry is now merged as another alias (`Cavaliers=cavs|cleveland cavaliers`), so full team names no longer score as separate, deeper answers.
+- **Tests:** `abyssThemes.test.mjs` (household names never rarer than shoal, sequels/"X and Y" capped, alias merge, deep tiers still common).
+
+## Performance (fix for "themed mode lags")
+- Themed scenes used 2,700-4,000 canvas draw calls per frame (the ocean uses ~950): fine on desktop Chrome, laggy on phones. `ThemeScene.tsx` now pre-renders every scrolling layer into an offscreen strip (`S()`), caches static backdrops (`B()`) and scrolling text (`T()`), refreshes only animated layers a few times per second, and runs at 30 fps. Draw calls dropped to 30-570 per frame.
+- The background canvas (ocean on the home screen, scenes in play) pauses while a sheet/menu is open or the tab is hidden.
+- `node scripts/abyss-draw-calls.mjs` re-measures it (run against a production build).
+

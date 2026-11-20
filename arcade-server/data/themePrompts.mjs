@@ -1,6 +1,14 @@
 // Abyss themed banks. Every prompt is a FLAT list, most famous first (a, b=alias, c ...). abyss.mjs auto-tiers each list into the
 // six rarity tiers by position, exactly like the category bank. Ids are prefixed t- and tagged with their theme.
-const L = (s) => s.split("|").map((x) => x.trim()).filter(Boolean);
+// A lowercase segment that directly follows an entry that already has aliases ("Lakers=la lakers|los angeles lakers") is one more
+// alias of THAT entry, not a separate answer (otherwise full team names would be ranked as separate, deeper answers).
+const L = (s) => {
+  const out = [];
+  for (const seg of s.split("|").map((x) => x.trim()).filter(Boolean)) {
+    if (out.length && out[out.length - 1].includes("=") && /^[a-z]/.test(seg) && !seg.includes("=")) out[out.length - 1] += "=" + seg; else out.push(seg);
+  }
+  return out;
+};
 const mk = (theme, cat, rows) => rows.map(([id, prompt, list]) => ({ id: `t-${theme}-${id}`, theme, cat, prompt, list: L(list) }));
 
 export const THEME_PROMPT_DATA = [

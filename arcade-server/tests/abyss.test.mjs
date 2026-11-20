@@ -6,15 +6,22 @@ import { FISH, ABYSS_PACK_IDS, PACK_IDS, PACKS, packOdds, rollPack, CHARACTERS }
 import { MemoryStore } from "../store.mjs";
 import { studentCtx, guestCtx } from "./helpers.mjs";
 
+// rarity is now fame-adjusted, so some prompts legitimately have no pearl (or trench) answer: tests use each prompt's deepest tier
+const deepTier = (p) => [...AB.TIER_ORDER].reverse().find((t) => p.tiers[t].length);
+const deepAns = (p) => p.tiers[deepTier(p)][0].split("=")[0];
+const deepPts = (p) => AB.TIERS[deepTier(p)].points;
+
 // answering needs the clock to have started (LEAD_MS after the question is first shown)
 const A = (c, body) => { c.now += 3000; return handleAbyss(c, body); };
 
-test("prompt bank: every prompt has all six tiers, no empty/duplicate answers within a tier, and its rule holds for every answer", () => {
+test("prompt bank: every prompt has its common tiers filled and something rarer, no empty/duplicate answers within a tier, and its rule holds for every answer", () => {
   assert.ok(AB.PROMPTS.length >= 20);
   const ids = new Set();
   for (const p of AB.PROMPTS) {
     assert.ok(!ids.has(p.id), `duplicate id ${p.id}`); ids.add(p.id);
-    for (const t of AB.TIER_ORDER) assert.ok(p.tiers[t]?.length >= 1, `${p.id} has no ${t} answers`);
+    for (const t of ["bubble", "clever", "shoal"]) assert.ok(p.tiers[t]?.length >= 1, `${p.id} has no ${t} answers`);
+    // closed sets of famous things (every NBA team, every Pixar film) honestly have no trench/pearl answers
+    assert.ok(p.tiers.reef.length + p.tiers.trench.length + p.tiers.pearl.length >= 1, `${p.id} has no rarer answers at all`);
     const total = AB.TIER_ORDER.reduce((n, t) => n + p.tiers[t].length, 0);
     assert.ok(total >= 15, `${p.id} needs more answers`);
     for (const t of AB.TIER_ORDER) {
@@ -64,7 +71,7 @@ test("run: scoring, depth, timing and the answer clock", () => {
   assert.ok(r.result.examples.every((e) => AB.TIER_ORDER.indexOf(e.tier) > AB.TIER_ORDER.indexOf("reef")));
   // late answer is a miss even if it is the best answer
   t += 40_000; AB.question(run, t);
-  const late = AB.submit(run, AB.getPrompt(run.ids[1]).tiers.pearl[0].split("=")[0], t + 32_000);
+  const late = AB.submit(run, AB.getPrompt(run.ids[1]).tiers.pearl[0]?.split("=")[0] ?? deepAns(AB.getPrompt(run.ids[1])), t + 32_000);
   assert.equal(late.result.points, 0); assert.equal(late.result.timedOut, true);
   // within grace is fine
   t += 40_000; AB.question(run, t);
@@ -127,30 +134,30 @@ test("API: archive only for the last 14 days and gives no pearls or streak; gues
   let r = await handleAbyss(ctx, { type: "start", mode: "archive", date: "2032-05-19" });
   const ids = AB.dailyIds("2032-05-19");
   let last;
-  for (let i = 0; i < 7; i++) last = await A(ctx, { type: "answer", mode: "archive", date: "2032-05-19", answer: AB.getPrompt(ids[i]).tiers.pearl[0].split("=")[0] });
-  assert.equal(last.run.points, 700); assert.equal(last.finish.pearls, 0);
+  for (let i = 0; i < 7; i++) last = await A(ctx, { type: "answer", mode: "archive", date: "2032-05-19", answer: deepAns(AB.getPrompt(ids[i])) });
+  assert.equal(last.run.points, ids.reduce((n, id) => n + deepPts(AB.getPrompt(id)), 0)); assert.equal(last.finish.pearls, 0);
   assert.equal((await handleAbyss(ctx, { type: "home" })).profile.dives, 0);
 
   const g = { ...guestCtx(store), now: Date.UTC(2032, 4, 20, 9) };
   let gr = await handleAbyss(g, { type: "start", mode: "daily" });
   assert.ok(gr.guestRun);
   const p0 = AB.getPrompt(AB.dailyIds("2032-05-20")[0]);
-  const ans = await A(g, { type: "answer", mode: "daily", answer: p0.tiers.trench[0].split("=")[0], run: gr.guestRun });
-  assert.equal(ans.result.points, 85); assert.ok(ans.guestRun.i === 1);
+  const ans = await A(g, { type: "answer", mode: "daily", answer: deepAns(p0), run: gr.guestRun });
+  assert.equal(ans.result.points, deepPts(p0)); assert.ok(ans.guestRun.i === 1);
   await assert.rejects(handleAbyss(g, { type: "fish" }).then((x) => { assert.equal(x.signedIn, false); throw new Error("ok-guest"); }), /ok-guest/);
   await assert.rejects(handleAbyss(g, { type: "open_pack", packId: "abyss_reef", requestId: "abcdefgh1" }), /Sign in/);
 });
 
 test("API: unlimited run, cash-out pearls capped per day, and the report endpoint", async () => {
   const store = new MemoryStore(); const ctx = { ...studentCtx(store, "diver-3"), now: Date.UTC(2032, 5, 1, 9) };
-  let r = await handleAbyss(ctx, { type: "start", mode: "unlimited" });
+  let r = await handleAbyss(ctx, { type: "start", mode: "unlimited" }); let pts = 0;
   for (let i = 0; i < 6; i++) {
     const p = AB.getPrompt(AB.getPrompt(r.run ? (await store.getMastery("diver-3", "abyss:unlimited")).ids[i] : "")?.id);
     ctx.now += 1000;
-    r = await A(ctx, { type: "answer", mode: "unlimited", answer: p.tiers.pearl[0].split("=")[0] });
+    r = await A(ctx, { type: "answer", mode: "unlimited", answer: deepAns(p) }); pts += deepPts(p);
   }
   const c = await handleAbyss(ctx, { type: "cashout", mode: "unlimited" });
-  assert.equal(c.finish.pearls, 60); assert.equal(c.run.done, true);
+  assert.equal(c.finish.pearls, Math.floor(pts / 10)); assert.equal(c.run.done, true);
   assert.equal((await handleAbyss(ctx, { type: "cashout", mode: "unlimited" })).finish, null, "cash-out is idempotent");
   assert.equal((await handleAbyss(ctx, { type: "report", promptId: "country-b", answer: "Myanmar" })).ok, true);
   await assert.rejects(handleAbyss(ctx, { type: "report", promptId: "nope", answer: "x" }), /Unknown prompt/);
@@ -205,8 +212,8 @@ test("unlisted answers do NOT end the question: keep guessing until one scores, 
   assert.deepEqual(r.guesses, ["definitely not listed", "also not listed"]);
   assert.equal(AB.question(run, t + 7000).guesses.length, 2, "question view shows guesses so a refresh keeps them");
   assert.ok(AB.submit(run, "   ", t + 7000).error, "empty guesses are rejected, not counted");
-  r = AB.submit(run, p.tiers.trench[0].split("=")[0], t + 11_500);
-  assert.equal(r.result.points, 85); assert.deepEqual(r.result.wrong, ["definitely not listed", "also not listed"]);
+  r = AB.submit(run, deepAns(p), t + 11_500);
+  assert.equal(r.result.points, deepPts(p)); assert.deepEqual(r.result.wrong, ["definitely not listed", "also not listed"]);
   assert.equal(run.i, 1); assert.deepEqual(run.guesses, []);
   // clock runs out while unlisted: miss, and the guesses come back for reporting
   t += 40_000; AB.question(run, t);

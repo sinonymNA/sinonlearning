@@ -84,7 +84,7 @@ export function AbyssHome() {
   return (
     <PrefsProvider>
       <div className="px-play home">
-        <PixelOcean depth={0} surfaceFrac={0.64} ruler={false} />
+        <PixelOcean depth={0} surfaceFrac={0.64} ruler={false} paused={sheet !== null} />
         <div className="px-crt" />
         <div className="px-col">
         <TopButtons onMenu={() => setSheet("menu")} />
@@ -265,9 +265,9 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
   return (
     <div className={`px-play ${meta ? "themed" : ""}`} style={meta ? ({ ["--t1" as any]: meta.c1, ["--t2" as any]: meta.c2 } as any) : undefined}>
       {meta ? (
-        <ThemeScene theme={meta.id as ThemeId} dist={target} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDist={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+        <ThemeScene theme={meta.id as ThemeId} dist={target} paused={menu} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDist={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
       ) : (
-        <PixelOcean depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+        <PixelOcean paused={menu} depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
       )}
       <div className="px-crt" />
       <div className="px-col">

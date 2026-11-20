@@ -104,3 +104,8 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 ## 20. Abyss themed dives
 - `arcade-server/tests/abyssThemes.test.mjs`: theme banks (all tiers filled, no cross-entry duplicate answers), run shape (7 distinct prompts from one theme, reproducible per id), scoring/finish with no lives, sanitizeRun, signed-in API flow (save, resume, pearls once, per-theme best, fresh run after finish), guest flow, no answer-key leak.
 - Browser: `node scripts/abyss-theme-e2e.mjs --url http://localhost:3100 --shots <dir>` plays a full Music themed dive and a daily dive on a 390x844 phone viewport and opens the Themed Dives sheet.
+
+## 21. Abyss rarity + performance
+- Unit: `abyssThemes.test.mjs` fame-aware rarity tests; `abyss.test.mjs`/`pufferParty.test.mjs` use each prompt's deepest available tier.
+- Perf: `node scripts/abyss-draw-calls.mjs` (production build) prints canvas draw calls per frame for home, ocean and the five themed scenes.
+

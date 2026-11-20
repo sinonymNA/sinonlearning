@@ -25,11 +25,13 @@ test("a valid answer passes the puffer and scores by rarity; unlisted and repeat
   const bad = ctx.tryAct(first, { type: "answer", text: "definitely not a real thing zzq" });
   assert.equal(bad.ok, false); assert.equal(bad.code, "nope"); assert.equal(grp.holder, first, "wrong guess keeps the puffer");
   const lives = grp.lives.get(first);
-  const a = answerFor(g, grp, "pearl");
+  const BONUS = { reef: 10, trench: 15, pearl: 25 };   // some prompts have no pearl once rarity is fame-adjusted: use the deepest tier
+  const tier = ["pearl", "trench", "reef"].find((t) => getPrompt(grp.promptId).tiers[t].length);
+  const a = answerFor(g, grp, tier);
   const pts0 = g.points.get(first);
   const r = ctx.tryAct(first, { type: "answer", text: a });
-  assert.equal(r.ok, true); assert.equal(r.result.tier, "pearl");
-  assert.equal(g.points.get(first), pts0 + 10 + 25);
+  assert.equal(r.ok, true); assert.equal(r.result.tier, tier);
+  assert.equal(g.points.get(first), pts0 + 10 + BONUS[tier]);
   assert.notEqual(grp.holder, first); assert.equal(grp.lives.get(first), lives);
   // the same answer can't be reused by the next player
   const dup = ctx.tryAct(grp.holder, { type: "answer", text: a });
@@ -41,7 +43,7 @@ test("the answer key never appears in any view; only said answers do", () => {
   const ctx = makeRoom({ n: 4, playlist: ["puffer_party"] });
   const g = ctx.begin(); const grp = g.groups[0];
   const p = getPrompt(grp.promptId);
-  const unsaid = p.tiers.pearl[0].split("=")[0];
+  const unsaid = (p.tiers.pearl[0] ?? p.tiers.trench[0] ?? p.tiers.reef[0]).split("=")[0];
   for (const m of ctx.players) { const json = JSON.stringify(ctx.view(m).game); assert.ok(!json.includes(unsaid) || p.prompt.toLowerCase().includes(unsaid.toLowerCase()), "unsaid answers must not leak"); assert.ok(!json.includes('"tiers"')); }
   const proj = JSON.stringify(ctx.room.view({ playerId: null, projector: true }).game ?? {});
   assert.ok(!proj.includes('"tiers"'));

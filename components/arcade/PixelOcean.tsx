@@ -21,6 +21,7 @@ type Props = {
   onDepth?: (m: number) => void;
   onArrive?: () => void;
   arriveKey?: number;            // bump to re-trigger onArrive for zero-distance moves
+  paused?: boolean;              // stop redrawing (a sheet/menu is covering the scene)
 };
 
 const PPM = 0.7;
@@ -71,7 +72,8 @@ export function makeSprite(fishId: string): Promise<HTMLCanvasElement | null> {
   });
 }
 
-export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fishId = null, mood = "idle", ruler = true, onDepth, onArrive, arriveKey = 0 }: Props) {
+export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fishId = null, mood = "idle", ruler = true, onDepth, onArrive, arriveKey = 0, paused = false }: Props) {
+  const pausedRef = useRef(paused); pausedRef.current = paused;
   const ref = useRef<HTMLCanvasElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
   const st = useRef({ cur: depth, from: depth, to: depth, start: 0, dur: 1, moving: false, sprite: null as HTMLCanvasElement | null, mood, markers, surfaceFrac, ruler, lastInt: -1, bubbles: [] as { x: number; y: number; r: number; v: number }[], burst: 0 });
@@ -103,6 +105,7 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
     try { void document.fonts?.load("8px VT323"); } catch { /* fonts optional */ }
 
     const frame = (now: number) => {
+      if (pausedRef.current || document.hidden) { raf = requestAnimationFrame(frame); return; }
       const s = st.current; const t = calm ? 0 : now / 1000;
       if (s.moving) {
         const f = Math.min(1, (now - s.start) / s.dur), e = f < .5 ? 2 * f * f : 1 - (-2 * f + 2) ** 2 / 2;
