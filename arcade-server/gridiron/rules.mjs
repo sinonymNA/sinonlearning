@@ -42,7 +42,7 @@ export class Game {
       final: this.final, log: this.log.slice(-8), stats: { ...this.stats }, lastPlay: this.lastPlay,
     };
   }
-  downText() { const d = ["", "1st", "2nd", "3rd", "4th"][this.down]; return `${d} & ${this.goalToGo ? "Goal" : this.toGo}`; }
+  downText() { const d = ["", "1st", "2nd", "3rd", "4th"][this.down]; return `${d} & ${this.goalToGo ? "Goal" : Math.max(1, Math.ceil(this.toGo - 0.05))}`; }
 
   // ---- the player's offence --------------------------------------------------------------------
   /** Create the PlaySim for the chosen play. The client runs it and hands `result` back to finishPlay. */

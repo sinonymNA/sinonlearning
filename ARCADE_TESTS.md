@@ -96,3 +96,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Content tests: built-in bank sizes/validity, Abyss bank size. Suite: 162 passing.
 - Puffer Party: 8 tests (registration, scoring by rarity, dup/unlisted keep the turn, no answer-key leak, pop/lives/new category, disconnect, 35 players, bot picks). Suite: 170 passing.
 - Puffer Party host-crash regression: compatibility() must have an entry for every game (test added). Suite: 171 passing. Full flow (teacher host + 3 students + projector, through a pop) browser-checked.
+
+## 19. Retro Gridiron
+- `arcade-server/tests/gridiron.test.mjs` (included in `npm run arcade:test`, 216 passing overall): playbook shape, routes move, defence states, man shadowing, throw targeting/lead, ball flight arc, outcome variety, rating effects (accuracy, catching, speed, pressure), sack, carry auto-run/steer/no-teleport, TD, OOB, tackle/broken/missed/gang, blockers, rules (first down, downs, INT, incomplete clock, sack/safety, TD, FG, punt, quarters, halftime, final, two-minute), CPU drive determinism, bot-played full Quick and Two-Minute games.
+- Browser: `node scripts/gridiron-e2e.mjs --url http://localhost:3100 --shots <dir>` (menu -> plays -> snap -> throw -> carry -> cpu drive; pause; phone landscape/portrait + tablet overflow checks). Run against `next dev -p 3100`. Debug hook: `/arcade/gridiron?debug=1` exposes `window.__gr` for tests.

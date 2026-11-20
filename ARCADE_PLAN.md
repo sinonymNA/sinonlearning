@@ -64,3 +64,11 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 
 ## Teacher gift button
 - [x] "🪙 Give 100 coins" on the host dashboard: pays every signed-in student currently in the room (guests and bots skipped). Safeguards: host only, max 3 gifts per session, 300 gift-coins/day per student, one payment per press per student. Students see a toast and the coins appear in their wallet.
+
+## Retro Gridiron (solo pixel football)
+- [x] Engine: 8-play playbook with formations + waypoint routes, real-time route running, man/zone/blitz defence, pass rush, QB throw with lead solver, catch/drop/deflection/INT/sack, lateral-only carry, tackles/broken/missed, blockers, OOB/TD (`arcade-server/gridiron/`, unit-tested).
+- [x] Rules: downs, first downs, TD/XP/FG/punt/safety, clock, quarters, halftime, final; Quick Play (4 quarters) and Two-Minute Drill; CPU drives simulated with play-by-play.
+- [x] Client: pixel field with scrolling camera, route overlays, A-D targets + keyboard, left/right steering (pad, keys, touch), HUD scoreboard, play select, 4th-down choice, FG timing meter, pause/restart/exit, results; landscape + portrait.
+- [x] Arcade integration: `/arcade/gridiron` (immersive), Solo hub card, no new backend.
+- [x] Browser-verified in headless Chromium: full Two-Minute Drill to FINAL, FG + punt flows, steering, desktop/tablet/phone layouts, no console errors.
+- [ ] Not verified: physical phones/tablets, audio by ear, long-run feel/balance with human players. Not built: interception returns, penalties, fumbles, 2-point tries, defence control.

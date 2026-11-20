@@ -298,3 +298,8 @@ test("a full Quick Play match runs to a final result", () => {
 test("a Two-Minute Drill runs to a final result", () => {
   for (const seed of [4, 5]) { const g = botGame("twoMinute", seed); assert.equal(g.phase, "final"); assert.ok(g.plays >= 3); }
 });
+
+test("down & distance text is a whole number and goal-to-go reads 'Goal'", () => {
+  const g = new Game({ seed: 3 }); g.toGo = 3.0696; assert.equal(g.downText(), "1st & 4");
+  g.yardline = 95; g.line = 100; assert.equal(g.downText(), "1st & Goal");
+});

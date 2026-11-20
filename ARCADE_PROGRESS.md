@@ -83,3 +83,6 @@ Pixel canvas ocean + pixel HUD/menus, lead-in countdown, DOM labels for crisp te
 
 ## Round: Abyss any-screen + 242 prompts + Puffer Party
 See ARCADE_ABYSS.md "v4". Browser-checked (dev auth): Abyss at 820x1180 (iPad), 1366x768, 390x844; Puffer Party solo practice at phone + desktop (own turn, wrong guess, bots passing, said-answer bubbles, no horizontal overflow). Not browser-checked: Puffer Party projector view and the pop animation in motion; multi-human tables; real devices. Auto-tiered Abyss prompts have not been reviewed by a person.
+
+## Round: Retro Gridiron
+Built a complete 2D pixel football game (see ARCADE_GRIDIRON.md). Engine first (`arcade-server/gridiron/*`, 45 node:test cases covering routes, defence states, throws/catches/INT/drop/deflection/sack, carry steering/tackles/TD/OOB, downs/first downs/turnovers/clock/quarters/FG/punt/safety/two-minute/CPU drives, and bot-played full games), then the canvas client, controls, menus, and arcade integration. Balance pass with a bot: tackle radius/probability and pursuit speed raised after YAC was too high (median now ~6 yd, breakaways <2%); INT/drop rates reduced. `scripts/gridiron-e2e.mjs` smoke-tests the browser flow.

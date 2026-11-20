@@ -798,3 +798,5 @@
 .px-col > * { pointer-events: auto; }
 .px-col .px-hud { pointer-events: none; }
 .pp-bottom { grid-template-columns: minmax(0, 1fr); min-width: 0; } .pp-form, .pp-clock, .pp-wait { min-width: 0; max-width: 100%; } .pp-lives { flex: none; } .pp-send { flex: none; padding: 0 16px; }
+
+.hb-game.green { --edge: #86efac; --c1: #166534; --c2: #0a2a1a; }
