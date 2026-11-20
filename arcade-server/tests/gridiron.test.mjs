@@ -108,8 +108,8 @@ test("interception: defender on the ball with the receiver out of reach", () => 
 });
 
 test("dropped pass: catching ability matters", () => {
-  const lo = mk(); lo.advance(1); lo.throwTo(0); lo.wr[0].r.catching = 20; lo.rng = Object.assign(() => 0.2, rng1);
-  const t = lo.wr[0]; lo.target = { x: t.x, y: t.y, ideal: { x: t.x, y: t.y } }; for (const d of lo.defenders) { d.x = 2; d.y = 100; }
+  const lo = mk(); lo.advance(1); lo.throwTo(0); lo.wr[0].r.catching = 20; lo.rng = Object.assign(() => 0.02, rng1);
+  const t = lo.wr[0]; lo.target = { x: t.x, y: t.y, ideal: { x: t.x, y: t.y } }; for (const d of lo.defenders) { d.x = 2; d.y = 100; } lo.db[0].x = t.x + 1.2; lo.db[0].y = t.y + 1.2; lo.db[0].r.coverage = 20; lo.db[0].r.awareness = 20;
   lo.phase = "flight"; lo.flight.t0 = lo.t - 9; lo.step(SIM.DT); assert.equal(lo.result.kind, "drop");
   const hi = mk(); hi.advance(1); hi.throwTo(0); hi.wr[0].r.catching = 99; hi.rng = Object.assign(() => 0.2, rng1);
   const t2 = hi.wr[0]; hi.target = { x: t2.x, y: t2.y, ideal: { x: t2.x, y: t2.y } }; for (const d of hi.defenders) { d.x = 2; d.y = 100; }

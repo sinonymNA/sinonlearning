@@ -348,7 +348,9 @@ export class PlaySim {
       const pBreak = 0.22 * ((dB.r.coverage * 0.5 + dB.r.awareness * 0.5) / 100) * (1 - dd / 2.4);
       if (this.rng() < pBreak) return this._incomplete("broken up", false, "deflection");
     }
-    const pDrop = clamp((1 - w.r.catching / 100) * 0.26 + (rd / SIM.CATCH_RADIUS) * 0.08 + (t.pressured ? 0.02 : 0), 0.01, 0.6);
+    // Open receivers catch the ball. Drops only really happen when a defender is on the man or the ball was off-target.
+    const crowd = clamp(1 - dd / 3, 0, 1);
+    const pDrop = clamp((1 - w.r.catching / 100) * 0.16 * crowd + (rd / SIM.CATCH_RADIUS) * 0.025, 0, 0.2);
     if (this.rng() < pDrop) return this._incomplete("dropped", false, "drop");
     return this._caught(w, land);
   }
