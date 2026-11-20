@@ -530,7 +530,7 @@ async function abyssLock(key, fn) {
 }
 export const ARCHIVE_DAYS = 14;
 const PEARL_CAP = 200;
-const pubProfile = (p, date) => ({ streak: AB.liveStreak(p, date), best: p.best, dives: p.dives, bestScore: p.bestScore, bestDepth: p.bestDepth, bestUnlimited: p.bestUnlimited, unlimitedRuns: p.unlimitedRuns, fish: p.fish, totalPoints: p.totalPoints });
+const pubProfile = (p, date) => ({ themeRuns: p.themeRuns ?? 0, themeBest: p.themeBest ?? {}, streak: AB.liveStreak(p, date), best: p.best, dives: p.dives, bestScore: p.bestScore, bestDepth: p.bestDepth, bestUnlimited: p.bestUnlimited, unlimitedRuns: p.unlimitedRuns, fish: p.fish, totalPoints: p.totalPoints });
 const shiftDay = (date, n) => new Date(Date.parse(date) + n * 86400000).toISOString().slice(0, 10);
 
 export async function handleAbyss(ctx, body) {
@@ -540,11 +540,11 @@ export async function handleAbyss(ctx, body) {
   if (abyssLimiter.limited(`abyss:${user?.id ?? ctx.ip ?? "anon"}`, 60_000, 90)) fail("Slow down a little.", "rate");
   const wid = user ? `abyss:${user.id}` : null;
   const loadProfile = async () => ({ ...AB.newProfile(), ...((user && await store.getMastery(user.id, "abyss:profile")) || {}) });
-  const runKey = (mode, d) => (mode === "unlimited" ? "abyss:unlimited" : `abyss:${mode}:${d}`);
+  const runKey = (mode, d, theme) => (mode === "unlimited" ? "abyss:unlimited" : mode === "theme" ? `abyss:theme:${theme}` : `abyss:${mode}:${d}`);
 
   switch (body.type) {
     case "home": {
-      const base = { date, signedIn: !!user, count: AB.PROMPTS.length, daily: AB.DAILY_COUNT, timeLimit: AB.TIME_LIMIT_MS / 1000, tiers: AB.TIER_ORDER.map((t) => AB.TIERS[t]) };
+      const base = { date, signedIn: !!user, count: AB.PROMPTS.length, daily: AB.DAILY_COUNT, timeLimit: AB.TIME_LIMIT_MS / 1000, tiers: AB.TIER_ORDER.map((t) => AB.TIERS[t]), themes: AB.THEME_META.map((t) => ({ ...t, count: AB.THEME_PROMPTS.filter((p) => p.theme === t.id).length })) };
       if (!user) return base;
       const profile = await loadProfile();
       const today = await store.getMastery(user.id, runKey("daily", date));
@@ -559,24 +559,27 @@ export async function handleAbyss(ctx, body) {
     }
 
     case "start": {
-      const mode = ["daily", "archive", "unlimited"].includes(body.mode) ? body.mode : fail("Unknown mode.");
+      const mode = ["daily", "archive", "unlimited", "theme"].includes(body.mode) ? body.mode : fail("Unknown mode.");
+      const theme = mode === "theme" ? (AB.THEME_BY_ID[body.theme] ? body.theme : fail("Unknown theme.")) : null;
       let d = date;
       if (mode === "archive") {
         d = String(body.date ?? "");
         if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || d >= date || d < shiftDay(date, -ARCHIVE_DAYS)) fail("That dive isn't in the archive.");
       }
-      const key = runKey(mode, d);
+      const key = runKey(mode, d, theme);
+      const fresh = mode === "unlimited" || mode === "theme";
       return abyssLock(`${user?.id ?? "g"}|${key}`, async () => {
         if (user && mode === "archive") {
           const played = await store.getMastery(user.id, runKey("daily", d));   // already dived on the day: just show that result
           if (played?.done) return { run: AB.publicRun(played), question: null, share: AB.shareText(played, d) };
         }
         let run = null;
-        if (user) { run = await store.getMastery(user.id, key); if (mode === "unlimited" && (!run || run.done || body.fresh)) run = null; }
+        if (user) { run = await store.getMastery(user.id, key); if (fresh && (!run || run.done || body.fresh)) run = null; }
         else if (body.run) run = AB.sanitizeRun(body.run);
-        if (run && run.mode !== mode) run = null;
-        if (run?.done && mode !== "unlimited") return { run: AB.publicRun(run), question: null, share: AB.shareText(run, d), guestRun: user ? undefined : run };
-        if (!run) run = AB.newRun(mode, { date: mode === "unlimited" ? null : d, id: mode === "unlimited" ? crypto.randomUUID().slice(0, 12) : null });
+        if (run && (run.mode !== mode || (mode === "theme" && run.theme !== theme))) run = null;
+        if (run && fresh && run.done && !user) run = null;
+        if (run?.done && !fresh) return { run: AB.publicRun(run), question: null, share: AB.shareText(run, d), guestRun: user ? undefined : run };
+        if (!run) run = AB.newRun(mode, { date: fresh ? null : d, id: fresh ? crypto.randomUUID().slice(0, 12) : null, theme });
         const q = AB.question(run, now);
         if (user) await store.saveMastery(user.id, key, run);
         const fish = user ? (await loadProfile()).fish : null;
@@ -585,12 +588,13 @@ export async function handleAbyss(ctx, body) {
     }
 
     case "answer": {
-      const mode = ["daily", "archive", "unlimited"].includes(body.mode) ? body.mode : fail("Unknown mode.");
+      const mode = ["daily", "archive", "unlimited", "theme"].includes(body.mode) ? body.mode : fail("Unknown mode.");
+      const theme = mode === "theme" ? (AB.THEME_BY_ID[body.theme] ? body.theme : fail("Unknown theme.")) : null;
       const d = mode === "archive" ? String(body.date ?? "") : date;
-      const key = runKey(mode, d);
+      const key = runKey(mode, d, theme);
       return abyssLock(`${user?.id ?? "g"}|${key}`, async () => {
         const run = user ? await store.getMastery(user.id, key) : AB.sanitizeRun(body.run);
-        if (!run || run.mode !== mode) fail("Start the dive first.");
+        if (!run || run.mode !== mode || (mode === "theme" && run.theme !== theme)) fail("Start the dive first.");
         const r = AB.submit(run, String(body.answer ?? "").slice(0, 80), now, Math.random, { expired: body.expired === true });
         if (r.error) fail(r.error);
         if (r.retry) {   // not on the list: keep the question open, remember the guess
@@ -671,6 +675,10 @@ async function abyssFinish({ store, user, wid, run, mode, date, loadProfile }) {
     const a = await store.awardCapped({ userId: wid, coins: AB.pearlsForDaily(run.points), key: `dive:${date}`, reason: "pearl daily dive", dailyCap: PEARL_CAP, group: "pearl" });
     pearls = a.awarded ? a.coins : 0;
     for (const id of rec.newFish) { const g = await store.grantCharacter(wid, id, `streak:${id}`); if (g.granted) newFish.push(id); }
+  } else if (mode === "theme") {
+    AB.recordTheme(profile, run);
+    const a = await store.awardCapped({ userId: wid, coins: AB.pearlsForTheme(run.points), key: `theme:${run.id}`, reason: "pearl themed dive", dailyCap: PEARL_CAP, group: "pearl" });
+    pearls = a.awarded ? a.coins : 0;
   } else if (mode === "unlimited") {
     AB.recordUnlimited(profile, run);
     const a = await store.awardCapped({ userId: wid, coins: AB.pearlsForUnlimited(run.points), key: `unl:${run.id}`, reason: "pearl unlimited dive", dailyCap: PEARL_CAP, group: "pearl" });

@@ -3,6 +3,7 @@ import { ABYSS_PROMPTS as P1 } from "./data/abyssPrompts.mjs";
 import { CATEGORIES } from "./data/categories.mjs";
 import { ABYSS_PROMPTS_2 as P2 } from "./data/abyssPrompts2.mjs";
 import { ABYSS_PROMPTS_3 as P3 } from "./data/abyssPrompts3.mjs";
+import { THEME_PROMPT_DATA, THEME_META } from "./data/themePrompts.mjs";
 import { dayKey, hash, rng } from "./shop.mjs";
 
 export const TIME_LIMIT_MS = 25_000;
@@ -57,7 +58,12 @@ const handIds = new Set(HAND.map((p) => p.id));
 const AUTO_ALL = CATEGORIES.filter((c) => !handIds.has(c.id)).map(fromCategory).filter((p) => p.count >= 12);
 const AUTO = AUTO_ALL.filter((p) => p.count >= 30);
 /** The Abyss bank: hand-tiered prompts plus auto-tiered categories with enough answers to make rarity meaningful. */
-export const PROMPTS = [...HAND, ...AUTO];
+/** Themed banks (movies, sports, music, TV, games): auto-tiered like the categories, tagged with their theme. */
+export const THEME_PROMPTS = THEME_PROMPT_DATA.map((c) => ({ ...fromCategory(c), theme: c.theme })).filter((p) => p.count >= 12);
+export { THEME_META };
+export const THEME_BY_ID = Object.fromEntries(THEME_META.map((t) => [t.id, t]));
+export const THEME_COUNT = 7;
+export const PROMPTS = [...HAND, ...AUTO, ...THEME_PROMPTS];
 /** Everything playable in Puffer Party (validity only): the Abyss bank plus the smaller categories. */
 export const PUFFER_PROMPTS = [...PROMPTS, ...AUTO_ALL.filter((p) => p.count < 30)];
 const BY_ID = new Map(PUFFER_PROMPTS.map((p) => [p.id, p]));
@@ -135,10 +141,19 @@ export function dailyIds(date = dayKey()) {
   return out;
 }
 
-export function newRun(mode, { date = null, id = null } = {}) {
+/** Seven distinct prompts from one theme, chosen from the run id so a themed run is reproducible but different every time. */
+export function themeIds(theme, seed) {
+  const r = rng(hash(`abyss-theme:${theme}:${seed}`));
+  const pool = THEME_PROMPTS.filter((p) => p.theme === theme);
+  const out = [];
+  while (out.length < THEME_COUNT && pool.length) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0].id);
+  return out;
+}
+
+export function newRun(mode, { date = null, id = null, theme = null } = {}) {
   return {
-    v: 1, mode, date, id, i: 0, guesses: [], points: 0, lives: mode === "unlimited" ? LIVES : null, done: false,
-    ids: mode === "unlimited" ? [] : dailyIds(date), results: [], qStartedAt: null, finishedAt: null,
+    v: 1, mode, date, id, theme: mode === "theme" ? theme : null, i: 0, guesses: [], points: 0, lives: mode === "unlimited" ? LIVES : null, done: false,
+    ids: mode === "unlimited" ? [] : mode === "theme" ? themeIds(theme, id ?? "x") : dailyIds(date), results: [], qStartedAt: null, finishedAt: null,
   };
 }
 
@@ -201,15 +216,17 @@ export function finish(run, now) { if (!run.done) { run.done = true; run.finishe
 /** What the client may see of a run (no future prompt ids for the daily). */
 export function publicRun(run) {
   return {
-    mode: run.mode, date: run.date, i: run.i, total: total(run), points: run.points, depth: run.points * METRES_PER_POINT, lives: run.lives, done: run.done,
+    mode: run.mode, theme: run.theme ?? null, date: run.date, i: run.i, total: total(run), points: run.points, depth: run.points * METRES_PER_POINT, lives: run.lives, done: run.done,
     results: run.results.map((r) => ({ n: r.n, prompt: r.prompt, answer: r.answer, matched: r.matched, tier: r.tier, points: r.points, timedOut: r.timedOut, wrong: (r.wrong ?? []).slice(0, 12) })),
   };
 }
 
 /** Validates a client-held run (guests). Only shape matters: the worst a guest can do is cheat their own score. */
 export function sanitizeRun(raw) {
-  if (!raw || raw.v !== 1 || !["daily", "archive", "unlimited"].includes(raw.mode)) return null;
-  const run = newRun(raw.mode, { date: raw.mode === "unlimited" ? null : String(raw.date ?? "").slice(0, 10), id: raw.id ? String(raw.id).slice(0, 40) : null });
+  if (!raw || raw.v !== 1 || !["daily", "archive", "unlimited", "theme"].includes(raw.mode)) return null;
+  if (raw.mode === "theme" && !THEME_BY_ID[raw.theme]) return null;
+  const run = newRun(raw.mode, { date: raw.mode === "unlimited" || raw.mode === "theme" ? null : String(raw.date ?? "").slice(0, 10), id: raw.id ? String(raw.id).slice(0, 40) : null, theme: raw.mode === "theme" ? raw.theme : null });
+  if (raw.mode === "theme") run.ids = Array.isArray(raw.ids) ? raw.ids.filter((x) => BY_ID.get(x)?.theme === raw.theme).slice(0, THEME_COUNT) : run.ids;
   if (raw.mode === "unlimited") run.ids = Array.isArray(raw.ids) ? raw.ids.filter((x) => BY_ID.has(x)).slice(0, 500) : [];
   run.i = Math.max(0, Math.min(Number(raw.i) || 0, run.ids.length));
   run.points = Math.max(0, Math.min(Number(raw.points) || 0, 100_000));
@@ -225,7 +242,7 @@ export const STREAK_FISH = [
   { days: 5, id: "f-pearl-guppy" }, { days: 14, id: "f-lantern-eel" }, { days: 30, id: "f-moon-jelly" }, { days: 60, id: "f-anglerlord" }, { days: 100, id: "f-old-kraken" },
 ];
 
-export const newProfile = () => ({ v: 1, streak: 0, best: 0, lastDone: null, dives: 0, bestScore: 0, bestDepth: 0, bestUnlimited: 0, unlimitedRuns: 0, fish: null, totalPoints: 0 });
+export const newProfile = () => ({ v: 1, streak: 0, best: 0, lastDone: null, dives: 0, bestScore: 0, bestDepth: 0, bestUnlimited: 0, unlimitedRuns: 0, themeRuns: 0, themeBest: {}, fish: null, totalPoints: 0 });
 const daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 86400000);
 
 /** Record a finished daily dive. Returns { newFish: [ids] }. */
@@ -240,13 +257,21 @@ export function recordUnlimited(profile, run) {
   profile.unlimitedRuns++; profile.totalPoints += run.points;
   profile.bestUnlimited = Math.max(profile.bestUnlimited, run.points); profile.bestDepth = Math.max(profile.bestDepth, run.points * METRES_PER_POINT);
 }
+/** Record a finished themed run (best score is kept per theme). */
+export function recordTheme(profile, run) {
+  profile.themeRuns = (profile.themeRuns ?? 0) + 1; profile.totalPoints += run.points;
+  profile.themeBest = { ...(profile.themeBest ?? {}) }; profile.themeBest[run.theme] = Math.max(profile.themeBest[run.theme] ?? 0, run.points);
+  profile.bestDepth = Math.max(profile.bestDepth, run.points * METRES_PER_POINT);
+}
 /** A streak is alive if the last dive was today or yesterday. */
 export function liveStreak(profile, date) { return profile.lastDone && daysBetween(profile.lastDone, date) <= 1 ? profile.streak : 0; }
 
 export const pearlsForDaily = (points) => Math.floor(points / 5);
 export const pearlsForUnlimited = (points) => Math.floor(points / 10);
+export const pearlsForTheme = (points) => Math.floor(points / 8);
 
 export function shareText(run, date) {
   const icons = run.results.map((r) => (r.tier ? TIERS[r.tier].icon : "💀")).join("");
-  return `Abyss ${date ?? ""}\n${icons}\n${run.points}/${(run.ids.length || run.results.length) * 100} · ${run.points * METRES_PER_POINT} m deep`.trim();
+  const head = run.theme ? THEME_BY_ID[run.theme]?.name ?? "Abyss" : `Abyss ${date ?? ""}`;
+  return `${head}\n${icons}\n${run.points}/${(run.ids.length || run.results.length) * 100} · ${run.points * METRES_PER_POINT} m deep`.trim();
 }
