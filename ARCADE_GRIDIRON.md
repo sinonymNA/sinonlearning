@@ -16,7 +16,12 @@ Keys: Space/Enter = snap / kick / continue, Esc or P = pause, A B C D or 1-4 = t
 - **Tight camera:** 46 x 30 yards visible (was 53 x 48), players drawn at 2x, receivers who run off-screen get a lettered edge arrow. Quick pocket (0.7 s drop, 6.5 s max hold) and game speed x1.2.
 - **Juice:** hit-stop on catches/tackles/picks/sacks/TDs, screen shake, dust / pop / confetti particles, ball trail in flight, bouncing ball on an incompletion, touchdown flash + crowd cheer, shorter result banners, skippable CPU drive log.
 
-## Modes
+## Retro-Bowl-style pass (third pass, "doesn't feel like a good football game")
+Original game, not a copy of any commercial title. Changes aimed at the arcade feel of games in that style:
+- **Run game:** two handoff plays (Dive, Sweep). The RB takes the handoff, linemen hold the defensive line for a beat (`SIM.RUN_DL_BLOCK`, `RUN_LB_BLOCK`), receivers block downfield.
+- **You drive the runner:** after a catch or handoff you steer left/right, **BOOST** (hold; Shift/Up/W; drains a stamina bar), brake (Down/S) and **JUKE** (button or Space): a sideways burst with a short window where close tacklers whiff, then a 1.15 s cooldown.
+- Play suggestions now mix runs and passes by down and distance.
+
 - **Quick Play:** four 4:00 quarters vs the CPU. You get the opening kickoff, the CPU gets the second-half kickoff.
 - **Two-Minute Drill:** you trail 0-7 with 2:00 left, ball at your own 25.
 - Difficulty (Rookie / Pro / Legend) shifts the CPU defence rating in the live plays and the CPU offence in simulated drives.
@@ -35,7 +40,7 @@ Keys: Space/Enter = snap / kick / continue, Esc or P = pause, A B C D or 1-4 = t
 Ratings (1-100) really change play: QB accuracy/arm/throw speed, receiver speed/accel/catching/route/agility/blocking, defender speed/coverage/awareness/tackling/rush. Each defender gets a slightly different rating sheet per snap.
 
 ## Honest limits
-- Not built (by design, per the brief): season mode, multiplayer, defence control, career, trading, accounts.
+- Not built (by design, per the brief; the carry is now fully steerable, which supersedes the original lateral-only brief): season mode, multiplayer, defence control, career, trading, accounts.
 - Interceptions end at the catch spot (no return). No penalties, fumbles, kickoff returns, two-point tries (extra points are automatic).
 - CPU drives are simulated from ratings, not played out on the field.
 - Whether it is actually fun still needs human playtesting; tuning lives in `config.mjs` (e.g. `SIM.GAME_SPEED`, `CONTEST_RADIUS`, `PASS_ERR_*`).

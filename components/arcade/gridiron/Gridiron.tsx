@@ -12,6 +12,7 @@ import "./gridiron.css";
 type Screen = "menu" | "plays" | "fourth" | "presnap" | "live" | "fg" | "cpu" | "final";
 type Hud = {
   score: { you: number; cpu: number }; qLabel: string; clock: number; down: string; spot: string; phase: string; seps: number[]; pressure: boolean;
+  stamina: number; jukeReady: boolean; isRun: boolean;
   playName: string; blurb: string; carrying: boolean; canThrow: boolean; mode: string; possession: string;
 };
 const DIFFS: { id: "easy" | "normal" | "hard"; label: string }[] = [{ id: "easy", label: "ROOKIE" }, { id: "normal", label: "PRO" }, { id: "hard", label: "LEGEND" }];
@@ -47,7 +48,7 @@ function PlayDiagram({ id }: { id: string }) {
 function GridironInner() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const R = useRef<any>({
-    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, input: { l: false, r: false, pl: false, pr: false },
+    game: null, sim: null, preview: false, screen: "menu", paused: false, cam: { bottom: -3, left: 0 } as Cam, parts: [] as Particle[], freezeUntil: 0, shake: 0, suggest: [] as string[], sIdx: 0, cheerUntil: 0, camSnap: true, acc: 0, last: 0, tick: 0, deadAt: 0, hudAt: 0, input: { l: false, r: false, pl: false, pr: false, pu: false, pd: false, bp: false },
     trail: [] as { x: number; y: number }[], sepShown: [3, 3, 3, 3], sepAt: -9, bannerTimer: 0, fg: { pos: 0, locked: false, t0: 0 }, fgTimer: 0, mode: "quick", diff: "normal", after: null as null | (() => void), heldScore: null as any,
   });
   const [screen, setScreenState] = useState<Screen>("menu");
@@ -75,7 +76,7 @@ function GridironInner() {
     const play = sim && !r.preview ? sim.play : null;
     setHud({
       score: r.heldScore ?? st.score, qLabel: st.qLabel, clock, down: g.downText(), spot: spotText(st.yardline), phase: sim ? sim.phase : "presnap", seps: [...r.sepShown], pressure,
-      playName: play ? play.name : "", blurb: play ? play.blurb : "", carrying: !!live && sim.phase === "carry", canThrow: !!live && sim.phase === "pocket", mode: st.mode, possession: r.heldScore || r.screen === "cpu" ? "cpu" : st.possession,
+      playName: play ? play.name : "", blurb: play ? play.blurb : "", carrying: !!live && sim.phase === "carry", canThrow: !!live && sim.phase === "pocket" && !sim.isRun, stamina: sim ? sim.stamina : 1, jukeReady: !!sim && sim.t >= sim.jukeCool, isRun: !!sim && !!sim.isRun, mode: st.mode, possession: r.heldScore || r.screen === "cpu" ? "cpu" : st.possession,
     });
   }, []);
 
@@ -167,6 +168,7 @@ function GridironInner() {
     nextCall();
   }, [nextCall]);
 
+  const doJuke = useCallback(() => { const r = R.current; if (r.screen === "live" && !r.paused && r.sim?.phase === "carry") r.sim.juke(); }, []);
   const pause = useCallback((p: boolean) => { R.current.paused = p; setPaused(p); }, []);
   const toMenu = useCallback(() => { const r = R.current; r.game = null; r.sim = null; setBanner(null); setCpuView(null); setFgView(null); pause(false); setScreen("menu"); }, [pause, setScreen]);
   const restart = useCallback(() => { startGame(R.current.mode); }, [startGame]);
@@ -174,24 +176,25 @@ function GridironInner() {
   // ---- keyboard -----------------------------------------------------------------------------------------------
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      const r = R.current; if (e.repeat && !["ArrowLeft", "ArrowRight"].includes(e.code)) return;
+      const r = R.current; if (e.repeat && !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.code)) return;
       const k = e.code;
       if (k === "Escape" || k === "KeyP") { if (r.screen === "live" || r.screen === "presnap") { e.preventDefault(); pause(!r.paused); } return; }
       if (r.paused) return;
       if (k === "Space" || k === "Enter") {
         e.preventDefault();
-        if (r.screen === "presnap") snap(); else if (r.screen === "fg") lockKick(); else if (r.screen === "cpu") document.getElementById("gr-continue")?.click();
+        if (r.screen === "presnap") snap(); else if (r.screen === "fg") lockKick(); else if (r.screen === "cpu") document.getElementById("gr-continue")?.click(); else if (r.screen === "live" && r.sim?.phase === "carry") r.sim.juke();
         return;
       }
       if (r.screen === "live") {
         const phase = r.sim?.phase;
         if (phase === "pocket") { const idx = ["KeyA", "KeyB", "KeyC", "KeyD"].indexOf(k); const d = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(k); if (idx >= 0 || d >= 0) { e.preventDefault(); doThrow(idx >= 0 ? idx : d); } }
         if (k === "ArrowLeft") { r.input.l = true; e.preventDefault(); } if (k === "ArrowRight") { r.input.r = true; e.preventDefault(); }
+        if (k === "ArrowUp" || k === "ShiftLeft" || k === "ShiftRight" || k === "KeyW") { r.input.pu = true; e.preventDefault(); } if (k === "ArrowDown" || k === "KeyS") { r.input.pd = true; e.preventDefault(); }
         if (phase === "carry" && k === "KeyA") r.input.l = true; if (phase === "carry" && k === "KeyD") r.input.r = true;
       }
       if (r.screen === "presnap" && (k === "KeyX" || k === "Tab")) { e.preventDefault(); audible(); }
     };
-    const up = (e: KeyboardEvent) => { const r = R.current; if (e.code === "ArrowLeft" || e.code === "KeyA") r.input.l = false; if (e.code === "ArrowRight" || e.code === "KeyD") r.input.r = false; };
+    const up = (e: KeyboardEvent) => { const r = R.current; if (e.code === "ArrowLeft" || e.code === "KeyA") r.input.l = false; if (e.code === "ArrowRight" || e.code === "KeyD") r.input.r = false; if (["ArrowUp", "ShiftLeft", "ShiftRight", "KeyW"].includes(e.code)) r.input.pu = false; if (["ArrowDown", "KeyS"].includes(e.code)) r.input.pd = false; };
     const vis = () => { if (document.hidden && (R.current.screen === "live")) pause(true); };
     window.addEventListener("keydown", down); window.addEventListener("keyup", up); document.addEventListener("visibilitychange", vis);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); document.removeEventListener("visibilitychange", vis); };
@@ -224,6 +227,8 @@ function GridironInner() {
       else if (ev.type === "td") { burst(c.x, c.y, 110, CONF, { up: 11, spread: 9, g: 14, life: 1.7 }); hit(110, 3); r.cheerUntil = ts + 3500; setFlash(true); window.setTimeout(() => setFlash(false), 450); }
       else if (ev.type === "deflect" || ev.type === "drop" || ev.type === "incomplete") { burst(bp.x, bp.y, 8, ["#ffffff", "#cfe0ff"], { spread: 4 }); hit(40, 1.2); }
       else if (ev.type === "oob") { hit(30, 1); }
+      else if (ev.type === "juke") { burst(c.x, c.y, 12, ["#ffffff", "#7fd0ff"], { spread: 5, up: 3 }); hit(35, 1.5); }
+      else if (ev.type === "handoff") { burst(c.x, c.y, 6, DUST, { spread: 3 }); }
     };
     const loop = (ts: number) => {
       const r = R.current; const dt = clamp((ts - (r.last || ts)) / 1000, 0, 0.05); r.last = ts; r.tick++;
@@ -234,10 +239,10 @@ function GridironInner() {
         if (sim.phase !== "dead") {
           if (!frozen) r.acc += dt * SIM.GAME_SPEED; let n = 0;
           const lat = (r.input.l ? -1 : 0) + (r.input.r ? 1 : 0) + (r.input.pl ? -1 : 0) + (r.input.pr ? 1 : 0);
-          while (!frozen && r.acc >= SIM.DT && n < 5 && sim.phase !== "dead") { sim.setLateral(clamp(lat, -1, 1)); sim.step(SIM.DT); r.acc -= SIM.DT; n++; }
+          while (!frozen && r.acc >= SIM.DT && n < 5 && sim.phase !== "dead") { sim.setLateral(clamp(lat, -1, 1)); sim.setPush((r.input.pu || r.input.bp ? 1 : 0) - (r.input.pd ? 1 : 0)); sim.step(SIM.DT); r.acc -= SIM.DT; n++; }
           for (const e of sim.drainEvents()) {
             juice(e, sim, ts);
-            if (e.type === "throw") sfx("whoosh"); else if (e.type === "catch") sfx("good"); else if (e.type === "tackle") sfx("boom"); else if (e.type === "int" || e.type === "sack") sfx("bad");
+            if (e.type === "throw" || e.type === "juke") sfx("whoosh"); else if (e.type === "handoff") sfx("pop"); else if (e.type === "catch") sfx("good"); else if (e.type === "tackle") sfx("boom"); else if (e.type === "int" || e.type === "sack") sfx("bad");
             else if (e.type === "td") sfx("win"); else if (e.type === "drop" || e.type === "deflect" || e.type === "incomplete" || e.type === "broken" || e.type === "missed") sfx("pop"); else if (e.type === "oob") sfx("tick");
           }
           if (sim.phase === "dead" && sim.result) {
@@ -323,7 +328,9 @@ function GridironInner() {
             <button className={`gr-key arrow ${hud?.carrying ? "hot" : ""}`} {...padProps("pl")} aria-label="Steer left">◀</button>
             <button className={`gr-key arrow ${hud?.carrying ? "hot" : ""}`} {...padProps("pr")} aria-label="Steer right">▶</button>
           </div>
-          <small className="gr-hint">{hud?.carrying ? "STEER!" : "STEER AFTER THE CATCH"}<br />← → or A D</small>
+          <button className={`gr-key boost ${hud?.carrying ? "hot" : ""}`} onPointerDown={(e) => { (e.target as HTMLElement).setPointerCapture?.(e.pointerId); R.current.input.bp = true; }} onPointerUp={() => { R.current.input.bp = false; }} onPointerCancel={() => { R.current.input.bp = false; }} onLostPointerCapture={() => { R.current.input.bp = false; }} onContextMenu={(e) => e.preventDefault()} aria-label="Boost (hold)">BOOST</button>
+          <div className="gr-stam" aria-label="Stamina"><i style={{ width: `${Math.round((hud?.stamina ?? 1) * 100)}%` }} /></div>
+          <small className="gr-hint">{hud?.carrying ? "STEER ◀ ▶ · HOLD BOOST" : "AFTER THE CATCH: STEER + BOOST"}<br />← → · ↑ boost · ↓ brake</small>
         </aside>
 
         <section className="gr-stage" onPointerDown={(e) => stagePtr(e, true)} onPointerUp={(e) => stagePtr(e, false)} onPointerLeave={(e) => stagePtr(e, false)} onPointerCancel={(e) => stagePtr(e, false)}>
@@ -375,7 +382,7 @@ function GridironInner() {
               <div className="gr-final-score"><span>{TEAMS.you.short} <b>{finalView.score.you}</b></span><span>{TEAMS.cpu.short} <b>{finalView.score.cpu}</b></span></div>
               <div className={`gr-result ${finalView.result === "win" ? "good" : finalView.result === "loss" ? "bad" : "neutral"}`}>{finalView.result === "win" ? "YOU WIN!" : finalView.result === "loss" ? "YOU LOSE" : "TIE GAME"}</div>
               <ul className="gr-stats">
-                <li><span>PASSES</span><b>{finalView.stats.comps}/{finalView.stats.passes}</b></li><li><span>YARDS</span><b>{finalView.stats.yards}</b></li>
+                <li><span>RUSHES</span><b>{finalView.stats.rushes ?? 0}</b></li><li><span>PASSES</span><b>{finalView.stats.comps}/{finalView.stats.passes}</b></li><li><span>YARDS</span><b>{finalView.stats.yards}</b></li>
                 <li><span>TOUCHDOWNS</span><b>{finalView.stats.tds}</b></li><li><span>INTS</span><b>{finalView.stats.ints}</b></li><li><span>SACKS</span><b>{finalView.stats.sacks}</b></li>
               </ul>
               <div className="gr-col"><button className="gr-btn big go" onClick={restart}>PLAY AGAIN</button><button className="gr-btn" onClick={toMenu}>MENU</button><Link className="gr-btn" href="/arcade/solo">BACK TO ARCADE</Link></div>
@@ -423,6 +430,9 @@ function GridironInner() {
         </section>
 
         <aside className="gr-side right">
+          {hud?.carrying ? (
+            <button className={`gr-key juke ${hud.jukeReady ? "hot" : ""}`} onPointerDown={(e) => { e.preventDefault(); doJuke(); }} aria-label="Juke">JUKE</button>
+          ) : (
           <div className="gr-abcd" aria-label="Pick a receiver">
             {["A", "B", "C", "D"].map((l, i) => (
               <button key={l} className={`gr-key abcd ${hud?.canThrow ? "hot" : ""}`} style={{ ["--c" as any]: LABEL_COLORS[i] }} onPointerDown={(e) => { e.preventDefault(); doThrow(i); }} disabled={!hud?.canThrow} aria-label={`Throw to receiver ${l}`}>
@@ -430,7 +440,8 @@ function GridironInner() {
               </button>
             ))}
           </div>
-          <small className="gr-hint">{hud?.canThrow ? "THROW NOW!" : "PICK A TARGET"}<br />A B C D · 1–4</small>
+          )}
+          <small className="gr-hint">{hud?.carrying ? "SPACE = JUKE" : hud?.isRun ? "RUN PLAY: HANDOFF" : hud?.canThrow ? "THROW NOW!" : "PICK A TARGET"}<br />{hud?.carrying ? "dodge tacklers!" : "A B C D · 1–4"}</small>
         </aside>
       </main>
     </div>

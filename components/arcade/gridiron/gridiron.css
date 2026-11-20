@@ -83,3 +83,9 @@
 .gr-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,.85), rgba(255,210,63,.35) 60%, transparent); animation: gr-flash .45s ease-out forwards; }
 @keyframes gr-flash { from { opacity: 1; } to { opacity: 0; } }
 .gr-banner { top: 14%; }
+
+/* boost / juke / stamina */
+.gr-key.boost { width: auto; min-width: 140px; height: clamp(40px, 8vh, 56px); font-size: clamp(11px, 2vh, 15px); letter-spacing: .1em; background: #4a2a0a; box-shadow: inset 0 0 0 3px #ffb020, 0 4px 0 #050a1c; } .gr-key.boost.hot { animation: none; }
+.gr-key.juke { width: clamp(110px, min(16vw, 24vh), 170px); height: clamp(110px, min(16vw, 24vh), 170px); font-size: clamp(16px, 3.2vh, 26px); background: #5b1a6e; box-shadow: inset 0 0 0 4px #e879f9, 0 5px 0 #050a1c; } .gr-key.juke.hot { animation: gr-pulse .6s steps(2) infinite; } .gr-key.juke:not(.hot) { opacity: .5; }
+.gr-stam { width: min(100%, 150px); height: 8px; background: #1b2142; box-shadow: inset 0 0 0 2px #3a5aa8; } .gr-stam i { display: block; height: 100%; background: linear-gradient(90deg, #ffb020, #ffe08a); }
+@media (max-aspect-ratio: 1/1) { .gr-key.boost { min-width: 90px; height: 40px; } .gr-key.juke { width: 90px; height: 60px; } }

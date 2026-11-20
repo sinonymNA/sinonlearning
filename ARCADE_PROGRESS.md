@@ -89,3 +89,6 @@ Built a complete 2D pixel football game (see ARCADE_GRIDIRON.md). Engine first (
 
 ## Round: Gridiron feel pass
 User feedback: "not really playable or fun, drops the ball too much". Changes: skill-based catches (open = caught; dice only when a defender is on the throw), tighter 46x30-yard camera with 2x sprites and edge markers, auto play-calling with a one-tap audible (replaces the 8-card grid), juice (hit-stop, shake, particles, ball trail/bounce, TD celebration), faster pocket + x1.2 game speed, skippable CPU drive log. Engine tests 220 passing; browser smoke re-run on desktop/tablet/phone. Not human-playtested for feel.
+
+## Round: Gridiron run game + juke/boost
+User: still "doesn't feel like a good football game", asked for a Retro-Bowl-style remake. Not copying any commercial files/art (not available, and copyrighted); instead added the missing arcade mechanics as original work: handoff run plays with a RB, free-feel carrying (steer, boost with stamina, brake) and a juke with a tackle-whiff window. Runs average ~2.9 yd unsteered. 226 engine tests; browser run verified a handoff, jukes and boost with no console errors. Still needs human playtesting.

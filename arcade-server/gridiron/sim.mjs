@@ -37,7 +37,8 @@ export class PlaySim {
     this.defDelta = o.defDelta ?? 0;
     this.offDelta = o.offDelta ?? 0;
     this.t = 0; this.phase = "presnap"; this.events = []; this.result = null;
-    this.input = { lateral: 0 };
+    this.input = { lateral: 0, push: 0 };
+    this.isRun = this.play.kind === "run"; this.stamina = 1; this.jukeUntil = 0; this.jukeCool = 0;
     this.target = null; this.flight = null; this.carrier = null; this.thrownTo = null; this.catchY = null; this.throwT = null;
     this._acc = 0;
     this._build();
@@ -62,7 +63,9 @@ export class PlaySim {
     const cx = FIELD.CX, los = this.los, d = this.offDelta, dd = this.defDelta;
     // ---- offence
     const qbR = Object.fromEntries(Object.entries(OFFENSE.qb).map(([k, v]) => [k, typeof v === "number" ? clamp(v + d, 20, 99) : v]));
-    this.qb = this._mk("QB", "o", "QB", cx, los - 5, { ...qbR, speed: 55, accel: 60 });
+    this.qb = this._mk("QB", "o", "QB", cx, this.play.kind === "run" ? los - 3 : los - 5, { ...qbR, speed: 55, accel: 60 });
+    const rbR = { speed: clamp(84 + d, 20, 99), accel: clamp(82 + d, 20, 99), catching: 70, route: 70, agility: clamp(84 + d, 20, 99), blocking: 60 };
+    this.rb = this._mk("RB", "o", "RB", cx + (this.play.rbX ?? 3), this.play.kind === "run" ? los - 6 : los - 5, rbR, { label: null });
     this.wr = this.play.receivers.map((rt, i) => {
       const r = this._rate(OFFENSE.wr[i], 0);
       for (const k of ["speed", "accel", "catching", "route", "agility", "blocking"]) r[k] = clamp(r[k] + d, 20, 99);
@@ -104,13 +107,22 @@ export class PlaySim {
       e.breakAt = Math.max(0.8, 1.55 + (ol.r.blocking - e.r.rush) * SIM.BLOCK_BREAK_RATING_SCALE + this.rng.range(-1, 1) * 0.4);
     }
     this.defenders = [...this.dl, ...this.lb, ...this.db];
-    this.everyone = [this.qb, ...this.wr, ...this.ol, ...this.defenders];
+    this.everyone = [this.qb, this.rb, ...this.wr, ...this.ol, ...this.defenders];
     for (const e of this.defenders) { e.react = SIM.REACTION_BASE + (100 - e.r.awareness) * SIM.REACTION_PER_INAWARE; }
     this.qbHome = { x: cx, y: this.los - SIM.QB_DROP_YARDS };
   }
 
   /** Start the play. */
   snap() { if (this.phase !== "presnap") return; this.phase = "pocket"; this.ev("snap"); for (const e of this.defenders) e.state = e.role === "DL" ? "BLOCKED" : (this.coverage === "zone" && e.role !== "LB" ? "COVER_ZONE" : e.role === "DB" && e.cover >= 0 ? "COVER_MAN" : "COVER_ZONE"); if (this.lb[1].blitz) this.lb[1].state = "BLOCKED"; }
+  setPush(v) { this.input.push = clamp(v || 0, -1, 1); }
+  /** Juke / spin: a burst sideways that makes close tacklers whiff for a moment. */
+  juke() {
+    if (this.phase !== "carry" || !this.carrier || this.t < this.jukeCool) return false;
+    const c = this.carrier; let dir = this.input.lateral;
+    if (!dir) { let n = null, nd = 99; for (const e of this.defenders) { const d = dist(e, c); if (e.y > c.y - 1 && d < nd) { nd = d; n = e; } } dir = n ? (n.x > c.x ? -1 : 1) : (c.x < FIELD.CX ? 1 : -1); }
+    c.vx = dir * 8.5; this.jukeUntil = this.t + 0.38; this.jukeCool = this.t + 1.15; this.ev("juke", { dir });
+    return true;
+  }
   setLateral(v) { this.input.lateral = clamp(v || 0, -1, 1); }
 
   // ---------------------------------------------------------------------------------------------
@@ -129,7 +141,7 @@ export class PlaySim {
 
   /** Quarterback throws to receiver idx 0..3 (A..D). Returns false if throwing is not possible now. */
   throwTo(idx) {
-    if (this.phase !== "pocket" || idx < 0 || idx > 3) return false;
+    if (this.phase !== "pocket" || this.isRun || idx < 0 || idx > 3) return false;
     const w = this.wr[idx];
     this.phase = "windup"; this.windT = SIM.RELEASE_DELAY; this.thrownTo = idx; this.throwT = this.t;
     const qb = this.qb;
@@ -160,6 +172,9 @@ export class PlaySim {
     this.t += dt;
     for (const e of this.everyone) { e.cool = Math.max(0, e.cool - dt); e.stun = Math.max(0, e.stun - dt); }
     this._receivers(dt); this._line(dt); this._qb(dt); this._defenders(dt);
+    if (this.isRun && this.phase === "pocket" && this.t >= 0.55) this._handoff();
+    if (this.phase === "carry" && this.carrier && this.play.kind === "screen") for (const ol of this.ol) this._blocker(ol, dt);
+    if (this.phase === "pocket" || this.phase === "presnap") this._backfield(dt);
     if (this.phase === "windup") { this.windT -= dt; if (this.windT <= 0) { this.phase = "flight"; this.flight.t0 = this.t; this.ev("release"); } }
     if (this.phase === "pocket" || this.phase === "windup") this._checkSack();
     if (this.phase === "flight") this._flight(dt);
@@ -167,6 +182,20 @@ export class PlaySim {
     for (const e of this.everyone) { if (e !== this.carrier) { e.x = clamp(e.x, 0.4, FIELD.W - 0.4); e.y = clamp(e.y, 0.4, FIELD.LEN - 0.4); } }
   }
 
+  _handoff() {
+    const rb = this.rb;
+    this.phase = "carry"; this.carrier = rb; this.catchY = rb.y; rb.vy = 3;
+    for (const e of this.defenders) { e.state = "PURSUE"; if (e.role === "DL") e.blockedUntil = this.t + SIM.RUN_DL_BLOCK; else if (e.role === "LB") e.blockedUntil = this.t + SIM.RUN_LB_BLOCK; }
+    this.ev("handoff");
+  }
+  _backfield(dt) {
+    const rb = this.rb, qb = this.qb;
+    if (this.isRun) { // take the handoff: run at the QB's hip then turn up the hole
+      const tx = this.play.id === "sweep" ? qb.x - 4 : qb.x, ty = this.t < 0.4 ? qb.y - 1 : qb.y + 2;
+      move(rb, tx, ty, 0.9, dt); return;
+    }
+    rb.vx = rb.vy = 0;
+  }
   _receivers(dt) {
     for (const w of this.wr) {
       if (w === this.carrier) continue;
@@ -375,7 +404,10 @@ export class PlaySim {
     const wantVx = L * latMax, dvx = wantVx - c.vx, mx = latAcc * dt;
     c.vx += Math.abs(dvx) <= mx ? dvx : Math.sign(dvx) * mx;
     const share = Math.min(1, Math.abs(c.vx) / latMax);
-    const fwd = c.maxSpeed * SIM.CARRY_SPEED_MULT * (1 - SIM.LATERAL_FORWARD_LOSS * share) * (c.stun > 0 ? 0.4 : 1);
+    const P = this.input.push; let pm = 1;
+    if (P > 0 && this.stamina > 0.04) { pm = 1.17; this.stamina = Math.max(0, this.stamina - 0.42 * dt); }
+    else { if (P < 0) pm = 0.6; this.stamina = Math.min(1, this.stamina + (P < 0 ? 0.35 : 0.14) * dt); }
+    const fwd = c.maxSpeed * SIM.CARRY_SPEED_MULT * pm * (1 - SIM.LATERAL_FORWARD_LOSS * share) * (c.stun > 0 ? 0.4 : 1);
     const dvy = fwd - c.vy, my = c.accel * 0.85 * dt;
     c.vy += Math.abs(dvy) <= my ? dvy : Math.sign(dvy) * my;
     c.x += c.vx * dt; c.y += c.vy * dt;
@@ -387,6 +419,7 @@ export class PlaySim {
       if (e.cool > 0 || e.stun > 0 || this.t < e.blockedUntil) continue;
       if (dist(e, c) > SIM.TACKLE_RADIUS) continue;
       e.cool = SIM.TACKLE_COOLDOWN;
+      if (this.t < this.jukeUntil && this.rng() < 0.92) { e.stun = SIM.MISSED_STUN + 0.35; this.ev("missed", { id: e.id, juked: true }); continue; }
       let gang = 0; for (const o of this.defenders) if (o !== e && o.stun <= 0 && dist(o, c) < 2.4) gang++;
       const p = clamp(SIM.TACKLE_BASE + e.r.tackling * SIM.TACKLE_PER_RATING - c.r.agility * SIM.TACKLE_AGILITY_RESIST + gang * SIM.GANG_BONUS, 0.22, 0.96);
       const r = this.rng();
@@ -397,7 +430,7 @@ export class PlaySim {
   }
 
   _end(res) {
-    this.result = { yards: res.endY - this.los, caught: false, td: false, turnover: false, incomplete: false, clockStop: false, oob: false, ...res, elapsed: this.t, playId: this.play.id, coverage: this.coverage };
+    this.result = { run: !!this.isRun, yards: res.endY - this.los, caught: false, td: false, turnover: false, incomplete: false, clockStop: false, oob: false, ...res, elapsed: this.t, playId: this.play.id, coverage: this.coverage };
     this.phase = "dead";
     if (res.kind === "sack") this.ev("sack");
     this.ev("dead", { kind: res.kind });
@@ -410,7 +443,7 @@ export class PlaySim {
     const targets = this.wr.map((w) => ({ idx: w.idx, label: w.label, open: this.separation(w), x: w.x, y: w.y }));
     return {
       t: this.t, phase: this.phase, los: this.los, coverage: this.coverage, players: this.everyone.map(pl), ball: this.ballPos(), targets, thrownTo: this.thrownTo,
-      carrierId: this.carrier ? this.carrier.id : null, landing: this.target && (this.phase === "flight" || this.phase === "windup") ? { x: this.target.x, y: this.target.y } : null,
+      carrierId: this.carrier ? this.carrier.id : null, stamina: this.stamina, jukeReady: this.t >= this.jukeCool, isRun: this.isRun, landing: this.target && (this.phase === "flight" || this.phase === "windup") ? { x: this.target.x, y: this.target.y } : null,
       result: this.result,
     };
   }

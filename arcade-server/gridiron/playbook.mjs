@@ -24,6 +24,10 @@ export const PLAYBOOK = [
     receivers: [{ start: S(-20), route: W([0, 13], [9, 26], [12, 36]) }, { start: S(-8, -0.5), route: W([0, 5], [6, 6], [10, 7]) }, { start: S(8, -0.5), route: W([0, 5], [-6, 6], [-10, 7]) }, { start: S(20), route: W([0, 13], [-9, 26], [-12, 36]) }] },
   { id: "screen", name: "Screen", blurb: "Catch behind the line, run behind blockers.", kind: "screen", depth: "short",
     receivers: [{ start: S(-20), route: W([4, -1], [6, -1.5]) }, { start: S(-9, -0.5), route: W([-1, 3], [-2, 5]) }, { start: S(9, -0.5), route: W([1, 3], [2, 5]) }, { start: S(20), route: W([0, 10], [-3, 18]) }] },
+  { id: "dive", name: "Dive", blurb: "Hand it off and hit the gap. Juke the second level.", kind: "run", depth: "short", rbX: 0,
+    receivers: [{ start: S(-20), route: W([2, 4], [4, 8]) }, { start: S(-12, -0.5), route: W([1, 3], [2, 7]) }, { start: S(12, -0.5), route: W([-1, 3], [-2, 7]) }, { start: S(20), route: W([-2, 4], [-4, 8]) }] },
+  { id: "sweep", name: "Sweep", blurb: "Bounce it outside, follow your blockers, then juke.", kind: "run", depth: "short", rbX: 3,
+    receivers: [{ start: S(-20), route: W([4, 3], [9, 6]) }, { start: S(-12, -0.5), route: W([4, 3], [9, 5]) }, { start: S(12, -0.5), route: W([-3, 2], [-6, 6]) }, { start: S(20), route: W([-5, 3], [-9, 7]) }] },
 ];
 export const getPlay = (id) => PLAYBOOK.find((p) => p.id === id);
 

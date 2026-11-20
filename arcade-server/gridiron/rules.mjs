@@ -49,11 +49,11 @@ export class Game {
   suggestPlays() {
     const short = this.toGo <= 3, mid = this.toGo <= 7, goal = this.line >= 100 || this.yardline >= 88;
     let pool;
-    if (goal) pool = ["slants", "mesh", "outs", "curls", "screen"];
+    if (goal) pool = ["dive", "slants", "mesh", "sweep", "outs", "curls"];
     else if (this.mode === "twoMinute") pool = this.toGo > 12 ? ["outs", "flood", "post", "curls"] : ["outs", "slants", "curls", "mesh", "flood"];
-    else if (short) pool = ["mesh", "slants", "curls", "screen", "outs"];
-    else if (mid) pool = ["curls", "outs", "slants", "mesh", "flood", "post"];
-    else pool = ["verts", "post", "flood", "curls", "outs"];
+    else if (short) pool = ["dive", "mesh", "slants", "sweep", "curls", "screen"];
+    else if (mid) pool = ["curls", "dive", "outs", "sweep", "slants", "mesh", "flood", "post"];
+    else pool = ["verts", "post", "flood", "curls", "sweep", "outs"];
     const out = []; const left = [...pool];
     while (out.length < 3 && left.length) out.push(left.splice(this.rng.int(left.length), 1)[0]);
     return out;
@@ -71,7 +71,8 @@ export class Game {
   finishPlay(result) {
     if (this.phase !== "playcall") throw new Error("no play in progress");
     const r = result, st = this.stats;
-    if (r.kind === "td" || r.kind === "tackle" || r.kind === "oob") { st.passes++; st.comps++; } else if (r.kind !== "sack") st.passes++;
+    if (r.run) st.rushes = (st.rushes || 0) + 1;
+    else if (r.kind === "td" || r.kind === "tackle" || r.kind === "oob") { st.passes++; st.comps++; } else if (r.kind !== "sack") st.passes++;
     const mode = this.mode;
     let text, yl = this.yardline, turnover = false, td = false, safety = false;
     const newYl = r.kind === "incomplete" || r.kind === "drop" || r.kind === "deflection" ? yl : clamp(r.endY - FIELD.END, -5, 100);
@@ -81,8 +82,8 @@ export class Game {
       case "interception": st.ints++; turnover = true; text = "INTERCEPTED!"; break;
       case "incomplete": case "deflection": case "drop": text = r.kind === "drop" ? "Pass dropped" : r.kind === "deflection" ? "Pass broken up" : "Incomplete"; break;
       case "td": td = true; st.tds++; st.yards += gained; text = "TOUCHDOWN!"; break;
-      case "oob": st.yards += gained; text = `Complete for ${gained}, out of bounds`; break;
-      default: st.yards += gained; text = gained >= 0 ? `Complete for ${gained}` : `Complete for a loss of ${-gained}`;
+      case "oob": st.yards += gained; text = `${r.run ? "Run" : "Complete"} for ${gained}, out of bounds`; break;
+      default: st.yards += gained; text = r.run ? (gained >= 0 ? `Run for ${gained}` : `Run for a loss of ${-gained}`) : gained >= 0 ? `Complete for ${gained}` : `Complete for a loss of ${-gained}`;
     }
     // clock: the play itself plus time between snaps unless the clock stops
     const stops = !!r.clockStop || r.kind === "td" || turnover;

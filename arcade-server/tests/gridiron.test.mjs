@@ -11,8 +11,8 @@ const clearDefence = (s) => { for (const e of s.defenders) { e.x = 5; e.y = 118;
 const toCarry = (s, x, y, idx = 0) => { s._caught(s.wr[idx], { x, y }); s.target = { x, y }; };
 
 // ---------------------------------------------------------------- playbook / routes
-test("playbook has the eight required plays, each with four labelled receivers and routes", () => {
-  assert.deepEqual(PLAYBOOK.map((p) => p.id).sort(), ["curls", "flood", "mesh", "outs", "post", "screen", "slants", "verts"].sort());
+test("playbook has the eight required passing plays plus two runs, each with four labelled receivers and routes", () => {
+  assert.deepEqual(PLAYBOOK.map((p) => p.id).sort(), ["curls", "dive", "flood", "mesh", "outs", "post", "screen", "slants", "sweep", "verts"].sort());
   for (const p of PLAYBOOK) { assert.equal(p.receivers.length, 4); for (const r of p.receivers) assert.ok(r.route.length >= 2); }
   const s = mk("verts"); assert.deepEqual(s.wr.map((w) => w.label), ["A", "B", "C", "D"]);
   for (let i = 1; i < 4; i++) assert.ok(s.wr[i].x > s.wr[i - 1].x, "A..D run left to right");
@@ -334,4 +334,41 @@ test("play suggestions: three distinct valid plays that fit the situation", () =
 
 test("pocket is quick: pressure arrives and the whole play is faster than before", () => {
   assert.ok(SIM.QB_DROP_TIME <= 0.75 && SIM.MAX_HOLD <= 7 && SIM.GAME_SPEED > 1);
+});
+
+// ---------------------------------------------------------------- run game, juke, boost
+test("run plays: the RB takes a handoff and becomes the carrier; no passing on a run", () => {
+  for (const id of ["dive", "sweep"]) {
+    const s = mk(id, { coverage: "zone" }); assert.equal(s.isRun, true); assert.equal(s.throwTo(0), false);
+    s.advance(0.7); assert.equal(s.phase === "carry" || s.phase === "dead", true); if (s.phase === "carry") assert.equal(s.carrier.id, "RB");
+    assert.ok(s.drainEvents().some((e) => e.type === "handoff"));
+  }
+});
+
+test("a run play can gain yards, ends with a run-flagged tackle result", () => {
+  let yards = 0, n = 0, flagged = 0;
+  for (let i = 0; i < 80; i++) { const s = runPlay({ play: i % 2 ? "dive" : "sweep", seed: 300 + i, los: yardlineToY(30) }, (q) => { if (q.phase === "carry") q.setLateral(0); }); if (s.result.run) flagged++; yards += s.result.yards; n++; }
+  assert.equal(flagged, n); assert.ok(yards / n > 1 && yards / n < 8, "avg run " + yards / n);
+});
+
+test("boost speeds the carrier up and drains stamina; brake slows him", () => {
+  const run = (push) => { const s = mk(); clearDefence(s); toCarry(s, 26, s.los + 8); s.setPush(push); const y0 = s.carrier.y; s.advance(1.0); return { dy: s.carrier.y - y0, st: s.stamina }; };
+  const b = run(1), n = run(0), k = run(-1);
+  assert.ok(b.dy > n.dy + 0.5, "boost is faster"); assert.ok(b.st < 1, "boost drains stamina"); assert.ok(k.dy < n.dy - 1.5, "brake slows");
+  const s = mk(); clearDefence(s); toCarry(s, 26, s.los + 8); s.setPush(1); s.advance(4); assert.ok(s.stamina < 0.2, "can't boost forever");
+});
+
+test("juke: sideways burst, short window where tacklers whiff, cooldown", () => {
+  const s = mk(); toCarry(s, 26, s.los + 6); s.rng = rng0; const d = s.db[0]; d.x = 26.3; d.y = s.los + 6.3; d.stun = 0; d.cool = 0; d.r.tackling = 99;
+  assert.equal(s.juke(), true); assert.ok(Math.abs(s.carrier.vx) > 6); s.step(SIM.DT);
+  assert.equal(s.phase, "carry", "juked tackler whiffs"); assert.ok(s.events.some((e) => e.type === "missed" && e.juked));
+  assert.equal(s.juke(), false, "cooldown");
+  s.t = s.jukeCool + 0.01; assert.equal(s.juke(), true);
+});
+
+test("juke is only available while carrying", () => { const s = mk(); assert.equal(s.juke(), false); });
+
+test("run plays are counted as rushes, not passes", () => {
+  const g = new Game({ seed: 3 }); g.finishPlay({ kind: "tackle", endY: g.losY + 5, elapsed: 4, caught: true, run: true });
+  assert.equal(g.stats.rushes, 1); assert.equal(g.stats.passes, 0); assert.match(g.lastPlay.text, /^Run for 5/);
 });
