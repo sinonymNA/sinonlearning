@@ -34,6 +34,9 @@ export class Room {
       teams: clamp(Number(settings.teams) || 0, 0, 6),
       lateJoin: settings.lateJoin !== "closed",
       chat: settings.chat !== false && settings.chat !== "off",
+      // Dacula Dash options (match length in minutes, seconds per question) and an optional seed for reproducible games/tests
+      dacula: { minutes: clamp(Number(settings.dacula?.minutes) || 20, 2, 40), questionSeconds: clamp(Number(settings.dacula?.questionSeconds) || 15, 5, 60) },
+      seed: Number.isFinite(Number(settings.seed)) && settings.seed !== undefined ? Number(settings.seed) : undefined,
     };
     this.chatLog = []; this.chatSeq = 0;
     this.playlist = this.cleanPlaylist(playlist);
@@ -268,7 +271,7 @@ export class Room {
       case "remove": this.removePlayer(String(args.playerId), "teacher"); break;
       case "end": this.phase = "ended"; this.game = null; this.log("ended_by_teacher"); break;
       case "playlist": this.setPlaylist(args.playlist); break;
-      case "settings": if (this.phase !== "lobby") fail("Settings lock once the session starts."); this.settings.teams = clamp(Number(args.teams) || 0, 0, 6); this.settings.lateJoin = args.lateJoin !== "closed"; if (args.chat !== undefined) this.settings.chat = args.chat !== false && args.chat !== "off"; break;
+      case "settings": if (this.phase !== "lobby") fail("Settings lock once the session starts."); this.settings.teams = clamp(Number(args.teams) || 0, 0, 6); this.settings.lateJoin = args.lateJoin !== "closed"; if (args.chat !== undefined) this.settings.chat = args.chat !== false && args.chat !== "off"; if (args.dacula) this.settings.dacula = { minutes: clamp(Number(args.dacula.minutes) || 20, 2, 40), questionSeconds: clamp(Number(args.dacula.questionSeconds) || 15, 5, 60) }; break;
       case "chat": this.settings.chat = !!args.on; if (!args.on) this.chatLog = []; break;
       case "restart": if (this.phase !== "final" && this.phase !== "results") fail("Nothing to restart yet."); this.resetToLobby(); break;
       default: fail("Unknown teacher command.");

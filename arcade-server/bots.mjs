@@ -107,6 +107,15 @@ export class Bots {
         q.push({ delay: at, run: () => { const text = g.botPick(grp, bot.accuracy); return text ? { type: "answer", text, turn: grp.turn } : null; } });
         return { key, queue: q };
       }
+      case "dacula_dash": {
+        const m = g.byPlayer.get(pid);
+        if (!m || m.over || m.cur !== pid) return null;
+        const key = `dd:${m.id}:${m.turnNo}:${m.phase}:${pid}`;
+        if (m.phase === "roll") return { key, queue: [{ delay: d(900, 2600), run: () => ({ type: "roll", turn: m.turnNo, boost: m.p.get(pid).tokens > 0 && randInt(100) < 55 ? 1 : 0 }) }] };
+        if (m.phase === "choose") return { key, queue: [{ delay: d(1800, 5200), run: () => { const b = m.bestMove(pid); const o = m.options; if (!b || !o) return null; const pickDest = randInt(100) < bot.accuracy * 100 ? b.dest : [...o.keys()][randInt(o.size)]; return { type: "move", to: pickDest, turn: m.turnNo }; } }] };
+        if (m.phase === "question" && m.q) return { key, queue: [{ delay: d(2500, 9000), run: () => { const q = m.q; if (!q) return null; const right = randInt(1000) < bot.accuracy * 1000; const idx = right ? q.correct : (q.correct + 1 + randInt(3)) % 4; return { type: "answer", index: idx, turn: m.turnNo }; } }] };
+        return null;
+      }
       case "last_one_standing": {
         if (g.phase !== "ready" && g.phase !== "question") return null;
         const key = `los:${g.asked}:${pid}`;

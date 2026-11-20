@@ -8,6 +8,7 @@ export const GAME_CATALOG = {
   piggy_bank: { id: "piggy_bank", name: "Piggy Bank", icon: "🐷", color: "#ff6fb0", min: 2, ref: 2000, minutes: "3-4", blurb: "Answer fast, then pick a chest: bank it safe, steal from rivals, or go wild. Nobody is ever knocked out!" },
   imposter: { id: "imposter", name: "Imposter", icon: "🕵️", color: "#ef476f", min: 3, ref: 230, minutes: "3-4", blurb: "Ask, answer, and spot the one player who doesn't know the secret word." },
   puffer_party: { id: "puffer_party", name: "Puffer Party", icon: "🐡", color: "#ffcf5a", min: 2, ref: 200, minutes: "3-4", blurb: "A category appears and the puffer sits on you. Name something on the list before time runs out, then pass it on. Run out of time and you lose a life." },
+  dacula_dash: { id: "dacula_dash", name: "Dacula Dash", icon: "🚗", color: "#3b82f6", min: 2, ref: 700, minutes: "15-20", blurb: "Race around a pixel map of Dacula, Georgia. Roll, pick your route, win a colour wedge at six landmarks, then dash back to school for the final question!" },
 };
 export const GAME_IDS = Object.keys(GAME_CATALOG);
 export const MAX_PLAYERS = 40;

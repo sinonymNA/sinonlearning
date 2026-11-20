@@ -175,6 +175,7 @@ export const GAME_NEEDS = {
   telephone: { key: "telephonePrompts", min: 3, label: "telephone prompts" },
   imposter: { key: "imposterWords", min: 3, label: "secret words" },
   puffer_party: { key: "pufferCategories", min: 0, optional: true, hidden: true, label: "categories" },
+  dacula_dash: { key: "daculaQuestions", min: 0, optional: true, hidden: true, label: "Dacula Dash questions" },
 };
 
 export function compatibility(set) {

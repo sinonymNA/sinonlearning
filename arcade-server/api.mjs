@@ -361,7 +361,7 @@ export async function handleAccount(service, ctx, body) {
 
 // ---------- solo practice (real engine, bot opponents, capped coins) ----------
 export const SOLO = {
-  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4, piggy_bank: 7, puffer_party: 4 },
+  bots: { hot_potato: 4, quick_draw: 4, last_one_standing: 9, telephone: 4, imposter: 4, piggy_bank: 7, puffer_party: 4, dacula_dash: 3 },
   difficulty: { easy: { behavior: "sloppy", mult: 0.6 }, medium: { behavior: "average", mult: 1 }, hard: { behavior: "smart", mult: 1.4 } },
   dailyCap: 150,
 };
@@ -372,7 +372,7 @@ export async function handleSolo(service, ctx, body) {
       limit(service, ctx, `solo:${ctx.ip}`, 60000, 60);
       if (!GAME_IDS.includes(body.game)) fail("Pick a game.");
       const diff = SOLO.difficulty[body.difficulty] ? body.difficulty : "medium";
-      const room = service.create({ playlist: [body.game], hostUserId: null, hostName: "Practice", settings: { teams: 0 }, solo: { game: body.game, difficulty: diff } });
+      const room = service.create({ playlist: [body.game], hostUserId: null, hostName: "Practice", settings: { teams: 0, dacula: { minutes: 6, questionSeconds: 12 } }, solo: { game: body.game, difficulty: diff } });
       let owned = [];
       if (ctx.user) owned = (await ctx.store.getCollection(ctx.user.id)).map((c) => c.id);
       const nick = String(body.nickname ?? "").trim() || ctx.user?.name || "Player";
