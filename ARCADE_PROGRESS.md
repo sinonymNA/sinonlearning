@@ -98,3 +98,6 @@ User feedback: much better; wanted Retro-Bowl-style drag/swipe strafing, a visib
 
 ## Round: Gridiron drag-and-place passing
 User: wanted to drag and place the ball instead of pressing receiver buttons. `PlaySim.throwAt(x,y)` (aim assist, free throws, nearest-receiver catch), reticle + arc UI, tap still throws to a receiver. Browser-verified (assist 4/5, free throws 5/5, no errors). 232 engine tests.
+
+## Round: Gridiron drag-and-place + Abyss themed dives
+User: drag-and-place passing in Gridiron; make Abyss better with animations, more questions and specialty themed modes with themed backgrounds (like movie / sports trivia in a competitor). Built original equivalents: `throwAt` drag-and-place passing with aim assist, and Abyss themed dives (5 themes, 58 prompts, themed animated scenes, ocean creatures + reaction effects). 240 engine tests (new `abyssThemes.test.mjs`); browser e2e for a full themed dive.

@@ -72,3 +72,10 @@ Timers are now role 6 s, ask 20 s, answer 30 s, answers shown 10 s, vote 20 s (r
 - [x] Arcade integration: `/arcade/gridiron` (immersive), Solo hub card, no new backend.
 - [x] Browser-verified in headless Chromium: full Two-Minute Drill to FINAL, FG + punt flows, steering, desktop/tablet/phone layouts, no console errors.
 - [ ] Not verified: physical phones/tablets, audio by ear, long-run feel/balance with human players. Not built: interception returns, penalties, fumbles, 2-point tries, defence control.
+
+## Abyss themed dives
+- [x] Five themed modes (movies, sports, music, TV, games) with 58 new themed prompt banks (also added to the general pool: 300 prompts), a themed run mode in the engine + API, per-theme best scores and pearls.
+- [x] Five original animated pixel scenes + a rolling fish-bowl vehicle, themed HUD labels/units, Themed Dives sheet on the Abyss home.
+- [x] Ocean polish: sea creatures, reaction bursts, speed lines.
+- [x] Browser-verified: a full themed dive and a daily dive on a phone viewport, no console errors.
+- [ ] Not verified: physical phones, human review of the new answer lists, rarity tuning from real play data.

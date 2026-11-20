@@ -18,30 +18,8 @@ const sx = (cam: Cam, x: number) => Math.round((x - cam.left) * PPY);
 const sy = (cam: Cam, y: number) => Math.round((cam.bottom + VIEW - y) * PPY);
 const rnd = (i: number, salt = 0) => { const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453; return x - Math.floor(x); };
 
-// ---- 3x5 bitmap font -------------------------------------------------------------------------------------------
-const G: Record<string, string[]> = {
-  A: [".#.", "#.#", "###", "#.#", "#.#"], B: ["##.", "#.#", "##.", "#.#", "##."], C: [".##", "#..", "#..", "#..", ".##"], D: ["##.", "#.#", "#.#", "#.#", "##."],
-  E: ["###", "#..", "##.", "#..", "###"], F: ["###", "#..", "##.", "#..", "#.."], G: [".##", "#..", "#.#", "#.#", ".##"], H: ["#.#", "#.#", "###", "#.#", "#.#"],
-  I: ["###", ".#.", ".#.", ".#.", "###"], J: ["..#", "..#", "..#", "#.#", ".#."], K: ["#.#", "#.#", "##.", "#.#", "#.#"], L: ["#..", "#..", "#..", "#..", "###"],
-  M: ["#.#", "###", "###", "#.#", "#.#"], N: ["###", "#.#", "#.#", "#.#", "#.#"], O: [".#.", "#.#", "#.#", "#.#", ".#."], P: ["##.", "#.#", "##.", "#..", "#.."],
-  Q: [".#.", "#.#", "#.#", "###", "..#"], R: ["##.", "#.#", "##.", "#.#", "#.#"], S: [".##", "#..", ".#.", "..#", "##."], T: ["###", ".#.", ".#.", ".#.", ".#."],
-  U: ["#.#", "#.#", "#.#", "#.#", "###"], V: ["#.#", "#.#", "#.#", "#.#", ".#."], W: ["#.#", "#.#", "###", "###", "#.#"], X: ["#.#", "#.#", ".#.", "#.#", "#.#"],
-  Y: ["#.#", "#.#", ".#.", ".#.", ".#."], Z: ["###", "..#", ".#.", "#..", "###"],
-  "0": ["###", "#.#", "#.#", "#.#", "###"], "1": [".#.", "##.", ".#.", ".#.", "###"], "2": ["##.", "..#", ".#.", "#..", "###"], "3": ["##.", "..#", ".#.", "..#", "##."],
-  "4": ["#.#", "#.#", "###", "..#", "..#"], "5": ["###", "#..", "##.", "..#", "##."], "6": [".##", "#..", "###", "#.#", "###"], "7": ["###", "..#", ".#.", ".#.", ".#."],
-  "8": ["###", "#.#", "###", "#.#", "###"], "9": ["###", "#.#", "###", "..#", "##."], "-": ["...", "...", "###", "...", "..."], " ": ["...", "...", "...", "...", "..."],
-};
-export function glyphs(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string, scale = 1) {
-  ctx.fillStyle = color;
-  let cx = x;
-  for (const ch of text.toUpperCase()) {
-    const g = G[ch] || G[" "];
-    for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) if (g[r][c] === "#") ctx.fillRect(cx + c * scale, y + r * scale, scale, scale);
-    cx += 4 * scale;
-  }
-}
-const textW = (t: string, s = 1) => t.length * 4 * s - s;
-function centred(ctx: CanvasRenderingContext2D, text: string, cx: number, y: number, color: string, scale = 1) { glyphs(ctx, text, Math.round(cx - textW(text, scale) / 2), y, color, scale); }
+import { glyphs, textW, centred } from "../pixelFont";
+export { glyphs };
 
 const dot = (ctx: CanvasRenderingContext2D, x: number, y: number, w = 1, h = 1) => ctx.fillRect(Math.round(x), Math.round(y), w, h);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));

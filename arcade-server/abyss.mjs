@@ -3,7 +3,8 @@ import { ABYSS_PROMPTS as P1 } from "./data/abyssPrompts.mjs";
 import { CATEGORIES } from "./data/categories.mjs";
 import { ABYSS_PROMPTS_2 as P2 } from "./data/abyssPrompts2.mjs";
 import { ABYSS_PROMPTS_3 as P3 } from "./data/abyssPrompts3.mjs";
-import { THEME_PROMPT_DATA, THEME_META } from "./data/themePrompts.mjs";
+import { THEME_PROMPT_DATA } from "./data/themePrompts.mjs";
+import { THEME_META } from "./data/themeMeta.mjs";
 import { dayKey, hash, rng } from "./shop.mjs";
 
 export const TIME_LIMIT_MS = 25_000;

@@ -100,3 +100,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 ## 19. Retro Gridiron
 - `arcade-server/tests/gridiron.test.mjs` (included in `npm run arcade:test`, 216 passing overall): playbook shape, routes move, defence states, man shadowing, throw targeting/lead, ball flight arc, outcome variety, rating effects (accuracy, catching, speed, pressure), sack, carry auto-run/steer/no-teleport, TD, OOB, tackle/broken/missed/gang, blockers, rules (first down, downs, INT, incomplete clock, sack/safety, TD, FG, punt, quarters, halftime, final, two-minute), CPU drive determinism, bot-played full Quick and Two-Minute games.
 - Browser: `node scripts/gridiron-e2e.mjs --url http://localhost:3100 --shots <dir>` (menu -> plays -> snap -> throw -> carry -> cpu drive; pause; phone landscape/portrait + tablet overflow checks). Run against `next dev -p 3100`. Debug hook: `/arcade/gridiron?debug=1` exposes `window.__gr` for tests.
+
+## 20. Abyss themed dives
+- `arcade-server/tests/abyssThemes.test.mjs`: theme banks (all tiers filled, no cross-entry duplicate answers), run shape (7 distinct prompts from one theme, reproducible per id), scoring/finish with no lives, sanitizeRun, signed-in API flow (save, resume, pearls once, per-theme best, fresh run after finish), guest flow, no answer-key leak.
+- Browser: `node scripts/abyss-theme-e2e.mjs --url http://localhost:3100 --shots <dir>` plays a full Music themed dive and a daily dive on a 390x844 phone viewport and opens the Themed Dives sheet.

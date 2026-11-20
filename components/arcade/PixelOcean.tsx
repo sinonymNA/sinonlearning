@@ -30,13 +30,30 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const hex = (c: string) => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
 const mix = (a: string, b: string, t: number) => { const A = hex(a), B = hex(b); return `rgb(${Math.round(lerp(A[0], B[0], t))},${Math.round(lerp(A[1], B[1], t))},${Math.round(lerp(A[2], B[2], t))})`; };
 const WATER: [number, string][] = [[0, "#3b8fd0"], [150, "#2468b0"], [400, "#164a88"], [1000, "#0d2f5e"], [2500, "#071b3a"], [5000, "#040f22"], [7000, "#02060f"]];
+type Pt = { x: number; y: number; vx: number; vy: number; l: number; max: number; c: string; sz: number; g: number };
+/** Big, slow sea creatures that cross the scene so the dive feels alive. */
+function creature(ctx: CanvasRenderingContext2D, kind: number, x: number, y: number, t: number, dir: number, shade: string, glow: string) {
+  const R = (c: string, dx: number, dy: number, w: number, h: number) => { ctx.fillStyle = c; ctx.fillRect(Math.round(dir > 0 ? x + dx : x - dx - w), Math.round(y + dy), w, h); };
+  if (kind === 0) { // whale
+    R(shade, 6, -6, 46, 14); R(shade, 0, -3, 8, 9); R(shade, 52, -4, 8, 8); R(shade, 58, -10, 10, 5); R(shade, 58, 4, 10, 5); R(glow, 14, 4, 34, 3); R("#c9e6f5", 40, -3, 2, 2);
+    for (let i = 0; i < 4; i++) R(glow, 12 + i * 3, 1 + (i % 2), 2, 1);
+  } else if (kind === 1) { // manta
+    const f = Math.round(Math.sin(t * 2) * 3); R(shade, 10, -2, 24, 6); R(shade, 2, -4 + f, 14, 3); R(shade, 28, -4 + f, 14, 3); R(shade, 0, -6 + f, 6, 3); R(shade, 36, -6 + f, 6, 3); R(shade, 34, 0, 18, 1); R(glow, 18, -1, 6, 2);
+  } else { // jellyfish
+    const pulse = Math.round(Math.sin(t * 3) * 1.5);
+    ctx.globalAlpha = 0.85; R(glow, 3, -8 + pulse, 14, 3); R(glow, 1, -5 + pulse, 18, 4); R(glow, 0, -1 + pulse, 20, 2);
+    ctx.globalAlpha = 0.5; for (let i = 0; i < 5; i++) for (let k = 0; k < 10; k += 2) R(glow, 2 + i * 4 + Math.round(Math.sin(t * 2 + k * 0.5 + i) * 1.5), 1 + k + pulse, 1, 2);
+    ctx.globalAlpha = 1;
+  }
+}
+
 function waterAt(m: number) {
   const q = Math.floor(Math.max(0, m) / 14) * 14;        // band the colour so it reads as pixel art
   for (let i = 1; i < WATER.length; i++) if (q <= WATER[i][0]) { const [d0, c0] = WATER[i - 1], [d1, c1] = WATER[i]; return mix(c0, c1, (q - d0) / (d1 - d0)); }
   return WATER[WATER.length - 1][1];
 }
 
-function makeSprite(fishId: string): Promise<HTMLCanvasElement | null> {
+export function makeSprite(fishId: string): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     try {
       const svg = renderToStaticMarkup(<Avatar id={fishId} size={112} />).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
@@ -136,6 +153,16 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
           px(1, 0, 5, 3); px(2, -1, 3, 1); px(2, 3, 3, 1); px(0, -1, 1, 5); px(-1, -2, 1, 7);
         }
       }
+      // big creatures: one lane every 140 m, kind and direction chosen per lane, drifting slowly across the screen
+      for (let lane = Math.floor(Math.max(0, m0) / 140); lane * 140 < m1; lane++) {
+        if (lane < 2 || rnd(lane, 21) > 0.7) continue;
+        const kind = Math.floor(rnd(lane, 22) * 3), dir = rnd(lane, 23) > 0.5 ? 1 : -1, sp = kind === 2 ? 2.5 : 5 + rnd(lane, 24) * 4, span = W + 140;
+        const x = ((rnd(lane, 25) * span + t * sp * dir) % span + span) % span - 70, y = sy(lane * 140 + 40 + rnd(lane, 26) * 60) + (kind === 2 ? Math.sin(t * 0.9 + lane) * 5 : 0);
+        if (y < surf + 12 || y > H + 10) continue;
+        const dk = Math.min(0.85, d / 3500 + 0.15);
+        creature(ctx, kind, x, y, t, dir, mix("#12305a", "#02060f", dk), kind === 2 ? `rgba(${kind === 2 ? "255,140,220" : "125,255,216"},${0.8 - dk * 0.3})` : mix("#3a6a9a", "#0a1a30", dk));
+      }
+
       // glowing specks deeper down
       const glow = Math.min(1, Math.max(0, (d - 900) / 1800));
       if (glow > 0) for (let i = 0; i < 22; i++) { const gx = rnd(i, 11) * W, gy = (rnd(i, 12) * H + t * -3 + H) % H, a = (Math.sin(t * 2 + i) + 1) / 2 * glow; ctx.fillStyle = `rgba(125,255,216,${a})`; ctx.fillRect(Math.floor(gx), Math.floor(gy), 1, 1); ctx.fillStyle = `rgba(125,255,216,${a * .25})`; ctx.fillRect(Math.floor(gx) - 1, Math.floor(gy) - 1, 3, 3); }
@@ -182,6 +209,22 @@ export default function PixelOcean({ depth, surfaceFrac = 0.28, markers = [], fi
         ctx.globalAlpha = s.mood === "miss" ? .55 : 1; ctx.drawImage(s.sprite, x, y); ctx.globalAlpha = 1;
         if (s.moving) { ctx.fillStyle = "rgba(215,240,255,.7)"; for (let i = 0; i < 4; i++) ctx.fillRect(x + 6 + ((now / 60 + i * 9) % 18), y - 4 - ((now / 40 + i * 13) % 14), 2, 2); }
       }
+      // reaction bursts: bubbles for a good answer, a golden shockwave for a deep cut, ink for a miss
+      const sx0 = Math.round(W * 0.5), sy0 = Math.round(surfY0 + (d - camY) * PPM);
+      const sa = s as unknown as { lastMood?: string; parts?: Pt[]; ring?: number };
+      sa.parts ??= []; if (s.mood !== sa.lastMood) {
+        if (!calm && s.sprite) {
+          if (s.mood === "good") for (let i = 0; i < 14; i++) sa.parts.push({ x: sx0 + (Math.random() - 0.5) * 20, y: sy0, vx: (Math.random() - 0.5) * 20, vy: -22 - Math.random() * 30, l: 0, max: 1.1, c: "rgba(215,240,255,.9)", sz: 2, g: -4 });
+          else if (s.mood === "great") { sa.ring = 0; for (let i = 0; i < 34; i++) { const a = Math.random() * 6.28, v = 30 + Math.random() * 50; sa.parts.push({ x: sx0, y: sy0, vx: Math.cos(a) * v, vy: Math.sin(a) * v, l: 0, max: 1.2, c: ["#ffe985", "#ffd23d", "#fff", "#ff9a3c"][i % 4], sz: 2, g: 40 }); } }
+          else if (s.mood === "miss") for (let i = 0; i < 18; i++) sa.parts.push({ x: sx0 + (Math.random() - 0.5) * 10, y: sy0 + (Math.random() - 0.5) * 8, vx: (Math.random() - 0.5) * 14, vy: -2 - Math.random() * 6, l: 0, max: 1.6, c: "rgba(8,6,20,.7)", sz: 4, g: 0 });
+        }
+        sa.lastMood = s.mood;
+      }
+      if (sa.ring != null) { sa.ring += 1 / 60; const rr = sa.ring * 70; ctx.globalAlpha = Math.max(0, 1 - sa.ring * 1.3); ctx.fillStyle = "#ffe985"; for (let a = 0; a < 40; a++) { const th = (a / 40) * 6.28; ctx.fillRect(Math.round(sx0 + Math.cos(th) * rr), Math.round(sy0 + Math.sin(th) * rr * 0.7), 2, 2); } ctx.globalAlpha = 1; if (sa.ring > 0.8) sa.ring = undefined; }
+      for (const q of sa.parts) { q.l += 1 / 60; q.x += q.vx / 60; q.y += q.vy / 60; q.vy += q.g / 60; ctx.globalAlpha = Math.max(0, 1 - q.l / q.max); ctx.fillStyle = q.c; ctx.fillRect(Math.round(q.x), Math.round(q.y), q.sz, q.sz); }
+      ctx.globalAlpha = 1; sa.parts = sa.parts.filter((q) => q.l < q.max);
+      // speed lines while diving
+      if (s.moving && !calm) { ctx.globalAlpha = 0.35; ctx.fillStyle = "#dff3ff"; for (let i = 0; i < 12; i++) ctx.fillRect(Math.round(rnd(i, 31) * W), Math.round(((rnd(i, 32) * H + now * 0.5 * (1 + (i % 3))) % H)), 1, 8 + (i % 4) * 4); ctx.globalAlpha = 1; }
       const host = labelsRef.current;
       if (host) {
         while (host.children.length < labels.length) { const e = document.createElement("div"); e.className = "px-lab"; host.appendChild(e); }

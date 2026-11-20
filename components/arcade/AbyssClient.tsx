@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import PackOpener from "./PackOpener";
 import PixelOcean, { type Marker } from "./PixelOcean";
+import ThemeScene, { type ThemeId } from "./ThemeScene";
+import { THEME_META } from "../../arcade-server/data/themeMeta.mjs";
 import { PrefsProvider, sfx, usePrefs } from "./prefs";
 import { api } from "./useRoom";
 import { RARITIES } from "@/lib/arcadeCatalog";
@@ -22,6 +24,8 @@ function useCountdown() {
   return left;
 }
 const fmt = (n: number) => n.toLocaleString("en-US");
+const THEMES: any[] = THEME_META;
+const themeById = (id?: string | null) => THEMES.find((t) => t.id === id) ?? null;
 
 /* ---------------- Pixel UI pieces ---------------- */
 const ZONES: [number, string][] = [[1500, "SUNLIGHT ZONE"], [3500, "TWILIGHT ZONE"], [5500, "MIDNIGHT ZONE"], [7000, "ABYSSAL ZONE"], [Infinity, "HADAL ZONE"]];
@@ -72,7 +76,7 @@ function TopButtons({ onMenu }: { onMenu: () => void }) {
 /* ---------------- Home ---------------- */
 export function AbyssHome() {
   const [d, setD] = useState<any>(null);
-  const [sheet, setSheet] = useState<null | "how" | "archive" | "menu">(null);
+  const [sheet, setSheet] = useState<null | "how" | "archive" | "menu" | "themes">(null);
   const left = useCountdown();
   useEffect(() => { api(A, { type: "home" }).then(setD).catch(() => setD({ error: true })); }, []);
   const t = d?.today;
@@ -94,6 +98,7 @@ export function AbyssHome() {
             <div className="px-bottom">
               <Link href="/arcade/abyss/play?mode=daily" className="px-btn big">▼ {status === "done" ? `TODAY: ${fmt(t.depth)} M` : status === "going" ? "RESUME DESCENT" : "BEGIN DESCENT"} ▼</Link>
               <p className="px-meta">{d.profile?.streak > 0 ? `🔥 ${d.profile.streak}-DAY STREAK · ` : ""}NEXT DIVE IN {left}{d.signedIn ? ` · ${d.pearls} PEARLS` : " · GUEST"}</p>
+              <button className="px-btn big alt" onClick={() => setSheet("themes")}>★ THEMED DIVES ★</button>
               <div className="px-row">
                 <button className="px-btn sm" disabled={!d.signedIn} onClick={() => setSheet("archive")}>ARCHIVE ↺</button>
                 <Link className="px-btn sm" href="/arcade/abyss/unlimited">UNLIMITED ∞</Link>
@@ -105,6 +110,21 @@ export function AbyssHome() {
         )}
         </div>
         {sheet === "menu" && <PixelMenu onClose={() => setSheet(null)} signedIn={!!d?.signedIn} />}
+        {sheet === "themes" && d && (
+          <Sheet title="THEMED DIVES" onClose={() => setSheet(null)}>
+            <p className="px-p opacity-70">Seven prompts, one theme, its own animated world. Rarer answers roll you farther. Play as many as you like.</p>
+            <div className="th-grid">
+              {(d.themes ?? THEMES).map((t: any) => (
+                <Link key={t.id} href={`/arcade/abyss/play?mode=theme&theme=${t.id}`} className="th-card" style={{ ["--t1" as any]: t.c1, ["--t2" as any]: t.c2 }}>
+                  <span className="th-icon">{t.icon}</span>
+                  <b>{t.name.toUpperCase()}</b>
+                  <small>{t.blurb}</small>
+                  <em>{d.profile?.themeBest?.[t.id] ? `BEST ${d.profile.themeBest[t.id]} PTS` : `${t.count ?? "?"} PROMPTS`}</em>
+                </Link>
+              ))}
+            </div>
+          </Sheet>
+        )}
         {sheet === "how" && d && (
           <Sheet title="HOW TO PLAY" onClose={() => setSheet(null)}>
             <p className="px-p">Every prompt has lots of correct answers. Type one. <b>The less common your correct answer, the deeper you sink</b> (10 m per point). Wrong guesses are free: keep guessing until one scores or the {d.timeLimit}s run out (12 guesses per prompt).</p>
@@ -130,13 +150,16 @@ export function AbyssPlay({ forceMode }: { forceMode?: string } = {}) {
   return <PrefsProvider><AbyssPlayInner forceMode={forceMode} /></PrefsProvider>;
 }
 function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
-  const [cfg, setCfg] = useState<{ mode: string; date: string } | null>(null);
+  const [cfg, setCfg] = useState<{ mode: string; date: string; theme: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    setCfg({ mode: forceMode ?? (["daily", "archive"].includes(p.get("mode") ?? "") ? (p.get("mode") as string) : "daily"), date: p.get("date") ?? "" });
+    const th = themeById(p.get("theme"));
+    setCfg({ mode: forceMode ?? (p.get("mode") === "theme" && th ? "theme" : ["daily", "archive"].includes(p.get("mode") ?? "") ? (p.get("mode") as string) : "daily"), date: p.get("date") ?? "", theme: th?.id ?? "" });
   }, [forceMode]);
   const mode = cfg?.mode ?? "daily";
   const archiveDate = cfg?.date ?? "";
+  const theme = cfg?.theme ?? "";
+  const meta = mode === "theme" ? themeById(theme) : null;
   const [me, setMe] = useState<any>(null);
   const [fish, setFish] = useState<string>("f-bubbles");
   const [phase, setPhase] = useState<Phase>("loading");
@@ -163,7 +186,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
   const base = useRef({ at: 0, left: 25000, lead: 0 });
   const input = useRef<HTMLInputElement>(null);
   const submitting = useRef(false);
-  const lsKey = `abyss:guest:${mode}:${archiveDate || "x"}`;
+  const lsKey = `abyss:guest:${mode}:${archiveDate || theme || "x"}`;
 
   const take = useCallback((d: any) => {
     if (d.guestRun) { guestRun.current = d.guestRun; try { localStorage.setItem(lsKey, JSON.stringify(d.guestRun)); } catch { /* private mode */ } }
@@ -183,20 +206,20 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
         const m = await api("/api/arcade/economy", { type: "me" }); setMe(m);
         let held: any = null;
         if (!m.signedIn) { try { held = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch { /* ignore */ } }
-        const d = await api(A, { type: "start", mode, date: archiveDate || undefined, run: held ?? undefined });
+        const d = await api(A, { type: "start", mode, date: archiveDate || undefined, theme: theme || undefined, run: held ?? undefined });
         if (d.fish) setFish(d.fish);
         take(d); setTarget(d.run.depth); setShown(d.run.depth);
         if (d.question) showQuestion(d.question, d.run.depth); else { setShare(d.share); setPhase("done"); }
       } catch (e: any) { setErr(e.message); setPhase("done"); }
     })();
-  }, [cfg, mode, archiveDate, lsKey, take, showQuestion]);
+  }, [cfg, mode, archiveDate, theme, lsKey, take, showQuestion]);
 
   const submit = useCallback(async (value: string, expired = false) => {
     if (submitting.current && !expired) return;
     if (!expired && !value.trim()) return;
     submitting.current = true; setBusy(true); setErr(null);
     try {
-      const d = await api(A, { type: "answer", mode, date: archiveDate || undefined, answer: value, expired: expired || undefined, run: guestRun.current ?? undefined });
+      const d = await api(A, { type: "answer", mode, date: archiveDate || undefined, theme: theme || undefined, answer: value, expired: expired || undefined, run: guestRun.current ?? undefined });
       if (d.retry) {          // not on the list: keep the question open
         take(d); setWrong(d.guesses); setAnswer(""); setMood("nope"); sfx("bad"); setTimeout(() => setMood("idle"), 700);
         if (d.question) base.current = { at: performance.now(), left: d.question.msLeft, lead: 0 };
@@ -209,7 +232,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
       if (d.done) { setFinish(d.finish); setShare(d.share); window.dispatchEvent(new Event("arcade:refresh")); }
       setQ(d.question);
     } catch (e: any) { setErr(e.message); submitting.current = false; } finally { setBusy(false); }
-  }, [mode, archiveDate, take]);
+  }, [mode, archiveDate, theme, take]);
 
   useEffect(() => {
     if (phase !== "question") return;
@@ -232,22 +255,28 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
   async function copy() { if (!share) return; try { await navigator.clipboard.writeText(share); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ } }
 
   const markers: Marker[] = phase === "done" ? [] : TIER_LIST.map((t) => ({ depth: markerBase + t.points * 10, label: `${t.label} · ${t.points}`, color: TIER_COLOR[t.id] }));
-  const title = mode === "daily" ? "DAILY DIVE" : mode === "archive" ? `ARCHIVE ${archiveDate.slice(5)}` : "UNLIMITED";
+  const title = meta ? meta.name.toUpperCase() : mode === "daily" ? "DAILY DIVE" : mode === "archive" ? `ARCHIVE ${archiveDate.slice(5)}` : "UNLIMITED";
+  const unit = meta ? meta.unit : "M";
+  const round = meta ? meta.round : "PROMPT";
   const tierColor = res?.tier ? TIER_COLOR[res.tier] : "#ff5d73";
   const total = run?.total ?? null;
   const frac = msLeft / 25000;
 
   return (
-    <div className="px-play">
-      <PixelOcean depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+    <div className={`px-play ${meta ? "themed" : ""}`} style={meta ? ({ ["--t1" as any]: meta.c1, ["--t2" as any]: meta.c2 } as any) : undefined}>
+      {meta ? (
+        <ThemeScene theme={meta.id as ThemeId} dist={target} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDist={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+      ) : (
+        <PixelOcean depth={target} surfaceFrac={0.5} markers={markers} fishId={phase === "loading" || phase === "done" ? null : fish} mood={mood} onDepth={setShown} onArrive={() => setArrived(true)} arriveKey={res?.n ?? -1} />
+      )}
       <div className="px-crt" />
       <div className="px-col">
       <header className="px-hud">
-        <div className="px-plate px-stat"><small>DEPTH</small><b>{fmt(shown)}m</b></div>
+        <div className="px-plate px-stat"><small>{meta ? unit : "DEPTH"}</small><b>{fmt(shown)}{meta ? "" : "m"}</b></div>
         <div className="px-progress" aria-label="Progress">
           {total ? <div className="px-pips">{Array.from({ length: total }, (_, i) => { const r = run?.results?.[i]; return <i key={i} style={{ background: r ? (r.tier ? TIER_COLOR[r.tier] : "#5a2230") : i === (run?.i ?? 0) ? "#ff5d9e" : "#0c1a33" }} />; })}</div>
             : <div className="px-lives">{"●".repeat(Math.max(0, run?.lives ?? 0))}<span>{"○".repeat(Math.max(0, 3 - (run?.lives ?? 0)))}</span></div>}
-          <small>{total ? `PROMPT ${Math.min((run?.i ?? 0) + 1, total)} OF ${total}` : `${title} · ${zoneOf(shown)}`}</small>
+          <small>{total ? `${round} ${Math.min((run?.i ?? 0) + 1, total)} OF ${total}` : `${title} · ${zoneOf(shown)}`}</small>
         </div>
         <div className="px-plate px-stat right"><small>SCORE</small><b>{run?.points ?? 0}</b></div>
       </header>
@@ -257,9 +286,9 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
         <div className={`px-sign ${phase === "reveal" ? "answered" : ""}`} key={phase === "reveal" ? `a${res?.n}` : `q${q?.n}`}>
           {phase === "question" ? (
             <>
-              <p className="px-signtag">{q?.total ? `PROMPT ${q.n + 1} OF ${q.total}` : `DIVE ${q?.n + 1}`} · {String(q?.cat).toUpperCase()}</p>
+              <p className="px-signtag">{q?.total ? `${round} ${q.n + 1} OF ${q.total}` : `DIVE ${q?.n + 1}`} · {String(q?.cat).toUpperCase()}</p>
               <p className="px-prompt">{q?.prompt}</p>
-              <p className="px-signfoot">▼ RARER ANSWERS SINK DEEPER ▼</p>
+              <p className="px-signfoot">{meta ? "▶ RARER ANSWERS ROLL FARTHER ▶" : "▼ RARER ANSWERS SINK DEEPER ▼"}</p>
             </>
           ) : res && (
             <>
@@ -275,7 +304,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
       {phase === "question" && q && (
         <div className="px-bottom">
           {lead > 0 ? (
-            <p className="px-plate px-lead">DESCENDING · THE CLOCK STARTS IN {Math.ceil(lead / 1000)}</p>
+            <p className="px-plate px-lead">{meta ? "GET READY" : "DESCENDING"} · THE CLOCK STARTS IN {Math.ceil(lead / 1000)}</p>
           ) : (
             <>
               <div className={`px-clock ${msLeft < 6000 ? "low" : ""}`} role="timer" aria-label={`${Math.ceil(msLeft / 1000)} seconds left`}><div className="px-clockbar">{Array.from({ length: 25 }, (_, i) => <i key={i} className={i < Math.ceil(frac * 25) ? "on" : ""} />)}</div><b>{Math.ceil(msLeft / 1000)}s</b></div>
@@ -299,7 +328,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
             <em>+{res.points}</em>
           </div>
           <div className="px-bottom" aria-live="polite">
-            {res.matched && <p className="px-meta">COUNTED AS {res.matched.toUpperCase()}{res.fuzzy ? " (TYPO FIXED)" : ""} · {fmt(res.depth)} M</p>}
+            {res.matched && <p className="px-meta">COUNTED AS {res.matched.toUpperCase()}{res.fuzzy ? " (TYPO FIXED)" : ""} · {fmt(res.depth)} {unit}</p>}
             {!res.matched && res.wrong?.length > 0 && <div className="px-row">{res.wrong.slice(0, 3).map((g: string) => <button key={g} className="px-btn sm" disabled={!me?.signedIn || reported.includes(g)} onClick={() => report(g)}>{reported.includes(g) ? "✓ REPORTED" : `REPORT “${g.toUpperCase()}”`}</button>)}</div>}
             {res.examples?.length > 0 && <p className="px-meta">DEEPER ANSWERS: {res.examples.map((e: any) => e.name.toUpperCase()).join(" · ")}</p>}
             {run?.done ? <button className="px-btn big" onClick={() => setPhase("done")} autoFocus>SEE YOUR DIVE</button> : <button className="px-btn big" onClick={() => q && showQuestion(q, run.depth)} autoFocus>NEXT PROMPT ▼</button>}
@@ -313,8 +342,8 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
         <div className="px-done">
           {run ? (
             <div className="px-plate px-donecard">
-              <p className="px-bigdepth">{fmt(run.depth)} M</p>
-              <p className="px-meta">{run.points} POINTS · {zoneOf(run.depth)}</p>
+              <p className="px-bigdepth">{fmt(run.depth)} {unit}</p>
+              <p className="px-meta">{run.points} POINTS · {meta ? meta.name.toUpperCase() : zoneOf(run.depth)}</p>
               <ul className="done-list">{run.results.map((r: any, i: number) => <li key={i}><span>{r.tier ? { bubble: "🫧", clever: "😏", shoal: "🐟", reef: "🪸", trench: "🦑", pearl: "🦪" }[r.tier as string] : "💀"}</span><span className="flex-1 truncate"><b>{(r.matched ?? (r.timedOut ? "(no answer)" : r.answer)).toUpperCase()}</b> <span className="opacity-60">- {r.prompt}</span></span><span className="tabular-nums">+{r.points}</span></li>)}</ul>
               {finish?.pearls > 0 && <p className="px-meta">🦪 +{finish.pearls} PEARLS</p>}
               {finish?.newFish?.length > 0 && <div className="flex items-center justify-center gap-3"><Avatar id={finish.newFish[0]} size={56} /><p className="px-meta">NEW FISH UNLOCKED FOR YOUR STREAK!</p></div>}
@@ -323,6 +352,7 @@ function AbyssPlayInner({ forceMode }: { forceMode?: string }) {
               <div className="px-row">
                 {share && <button className="px-btn sm" onClick={copy}>{copied ? "COPIED!" : "COPY RESULT"}</button>}
                 {mode === "unlimited" && <button className="px-btn sm" onClick={() => { window.location.href = "/arcade/abyss/unlimited"; }}>DIVE AGAIN</button>}
+                {meta && <button className="px-btn sm" onClick={() => { window.location.href = `/arcade/abyss/play?mode=theme&theme=${meta.id}`; }}>PLAY AGAIN</button>}
                 <Link className="px-btn sm" href="/arcade/abyss">BACK</Link>
               </div>
             </div>
