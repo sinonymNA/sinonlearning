@@ -321,37 +321,35 @@ export class PlaySim {
     return { x: this.qb.x, y: this.qb.y, z: 1.1 };
   }
 
+  /**
+   * Catch resolution is mostly skill: a receiver with daylight catches the ball. Dice only come in when a defender is
+   * actually on top of the throw (the closer he is, the bigger the chance of a break-up, a drop or a pick).
+   */
   _arrive() {
     const t = this.target, w = this.wr[this.thrownTo];
     const land = { x: t.x, y: t.y };
     const out = land.x < 0.2 || land.x > FIELD.W - 0.2 || land.y > FIELD.LEN - 0.2;
     const rd = dist(w, land);
-    // nearest defender who could play the ball
     let dd = 99, dB = null;
     for (const e of this.defenders) { if (e.role === "DL") continue; const d = dist(e, land); if (d < dd) { dd = d; dB = e; } }
     const recReach = rd <= SIM.CATCH_RADIUS && !out;
     const defReach = dd <= SIM.INT_RADIUS && !out;
     this.catchSpot = land;
     if (!recReach && !defReach) return this._incomplete(out ? "out of bounds" : "overthrown", out);
-    const recQ = (w.r.catching / 100) * (1 - (rd / SIM.CATCH_RADIUS) * 0.55);
-    const defQ = dB ? ((dB.r.coverage * 0.5 + dB.r.awareness * 0.5) / 100) * (1 - (dd / SIM.INT_RADIUS) * 0.55) : 0;
-    if (!recReach) { // only a defender in position
+    const defQ = dB ? (dB.r.coverage * 0.5 + dB.r.awareness * 0.5) / 100 : 0;
+    if (!recReach) { // only a defender can get to it
       if (this.rng() < defQ * 0.4) return this._intercepted(dB, land);
       return this._incomplete("deflected", false, "deflection");
     }
-    if (defReach) {
-      const pDef = defQ / (defQ + recQ * 1.15);
-      const r = this.rng();
-      if (r < pDef * 0.26) return this._intercepted(dB, land);
-      if (r < pDef * 0.8) return this._incomplete("broken up", false, "deflection");
-    } else if (dd < 2.4) {
-      const pBreak = 0.22 * ((dB.r.coverage * 0.5 + dB.r.awareness * 0.5) / 100) * (1 - dd / 2.4);
-      if (this.rng() < pBreak) return this._incomplete("broken up", false, "deflection");
+    const c = clamp(1 - dd / SIM.CONTEST_RADIUS, 0, 1);   // 0 = open, 1 = defender on the receiver
+    if (c > 0) {
+      const pBreak = c * (0.22 + 0.4 * defQ) * (1.2 - (w.r.catching / 100) * 0.5);
+      if (this.rng() < pBreak) {
+        if (dd < 1.3 && this.rng() < 0.16 + defQ * 0.14) return this._intercepted(dB, land);
+        return this._incomplete("broken up", false, "deflection");
+      }
+      if (this.rng() < (1 - w.r.catching / 100) * 0.22 * c) return this._incomplete("dropped", false, "drop");
     }
-    // Open receivers catch the ball. Drops only really happen when a defender is on the man or the ball was off-target.
-    const crowd = clamp(1 - dd / 3, 0, 1);
-    const pDrop = clamp((1 - w.r.catching / 100) * 0.16 * crowd + (rd / SIM.CATCH_RADIUS) * 0.025, 0, 0.2);
-    if (this.rng() < pDrop) return this._incomplete("dropped", false, "drop");
     return this._caught(w, land);
   }
 

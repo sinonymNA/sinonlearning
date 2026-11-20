@@ -16,7 +16,7 @@
 
 /* layout */
 .gr-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: clamp(6px, 1.6vw, 20px); padding: 8px 10px; align-items: stretch; }
-.gr-stage { position: relative; height: 100%; aspect-ratio: 176 / 144; max-width: 100%; justify-self: center; box-shadow: 0 0 0 3px #000, 0 0 0 6px #2b4c93, 0 10px 40px rgba(0,0,0,.6); background: #0b1020; overflow: hidden; }
+.gr-stage { position: relative; width: min(calc(100vw - 470px), calc((100dvh - 70px) * 1.5333)); height: auto; align-self: center; aspect-ratio: 276 / 180; max-width: 100%; justify-self: center; box-shadow: 0 0 0 3px #000, 0 0 0 6px #2b4c93, 0 10px 40px rgba(0,0,0,.6); background: #0b1020; overflow: hidden; }
 .gr-canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: -webkit-optimize-contrast; image-rendering: pixelated; }
 .gr-crt { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,10,.12) 0 1px, transparent 1px 3px), radial-gradient(ellipse at center, transparent 68%, rgba(0,0,12,.34) 100%); z-index: 2; }
 .gr-pressure { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 36px 8px rgba(255, 40, 60, .55); animation: gr-pulse .45s steps(2) infinite; z-index: 2; }
@@ -26,7 +26,7 @@
 
 /* controls */
 .gr-pad { display: flex; gap: 10px; } .gr-abcd { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.gr-key { position: relative; display: grid; place-items: center; width: clamp(64px, min(11vw, 17vh), 108px); height: clamp(64px, min(11vw, 17vh), 108px); background: #0e1b44; border: 0; box-shadow: inset 0 0 0 3px #3a5aa8, 0 4px 0 #050a1c; font-family: 'Press Start 2P', monospace; font-size: clamp(18px, 3.4vh, 30px); color: #fff; touch-action: none; transition: transform .06s; clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px)); }
+.gr-key { position: relative; display: grid; place-items: center; width: clamp(52px, min(8.4vw, 14vh), 92px); height: clamp(52px, min(8.4vw, 14vh), 92px); background: #0e1b44; border: 0; box-shadow: inset 0 0 0 3px #3a5aa8, 0 4px 0 #050a1c; font-family: 'Press Start 2P', monospace; font-size: clamp(18px, 3.4vh, 30px); color: #fff; touch-action: none; transition: transform .06s; clip-path: polygon(0 6px, 6px 6px, 6px 0, calc(100% - 6px) 0, calc(100% - 6px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 6px), 0 calc(100% - 6px)); }
 .gr-key:active:not(:disabled) { transform: translateY(3px); } .gr-key:disabled { opacity: .45; }
 .gr-key.arrow.hot { background: #1b4a8f; box-shadow: inset 0 0 0 3px #ffd23f, 0 4px 0 #050a1c; animation: gr-pulse .7s steps(2) infinite; }
 .gr-key.abcd { background: color-mix(in srgb, var(--c) 22%, #0a1230); box-shadow: inset 0 0 0 3px var(--c), 0 4px 0 #050a1c; } .gr-key.abcd span { color: var(--c); text-shadow: 2px 2px 0 #000; }
@@ -73,6 +73,13 @@
   .gr-key { width: clamp(44px, 12.4vw, 70px); height: clamp(44px, 12.4vw, 70px); font-size: clamp(14px, 4.4vw, 22px); }
   .gr-playgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; } .gr-play b { font-size: .6em; } .gr-play small { display: none; } .gr-panel.plays h2 { font-size: 10px; }
   .gr-dd { min-width: 0; } .gr-top { gap: 8px; } .gr-hint { font-size: .8rem; }
+  .gr-snapplay .gr-diagram, .gr-playname small { display: none; } .gr-snapbar { padding: 4px 6px; flex-wrap: nowrap; } .gr-snapbar .gr-btn { padding: 5px 10px; font-size: .9em; }
 }
 @media (max-height: 420px) and (min-aspect-ratio: 1/1) { .gr-top { min-height: 36px; padding: 3px 8px; } .gr-team { font-size: 1.2rem; } .gr-team b, .gr-clock b { font-size: .9rem; } .gr-dd { font-size: 1.2rem; } .gr-main { padding: 4px 8px; } .gr-hint { font-size: .85rem; } .gr-play small { display: none; } }
 @media (prefers-reduced-motion: reduce) { .gr-pressure, .gr-key.arrow.hot, .gr-banner, .gr-log li { animation: none; } }
+
+/* auto-called play + audible */
+.gr-snapplay { display: flex; align-items: center; gap: 8px; min-width: 0; } .gr-snapplay .gr-diagram { width: clamp(70px, 14%, 120px); box-shadow: 0 0 0 2px #3a5aa8; flex: none; }
+.gr-flash { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,.85), rgba(255,210,63,.35) 60%, transparent); animation: gr-flash .45s ease-out forwards; }
+@keyframes gr-flash { from { opacity: 1; } to { opacity: 0; } }
+.gr-banner { top: 14%; }

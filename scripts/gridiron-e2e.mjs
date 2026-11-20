@@ -23,12 +23,12 @@ async function overflow(p, name) {
 const p = await session("desktop", { width: 1366, height: 768 });
 await shot(p, "1-menu"); await overflow(p, "menu");
 await p.click("text=QUICK PLAY");
-await p.waitForSelector(".gr-playgrid"); await shot(p, "2-plays"); await overflow(p, "plays");
+await p.waitForSelector("text=SNAP"); await shot(p, "2-presnap-auto"); await overflow(p, "presnap");
+await p.click("text=AUDIBLE"); await p.waitForTimeout(200); await shot(p, "2b-audible");
 const seen = new Set(); let plays = 0, snaps = 0, catches = 0;
 for (let guard = 0; guard < 400 && plays < PLAYS; guard++) {
   const s = await screen(p); seen.add(s);
-  if (s === "plays") { await p.locator(".gr-play").nth(plays % 8).click(); }
-  else if (s === "fourth") { await p.click("text=PUNT"); }
+  if (s === "fourth") { await p.click("text=PUNT"); }
   else if (s === "presnap") { if (plays === 0) await shot(p, "3-presnap"); await p.click("text=SNAP"); snaps++; }
   else if (s === "live") {
     const t0 = Date.now(); let thrown = false;
@@ -46,7 +46,7 @@ for (let guard = 0; guard < 400 && plays < PLAYS; guard++) {
 }
 console.log("screens seen", [...seen].join(","), "plays", plays, "snaps", snaps, "carry frames", catches);
 // pause / resume
-if ((await screen(p)) === "plays") { await p.locator(".gr-play").first().click(); await p.click("text=SNAP"); }
+if ((await screen(p)) === "presnap") { await p.click("text=SNAP"); }
 if ((await screen(p)) === "live") { await p.keyboard.press("Escape"); await p.waitForSelector("text=PAUSED"); await shot(p, "6-pause"); await p.click("text=RESUME"); }
 await shot(p, "7-after");
 const hudText = await p.locator(".gr-top").innerText().catch(() => ""); console.log("HUD:", hudText.replace(/\n/g, " | "));
@@ -56,8 +56,7 @@ await p.close();
 for (const [name, vp] of [["phone-landscape", { width: 844, height: 390 }], ["phone-portrait", { width: 390, height: 844 }], ["tablet", { width: 1024, height: 768 }]]) {
   const q = await session(name, vp, { touch: true });
   await shot(q, `${name}-menu`); await overflow(q, name + " menu");
-  await q.tap("text=TWO-MINUTE DRILL"); await q.waitForSelector(".gr-playgrid"); await shot(q, `${name}-plays`); await overflow(q, name + " plays");
-  await q.locator(".gr-play").nth(1).tap(); await q.waitForSelector("text=SNAP"); await overflow(q, name + " presnap"); await shot(q, `${name}-presnap`);
+  await q.tap("text=TWO-MINUTE DRILL"); await q.waitForSelector("text=SNAP"); await overflow(q, name + " presnap"); await shot(q, `${name}-presnap`);
   await q.tap("text=SNAP"); await q.waitForTimeout(1500); await shot(q, `${name}-live`); await overflow(q, name + " live");
   const can = await q.locator(".gr-abcd .gr-key:not([disabled])").count();
   if (can) { await q.locator(".gr-abcd .gr-key").nth(1).tap(); await q.waitForTimeout(2500); await shot(q, `${name}-after-throw`); }

@@ -3,13 +3,18 @@
 A 2D top-down pixel-art football game in the arcade (`/arcade/gridiron`, Solo hub card "RETRO GRIDIRON"). Single player vs the computer, desktop + mobile browsers, landscape-first (portrait works too). No new backend, no accounts: it is a pure client game built on a unit-tested engine.
 
 ## How it plays
-1. **Call a play** (8-play book, each card shows its four routes A B C D).
+1. **The coordinator calls the play** (8-play book, picked for down & distance: no bombs on 3rd-and-short, no screens on 3rd-and-18). The route overlay and A B C D labels are shown pre-snap; tap **AUDIBLE** (or X) to switch to one of two other situational calls. No menu to browse.
 2. **Snap.** Receivers run their routes in real time; the defence (man, zone or a blitz, chosen per snap) reacts; the pass rush breaks free after a few seconds. A red pulse means a rusher is closing on the QB.
 3. **Throw:** tap A / B / C / D (or press A B C D / 1-4). The ball leaves after a short wind-up and is *led* to where the receiver will be (route-projection solver). Accuracy depends on QB rating, pressure, a rushed throw and flight time. The A-D buttons carry a faint separation bar that is deliberately noisy and slow (it hints, it does not tell).
 4. **Carry:** after the catch only lateral steering is yours (hold ◀ ▶, arrow keys, A/D, or touch the left/right half of the field). The receiver runs upfield by his speed rating; cutting hard costs a little forward speed. Defenders take pursuit angles and tackle (tackle / broken tackle / missed tackle, gang bonus); non-target receivers (and linemen on a screen) block.
 5. Dead ball on tackle, out of bounds, touchdown. Normal football rules apply (below).
 
 Keys: Space/Enter = snap / kick / continue, Esc or P = pause, A B C D or 1-4 = throw (A and D steer instead once the catch is made).
+
+## Feel (second pass, after play feedback "not fun, drops the ball too much")
+- **Skill decides catches.** A receiver with daylight (>2.2 yd from the nearest defender) catches the ball; no hidden dice. Dice only apply when a defender is on the throw, scaled by how close he is (break-up, small drop chance, interception only when he is nearly on top of the receiver). QB accuracy error was cut by about half.
+- **Tight camera:** 46 x 30 yards visible (was 53 x 48), players drawn at 2x, receivers who run off-screen get a lettered edge arrow. Quick pocket (0.7 s drop, 6.5 s max hold) and game speed x1.2.
+- **Juice:** hit-stop on catches/tackles/picks/sacks/TDs, screen shake, dust / pop / confetti particles, ball trail in flight, bouncing ball on an incompletion, touchdown flash + crowd cheer, shorter result banners, skippable CPU drive log.
 
 ## Modes
 - **Quick Play:** four 4:00 quarters vs the CPU. You get the opening kickoff, the CPU gets the second-half kickoff.
@@ -33,5 +38,6 @@ Ratings (1-100) really change play: QB accuracy/arm/throw speed, receiver speed/
 - Not built (by design, per the brief): season mode, multiplayer, defence control, career, trading, accounts.
 - Interceptions end at the catch spot (no return). No penalties, fumbles, kickoff returns, two-point tries (extra points are automatic).
 - CPU drives are simulated from ratings, not played out on the field.
+- Whether it is actually fun still needs human playtesting; tuning lives in `config.mjs` (e.g. `SIM.GAME_SPEED`, `CONTEST_RADIUS`, `PASS_ERR_*`).
 - Balance was tuned with a bot over a few hundred plays per play-type (see ARCADE_TESTS.md); deep routes are somewhat generous. It still needs real play time to tune the feel. Every number is in `config.mjs`.
 - Verified in headless Chromium (desktop, tablet, phone portrait/landscape, touch emulation) but not on physical devices; audio is the shared WebAudio synth and was not listened to.

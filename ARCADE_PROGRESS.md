@@ -86,3 +86,6 @@ See ARCADE_ABYSS.md "v4". Browser-checked (dev auth): Abyss at 820x1180 (iPad), 
 
 ## Round: Retro Gridiron
 Built a complete 2D pixel football game (see ARCADE_GRIDIRON.md). Engine first (`arcade-server/gridiron/*`, 45 node:test cases covering routes, defence states, throws/catches/INT/drop/deflection/sack, carry steering/tackles/TD/OOB, downs/first downs/turnovers/clock/quarters/FG/punt/safety/two-minute/CPU drives, and bot-played full games), then the canvas client, controls, menus, and arcade integration. Balance pass with a bot: tackle radius/probability and pursuit speed raised after YAC was too high (median now ~6 yd, breakaways <2%); INT/drop rates reduced. `scripts/gridiron-e2e.mjs` smoke-tests the browser flow.
+
+## Round: Gridiron feel pass
+User feedback: "not really playable or fun, drops the ball too much". Changes: skill-based catches (open = caught; dice only when a defender is on the throw), tighter 46x30-yard camera with 2x sprites and edge markers, auto play-calling with a one-tap audible (replaces the 8-card grid), juice (hit-stop, shake, particles, ball trail/bounce, TD celebration), faster pocket + x1.2 game speed, skippable CPU drive log. Engine tests 220 passing; browser smoke re-run on desktop/tablet/phone. Not human-playtested for feel.

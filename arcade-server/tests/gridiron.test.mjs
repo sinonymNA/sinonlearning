@@ -83,7 +83,7 @@ test("can't throw twice, before the snap, or to a bad index", () => {
 
 test("pass outcomes cover completion, incompletion, drop, deflection and interception across many throws", () => {
   const seen = new Set();
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 900; i++) {
     let th = false;
     const s = runPlay({ play: PLAYBOOK[i % 8].id, seed: 100 + i, los: yardlineToY(40) }, (s) => {
       if (s.phase === "carry") s.setLateral(0);
@@ -108,7 +108,7 @@ test("interception: defender on the ball with the receiver out of reach", () => 
 });
 
 test("dropped pass: catching ability matters", () => {
-  const lo = mk(); lo.advance(1); lo.throwTo(0); lo.wr[0].r.catching = 20; lo.rng = Object.assign(() => 0.02, rng1);
+  const lo = mk(); lo.advance(1); lo.throwTo(0); lo.wr[0].r.catching = 20; { const seq = [0.9, 0.01]; let k = 0; lo.rng = Object.assign(() => seq[Math.min(k++, 1)], rng1); }
   const t = lo.wr[0]; lo.target = { x: t.x, y: t.y, ideal: { x: t.x, y: t.y } }; for (const d of lo.defenders) { d.x = 2; d.y = 100; } lo.db[0].x = t.x + 1.2; lo.db[0].y = t.y + 1.2; lo.db[0].r.coverage = 20; lo.db[0].r.awareness = 20;
   lo.phase = "flight"; lo.flight.t0 = lo.t - 9; lo.step(SIM.DT); assert.equal(lo.result.kind, "drop");
   const hi = mk(); hi.advance(1); hi.throwTo(0); hi.wr[0].r.catching = 99; hi.rng = Object.assign(() => 0.2, rng1);
@@ -302,4 +302,36 @@ test("a Two-Minute Drill runs to a final result", () => {
 test("down & distance text is a whole number and goal-to-go reads 'Goal'", () => {
   const g = new Game({ seed: 3 }); g.toGo = 3.0696; assert.equal(g.downText(), "1st & 4");
   g.yardline = 95; g.line = 100; assert.equal(g.downText(), "1st & Goal");
+});
+
+test("open receivers catch the ball: no dice when nobody is near", () => {
+  let caught = 0; const N = 200;
+  for (let i = 0; i < N; i++) {
+    const s = mk("curls", { seed: i }); s.advance(1.0); s.throwTo(1); s.rng = makeRng(i + 7);
+    const w = s.wr[1]; s.target = { x: w.x, y: w.y, ideal: { x: w.x, y: w.y } }; for (const d of s.defenders) { d.x = 2; d.y = 100; }
+    s.wr[1].r.catching = 55; s.phase = "flight"; s.flight.t0 = s.t - 9; s.step(SIM.DT); if (s.phase === "carry") caught++;
+  }
+  assert.equal(caught, N);
+});
+
+test("contested throws are risky: a defender on the receiver breaks up or picks a real share of passes", () => {
+  let bad = 0; const N = 300;
+  for (let i = 0; i < N; i++) {
+    const s = mk("curls", { seed: i }); s.advance(1.0); s.throwTo(1); s.rng = makeRng(i + 3);
+    const w = s.wr[1]; s.target = { x: w.x, y: w.y, ideal: { x: w.x, y: w.y } }; for (const d of s.defenders) { d.x = 2; d.y = 100; }
+    s.db[0].x = w.x + 0.5; s.db[0].y = w.y + 0.5; s.phase = "flight"; s.flight.t0 = s.t - 9; s.step(SIM.DT); if (s.phase === "dead" && (s.result.incomplete || s.result.interception)) bad++;
+  }
+  assert.ok(bad / N > 0.15 && bad / N < 0.5, "contested incompletion rate " + bad / N);
+});
+
+test("play suggestions: three distinct valid plays that fit the situation", () => {
+  const ids = PLAYBOOK.map((p) => p.id);
+  for (let i = 0; i < 40; i++) {
+    const g = new Game({ seed: i }); g.toGo = 2; const a = g.suggestPlays(); assert.equal(new Set(a).size, 3); a.forEach((x) => assert.ok(ids.includes(x))); assert.ok(!a.includes("verts"), "no bomb on 3rd & short");
+    g.toGo = 18; const b = g.suggestPlays(); assert.ok(!b.includes("screen") && !b.includes("mesh"));
+  }
+});
+
+test("pocket is quick: pressure arrives and the whole play is faster than before", () => {
+  assert.ok(SIM.QB_DROP_TIME <= 0.75 && SIM.MAX_HOLD <= 7 && SIM.GAME_SPEED > 1);
 });

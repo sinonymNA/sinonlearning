@@ -45,6 +45,20 @@ export class Game {
   downText() { const d = ["", "1st", "2nd", "3rd", "4th"][this.down]; return `${d} & ${this.goalToGo ? "Goal" : Math.max(1, Math.ceil(this.toGo - 0.05))}`; }
 
   // ---- the player's offence --------------------------------------------------------------------
+  /** The offensive coordinator: three sensible plays for the situation (first is the default call). */
+  suggestPlays() {
+    const short = this.toGo <= 3, mid = this.toGo <= 7, goal = this.line >= 100 || this.yardline >= 88;
+    let pool;
+    if (goal) pool = ["slants", "mesh", "outs", "curls", "screen"];
+    else if (this.mode === "twoMinute") pool = this.toGo > 12 ? ["outs", "flood", "post", "curls"] : ["outs", "slants", "curls", "mesh", "flood"];
+    else if (short) pool = ["mesh", "slants", "curls", "screen", "outs"];
+    else if (mid) pool = ["curls", "outs", "slants", "mesh", "flood", "post"];
+    else pool = ["verts", "post", "flood", "curls", "outs"];
+    const out = []; const left = [...pool];
+    while (out.length < 3 && left.length) out.push(left.splice(this.rng.int(left.length), 1)[0]);
+    return out;
+  }
+
   /** Create the PlaySim for the chosen play. The client runs it and hands `result` back to finishPlay. */
   beginPlay(playId, opts = {}) {
     if (this.phase !== "playcall") throw new Error("not a play-call phase");
