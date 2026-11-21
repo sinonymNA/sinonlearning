@@ -119,3 +119,7 @@ User: add Telatro (external HTML game) as a solo game, embedded by link
 
 User: replace the Telatro embed (an unofficial Balatro port) with an original idle pack-cracker; fantasy football idle game to follow
 - Done: Pack Rush (`ARCADE_PACKS.md`), hub card, tests, economy simulator, browser smoke. Telatro route and card removed. Next: fantasy football idle game.
+
+
+User feedback: Pack Rush felt like a robot idle game; cards were icons. Rebuilt as shop -> table -> tap-to-tear packs -> framed cards with 6 finishes -> sell duplicates -> staff.
+- Done: engine v2, parts-based card art, tear/flip/particle UI, album close-ups, odds lab, tests, econ sim, browser smoke. Reboot tree dropped.

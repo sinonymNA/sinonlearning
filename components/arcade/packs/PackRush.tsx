@@ -1,65 +1,66 @@
 "use client";
 /* eslint-disable @next/next/no-img-element, @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect, react-hooks/refs */
-// PACK RUSH: an incremental card-collecting game. All rules live in arcade-server/packs (pure ESM, tested); this file draws the state.
-// Save data lives in this browser only (localStorage). Cards and packs are drawn from seeds, so there are no art files.
+// PACK RUSH: buy packs, tap them open on your table, file the cards in your album, sell the duplicates, hire staff.
+// All rules are in arcade-server/packs (pure ESM, tested). This file only draws the state. Saves live in this browser (localStorage).
 import Link from "next/link";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import {
-  newState, mods, tick, offline, openPack, openMany, packCost, unlocked, ownedInSet, claimFree, freeReady, buyUpgrade, upgradeCost, tap, incomeRate, cardRate,
-  levelOf, nextAt, odds, packsForRarity, simulate, rebootGain, reboot, buyNode, nodeAvailable, starsAvailable, CARDS, SETS, RARITIES, UPGRADES, TREE, SET_SIZE, REBOOT_DIVISOR,
+  newState, mods, hit, buyPack, unlockTier, sellAll, storedValue, buyUpgrade, hire, upgradeCost, advance, offline, rarityOdds, variantOdds, simulate, expectedValue, cardValue,
+  freeSlot, dupeCount, albumCount, packsFor, ownedInSet, ALBUM_TOTAL, CARDS, SETS, VARIANTS, RARITIES, UPGRADES, STAFF, MAX_SLOTS, SET_SIZE,
 } from "../../../arcade-server/packs/index.mjs";
 import { PrefsProvider, PrefsButtons, sfx } from "../prefs";
-import { creatureUrl, packUrl } from "./sprites";
+import { packUrl } from "./sprites";
+import CardFace from "./CardFace";
 import { fmt, fmtTime } from "./format";
 import "./packs.css";
 
-const KEY = "packrush:v1";
-type Tab = "packs" | "upgrades" | "dex" | "reboot" | "odds";
-const RCOLOR: Record<string, string> = Object.fromEntries(RARITIES.map((r: any) => [r.id, r.color]));
-const RORDER: Record<string, number> = Object.fromEntries(RARITIES.map((r: any, i: number) => [r.id, i]));
+const KEY = "packrush:v2";
+type Tab = "table" | "shop" | "upgrades" | "staff" | "album" | "odds";
+const ROR: Record<string, number> = Object.fromEntries(RARITIES.map((r: any, i: number) => [r.id, i]));
+const TABS: [Tab, string, string][] = [["table", "🎴", "TABLE"], ["shop", "🏪", "SHOP"], ["upgrades", "⬆️", "UPGRADES"], ["staff", "🧑‍💼", "STAFF"], ["album", "📖", "ALBUM"], ["odds", "🎲", "ODDS"]];
 
 export default function PackRush() { return <PrefsProvider><Inner /></PrefsProvider>; }
 
-function load(): any {
-  const now = Date.now();
+function load(): { st: any; at: number } {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const s = JSON.parse(raw); if (s?.v === 1 && s.dex && s.up) return s; }
+    if (raw) { const j = JSON.parse(raw); if (j?.st?.v === 2) return { st: j.st, at: j.at || Date.now() }; }
   } catch { /* blocked or corrupt: start fresh */ }
-  return newState((now ^ 0x5bd1e995) >>> 0, now);
+  return { st: newState((Date.now() ^ 0x5bd1e995) >>> 0), at: Date.now() };
 }
 
 function Inner() {
-  const S = useRef<any>(null);
+  const S = useRef<any>(null), last = useRef(0), nid = useRef(0);
   const [, bump] = useReducer((x: number) => x + 1, 0);
-  const [tab, setTab] = useState<Tab>("packs");
+  const [tab, setTab] = useState<Tab>("table");
   const [reveal, setReveal] = useState<any>(null);
-  const [ticker, setTicker] = useState<any[]>([]);
+  const [hits, setHits] = useState<number[]>(Array(MAX_SLOTS).fill(0));
+  const [bits, setBits] = useState<any[]>([]);
+  const [flash, setFlash] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [welcome, setWelcome] = useState<any>(null);
-  const [floats, setFloats] = useState<{ id: number; t: string }[]>([]);
-  const [confirmReboot, setConfirmReboot] = useState(false);
-  const keyN = useRef(0);
+  const [ticker, setTicker] = useState<any[]>([]);
+  const [view, setView] = useState<{ id: string; v: string } | null>(null);
 
-  const flash = useCallback((m: string) => { setMsg(m); window.setTimeout(() => setMsg((x) => (x === m ? null : x)), 2200); }, []);
-  const save = useCallback(() => { try { if (S.current) localStorage.setItem(KEY, JSON.stringify(S.current)); } catch { /* storage blocked */ } }, []);
-  const run = useCallback(<T,>(fn: (s: any) => T): T | null => { try { const r = fn(S.current); bump(); return r; } catch (e: any) { flash(e?.message || "Can't do that"); sfx("bad"); return null; } }, [flash]);
+  const toast = useCallback((m: string) => { setMsg(m); window.setTimeout(() => setMsg((x) => (x === m ? null : x)), 2200); }, []);
+  const save = useCallback(() => { try { if (S.current) localStorage.setItem(KEY, JSON.stringify({ st: S.current, at: Date.now() })); } catch { /* storage blocked */ } }, []);
+  const run = useCallback(<T,>(fn: (s: any) => T): T | null => { try { const r = fn(S.current); bump(); return r; } catch (e: any) { toast(e?.message || "Can't do that"); sfx("bad"); return null; } }, [toast]);
 
   // ---- boot: load the save, credit time away
   useEffect(() => {
-    const st = load(), now = Date.now(), gap = (now - st.last) / 1000;
-    if (gap > 30) { const r = offline(st, gap); if (r.coins > 0) setWelcome({ ...r, secs: Math.min(gap, mods(st).offlineHours * 3600) }); }
-    st.last = now; st.autoAt = now; S.current = st; bump();
+    const { st, at } = load(), now = Date.now(), gap = (now - at) / 1000;
+    if (gap > 30) { const r = offline(st, gap); if (r.packs > 0 || r.cash > 1) setWelcome(r); }
+    S.current = st; last.current = now; bump();
   }, []);
 
-  // ---- loop: passive income + Auto-Ripper, plus autosave. Handles tabs that were throttled in the background.
+  // ---- loop: restock + staff. Handles throttled background tabs by treating a long gap as time away.
   useEffect(() => {
     const id = window.setInterval(() => {
-      const st = S.current; if (!st) return; const now = Date.now(), gap = now - st.last;
-      if (gap > 15000) { const r = offline(st, gap / 1000); st.last = now; st.autoAt = now; if (r.coins > 0) setWelcome({ ...r, secs: Math.min(gap / 1000, mods(st).offlineHours * 3600) }); }
-      else { const out = tick(st, now); if (out.length) setTicker((t) => [...out.flatMap((p: any) => p.cards).slice(-6).map((c: any) => ({ ...c, k: ++keyN.current })), ...t].slice(0, 10)); }
+      const st = S.current; if (!st) return; const now = Date.now(), dt = (now - last.current) / 1000; last.current = now;
+      if (dt > 15) { const r = offline(st, dt); if (r.packs > 0 || r.cash > 1) setWelcome(r); }
+      else { const out = advance(st, dt); if (out.length) setTicker((t) => [...out.flatMap((p: any) => p.cards).slice(-5).map((c: any) => ({ ...c, k: ++nid.current })), ...t].slice(0, 8)); }
       bump();
-    }, 250);
+    }, 100);
     const sv = window.setInterval(save, 4000);
     const hide = () => { if (document.hidden) save(); };
     document.addEventListener("visibilitychange", hide); window.addEventListener("pagehide", save);
@@ -67,197 +68,220 @@ function Inner() {
   }, [save]);
 
   const st = S.current;
-  if (!st) return <div className="pk-root"><div className="pk-loading">LOADING…</div></div>;
-  const m = mods(st), rate = incomeRate(st), now = st.last;   // st.last is refreshed every 250ms by the loop
-  const tier = st.tier, cost = packCost(st, tier), set = SETS[tier];
 
   // ---- actions
-  const open = (n: number) => {
-    const rs = run((s) => (n === 1 ? [openPack(s, s.tier)] : openMany(s, s.tier, n)));
-    if (!rs) return; if (!rs.length) { flash(`Need ${fmt(cost)} coins`); sfx("bad"); return; }
-    const cards = rs.flatMap((r: any) => r.cards), best = cards.reduce((a: any, c: any) => (RORDER[c.rarity] > RORDER[a.rarity] ? c : a), cards[0]);
-    setReveal({ key: ++keyN.current, cards: cards.sort((a: any, b: any) => RORDER[b.rarity] - RORDER[a.rarity]), packs: rs.length, newN: cards.filter((c: any) => c.isNew).length, best });
-    sfx(best.rarity === "legendary" ? "win" : best.rarity === "epic" ? "boom" : best.rarity === "rare" || cards.some((c: any) => c.isNew) ? "reveal" : "pop");
+  const spawnBits = (slot: number, n: number, big: boolean) => {
+    const add = Array.from({ length: n }, () => ({ id: ++nid.current, slot, x: Math.round((Math.random() - 0.5) * (big ? 220 : 90)), y: Math.round(-30 - Math.random() * (big ? 150 : 60)), r: Math.round(Math.random() * 360), s: big ? 1 : 0 }));
+    setBits((b) => [...b.slice(-40), ...add]); window.setTimeout(() => setBits((b) => b.filter((x) => !add.some((a) => a.id === x.id))), 800);
   };
-  const gift = () => {
-    const r = run((s) => claimFree(s, Date.now())); if (!r) return;
-    setReveal({ key: ++keyN.current, cards: r.cards, packs: 1, newN: r.cards.filter((c: any) => c.isNew).length, best: r.cards[0], gift: true }); sfx("reveal");
+  const tap = (slot: number) => {
+    const s = S.current; if (!s) return;
+    if (!s.table[slot]) { buy(); return; }
+    const r = run((x) => hit(x, slot)); if (!r) return;
+    setHits((h) => { const n = [...h]; n[slot]++; return n; }); spawnBits(slot, r.burst ? 14 : r.crit ? 8 : 3, r.burst); sfx(r.burst ? "boom" : "tick");
+    if (r.burst) {
+      const cards = (r as any).result.cards, best = cards.reduce((a: any, c: any) => (ROR[c.rarity] + c.vIdx * 0.5 > ROR[a.rarity] + a.vIdx * 0.5 ? c : a), cards[0]);
+      setReveal({ key: ++nid.current, cards }); const big = best.rarity === "legendary" || best.rarity === "epic" || best.vIdx >= 3;
+      if (big) { setFlash(best.vIdx >= 3 ? "gold" : best.rarity); window.setTimeout(() => setFlash(null), 900); }
+      window.setTimeout(() => sfx(best.rarity === "legendary" || best.vIdx >= 3 ? "win" : best.isNewCard || best.isNewVariant ? "reveal" : "pop"), 260);
+    }
   };
-  const doTap = () => { const g = run((s) => tap(s)); if (g) { const id = ++keyN.current; setFloats((f) => [...f.slice(-5), { id, t: "+" + fmt(g) }]); window.setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 800); sfx("tick"); } };
-  const pickTier = (t: number) => { if (!unlocked(st, t)) { flash(`Complete the ${SETS[t - 1].name} set to unlock`); return; } st.tier = t; bump(); sfx("pop"); };
-  const buy = (id: string) => { if (run((s) => buyUpgrade(s, id)) !== null) sfx("good"); };
-  const gain = rebootGain(st), avail = starsAvailable(st);
-  const doReboot = () => { if (!confirmReboot) { setConfirmReboot(true); return; } const g = run((s) => reboot(s, Date.now())); setConfirmReboot(false); if (g) { setReveal(null); setTicker([]); setTab("packs"); flash(`REBOOT! +${g} ⭐`); sfx("win"); save(); } };
+  const buy = () => { if (run((s) => buyPack(s, s.tier)) !== null) sfx("pop"); };
+  const doSell = () => { const r = run((s) => sellAll(s)); if (r) { if (r.n) { toast(`Sold ${r.n} card${r.n === 1 ? "" : "s"} for $${fmt(r.cash)}`); sfx("good"); } else toast("Nothing to sell yet"); } };
+  const pickTier = (t: number) => { const s = S.current; if (!s.unlocked[t]) { toast(`Unlock ${SETS[t].name} packs in the Shop ($${fmt(SETS[t].unlock)})`); return; } s.tier = t; bump(); sfx("pop"); };
 
-  const freeIn = Math.max(0, (st.freeAt - now) / 1000), free = freeReady(st, now);
-  const canAfford = (id: string) => { const l = st.up[id] || 0, u: any = UPGRADES.find((x: any) => x.id === id); return l < u.max && st.coins >= upgradeCost(id, l); };
-  const badge = UPGRADES.some((u: any) => canAfford(u.id));
-  const tabs: [Tab, string, string][] = [["packs", "🎴", "PACKS"], ["upgrades", "⬆️", "UPGRADES"], ["dex", "📖", "COLLECTION"], ["reboot", "⭐", "REBOOT"], ["odds", "🎲", "ODDS"]];
+  // keyboard: 1-8 tap a slot, Space taps the weakest pack, B buys, S sells
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const s = S.current; if (!s || tab !== "table" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (/^Digit[1-8]$/.test(e.code)) { e.preventDefault(); tap(+e.code.slice(5) - 1); }
+      else if (e.code === "Space") { e.preventDefault(); let b = -1; for (let i = 0; i < MAX_SLOTS; i++) if (s.table[i] && (b < 0 || s.table[i].hp < s.table[b].hp)) b = i; if (b >= 0) tap(b); else buy(); }
+      else if (e.code === "KeyB") buy(); else if (e.code === "KeyS") doSell();
+    };
+    window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey);
+  });
+
+  if (!st) return <div className="pk-root"><div className="pk-loading">LOADING…</div></div>;
+  const m = mods(st), tier = st.tier, set = SETS[tier], stored = dupeCount(st), sv = storedValue(st), album = albumCount(st);
+  const affordable = (cost: number) => st.cash >= cost;
 
   return (
     <div className="pk-root" data-tab={tab}>
       <header className="pk-top">
         <Link href="/arcade/solo" className="pk-btn sm" aria-label="Back to arcade">←</Link>
-        <div className="pk-coins" aria-live="off"><span className="pk-coin" aria-hidden>🪙</span><b>{fmt(st.coins)}</b><small>+{fmt(rate)}/s</small></div>
-        {st.stars > 0 && <div className="pk-stars" title="Reboot stars: +5% income each">⭐ {st.stars}</div>}
+        <div className="pk-cash"><b>${fmt(st.cash)}</b><small>{album}/{ALBUM_TOTAL} album</small></div>
+        <button className={`pk-btn sm store ${stored >= m.cap ? "full" : ""}`} onClick={doSell} title="Sell all stored duplicates (S)">📦 {stored}/{m.cap}<small>SELL ${fmt(sv)}</small></button>
         <PrefsButtons />
       </header>
       <nav className="pk-tabs" role="tablist" aria-label="Sections">
-        {tabs.map(([k, ic, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`pk-tab ${tab === k ? "on" : ""}`} onClick={() => { setTab(k); setConfirmReboot(false); }}><span aria-hidden>{ic}</span><i>{l}</i>{k === "upgrades" && badge && <u />}{k === "reboot" && gain >= 1 && <u />}</button>)}
+        {TABS.map(([k, ic, l]) => <button key={k} role="tab" aria-selected={tab === k} className={`pk-tab ${tab === k ? "on" : ""}`} onClick={() => setTab(k)}><span aria-hidden>{ic}</span><i>{l}</i>
+          {k === "upgrades" && UPGRADES.some((u: any) => (st.up[u.id] || 0) < u.max && affordable(upgradeCost(UPGRADES, u.id, st.up[u.id] || 0))) && <u />}
+          {k === "staff" && STAFF.some((u: any) => (st.staff[u.id] || 0) < u.max && affordable(upgradeCost(STAFF, u.id, st.staff[u.id] || 0))) && <u />}
+          {k === "shop" && SETS.some((_: any, t: number) => !st.unlocked[t] && t > 0 && st.unlocked[t - 1] && affordable(SETS[t].unlock)) && <u />}</button>)}
       </nav>
       {msg && <div className="pk-msg" role="alert">{msg}</div>}
+      {flash && <div className={`pk-flash f-${flash}`} aria-hidden />}
 
       <main className="pk-main">
-        {tab === "packs" && (
-          <section className="pk-stage">
-            <div className="pk-tiers" role="radiogroup" aria-label="Pack type">
-              {SETS.map((s: any, t: number) => {
-                const ok = unlocked(st, t), own = ownedInSet(st, t);
-                return <button key={s.id} role="radio" aria-checked={tier === t} className={`pk-tier ${tier === t ? "on" : ""} ${ok ? "" : "lock"}`} style={{ ["--h" as any]: s.hue }} onClick={() => pickTier(t)}><span>{ok ? "" : "🔒 "}{s.name}</span><small>{own}/{SET_SIZE}</small></button>;
-              })}
+        {tab === "table" && (
+          <section className="pk-play">
+            <div className="pk-show">
+              {reveal ? <Reveal key={reveal.key} data={reveal} /> : <div className="pk-hint"><b>TAP A PACK</b> to tear it open. New cards go to your album, duplicates to storage.<small>Keys: 1–8 tap · Space taps the weakest · B buys · S sells</small></div>}
             </div>
-            <div className="pk-table" style={{ ["--h" as any]: set.hue }}>
-              <div className="pk-reveal" aria-live="polite">
-                {reveal ? (
-                  <>
-                    <div className="pk-cards" key={reveal.key} data-n={Math.min(reveal.cards.length, 8)}>
-                      {reveal.cards.slice(0, 8).map((c: any, i: number) => <CardView key={i} c={c} i={i} />)}
-                    </div>
-                    <div className="pk-sum">{reveal.gift ? "FREE GIFT · " : ""}{reveal.packs > 1 ? `${reveal.packs} packs · ${reveal.cards.length} cards · ` : ""}{reveal.newN ? `${reveal.newN} NEW` : "no new cards, but duplicates level cards up"}{reveal.cards.length > 8 ? " · best 8 shown" : ""}</div>
-                  </>
-                ) : <div className="pk-hint">Tap the pack. New cards pay coins every second. Duplicates level them up.</div>}
+            <div className="pk-wood" style={{ ["--h" as any]: set.hue }}>
+              <div className="pk-slots" data-n={m.slots}>
+                {Array.from({ length: m.slots }, (_, i) => {
+                  const p = st.table[i];
+                  return p ? <TablePack key={i} i={i} p={p} hits={hits[i]} bits={bits.filter((b) => b.slot === i)} onTap={tap} /> :
+                    <button key={i} className="tp-empty" onPointerDown={(e) => { e.preventDefault(); buy(); }} aria-label="Empty slot: buy a pack"><span>＋</span><small>${fmt(set.cost)}</small></button>;
+                })}
               </div>
-              <button className="pk-pack" onClick={() => open(1)} aria-label={`Open ${set.name} pack for ${fmt(cost)} coins`}>
-                <img src={packUrl(tier, set.hue)} alt="" draggable={false} />
-                <span className="pk-open">OPEN</span><span className="pk-cost">🪙 {fmt(cost)}</span>
-              </button>
+              {ticker.length > 0 && <div className="pk-ticker" aria-label="Pulled by staff">{ticker.map((c: any) => <span key={c.k} className={`r-${c.rarity}`}>{(CARDS.find((x: any) => x.id === c.id) as any).name}{c.isNewVariant ? " ✨" : ""}</span>)}</div>}
             </div>
-            <div className="pk-actions">
-              {m.multi.filter((n: number) => n > 1).map((n: number) => <button key={n} className="pk-btn" disabled={st.coins < cost} onClick={() => open(n)}>OPEN ×{n}</button>)}
-              <button className={`pk-btn gift ${free ? "go" : ""}`} disabled={!free} onClick={gift}>🎁 {free ? "FREE PACK" : fmtTime(freeIn)}</button>
-              <button className="pk-btn tap" onClick={doTap}>👆 TAP <small>+{fmt(Math.max(1, rate * 0.6))}</small>{floats.map((f) => <em key={f.id} className="pk-float">{f.t}</em>)}</button>
+            <div className="pk-bar">
+              <div className="pk-tiers" role="radiogroup" aria-label="Pack type">
+                {SETS.map((s: any, t: number) => <button key={s.id} role="radio" aria-checked={tier === t} className={`pk-tier ${tier === t ? "on" : ""} ${st.unlocked[t] ? "" : "lock"}`} style={{ ["--h" as any]: s.hue }} onClick={() => pickTier(t)}>{st.unlocked[t] ? "" : "🔒"}{s.name}</button>)}
+              </div>
+              <button className={`pk-btn big ${affordable(set.cost) && st.stock[tier] >= 1 && freeSlot(st) >= 0 ? "go" : ""}`} onClick={buy}>BUY {set.name.toUpperCase()} <small>${fmt(set.cost)} · {Math.floor(st.stock[tier])}/{m.stockMax} in stock</small></button>
             </div>
-            {m.autoEvery > 0 && <div className="pk-auto">🤖 Auto-Ripper opening {set.name} packs every {m.autoEvery.toFixed(1)}s{st.coins < cost ? " (waiting for coins)" : ""}</div>}
-            {ticker.length > 0 && <div className="pk-ticker" aria-label="Recent auto pulls">{ticker.map((c: any) => <span key={c.k} className={`r-${c.rarity}`} style={{ borderColor: RCOLOR[c.rarity] }}>{CARDS.find((x: any) => x.id === c.id).name}{c.isNew ? " ✨" : ""}</span>)}</div>}
           </section>
         )}
 
-        {tab === "upgrades" && (
+        {tab === "shop" && (
           <section className="pk-list">
-            <h2>UPGRADES <small>cost coins, reset when you reboot</small></h2>
-            {UPGRADES.map((u: any) => {
-              const l = st.up[u.id] || 0, maxed = l >= u.max, c = upgradeCost(u.id, l);
+            <h2>SHOP <small>stock restocks every {m.restockEvery.toFixed(1)}s. Packs land on your table.</small></h2>
+            {SETS.map((s: any, t: number) => {
+              const ok = st.unlocked[t], ev = expectedValue(st, t), canUnlock = t > 0 && st.unlocked[t - 1];
+              return (
+                <div key={s.id} className={`pk-row shop ${ok ? "" : "lock"}`} style={{ ["--h" as any]: s.hue }}>
+                  <img className="pk-thumb" src={packUrl(t, s.hue)} alt="" draggable={false} />
+                  <span className="pk-rt"><b>{s.name} Pack <em>{ownedInSet(st, t)}/{SET_SIZE} cards</em></b>
+                    <small>${fmt(s.cost)} · {s.hp} taps to open{ok ? ` · ${Math.floor(st.stock[t])}/${m.stockMax} in stock${st.stock[t] < m.stockMax ? ` (+1 in ${fmtTime((1 - (st.stock[t] % 1)) * m.restockEvery)})` : ""}` : ""}</small>
+                    <small className={ev >= s.cost ? "up" : "down"}>Average card sells for ${fmt(ev)} {ev >= s.cost ? "(you profit on average)" : "(you lose on average)"}</small></span>
+                  {ok ? <button className={`pk-btn ${affordable(s.cost) ? "go" : ""}`} onClick={() => { st.tier = t; if (run((x) => buyPack(x, t)) !== null) { sfx("pop"); setTab("table"); } }}>BUY ${fmt(s.cost)}</button>
+                    : <button className={`pk-btn ${affordable(s.unlock) && canUnlock ? "go" : ""}`} disabled={!canUnlock || !affordable(s.unlock)} onClick={() => { if (run((x) => unlockTier(x, t)) !== null) { st.tier = t; sfx("win"); toast(`${s.name} packs unlocked!`); } }}>{canUnlock ? `UNLOCK $${fmt(s.unlock)}` : "LOCKED"}</button>}
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {(tab === "upgrades" || tab === "staff") && (
+          <section className="pk-list">
+            <h2>{tab === "upgrades" ? "UPGRADES" : "STAFF"} <small>{tab === "upgrades" ? "cash upgrades make every tap and every card count for more" : "they work even while you are away (up to 2 hours)"}</small></h2>
+            {(tab === "upgrades" ? UPGRADES : STAFF).map((u: any) => {
+              const l = (tab === "upgrades" ? st.up : st.staff)[u.id] || 0, maxed = l >= u.max, c = upgradeCost(tab === "upgrades" ? UPGRADES : STAFF, u.id, l);
               return (
                 <div key={u.id} className="pk-row">
                   <i className="pk-ic" aria-hidden>{u.icon}</i>
-                  <span className="pk-rt"><b>{u.name} <em>{l}/{u.max}</em></b><small>{u.desc}</small><span className="pk-bar"><u style={{ width: `${(l / u.max) * 100}%` }} /></span></span>
-                  <button className={`pk-btn ${!maxed && st.coins >= c ? "go" : ""}`} disabled={maxed || st.coins < c} onClick={() => buy(u.id)}>{maxed ? "MAX" : `🪙 ${fmt(c)}`}</button>
+                  <span className="pk-rt"><b>{u.name} <em>{tab === "staff" && l === 0 ? "not hired" : `Lv ${l}/${u.max}`}</em></b><small>{u.desc}</small><span className="pk-bar2"><u style={{ width: `${(l / u.max) * 100}%` }} /></span></span>
+                  <button className={`pk-btn ${!maxed && affordable(c) ? "go" : ""}`} disabled={maxed || !affordable(c)} onClick={() => { if (run((s) => (tab === "upgrades" ? buyUpgrade(s, u.id) : hire(s, u.id))) !== null) sfx("good"); }}>{maxed ? "MAX" : `${tab === "staff" && l === 0 ? "HIRE" : "BUY"} $${fmt(c)}`}</button>
                 </div>
               );
             })}
           </section>
         )}
 
-        {tab === "dex" && (
-          <section className="pk-list">
-            <h2>COLLECTION <small>{m.owned}/{CARDS.length} · +{(m.coll * 100 - 100).toFixed(0)}% income from collecting</small></h2>
-            {SETS.map((s: any, k: number) => {
-              const own = ownedInSet(st, k), cards = CARDS.filter((c: any) => c.set === k);
-              return (
-                <div key={s.id} className="pk-set" style={{ ["--h" as any]: s.hue }}>
-                  <h3>{s.name} <small>{own}/{SET_SIZE}{own === SET_SIZE ? " · COMPLETE +50% income" : ""}</small></h3>
-                  <div className="pk-grid">
-                    {cards.map((c: any) => {
-                      const d = st.dex[c.id], v = d?.holo ? "holo" : d?.foil ? "foil" : "normal", lv = d ? levelOf(d.n) : 0, nx = d ? nextAt(d.n) : null;
-                      return (
-                        <div key={c.id} className={`pk-mini ${d ? "" : "unk"} r-${c.rarity} v-${v}`} style={{ borderColor: d ? RCOLOR[c.rarity] : undefined }} title={d ? `${c.name} · ${fmt(cardRate(c, d) * m.income)}/s` : "Not found yet"}>
-                          {d ? <img src={creatureUrl(c, s.hue, v)} alt={c.name} draggable={false} /> : <span aria-hidden>?</span>}
-                          <b>{d ? c.name : "???"}</b>
-                          <small>{d ? (nx ? `${d.n}/${nx} · LV${lv}` : `LV${lv} MAX`) : c.rarity}</small>
-                        </div>
-                      );
-                    })}
-                  </div>
+        {tab === "album" && (
+          <section className="pk-list wide">
+            <h2>ALBUM <small>{album}/{ALBUM_TOTAL} finishes found · +{(album).toFixed(0)}% sell price from your collection. Tap a card to look closer.</small></h2>
+            {SETS.map((s: any, k: number) => (
+              <div key={s.id} className="pk-set" style={{ ["--h" as any]: s.hue }}>
+                <h3>{s.name} <small>{ownedInSet(st, k)}/{SET_SIZE} cards</small></h3>
+                <div className="pk-grid">
+                  {CARDS.filter((c: any) => c.set === k).map((c: any) => {
+                    const d = st.dex[c.id], best = d ? d.vars.reduce((b: number, n: number, i: number) => (n > 0 ? i : b), 0) : 0;
+                    return (
+                      <div key={c.id} className="pk-slot">
+                        <CardFace id={c.id} variant={VARIANTS[best].id} locked={!d} onClick={d ? () => setView({ id: c.id, v: VARIANTS[best].id }) : undefined} />
+                        <span className="pk-dots" aria-label={d ? `${d.vars.filter((n: number) => n > 0).length} of 6 finishes` : "not found"}>{VARIANTS.map((v: any, i: number) => <u key={v.id} className={d && d.vars[i] > 0 ? `on d-${v.id}` : ""} />)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </section>
-        )}
-
-        {tab === "reboot" && (
-          <section className="pk-list">
-            <h2>REBOOT <small>reset coins and upgrades, keep every card, earn permanent ⭐</small></h2>
-            <div className="pk-rebox">
-              <div><b>{gain >= 1 ? `+${gain} ⭐` : "Not yet"}</b><small>{gain >= 1 ? `from ${fmt(st.run.earned)} coins earned this run` : `Earn ${fmt(REBOOT_DIVISOR)} coins this run for your first ⭐ (you have ${fmt(st.run.earned)})`}</small></div>
-              <button className={`pk-btn ${gain >= 1 ? "go" : ""}`} disabled={gain < 1} onClick={doReboot}>{confirmReboot ? "TAP AGAIN TO CONFIRM" : "REBOOT"}</button>
-            </div>
-            <div className="pk-avail">⭐ {avail} to spend · each ⭐ also gives +5% income</div>
-            <div className="pk-tree">
-              <svg viewBox="0 0 3 5" preserveAspectRatio="none" aria-hidden>
-                {TREE.flatMap((n: any) => n.req.map((r: string) => { const p: any = TREE.find((x: any) => x.id === r); return <line key={n.id + r} x1={p.x + 0.5} y1={p.y + 0.5} x2={n.x + 0.5} y2={n.y + 0.5} className={(st.tree[r] || 0) > 0 ? "on" : ""} vectorEffect="non-scaling-stroke" />; }))}
-              </svg>
-              {TREE.map((n: any) => {
-                const l = st.tree[n.id] || 0, ok = nodeAvailable(st, n.id), maxed = l >= n.max;
-                return (
-                  <button key={n.id} className={`pk-node ${l ? "has" : ""} ${ok ? "" : "off"} ${maxed ? "max" : ""}`} style={{ gridColumn: n.x + 1, gridRow: n.y + 1 }} disabled={!ok || maxed || avail < n.cost}
-                    onClick={() => { if (run((s) => buyNode(s, n.id)) !== null) sfx("good"); }} title={n.desc} aria-label={`${n.name}: ${n.desc}. Level ${l} of ${n.max}. Costs ${n.cost} stars.`}>
-                    <i aria-hidden>{n.icon}</i><b>{n.name}</b><small>{maxed ? "MAX" : `${l}/${n.max} · ⭐${n.cost}`}</small>
-                  </button>
-                );
-              })}
-            </div>
-            <ul className="pk-legend">{TREE.map((n: any) => <li key={n.id}><b>{n.icon} {n.name}</b> {n.desc}</li>)}</ul>
+              </div>
+            ))}
           </section>
         )}
 
         {tab === "odds" && <OddsLab st={st} tier={tier} />}
       </main>
 
+      {view && (
+        <div className="pk-modal" role="dialog" aria-label="Card close-up" onClick={() => setView(null)}>
+          <div className="pk-viewer" onClick={(e) => e.stopPropagation()}>
+            <CardFace id={view.id} variant={view.v} value={cardValue(st, CARDS.find((c: any) => c.id === view.id), VARIANTS.findIndex((v: any) => v.id === view.v))} className="big" />
+            <div className="pk-vtabs">{VARIANTS.map((v: any, i: number) => { const have = st.dex[view.id]?.vars[i] > 0; return <button key={v.id} className={`pk-btn sm ${view.v === v.id ? "go" : ""}`} disabled={!have} onClick={() => setView({ id: view.id, v: v.id })}>{have ? v.name : "🔒"}</button>; })}</div>
+            <button className="pk-btn" onClick={() => setView(null)}>CLOSE</button>
+          </div>
+        </div>
+      )}
       {welcome && (
         <div className="pk-modal" role="dialog" aria-label="Welcome back">
-          <div className="pk-card-modal"><h2>WELCOME BACK</h2><p>You were away {fmtTime(welcome.secs)}.</p><p>Your cards earned <b>🪙 {fmt(welcome.coins)}</b>{welcome.packs ? <> and the Auto-Ripper opened <b>{welcome.packs}</b> packs</> : null}.</p><button className="pk-btn go big" onClick={() => setWelcome(null)}>COLLECT</button></div>
+          <div className="pk-viewer"><h2>WELCOME BACK</h2><p>Your staff worked {fmtTime(welcome.secs || 0)} while you were away.</p><p>They opened <b>{welcome.packs}</b> packs and made <b>${fmt(Math.max(0, welcome.earned || welcome.cash || 0))}</b>.</p><button className="pk-btn go big" onClick={() => setWelcome(null)}>NICE</button></div>
         </div>
       )}
     </div>
   );
 }
 
-function CardView({ c, i }: { c: any; i: number }) {
-  const card = CARDS.find((x: any) => x.id === c.id), set = SETS[card.set];
+/** A pack lying on the table. Each tap re-keys the inner element so the shake animation restarts. */
+function TablePack({ i, p, hits, bits, onTap }: { i: number; p: any; hits: number; bits: any[]; onTap: (i: number) => void }) {
+  const s: any = SETS[p.tier], dmg = 1 - p.hp / p.max;
   return (
-    <div className={`pk-card r-${c.rarity} v-${c.variant}`} style={{ ["--d" as any]: `${i * 140}ms`, borderColor: RCOLOR[c.rarity] }}>
-      <img src={creatureUrl(card, set.hue, c.variant)} alt="" draggable={false} />
-      <b>{card.name}</b><i style={{ color: RCOLOR[c.rarity] }}>{c.variant !== "normal" ? c.variant.toUpperCase() + " " : ""}{c.rarity}</i>
-      {c.isNew && <em className="new">NEW</em>}{c.leveled && <em className="lvl">LVL {c.level}</em>}
-    </div>
+    <button className="tp" style={{ ["--dmg" as any]: dmg.toFixed(3), ["--h" as any]: s.hue, ["--rot" as any]: `${((i * 37) % 9) - 4}deg` }} onPointerDown={(e) => { e.preventDefault(); onTap(i); }} aria-label={`${s.name} pack, ${Math.ceil(p.hp)} taps left. Tap to tear it open`}>
+      <span className={`tp-in ${hits ? "hit" : ""}`} key={hits}>
+        <img className="tp-img" src={packUrl(p.tier, s.hue)} alt="" draggable={false} />
+        <span className="tp-name">{s.name}</span>
+        <span className="tp-tear" aria-hidden />
+      </span>
+      <span className="tp-hp" aria-hidden><u style={{ width: `${Math.max(0, 100 - dmg * 100)}%` }} /></span>
+      {p.free && <span className="tp-free">FREE</span>}
+      {bits.map((b) => <i key={b.id} className={`bit ${b.s ? "big" : ""}`} style={{ ["--x" as any]: `${b.x}px`, ["--y" as any]: `${b.y}px`, ["--r" as any]: `${b.r}deg`, background: `hsl(${s.hue + (b.r % 40)} 80% ${55 + (b.r % 25)}%)` }} />)}
+    </button>
   );
 }
 
-/** The Odds lab: shows the real chances, how long a chase takes on average, and lets you test it. */
-function OddsLab({ st, tier }: { st: any; tier: number }) {
-  const [lab, setLab] = useState<any>(null);
-  const o = odds(st), m = mods(st);
+/** The card(s) that popped out of the pack: face down, then a flip. Tap to flip early. */
+function Reveal({ data }: { data: any }) {
+  const [flip, setFlip] = useState(false);
+  useEffect(() => { const t = window.setTimeout(() => setFlip(true), 320); return () => clearTimeout(t); }, []);
   return (
-    <section className="pk-list">
-      <h2>ODDS LAB <small>the real chances behind every pack</small></h2>
-      <div className="pk-odds">
-        {o.map((r: any) => {
-          const need = packsForRarity(st, r.id), miss = (1 - r.p) ** (m.cards * Math.round(need));
+    <div className="rv-wrap" onPointerDown={() => setFlip(true)}>
+      <div className="rv-cards">
+        {data.cards.map((c: any, i: number) => {
+          const card: any = CARDS.find((x: any) => x.id === c.id);
           return (
-            <div key={r.id} className="pk-orow"><span style={{ color: r.color }}><b>{r.name}</b></span><span>{(r.p * 100).toFixed(2)}% per card</span><span>~{need < 10 ? need.toFixed(1) : Math.round(need)} packs</span><span title="Chance you still haven't seen one after that many packs">{(miss * 100).toFixed(0)}% unlucky</span></div>
+            <div key={i} className="rv-col" style={{ ["--d" as any]: `${i * 120}ms` }}>
+              <div className={`rv ${flip ? "flip" : ""}`}>
+                <div className="rv-back" style={{ ["--h" as any]: (SETS[card.set] as any).hue }}><span>?</span></div>
+                <div className="rv-front"><CardFace id={c.id} variant={c.variant} value={c.value} /></div>
+              </div>
+              <div className={`rv-tag ${flip ? "on" : ""} ${c.isNewVariant ? "new" : ""}`}>
+                {c.isNewCard ? `NEW CARD! +$${fmt(c.value * 2)}` : c.isNewVariant ? `NEW FINISH! +$${fmt(c.value * 2)}` : c.fate === "stored" ? "Stored for sale" : `Storage full: sold $${fmt(c.value / 2)}`}
+              </div>
+            </div>
           );
         })}
       </div>
-      <p className="pk-note">Packs have {m.cards} cards each. &ldquo;Packs&rdquo; is the average number of packs it takes to see that rarity at least once. Even after that many packs, the last column says how often you&apos;d <i>still</i> be waiting. The game does not make you &ldquo;due&rdquo;: every card is rolled fresh.</p>
-      <div className="pk-row lab">
-        <span className="pk-rt"><b>Run 1,000 packs ({SETS[tier].name}) without spending anything</b><small>Compare what actually came out with the odds above. More packs, closer to the odds.</small></span>
-        <button className="pk-btn go" onClick={() => setLab(simulate(st, tier, 1000, ((Date.now() / 1000) | 0) + st.ops))}>RUN</button>
-      </div>
-      {lab && (
-        <div className="pk-odds">
-          {RARITIES.map((r: any, i: number) => { const exp = o[i].p * lab.cards, act = lab.counts[r.id]; return <div key={r.id} className="pk-orow"><span style={{ color: r.color }}><b>{r.name}</b></span><span>expected {Math.round(exp)}</span><span>got {act}</span><span>{act >= exp ? "+" : ""}{Math.round(((act - exp) / Math.max(1, exp)) * 100)}%</span></div>; })}
-        </div>
-      )}
+      <span className="rv-sr" aria-live="polite">{flip ? data.cards.map((c: any) => (CARDS.find((x: any) => x.id === c.id) as any).name + " " + c.rarity + " " + c.variant).join(", ") : ""}</span>
+    </div>
+  );
+}
+
+/** The Odds Lab: real chances, how long a chase takes on average, and a 1,000-pack test. */
+function OddsLab({ st, tier }: { st: any; tier: number }) {
+  const [lab, setLab] = useState<any>(null);
+  const ro = rarityOdds(st), vo = variantOdds(st), m = mods(st);
+  const row = (label: string, color: string, p: number, key: string) => { const need = packsFor(st, p), miss = (1 - p) ** (Math.round(need) * (1 + m.extra)); return <div key={key} className="pk-orow"><span style={{ color }}><b>{label}</b></span><span>{(p * 100).toFixed(p < 0.01 ? 2 : 1)}%</span><span>~{need < 10 ? need.toFixed(1) : Math.round(need)} packs</span><span title="Chance you still have not seen one after that many packs">{(miss * 100).toFixed(0)}% still waiting</span></div>; };
+  return (
+    <section className="pk-list">
+      <h2>ODDS LAB <small>the real chances behind every pack</small></h2>
+      <div className="pk-odds"><div className="pk-orow head"><span>Rarity</span><span>Chance per card</span><span>Avg packs to see one</span><span>Unlucky</span></div>{ro.map((r: any) => row(r.name, r.color, r.p, r.id))}</div>
+      <div className="pk-odds"><div className="pk-orow head"><span>Finish</span><span>Chance per card</span><span>Avg packs to see one</span><span>Unlucky</span></div>{vo.map((v: any) => row(v.name, "#cfe3ff", v.p, v.id))}</div>
+      <p className="pk-note">&ldquo;Avg packs&rdquo; is how many packs it takes on average to see that at least once. Even after that many, the last column shows how often you would <i>still</i> be waiting. The game never makes you &ldquo;due&rdquo;: every card is rolled fresh.</p>
+      <div className="pk-row"><span className="pk-rt"><b>Run 1,000 {SETS[tier].name} packs for free</b><small>Compare what comes out with the table. More packs, closer to the odds.</small></span><button className="pk-btn go" onClick={() => setLab(simulate(st, tier, 1000, ((Date.now() / 1000) | 0) + st.ops))}>RUN</button></div>
+      {lab && <div className="pk-odds">{RARITIES.map((r: any, i: number) => { const e = ro[i].p * lab.n, a = lab.rarity[r.id]; return <div key={r.id} className="pk-orow"><span style={{ color: r.color }}><b>{r.name}</b></span><span>expected {Math.round(e)}</span><span>got {a}</span><span>{a >= e ? "+" : ""}{Math.round(((a - e) / Math.max(1, e)) * 100)}%</span></div>; })}{VARIANTS.map((v: any, i: number) => { const e = vo[i].p * lab.n, a = lab.variant[v.id]; return <div key={v.id} className="pk-orow"><span><b>{v.name}</b></span><span>expected {Math.round(e)}</span><span>got {a}</span><span>{a >= e ? "+" : ""}{Math.round(((a - e) / Math.max(1, e)) * 100)}%</span></div>; })}</div>}
     </section>
   );
 }

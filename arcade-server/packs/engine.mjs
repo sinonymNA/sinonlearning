@@ -1,149 +1,144 @@
-// Pack Rush engine. Pure ESM, JSON state, no clocks or Math.random: callers pass `now` (ms) and randomness is seeded.
+// Pack Rush v2 engine. Pure ESM, JSON state, no clocks or Math.random: time only moves through advance(st, seconds) and randomness is seeded.
 import { makeRng } from "../gridiron/rng.mjs";
-import { RARITIES, SETS, SET_SIZE, UNLOCK_OWNED, BASE_CARDS, LEVELS, LEVEL_MUL, VARIANT_BONUS, TAP_SECONDS, START_COINS, FREE_PACK_SECONDS, AUTO_BASE_SECONDS, OFFLINE_BASE_HOURS, OFFLINE_SIM_CAP, REBOOT_DIVISOR, STAR_BONUS, UPGRADES, TREE } from "./config.mjs";
+import { RARITIES, VARIANTS, SETS, SET_SIZE, SET_VALUE_MUL, START_CASH, BASE_SLOTS, MAX_SLOTS, BASE_STOCK, BASE_RESTOCK, BASE_CAP, CRIT_MUL, DISCOVERY, ALBUM_BONUS, OVERFLOW_SHARE, OFFLINE_BASE_HOURS, RESCUE_SECONDS, UPGRADES, STAFF } from "./config.mjs";
 import { CARDS, CARD_BY_ID, cardsOfSet } from "./cards.mjs";
 
-const lvl = (st, id) => st.up[id] || 0, tl = (st, id) => st.tree[id] || 0;
+const lvl = (st, id) => st.up[id] || 0, staff = (st, id) => st.staff[id] || 0;
 const rngFor = (st) => makeRng(((st.seed >>> 0) + (st.ops++) * 7919 + 1) >>> 0);
-export const SET_VALUE = SETS.map((_, k) => 8 ** k);                       // income per card grows x8 per set while pack prices grow ~x20
 
-export function newState(seed = 1, now = 0) {
-  return { v: 1, seed: seed >>> 0, ops: 0, coins: START_COINS, tier: 0, up: {}, tree: {}, dex: {}, stars: 0, starsSpent: 0, run: { earned: 0, packs: 0 }, total: { packs: 0, earned: 0, reboots: 0, legendaries: 0, best: 0 }, freeAt: now, autoAt: now, last: now };
+export function newState(seed = 1) {
+  return { v: 2, seed: seed >>> 0, ops: 0, t: 0, cash: START_CASH, tier: 0, unlocked: SETS.map((_, i) => i === 0), stock: SETS.map(() => BASE_STOCK), table: Array(MAX_SLOTS).fill(null), up: {}, staff: {}, acc: { opener: 0, seller: 0, buyer: 0, rescue: 0 }, dex: {}, dupes: {}, total: { packs: 0, cards: 0, sold: 0, earned: 0, legendaries: 0 } };
 }
+
+export function albumCount(st) { let n = 0; for (const d of Object.values(st.dex)) for (const c of d.vars) if (c > 0) n++; return n; }
+export const ALBUM_TOTAL = CARDS.length * VARIANTS.length;
+export const cardsOwned = (st) => Object.keys(st.dex).length;
+export const ownedInSet = (st, k) => cardsOfSet(k).filter((c) => st.dex[c.id]).length;
 
 /** Every multiplier in one place. */
 export function mods(st) {
-  const owned = Object.keys(st.dex).length, sets = SETS.filter((_, k) => ownedInSet(st, k) === SET_SIZE).length;
-  let foilCards = 0, holoCards = 0; for (const d of Object.values(st.dex)) { if (d.holo) holoCards++; if (d.foil) foilCards++; }
-  const coll = 1 + 0.02 * owned + 0.5 * sets + 0.01 * foilCards + 0.05 * holoCards;
-  const starMul = 1 + STAR_BONUS * st.stars;
-  const autoMul = 0.85 ** lvl(st, "auto") * 0.9 ** tl(st, "clock");
+  const op = staff(st, "opener"), se = staff(st, "seller"), bu = staff(st, "buyer");
   return {
-    coll, starMul, owned, sets,
-    cost: 0.96 ** lvl(st, "bulk") * 0.92 ** tl(st, "whole"),
-    income: (1 + 0.12 * lvl(st, "income")) * (1 + 0.2 * tl(st, "sleeve")) * coll * starMul,
-    luck: (1 + 0.08 * lvl(st, "luck")) * (1 + 0.04 * tl(st, "foot")),
-    foil: 0.08 + 0.01 * lvl(st, "shiny") + 0.015 * tl(st, "prism"),
-    holo: 0.01 + 0.002 * lvl(st, "shiny"),
-    cards: BASE_CARDS + lvl(st, "cards") + tl(st, "fat"),
-    autoEvery: lvl(st, "auto") > 0 ? AUTO_BASE_SECONDS * autoMul : 0,
-    freeEvery: FREE_PACK_SECONDS * 0.8 ** tl(st, "gift"),
-    startCoins: START_COINS + 1500 * tl(st, "seed"),
-    offlineHours: OFFLINE_BASE_HOURS + 2 * tl(st, "night"),
-    multi: [1, ...(lvl(st, "multi") >= 1 ? [5] : []), ...(lvl(st, "multi") >= 2 ? [10] : []), ...(tl(st, "x25") ? [25] : [])],
+    dmg: 1 + lvl(st, "dmg"), crit: 0.04 * lvl(st, "crit"), luck: 1 + 0.08 * lvl(st, "luck"), shine: 1 + 0.1 * lvl(st, "shine"),
+    sell: (1 + 0.1 * lvl(st, "sell")) * (1 + ALBUM_BONUS * albumCount(st)), album: albumCount(st),
+    cap: BASE_CAP + 8 * lvl(st, "cap"), stockMax: BASE_STOCK + 2 * lvl(st, "stock"), restockEvery: BASE_RESTOCK * 0.92 ** lvl(st, "restock"),
+    slots: Math.min(MAX_SLOTS, BASE_SLOTS + lvl(st, "slots")), extra: 0.1 * lvl(st, "extra"),
+    openHits: op ? 0.6 * 1.3 ** (op - 1) : 0, sellEvery: se ? 8 * 0.85 ** (se - 1) : 0, buyEvery: bu ? 6 * 0.85 ** (bu - 1) : 0,
+    offlineHours: OFFLINE_BASE_HOURS,
   };
 }
-export const ownedInSet = (st, k) => cardsOfSet(k).filter((c) => st.dex[c.id]).length;
-export const unlocked = (st, tier) => tier === 0 || ownedInSet(st, tier - 1) >= UNLOCK_OWNED;
-export const packCost = (st, tier) => Math.max(1, Math.round(SETS[tier].cost * mods(st).cost));
 
-/** Rarity chances for the current luck (rare and better are boosted, the rest renormalised). */
-export function odds(st) {
-  const luck = mods(st).luck, w = RARITIES.map((r, i) => r.w * (i >= 2 ? luck : 1)), sum = w.reduce((a, b) => a + b, 0);
-  return RARITIES.map((r, i) => ({ ...r, p: w[i] / sum }));
-}
-function pickRarity(o, r) { let x = r(), a = 0; for (const e of o) { a += e.p; if (x < a) return e; } return o[o.length - 1]; }
-export const levelOf = (n) => { let l = 0; for (let i = 0; i < LEVELS.length; i++) if (n >= LEVELS[i]) l = i + 1; return l; };
-/** Copies needed for the next level (null at the top). */
-export const nextAt = (n) => LEVELS[levelOf(n)] ?? null;
-/** Coins per second one owned card produces, before the global multiplier. */
-export function cardRate(card, d) {
-  if (!d || !d.n) return 0; const r = RARITIES.find((x) => x.id === card.rarity);
-  return r.v * SET_VALUE[card.set] * LEVEL_MUL[Math.max(0, levelOf(d.n) - 1)] * (1 + (d.foil ? VARIANT_BONUS.foil : 0) + (d.holo ? VARIANT_BONUS.holo : 0));
-}
-/** Total coins per second. */
-export function incomeRate(st) { let t = 0; for (const c of CARDS) t += cardRate(c, st.dex[c.id]); return t * mods(st).income; }
-/** Tapping the table pays a little of that, so active play always helps. */
-export function tap(st) { const g = Math.max(1, incomeRate(st) * TAP_SECONDS); st.coins += g; st.run.earned += g; st.total.earned += g; return g; }
+export function rarityOdds(st) { const luck = mods(st).luck, w = RARITIES.map((r, i) => r.w * (i >= 2 ? luck : 1)), s = w.reduce((a, b) => a + b, 0); return RARITIES.map((r, i) => ({ ...r, p: w[i] / s })); }
+export function variantOdds(st) { const sh = mods(st).shine, w = VARIANTS.map((v, i) => v.w * (i ? sh : 1)), s = w.reduce((a, b) => a + b, 0); return VARIANTS.map((v, i) => ({ ...v, p: w[i] / s })); }
+const pick = (arr, r) => { let x = r(), a = 0; for (const e of arr) { a += e.p; if (x < a) return e; } return arr[arr.length - 1]; };
 
-function rollCard(o, m, pool, rng) {
-  const r = pickRarity(o, rng), opts = pool.filter((c) => c.rarity === r.id), card = opts[rng.int(opts.length)];
-  const x = rng(), variant = x < m.holo ? "holo" : x < m.holo + m.foil ? "foil" : "normal";
-  return { r, card, variant };
+/** Cash one copy sells for. */
+export const baseValue = (card, vIdx) => RARITIES.find((r) => r.id === card.rarity).v * SET_VALUE_MUL ** card.set * VARIANTS[vIdx].mult;
+export const cardValue = (st, card, vIdx) => baseValue(card, vIdx) * mods(st).sell;
+/** Average cash one card of this pack sells for (the number to compare with the price). */
+export function expectedValue(st, tier) {
+  const ro = rarityOdds(st), vo = variantOdds(st), m = mods(st); let t = 0;
+  for (const r of ro) for (const v of vo) t += r.p * v.p * r.v * SET_VALUE_MUL ** tier * v.mult;
+  return t * m.sell * (1 + m.extra);
 }
-/** Open one pack. Cards go to your collection; duplicates level the card up. Returns {cards:[{id,rarity,variant,isNew,leveled,level}], cost}. */
-export function openPack(st, tier, rng = rngFor(st), pay = true) {
-  if (!unlocked(st, tier)) throw new Error("That pack is still locked");
-  const cost = packCost(st, tier); if (pay) { if (st.coins < cost) throw new Error("Not enough coins"); st.coins -= cost; }
-  const m = mods(st), o = odds(st), pool = cardsOfSet(tier), cards = [];
-  for (let i = 0; i < m.cards; i++) {
-    const { r, card, variant } = rollCard(o, m, pool, rng);
-    const d = st.dex[card.id], isNew = !d, e = st.dex[card.id] = d || { n: 0, foil: 0, holo: 0 }, before = levelOf(e.n);
-    e.n++; if (variant === "foil") e.foil++; if (variant === "holo") e.holo++;
-    if (r.id === "legendary") st.total.legendaries++;
-    cards.push({ id: card.id, rarity: r.id, variant, isNew, leveled: !isNew && levelOf(e.n) > before, level: levelOf(e.n) });
+
+export const dupeCount = (st) => Object.values(st.dupes).reduce((a, b) => a + b, 0);
+export const packPrice = (tier) => SETS[tier].cost;
+export const freeSlot = (st) => { const n = mods(st).slots; for (let i = 0; i < n; i++) if (!st.table[i]) return i; return -1; };
+
+function award(st, n) { st.cash += n; st.total.earned += n; }
+
+/** A pack bursts: roll its cards, file them (album, storage or overflow sale). */
+function burst(st, tier, rng) {
+  const m = mods(st), ro = rarityOdds(st), vo = variantOdds(st), pool = cardsOfSet(tier), cards = [];
+  const n = 1 + (rng() < m.extra ? 1 : 0);
+  for (let i = 0; i < n; i++) {
+    const r = pick(ro, rng), opts = pool.filter((c) => c.rarity === r.id), card = opts[rng.int(opts.length)], v = pick(vo, rng), vIdx = VARIANTS.findIndex((x) => x.id === v.id);
+    const e = st.dex[card.id] || (st.dex[card.id] = { n: 0, vars: VARIANTS.map(() => 0) }), isNewCard = e.n === 0, isNewVariant = e.vars[vIdx] === 0, value = cardValue(st, card, vIdx);
+    e.n++; e.vars[vIdx]++; st.total.cards++; if (r.id === "legendary") st.total.legendaries++;
+    let fate; // "album" (first copy of this finish), "stored", or "overflow" (storage full: sold at half)
+    if (isNewVariant) { fate = "album"; award(st, value * DISCOVERY); }
+    else if (dupeCount(st) < m.cap) { fate = "stored"; const k = `${card.id}|${vIdx}`; st.dupes[k] = (st.dupes[k] || 0) + 1; }
+    else { fate = "overflow"; award(st, value * OVERFLOW_SHARE); st.total.sold++; }
+    cards.push({ id: card.id, rarity: r.id, variant: v.id, vIdx, isNewCard, isNewVariant, fate, value });
   }
-  st.run.packs++; st.total.packs++;
-  return { cards, cost };
+  st.total.packs++;
+  return { tier, cards };
 }
-export function openMany(st, tier, n) {
-  const rng = rngFor(st), out = [];
-  for (let i = 0; i < n && st.coins >= packCost(st, tier); i++) out.push(openPack(st, tier, rng));
-  return out;
-}
-/** Average packs you must open to see a rarity at least once (coupon-collector maths, shown in the Odds lab). */
-export const packsForRarity = (st, id) => { const p = odds(st).find((r) => r.id === id).p, m = mods(st).cards; return 1 / (1 - (1 - p) ** m); };
 
-export const upgradeCost = (id, level) => { const u = UPGRADES.find((x) => x.id === id); return Math.round(u.base * u.growth ** level); };
+/** Tap a pack on the table. Returns {burst, hp, dmg, crit, result?}. */
+export function hit(st, slot, rng = rngFor(st)) {
+  const p = st.table[slot]; if (!p) throw new Error("Nothing there");
+  const m = mods(st), crit = rng() < m.crit, dmg = m.dmg * (crit ? CRIT_MUL : 1); p.hp -= dmg;
+  if (p.hp > 0) return { burst: false, hp: p.hp, dmg, crit };
+  st.table[slot] = null; return { burst: true, hp: 0, dmg, crit, result: burst(st, p.tier, rng) };
+}
+
+export function buyPack(st, tier) {
+  if (!st.unlocked[tier]) throw new Error("Unlock that pack first");
+  const slot = freeSlot(st); if (slot < 0) throw new Error("Your table is full. Open some packs");
+  if (st.stock[tier] < 1) throw new Error("Out of stock. Wait for the delivery");
+  const c = packPrice(tier); if (st.cash < c) throw new Error("Not enough cash");
+  st.cash -= c; st.stock[tier] -= 1; st.table[slot] = { tier, hp: SETS[tier].hp, max: SETS[tier].hp }; return slot;
+}
+export function unlockTier(st, tier) {
+  if (st.unlocked[tier]) throw new Error("Already unlocked"); if (tier > 0 && !st.unlocked[tier - 1]) throw new Error("Unlock the earlier pack first");
+  const c = SETS[tier].unlock; if (st.cash < c) throw new Error("Not enough cash"); st.cash -= c; st.unlocked[tier] = true; st.stock[tier] = mods(st).stockMax; return c;
+}
+
+export function sellAll(st) {
+  let t = 0, n = 0; for (const [k, c] of Object.entries(st.dupes)) { const [id, v] = k.split("|"); t += cardValue(st, CARD_BY_ID[id], +v) * c; n += c; }
+  st.dupes = {}; award(st, t); st.total.sold += n; return { cash: t, n };
+}
+export function sellOne(st, key) {
+  const c = st.dupes[key]; if (!c) throw new Error("None stored"); const [id, v] = key.split("|"), val = cardValue(st, CARD_BY_ID[id], +v);
+  if (c === 1) delete st.dupes[key]; else st.dupes[key] = c - 1; award(st, val); st.total.sold++; return val;
+}
+/** Storage value, for the SELL ALL button. */
+export function storedValue(st) { let t = 0; for (const [k, c] of Object.entries(st.dupes)) { const [id, v] = k.split("|"); t += cardValue(st, CARD_BY_ID[id], +v) * c; } return t; }
+
+export const upgradeCost = (list, id, level) => { const u = list.find((x) => x.id === id); return Math.round(u.base * u.growth ** level); };
 export function buyUpgrade(st, id) {
-  const u = UPGRADES.find((x) => x.id === id); if (!u) throw new Error("No such upgrade");
-  const l = lvl(st, id); if (l >= u.max) throw new Error("Maxed out");
-  const c = upgradeCost(id, l); if (st.coins < c) throw new Error("Not enough coins");
-  st.coins -= c; st.up[id] = l + 1; return c;
+  const u = UPGRADES.find((x) => x.id === id); if (!u) throw new Error("No such upgrade"); const l = lvl(st, id); if (l >= u.max) throw new Error("Maxed out");
+  const c = upgradeCost(UPGRADES, id, l); if (st.cash < c) throw new Error("Not enough cash"); st.cash -= c; st.up[id] = l + 1;
+  if (id === "stock") for (let t = 0; t < SETS.length; t++) if (st.unlocked[t]) st.stock[t] += 2; return c;
+}
+export function hire(st, id) {
+  const u = STAFF.find((x) => x.id === id); if (!u) throw new Error("No such staff"); const l = staff(st, id); if (l >= u.max) throw new Error("Maxed out");
+  const c = upgradeCost(STAFF, id, l); if (st.cash < c) throw new Error("Not enough cash"); st.cash -= c; st.staff[id] = l + 1; return c;
 }
 
-/** Free gift pack: always the best pack you have unlocked. */
-export const bestTier = (st) => { let t = 0; while (t + 1 < SETS.length && unlocked(st, t + 1)) t++; return t; };
-export const freeReady = (st, now) => now >= st.freeAt;
-export function claimFree(st, now) {
-  if (!freeReady(st, now)) throw new Error("Not ready yet");
-  const r = openPack(st, bestTier(st), rngFor(st), false); st.freeAt = now + mods(st).freeEvery * 1000; return r;
-}
-
-/** Passive income + Auto-Ripper. Returns the packs the Auto-Ripper opened (capped per call so the UI never stalls). */
-export function tick(st, now) {
-  const dt = Math.max(0, Math.min(10, (now - st.last) / 1000)); st.last = now;
-  if (dt > 0) { const g = incomeRate(st) * dt; st.coins += g; st.run.earned += g; st.total.earned += g; }
-  const m = mods(st), out = []; if (!m.autoEvery) { st.autoAt = now; return out; }
-  const every = m.autoEvery * 1000; let guard = 0;
-  while (st.autoAt + every <= now && guard++ < 40) {
-    st.autoAt += every; if (st.coins < packCost(st, st.tier) || !unlocked(st, st.tier)) { st.autoAt = Math.max(st.autoAt, now - every); break; }
-    out.push(openPack(st, st.tier, rngFor(st)));
+/** Move time forward. Restocks the shop and runs staff. Returns the bursts staff caused (for the UI ticker). */
+export function advance(st, dt) {
+  const m = mods(st), out = []; st.t += dt;
+  for (let t = 0; t < SETS.length; t++) if (st.unlocked[t]) st.stock[t] = Math.min(m.stockMax, st.stock[t] + dt / m.restockEvery);
+  if (m.buyEvery) { st.acc.buyer += dt; while (st.acc.buyer >= m.buyEvery) { st.acc.buyer -= m.buyEvery; try { buyPack(st, st.tier); } catch { /* nothing to buy right now */ } } }
+  if (m.openHits) {
+    st.acc.opener += dt * m.openHits;
+    while (st.acc.opener >= 1) {
+      st.acc.opener -= 1; let best = -1; for (let i = 0; i < MAX_SLOTS; i++) if (st.table[i] && (best < 0 || st.table[i].hp < st.table[best].hp)) best = i;
+      if (best < 0) { st.acc.opener = Math.min(st.acc.opener, 1); break; }
+      const r = hit(st, best); if (r.burst) out.push(r.result);
+    }
   }
-  if (st.autoAt + every * 40 < now) st.autoAt = now;
+  // Free sample: never leave a player stuck. If you are broke with nothing on the table or in storage, a Meadow pack turns up.
+  if (!st.table.some(Boolean) && st.cash < packPrice(0) && !dupeCount(st)) { st.acc.rescue += dt; if (st.acc.rescue >= RESCUE_SECONDS) { st.acc.rescue = 0; st.table[0] = { tier: 0, hp: SETS[0].hp, max: SETS[0].hp, free: true }; } } else st.acc.rescue = 0;
+  if (m.sellEvery) { st.acc.seller += dt; if (st.acc.seller >= m.sellEvery) { st.acc.seller = 0; if (dupeCount(st)) sellAll(st); } }
   return out;
 }
-/** Time away: income keeps flowing (capped by offline hours) and the Auto-Ripper keeps opening packs (at most OFFLINE_SIM_CAP of them). */
+/** Time away: staff keep working (capped). */
 export function offline(st, seconds) {
-  const m = mods(st), secs = Math.min(seconds, m.offlineHours * 3600); if (secs < 30) return { packs: 0, coins: 0 };
-  const c0 = st.coins, credit = (g) => { st.coins += g; st.run.earned += g; st.total.earned += g; }; let packs = 0;
-  if (m.autoEvery) {
-    const n = Math.min(Math.floor(secs / m.autoEvery), OFFLINE_SIM_CAP), slice = secs / Math.max(1, n);
-    for (let i = 0; i < n; i++) { credit(incomeRate(st) * slice); if (st.coins >= packCost(st, st.tier) && unlocked(st, st.tier)) { openPack(st, st.tier, rngFor(st)); packs++; } }
-  } else credit(incomeRate(st) * secs);
-  return { packs, coins: st.coins - c0 };
+  const m = mods(st), secs = Math.min(seconds, m.offlineHours * 3600); if (secs < 30 || !(m.openHits || m.sellEvery || m.buyEvery)) return { cash: 0, packs: 0 };
+  const c0 = st.cash, p0 = st.total.packs, e0 = st.total.earned; for (let s = 0; s < secs; s += 1) advance(st, 1);
+  return { cash: st.cash - c0, packs: st.total.packs - p0, earned: st.total.earned - e0, secs };
 }
 
-export const starsAvailable = (st) => st.stars - st.starsSpent;
-export const rebootGain = (st) => Math.floor(Math.sqrt(st.run.earned / REBOOT_DIVISOR));
-export function reboot(st, now = 0) {
-  const g = rebootGain(st); if (g < 1) throw new Error("Earn more coins first");
-  st.stars += g; st.total.reboots++; st.up = {}; st.run = { earned: 0, packs: 0 }; st.tier = 0; st.coins = mods(st).startCoins; st.freeAt = now; st.autoAt = now;
-  return g;
-}
-export const nodeAvailable = (st, id) => { const n = TREE.find((x) => x.id === id); return !!n && n.req.every((r) => tl(st, r) > 0); };
-export function buyNode(st, id) {
-  const n = TREE.find((x) => x.id === id); if (!n) throw new Error("No such node");
-  if (!nodeAvailable(st, id)) throw new Error("Unlock the earlier nodes first"); if (tl(st, id) >= n.max) throw new Error("Maxed out");
-  if (starsAvailable(st) < n.cost) throw new Error(`Costs ${n.cost} stars`);
-  st.starsSpent += n.cost; st.tree[id] = tl(st, id) + 1;
-}
-
-/** Dry-run n packs without touching state: rarity counts for the Odds lab (expected vs actual). */
+/** Dry-run n packs from a tier without touching state: rarity and finish counts for the Odds Lab. */
 export function simulate(st, tier, n, seed = 1) {
-  const rng = makeRng(seed), m = mods(st), o = odds(st), pool = cardsOfSet(tier), counts = Object.fromEntries(RARITIES.map((r) => [r.id, 0]));
-  for (let i = 0; i < n; i++) for (let k = 0; k < m.cards; k++) counts[rollCard(o, m, pool, rng).r.id]++;
-  return { counts, cards: n * m.cards };
+  const rng = makeRng(seed), ro = rarityOdds(st), vo = variantOdds(st), r = Object.fromEntries(RARITIES.map((x) => [x.id, 0])), v = Object.fromEntries(VARIANTS.map((x) => [x.id, 0]));
+  for (let i = 0; i < n; i++) { r[pick(ro, rng).id]++; v[pick(vo, rng).id]++; }
+  return { rarity: r, variant: v, n };
 }
-export const collectionScore = (st) => Object.keys(st.dex).length;
-export { CARDS, CARD_BY_ID, SETS, RARITIES };
+/** Average packs to see an outcome with chance p per pack. */
+export const packsFor = (st, p) => { const per = 1 - (1 - p) ** (1 + mods(st).extra); return 1 / per; };
+export { CARDS, CARD_BY_ID, SETS, RARITIES, VARIANTS, SET_SIZE, UPGRADES, STAFF, MAX_SLOTS };

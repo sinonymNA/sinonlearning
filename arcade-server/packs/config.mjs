@@ -1,58 +1,60 @@
-// Pack Rush: tunables. Everything economic lives here so the simulation tests can tune it.
+// Pack Rush v2 tunables. The loop: buy a pack from the shop -> it lands on your table -> tap it until it tears open -> a card pops out.
+// New cards (and new variants) go in your album and pay a discovery bonus; duplicates go to storage and sell for cash.
 export const RARITIES = [
-  { id: "common", name: "Common", w: 62, v: 0.1, color: "#9aa7c7" },
-  { id: "uncommon", name: "Uncommon", w: 25, v: 0.2, color: "#5ee08a" },
-  { id: "rare", name: "Rare", w: 9.5, v: 0.5, color: "#4cc3ff" },
-  { id: "epic", name: "Epic", w: 3, v: 1.5, color: "#c77dff" },
-  { id: "legendary", name: "Legendary", w: 0.5, v: 5, color: "#ffd23f" },
+  { id: "common", name: "Common", w: 62, v: 1, color: "#9aa7c7" },
+  { id: "uncommon", name: "Uncommon", w: 25, v: 3, color: "#5ee08a" },
+  { id: "rare", name: "Rare", w: 9.5, v: 10, color: "#4cc3ff" },
+  { id: "epic", name: "Epic", w: 3, v: 40, color: "#c77dff" },
+  { id: "legendary", name: "Legendary", w: 0.5, v: 200, color: "#ffd23f" },
 ];
-/** Each set is a pack tier. Cards in a set: 5 common, 3 uncommon, 2 rare, 1 epic, 1 legendary. */
+/** Six finishes for every card. Weights are relative; Shiny Coat multiplies everything except Standard. */
+export const VARIANTS = [
+  { id: "standard", name: "Standard", w: 1, mult: 1 },
+  { id: "chrome", name: "Chrome", w: 0.14, mult: 2.5 },
+  { id: "holo", name: "Holo", w: 0.06, mult: 6 },
+  { id: "gold", name: "Gold", w: 0.025, mult: 15 },
+  { id: "negative", name: "Negative", w: 0.01, mult: 40 },
+  { id: "glitch", name: "Glitch", w: 0.004, mult: 120 },
+];
+/** Each set is a pack type. cost = shop price, hp = taps (at 1 damage) to tear it open, unlock = one-time price. */
 export const SETS = [
-  { id: "meadow", name: "Meadow", hue: 110, cost: 100 },
-  { id: "cave", name: "Cave", hue: 28, cost: 3000 },
-  { id: "reef", name: "Reef", hue: 190, cost: 90000 },
-  { id: "sky", name: "Sky", hue: 218, cost: 2.7e6 },
-  { id: "void", name: "Void", hue: 280, cost: 8.1e7 },
-  { id: "neon", name: "Neon", hue: 325, cost: 2.43e9 },
+  { id: "meadow", name: "Meadow", hue: 110, cost: 5, hp: 6, unlock: 0 },
+  { id: "cave", name: "Cave", hue: 28, cost: 40, hp: 16, unlock: 300 },
+  { id: "reef", name: "Reef", hue: 190, cost: 320, hp: 40, unlock: 15000 },
+  { id: "sky", name: "Sky", hue: 218, cost: 2600, hp: 100, unlock: 1e6 },
+  { id: "void", name: "Void", hue: 280, cost: 21000, hp: 250, unlock: 6e7 },
+  { id: "neon", name: "Neon", hue: 325, cost: 170000, hp: 620, unlock: 2e9 },
 ];
 export const SET_LAYOUT = ["common", "common", "common", "common", "common", "uncommon", "uncommon", "uncommon", "rare", "rare", "epic", "legendary"];
 export const SET_SIZE = SET_LAYOUT.length;
-export const UNLOCK_OWNED = 12;              // complete the previous set (all 12 cards, legendary included) to unlock the next pack
-export const BASE_CARDS = 3;
-// Cards pay coins per second (RARITIES[].v at pack tier 1, scaled up by set). Duplicates level a card up; foil/holo copies add a bonus.
-export const LEVELS = [1, 2, 4, 7, 12, 20];                     // copies needed for level 1..6
-export const LEVEL_MUL = [1, 1.5, 2.2, 3.2, 4.5, 6];
-export const VARIANT_BONUS = { foil: 0.5, holo: 2 };             // +50% / +200% income on that card once you own one
-export const TAP_SECONDS = 0.6;                                  // tapping the table pays this many seconds of income
-export const START_COINS = 300;
-export const FREE_PACK_SECONDS = 25;
-export const AUTO_BASE_SECONDS = 10;
+export const SET_VALUE_MUL = 7;               // card value x7 per set while pack price x8
+export const START_CASH = 25;
+export const BASE_SLOTS = 3, MAX_SLOTS = 8;
+export const BASE_STOCK = 6, BASE_RESTOCK = 4;  // shop holds this many of each pack and restocks one every N seconds
+export const BASE_CAP = 12;                      // duplicates you can store before extras sell at half price
+export const CRIT_MUL = 3;
+export const DISCOVERY = 2;                      // first copy of a card or a new variant pays this x its value
+export const ALBUM_BONUS = 0.01;                 // +1% sell value per card/variant in the album
+export const OVERFLOW_SHARE = 0.5;
 export const OFFLINE_BASE_HOURS = 2;
-export const OFFLINE_SIM_CAP = 250;          // packs truly simulated while away; the rest is extrapolated
-export const REBOOT_DIVISOR = 5e7;           // stars = floor(sqrt(earned this run / divisor))
-export const STAR_BONUS = 0.05;              // +5% income per star
+export const RESCUE_SECONDS = 6;                // broke with nothing to open or sell: a free Meadow pack arrives after this long
 
-/** Coin upgrades: cost = base * growth^level. */
+/** Cash upgrades: cost = base * growth^level. */
 export const UPGRADES = [
-  { id: "bulk", name: "Bulk Pallets", icon: "📦", desc: "Packs cost 4% less per level.", max: 25, base: 300, growth: 1.9 },
-  { id: "income", name: "Dividends", icon: "📈", desc: "+12% income from every card, per level.", max: 40, base: 400, growth: 1.7 },
-  { id: "luck", name: "Lucky Charm", icon: "🍀", desc: "Rare and better cards show up 8% more often per level.", max: 25, base: 600, growth: 1.9 },
-  { id: "shiny", name: "Shiny Coat", icon: "✨", desc: "+1% foil and +0.2% holo chance per level.", max: 20, base: 800, growth: 1.9 },
-  { id: "cards", name: "Bigger Packs", icon: "🃏", desc: "+1 card in every pack.", max: 4, base: 4000, growth: 8 },
-  { id: "auto", name: "Auto-Ripper", icon: "🤖", desc: "Opens your selected pack by itself, faster each level.", max: 15, base: 5000, growth: 2.4 },
-  { id: "multi", name: "Quick Hands", icon: "⚡", desc: "Level 1 unlocks opening 5 at once. Level 2 unlocks 10.", max: 2, base: 1500, growth: 12 },
+  { id: "dmg", name: "Sharper Nails", icon: "🔪", desc: "+1 tear power per tap.", max: 40, base: 15, growth: 1.62 },
+  { id: "crit", name: "Lucky Rip", icon: "💥", desc: "+4% chance a tap does triple damage.", max: 15, base: 60, growth: 1.9 },
+  { id: "luck", name: "Lucky Charm", icon: "🍀", desc: "Rare and better cards come up 8% more often.", max: 25, base: 100, growth: 2.0 },
+  { id: "shine", name: "Shiny Coat", icon: "✨", desc: "+10% chance of every special finish.", max: 25, base: 150, growth: 2.0 },
+  { id: "sell", name: "Haggler", icon: "🤝", desc: "+10% sell price.", max: 40, base: 50, growth: 1.75 },
+  { id: "cap", name: "Storage Boxes", icon: "📦", desc: `+8 duplicate storage.`, max: 20, base: 40, growth: 1.7 },
+  { id: "stock", name: "Bigger Shelves", icon: "🗄️", desc: "+2 packs in stock per pack type.", max: 15, base: 120, growth: 2.0 },
+  { id: "restock", name: "Fast Delivery", icon: "🚚", desc: "Shop restocks 8% faster.", max: 20, base: 100, growth: 1.9 },
+  { id: "slots", name: "Table Space", icon: "🪑", desc: "+1 pack slot on your table.", max: 5, base: 200, growth: 8 },
+  { id: "extra", name: "Bonus Card", icon: "🃏", desc: "+10% chance of a second card in each pack.", max: 10, base: 500, growth: 3.0 },
 ];
-
-/** Reboot tree, bought with stars. x/y are grid positions for drawing. */
-export const TREE = [
-  { id: "seed", name: "Seed Money", icon: "💰", desc: "+1500 starting coins per level after every reboot.", cost: 1, max: 5, req: [], x: 1, y: 0 },
-  { id: "whole", name: "Wholesale", icon: "🏷️", desc: "Packs cost 8% less per level.", cost: 2, max: 5, req: ["seed"], x: 0, y: 1 },
-  { id: "sleeve", name: "Sticky Sleeves", icon: "🧤", desc: "+20% income per level.", cost: 2, max: 10, req: ["seed"], x: 2, y: 1 },
-  { id: "gift", name: "Gift Shop", icon: "🎁", desc: "Free pack comes 20% sooner per level.", cost: 2, max: 4, req: ["whole"], x: 0, y: 2 },
-  { id: "foot", name: "Rabbit's Foot", icon: "🐇", desc: "Rare+ odds up 4% per level.", cost: 3, max: 5, req: ["whole"], x: 1, y: 2 },
-  { id: "prism", name: "Prism", icon: "🔮", desc: "+1.5% foil chance per level.", cost: 3, max: 5, req: ["sleeve"], x: 2, y: 2 },
-  { id: "clock", name: "Overclock", icon: "⏱️", desc: "Auto-Ripper 10% faster per level.", cost: 4, max: 5, req: ["foot"], x: 1, y: 3 },
-  { id: "night", name: "Night Shift", icon: "🌙", desc: "+2 hours of offline progress per level.", cost: 3, max: 4, req: ["clock"], x: 0, y: 4 },
-  { id: "fat", name: "Fat Packs", icon: "🥩", desc: "+1 card in every pack per level.", cost: 8, max: 2, req: ["foot", "prism"], x: 2, y: 3 },
-  { id: "x25", name: "Turbo Hands", icon: "🚀", desc: "Unlocks opening 25 at once.", cost: 6, max: 1, req: ["clock"], x: 2, y: 4 },
+/** Staff work for you, even while you are away. Level 0 = not hired. */
+export const STAFF = [
+  { id: "opener", name: "Card Opener", icon: "🧑‍🔧", desc: "Taps your packs for you. Faster each level.", max: 15, base: 400, growth: 2.6 },
+  { id: "seller", name: "Salesperson", icon: "🧑‍💼", desc: "Sells your stored duplicates every few seconds.", max: 12, base: 600, growth: 2.4 },
+  { id: "buyer", name: "Buyer", icon: "🛒", desc: "Buys your selected pack whenever there is room and stock.", max: 12, base: 900, growth: 2.4 },
 ];

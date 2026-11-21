@@ -118,5 +118,5 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Browser: `node scripts/gridiron-career-e2e.mjs --url http://localhost:3100 --shots <dir>` (R/Shift/W hotkeys, new career, train, sign, sim week, reload persistence, one live game to the final, week advances).
 
 ## 21. Pack Rush
-- `arcade-server/tests/packs.test.mjs` (cards, packs, odds vs simulation, coupon-collector expectation, income/levels, upgrades, unlocks, free pack, auto-ripper, offline, reboot + tree, determinism, human-speed economy bands). 309 passing overall.
-- Browser: `node scripts/packs-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (no page scroll, cards inside the table, tabs without overflow, save persists, odds lab runs).
+- `arcade-server/tests/packs.test.mjs` (cards/finishes, odds vs simulation, buy/slots/stock, tap damage and crits, album discovery vs storage vs overflow, selling, unlocks/upgrades/staff, restock and staff jobs, free sample, offline, expected value, determinism, human-speed economy bands).
+- Browser: `node scripts/packs-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (buy, tap damages pack, burst reveals a card on screen, save persists, every tab without overflow, album close-up, odds lab) using a seeded save to show every finish.

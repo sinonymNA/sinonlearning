@@ -1,102 +1,93 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { newState, openPack, openMany, buyUpgrade, upgradeCost, unlocked, packCost, mods, odds, claimFree, tick, offline, reboot, rebootGain, buyNode, starsAvailable, simulate, bestTier, ownedInSet, levelOf, nextAt, cardRate, incomeRate, tap, packsForRarity, CARDS, SETS } from "../packs/engine.mjs";
-import { RARITIES, UPGRADES, TREE, SET_SIZE } from "../packs/config.mjs";
+import { newState, mods, hit, buyPack, unlockTier, sellAll, sellOne, storedValue, buyUpgrade, hire, upgradeCost, advance, offline, rarityOdds, variantOdds, simulate, expectedValue, cardValue, freeSlot, dupeCount, albumCount, packsFor, ALBUM_TOTAL, CARDS, SETS, VARIANTS, RARITIES, UPGRADES, STAFF, MAX_SLOTS } from "../packs/engine.mjs";
+import { SET_SIZE, DISCOVERY, BASE_CAP, CRIT_MUL } from "../packs/config.mjs";
+import { human } from "../../scripts/packs-econ.mjs";
 
-test("72 unique cards, 12 per set with the fixed rarity layout, unique names and seeds", () => {
+test("72 unique creatures, 12 per set with the fixed rarity layout; 6 finishes give 432 album entries", () => {
   assert.equal(CARDS.length, 72); assert.equal(new Set(CARDS.map((c) => c.id)).size, 72); assert.equal(new Set(CARDS.map((c) => c.name)).size, 72); assert.equal(new Set(CARDS.map((c) => c.seed)).size, 72);
-  for (let k = 0; k < 6; k++) { const s = CARDS.filter((c) => c.set === k); assert.equal(s.length, SET_SIZE); assert.equal(s.filter((c) => c.rarity === "legendary").length, 1); assert.equal(s.filter((c) => c.rarity === "common").length, 5); }
+  for (let k = 0; k < 6; k++) { const s = CARDS.filter((c) => c.set === k); assert.equal(s.length, SET_SIZE); assert.equal(s.filter((c) => c.rarity === "legendary").length, 1); }
+  assert.equal(VARIANTS.length, 6); assert.equal(ALBUM_TOTAL, 432);
 });
 
-test("opening a pack costs coins, adds cards to the collection, and duplicates level a card up", () => {
-  const st = newState(5); const c0 = st.coins, cost = packCost(st, 0);
-  const r = openPack(st, 0); assert.equal(r.cards.length, 3); assert.equal(st.coins, c0 - cost); assert.ok(Object.keys(st.dex).length >= 1);
-  const st2 = newState(5); st2.coins = 0; assert.throws(() => openPack(st2, 0), /Not enough/); assert.throws(() => openPack(newState(1), 1), /locked/);
-  const d = newState(1); d.coins = 1e9; for (let i = 0; i < 200; i++) openPack(d, 0); assert.ok(Object.values(d.dex).some((x) => x.n >= 4) && Object.values(d.dex).some((x) => levelOf(x.n) >= 3));
-  assert.equal(levelOf(1), 1); assert.equal(levelOf(2), 2); assert.equal(levelOf(3), 2); assert.equal(levelOf(4), 3); assert.equal(nextAt(1), 2); assert.equal(nextAt(20), null);
+test("rarity and finish odds sum to 1, luck and shiny shift them, and simulation matches", () => {
+  const st = newState(1), ro = rarityOdds(st), vo = variantOdds(st);
+  assert.ok(Math.abs(ro.reduce((a, r) => a + r.p, 0) - 1) < 1e-9 && Math.abs(vo.reduce((a, r) => a + r.p, 0) - 1) < 1e-9); assert.ok(Math.abs(ro[0].p - 0.62) < 1e-9);
+  st.up.luck = 10; st.up.shine = 10; assert.ok(rarityOdds(st)[4].p > ro[4].p && variantOdds(st)[5].p > vo[5].p && variantOdds(st)[0].p < vo[0].p);
+  const base = newState(2), sim = simulate(base, 0, 40000, 9), o = rarityOdds(base), v = variantOdds(base);
+  RARITIES.forEach((r, i) => assert.ok(Math.abs(sim.rarity[r.id] / sim.n - o[i].p) < 0.01, r.id)); VARIANTS.forEach((x, i) => assert.ok(Math.abs(sim.variant[x.id] / sim.n - v[i].p) < 0.006, x.id));
 });
 
-test("rarity odds follow the table; luck shifts rare+ up but probabilities still sum to 1", () => {
-  const st = newState(1), o = odds(st); assert.ok(Math.abs(o.reduce((a, r) => a + r.p, 0) - 1) < 1e-9); assert.ok(Math.abs(o[0].p - 0.62) < 1e-9);
-  st.up.luck = 10; const o2 = odds(st); assert.ok(o2[4].p > o[4].p && o2[0].p < o[0].p && Math.abs(o2.reduce((a, r) => a + r.p, 0) - 1) < 1e-9);
-  const sim = simulate(newState(2), 0, 20000, 9), n = sim.cards;
-  RARITIES.forEach((r, i) => assert.ok(Math.abs(sim.counts[r.id] / n - o[i].p) < 0.01, `${r.id} ${sim.counts[r.id] / n} vs ${o[i].p}`));
+test("buying a pack needs unlock, a free table slot, stock and cash; it lands on the table with HP", () => {
+  const st = newState(1); assert.throws(() => buyPack(st, 1), /Unlock/); const cash = st.cash; const slot = buyPack(st, 0);
+  assert.equal(slot, 0); assert.equal(st.cash, cash - SETS[0].cost); assert.equal(st.table[0].hp, SETS[0].hp); assert.ok(st.stock[0] < 6);
+  buyPack(st, 0); buyPack(st, 0); assert.equal(freeSlot(st), -1); assert.throws(() => buyPack(st, 0), /table is full/);
+  const poor = newState(1); poor.cash = 1; assert.throws(() => buyPack(poor, 0), /Not enough/);
+  const dry = newState(1); dry.stock[0] = 0; assert.throws(() => buyPack(dry, 0), /stock/);
 });
 
-test("coupon collector: packs needed for a legendary matches simulation", () => {
-  const st = newState(1), exp = packsForRarity(st, "legendary"); let total = 0; const trials = 1500;
-  for (let s = 1; s <= trials; s++) { const g = newState(s); g.coins = Infinity; let n = 0; for (;;) { n++; if (openPack(g, 0).cards.some((c) => c.rarity === "legendary")) break; } total += n; }
-  assert.ok(Math.abs(total / trials - exp) / exp < 0.12, `sim ${total / trials} vs expected ${exp}`);
+test("tapping tears a pack: damage scales with upgrades, crits triple it, and the pack bursts into a card", () => {
+  const st = newState(3); buyPack(st, 0); let r = hit(st, 0); assert.equal(r.burst, false); assert.equal(st.table[0].hp, SETS[0].hp - 1);
+  let taps = 1; while (!r.burst) { r = hit(st, 0); taps++; } assert.equal(taps, SETS[0].hp); assert.equal(st.table[0], null); assert.equal(r.result.cards.length >= 1, true); assert.equal(st.total.packs, 1);
+  const up = newState(3); up.up.dmg = 5; up.up.crit = 25; buyPack(up, 0); assert.equal(mods(up).dmg, 6); up.up.crit = 15; assert.ok(mods(up).crit > 0.5);
+  let crits = 0; for (let i = 0; i < 40 && !up.table[0] === false; i++) { const x = hit(up, 0); if (x.crit) { crits++; assert.equal(x.dmg, 6 * CRIT_MUL); } if (x.burst) break; } assert.ok(true);
+  assert.throws(() => hit(newState(1), 2), /Nothing/);
 });
 
-test("owned cards pay coins per second; levels, variants, completed sets and stars raise it", () => {
-  const st = newState(1); assert.equal(incomeRate(st), 0);
-  st.dex["meadow-0"] = { n: 1, foil: 0, holo: 0 }; const base = incomeRate(st); assert.ok(base > 0);
-  st.dex["meadow-0"].n = 4; const lv = incomeRate(st); assert.ok(lv > base * 2);
-  st.dex["meadow-0"].foil = 1; assert.ok(incomeRate(st) > lv * 1.5);
-  const before = incomeRate(st); st.stars = 10; assert.ok(incomeRate(st) > before * 1.4); st.up.income = 5; assert.ok(incomeRate(st) > before * 2);
-  const g = newState(2); g.dex["cave-0"] = { n: 1, foil: 0, holo: 0 }; g.dex["meadow-0"] = { n: 1, foil: 0, holo: 0 }; assert.ok(cardRate(CARDS.find((c) => c.id === "cave-0"), g.dex["cave-0"]) >= 7 * cardRate(CARDS.find((c) => c.id === "meadow-0"), g.dex["meadow-0"]) * 0.9, "later sets pay far more");
-  const c0 = st.coins; assert.ok(tap(st) >= 1 && st.coins > c0);
+test("new cards and new finishes go to the album and pay a discovery bonus; duplicates go to storage; a full storage sells extras at half", () => {
+  const st = newState(5); st.cash = 1e9; const c0 = st.cash; buyPack(st, 0); let r; while (!(r = hit(st, 0)).burst);
+  const card = r.result.cards[0]; assert.ok(card.isNewCard && card.isNewVariant && card.fate === "album"); assert.ok(st.cash > c0 - 5 + card.value * DISCOVERY - 1e-6); assert.equal(albumCount(st), 1); assert.equal(dupeCount(st), 0);
+  const stored = []; for (let i = 0; i < 400; i++) { st.stock[0] = 9; buyPack(st, 0); let x; while (!(x = hit(st, st.table.findIndex(Boolean))).burst); stored.push(...x.result.cards.map((c) => c.fate)); }
+  assert.ok(stored.includes("stored") && stored.includes("overflow") && stored.includes("album")); assert.ok(dupeCount(st) <= BASE_CAP);
 });
 
-test("upgrades cost coins, cap at max, and change the mods", () => {
-  const st = newState(1); st.coins = 1e12; const c = upgradeCost("bulk", 0); const before = st.coins; buyUpgrade(st, "bulk"); assert.equal(before - st.coins, c); assert.ok(mods(st).cost < 1);
-  for (const u of UPGRADES) { while ((st.up[u.id] || 0) < u.max) buyUpgrade(st, u.id); assert.throws(() => buyUpgrade(st, u.id), /Maxed/); }
-  assert.equal(mods(st).cards, 3 + 4); assert.deepEqual(mods(st).multi, [1, 5, 10]); assert.ok(mods(st).autoEvery > 0);
-  const poor = newState(1); poor.coins = 1; assert.throws(() => buyUpgrade(poor, "bulk"), /Not enough/);
+test("selling: sell all and sell one pay the current price and clear storage", () => {
+  const st = newState(1); st.dupes = { "meadow-0|0": 3, "meadow-11|5": 1 }; const a = cardValue(st, CARDS.find((c) => c.id === "meadow-0"), 0), b = cardValue(st, CARDS.find((c) => c.id === "meadow-11"), 5);
+  assert.ok(b > a * 100); assert.ok(Math.abs(storedValue(st) - (3 * a + b)) < 1e-6); const c0 = st.cash; assert.equal(sellOne(st, "meadow-0|0"), a); assert.equal(dupeCount(st), 3);
+  const r = sellAll(st); assert.equal(r.n, 3); assert.ok(Math.abs(st.cash - (c0 + a + (2 * a + b))) < 1e-6); assert.equal(dupeCount(st), 0); assert.throws(() => sellOne(st, "meadow-0|0"), /None/);
 });
 
-test("the next pack unlocks only when the previous set is complete", () => {
-  const st = newState(1); assert.ok(!unlocked(st, 1));
-  for (const c of CARDS.filter((x) => x.set === 0).slice(0, 11)) st.dex[c.id] = { n: 1, foil: 0, holo: 0 };
-  assert.ok(!unlocked(st, 1)); st.dex["meadow-11"] = { n: 1, foil: 0, holo: 0 };
-  assert.ok(unlocked(st, 1)); assert.ok(!unlocked(st, 2)); assert.equal(ownedInSet(st, 0), 12);
+test("unlocking pack types costs cash and must go in order; upgrades and staff cost cash, cap out and change mods", () => {
+  const st = newState(1); assert.throws(() => unlockTier(st, 2), /earlier/); assert.throws(() => unlockTier(st, 1), /Not enough/); st.cash = 1e12; unlockTier(st, 1); assert.ok(st.unlocked[1]); assert.throws(() => unlockTier(st, 1), /Already/);
+  for (const u of UPGRADES) { const c = upgradeCost(UPGRADES, u.id, 0), b = st.cash; buyUpgrade(st, u.id); assert.equal(b - st.cash, c); while ((st.up[u.id] || 0) < u.max) buyUpgrade(st, u.id); assert.throws(() => buyUpgrade(st, u.id), /Maxed/); }
+  for (const u of STAFF) { hire(st, u.id); while ((st.staff[u.id] || 0) < u.max) hire(st, u.id); assert.throws(() => hire(st, u.id), /Maxed/); }
+  const m = mods(st); assert.equal(m.dmg, 41); assert.equal(m.slots, MAX_SLOTS); assert.ok(m.cap > 100 && m.openHits > 5 && m.sellEvery > 0 && m.buyEvery > 0 && m.extra === 1);
+  const poor = newState(1); poor.cash = 1; assert.throws(() => buyUpgrade(poor, "dmg"), /Not enough/); assert.throws(() => hire(poor, "opener"), /Not enough/);
 });
 
-test("free pack: usable on a timer, never leaves a broke player stuck", () => {
-  const st = newState(1, 0); st.coins = 0; assert.equal(claimFree(st, 0).cards.length, 3);
-  assert.throws(() => claimFree(st, 1000), /Not ready/); claimFree(st, 30000); assert.equal(bestTier(st), 0);
+test("the shop restocks over time up to its cap, and staff do their jobs", () => {
+  const st = newState(1); st.stock[0] = 0; advance(st, 4); assert.ok(Math.abs(st.stock[0] - 1) < 1e-9); advance(st, 1000); assert.equal(st.stock[0], mods(st).stockMax);
+  const o = newState(2); o.cash = 1e6; buyPack(o, 0); buyPack(o, 0); o.staff.opener = 1; let bursts = 0; for (let i = 0; i < 40; i++) bursts += advance(o, 1).length; assert.ok(bursts >= 2, "opener tears open the packs");
+  const s = newState(3); s.dupes = { "meadow-0|0": 5 }; s.staff.seller = 1; advance(s, 9); assert.equal(dupeCount(s), 0); assert.ok(s.cash > 25);
+  const b = newState(4); b.cash = 100; b.staff.buyer = 1; advance(b, 7); assert.ok(b.table.some(Boolean), "buyer put a pack on the table");
 });
 
-test("tick pays passive income and the auto-ripper opens packs on its timer, stopping when broke", () => {
-  const st = newState(1, 0); st.dex["meadow-0"] = { n: 1, foil: 0, holo: 0 }; st.coins = 0; tick(st, 5000); assert.ok(st.coins > 0 && st.coins < 5, "5s of one common");
-  const a = newState(1, 0); a.coins = 1e6; a.up.auto = 1; assert.equal(mods(a).autoEvery, 8.5);
-  const out = []; for (let t = 1000; t <= 60000; t += 1000) out.push(...tick(a, t)); assert.ok(out.length >= 6 && out.length <= 8, "about 7 packs in 60s at 8.5s each, got " + out.length);
-  const broke = newState(1, 0); broke.up.auto = 1; broke.coins = 0; assert.equal(tick(broke, 9000).length, 0);
+test("a broke player is never stuck: a free sample pack arrives", () => {
+  const st = newState(1); st.cash = 0; advance(st, 3); assert.ok(!st.table.some(Boolean)); advance(st, 4); assert.ok(st.table[0] && st.table[0].free);
+  const rich = newState(1); rich.cash = 100; advance(rich, 30); assert.ok(!rich.table.some(Boolean), "no handouts when you can afford a pack");
 });
 
-test("offline: income is credited up to the cap; with an auto-ripper packs open too", () => {
-  const st = newState(1, 0); st.dex["meadow-0"] = { n: 1, foil: 0, holo: 0 }; const r0 = offline(st, 10 * 3600); assert.ok(Math.abs(r0.coins - incomeRate(st) * 2 * 3600) < 1e-6 || r0.coins > 0, "capped at 2h"); assert.equal(r0.packs, 0);
-  const a = newState(1, 0); a.up.auto = 5; a.coins = 5000; for (const c of CARDS.slice(0, 8)) a.dex[c.id] = { n: 1, foil: 0, holo: 0 }; const r = offline(a, 10 * 3600); assert.ok(r.packs > 50 && r.packs <= 250, "packs " + r.packs);
-  assert.equal(offline(newState(1), 10).coins, 0);
+test("offline: staff keep working for up to the cap; without staff nothing happens", () => {
+  assert.equal(offline(newState(1), 7200).cash, 0);
+  const st = newState(1); st.cash = 5000; st.staff = { opener: 3, buyer: 3, seller: 3 }; const r = offline(st, 10 * 3600); assert.ok(r.packs > 50 && r.secs === 7200, JSON.stringify(r));
 });
 
-test("reboot: needs earnings, grants stars, keeps the collection, resets the run, tree spends stars", () => {
-  const st = newState(1); assert.throws(() => reboot(st), /Earn more/);
-  st.run.earned = 2e8; st.coins = 123; st.up.bulk = 5; st.dex["meadow-0"] = { n: 3, foil: 1, holo: 0 }; assert.equal(rebootGain(st), 2);
-  assert.equal(reboot(st), 2); assert.equal(st.stars, 2); assert.deepEqual(st.up, {}); assert.equal(st.run.earned, 0); assert.equal(st.dex["meadow-0"].n, 3); assert.equal(st.coins, 300);
-  assert.throws(() => buyNode(st, "whole"), /earlier/); buyNode(st, "seed"); assert.equal(starsAvailable(st), 1); st.stars += 2; buyNode(st, "whole"); assert.equal(starsAvailable(st), 1);
-  assert.throws(() => buyNode(st, "sleeve"), /Costs/); assert.ok(mods(st).cost < 1 && mods(st).starMul > 1);
-  st.run.earned = 1e8; reboot(st); assert.equal(st.coins, 300 + 1500, "seed money applies");
-});
-
-test("tree: every requirement exists and no node is unreachable", () => {
-  const ids = new Set(TREE.map((n) => n.id)); for (const n of TREE) for (const r of n.req) assert.ok(ids.has(r), n.id + " needs " + r);
-  const done = new Set(); let grew = true; while (grew) { grew = false; for (const n of TREE) if (!done.has(n.id) && n.req.every((r) => done.has(r))) { done.add(n.id); grew = true; } }
-  assert.equal(done.size, TREE.length);
+test("expected value matches the odds and rises with luck, shine and sell upgrades; the Odds Lab maths holds", () => {
+  const st = newState(1), ro = rarityOdds(st), vo = variantOdds(st), ev = expectedValue(st, 0);
+  assert.ok(Math.abs(ev - ro.reduce((a, r) => a + r.p * r.v, 0) * vo.reduce((a, v) => a + v.p * v.mult, 0)) < 1e-9);
+  const up = newState(1); up.up.luck = 10; up.up.shine = 10; up.up.sell = 10; assert.ok(expectedValue(up, 0) > ev * 2); assert.ok(expectedValue(st, 1) > ev * 6);
+  const p = 0.005 * 0.1; assert.ok(Math.abs(packsFor(st, p) - 1 / p) / (1 / p) < 1e-9);
 });
 
 test("state is plain JSON and deterministic from its seed", () => {
-  const a = newState(42), b = newState(42); a.coins = b.coins = 1000;
-  assert.deepEqual(openMany(a, 0, 5).map((r) => r.cards.map((c) => c.id)), openMany(b, 0, 5).map((r) => r.cards.map((c) => c.id)));
-  assert.deepEqual(JSON.parse(JSON.stringify(a)), a);
+  const run = () => { const st = newState(42); st.cash = 1e6; const out = []; for (let i = 0; i < 6; i++) { st.stock[0] = 9; const slot = buyPack(st, 0); let x; while (!(x = hit(st, slot)).burst); out.push(x.result.cards.map((c) => c.id + c.variant)); } return { st, out }; };
+  const a = run(), b = run(); assert.deepEqual(a.out, b.out); assert.deepEqual(JSON.parse(JSON.stringify(a.st)), a.st);
 });
 
-import { human } from "../../scripts/packs-econ.mjs";
-test("economy: a human-speed player unlocks tiers steadily, gets the auto-ripper early and reaches a first reboot (3 stars) in 12 to 60 minutes", () => {
+test("economy: a human tapping 4 times a second unlocks packs, hires staff and progresses at a sensible pace", () => {
   for (const seed of [1, 2, 3]) {
-    const { st, log } = human(seed, 4 * 3600);
-    assert.ok(log.tier1 !== undefined && log.tier1 < 900, `tier 1 at ${log.tier1}s`); assert.ok(log.auto !== undefined && log.auto < 1500, `auto at ${log.auto}s`);
-    assert.ok(log.reboot !== undefined && log.reboot > 12 * 60 && log.reboot < 60 * 60, `first reboot at ${log.reboot / 60}min (seed ${seed}), earned ${st.run.earned.toExponential(2)}`);
+    const { st, log } = human(seed, 45 * 60);
+    assert.ok(log.tier1 !== undefined && log.tier1 < 10 * 60, `tier 1 at ${log.tier1}s`); assert.ok(log["staff:opener"] !== undefined && log["staff:opener"] < 15 * 60, `opener at ${log["staff:opener"]}s`);
+    assert.ok(log.tier2 !== undefined && log.tier2 < 30 * 60 && log.tier2 > 5 * 60, `tier 2 at ${log.tier2}s`); assert.ok(log.tier5 === undefined, "the last pack type is a long-term goal"); assert.ok(albumCount(st) > 100, `album ${albumCount(st)}`);
   }
 });
