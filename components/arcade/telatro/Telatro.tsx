@@ -39,7 +39,7 @@ export default function Telatro() {
           <div className="tl-cover">
             <div className="tl-logo" aria-hidden>🃏</div>
             <h1>TELATRO</h1>
-            <p>A game by its own author, played right here. Tap to load it.</p>
+            <p>An unofficial fan port of Balatro by LocalThunk. The port asks that you own the original game. Tap to load it.</p>
             <button className="tl-play" onClick={start}>▶ PLAY</button>
             <small>Loads from telatro.tomcat.sh. Sound and saves are handled by the game itself.</small>
           </div>
