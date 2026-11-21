@@ -111,3 +111,7 @@ Built a complete multiplayer trivia board game (see ARCADE_DACULA.md). Because e
 
 User: add coaching career mode (season, free agents), a student's nine plays, and WASD/Shift/R hotkeys to Gridiron
 - Done: nine student plays (interpreted from a drawing), hotkeys, `career.mjs` + `Career.tsx` + menu button + persistence, tests, docs. See ARCADE_GRIDIRON.md. Not playtested by a human.
+
+
+User: add Telatro (external HTML game) as a solo game, embedded by link
+- Done: `/arcade/telatro` embeds https://telatro.tomcat.sh in a sandboxed iframe mounted only after PLAY (no load on the hub), responsive via 100dvh + safe areas, Full/Open-in-new-tab buttons, hub card. Layout checked at 6 viewport sizes. NOT verified: that the host actually allows framing (sandbox network blocks the host). No Telatro files were in the repo/branches visible to the agent, none were touched.
