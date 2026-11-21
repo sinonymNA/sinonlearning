@@ -115,3 +115,7 @@ User: add coaching career mode (season, free agents), a student's nine plays, an
 
 User: add Telatro (external HTML game) as a solo game, embedded by link
 - Done: `/arcade/telatro` embeds https://telatro.tomcat.sh in a sandboxed iframe mounted only after PLAY (no load on the hub), responsive via 100dvh + safe areas, Full/Open-in-new-tab buttons, hub card. Layout checked at 6 viewport sizes. NOT verified: that the host actually allows framing (sandbox network blocks the host). No Telatro files were in the repo/branches visible to the agent, none were touched.
+
+
+User: replace the Telatro embed (an unofficial Balatro port) with an original idle pack-cracker; fantasy football idle game to follow
+- Done: Pack Rush (`ARCADE_PACKS.md`), hub card, tests, economy simulator, browser smoke. Telatro route and card removed. Next: fantasy football idle game.

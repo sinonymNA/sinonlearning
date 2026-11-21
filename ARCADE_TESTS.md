@@ -116,3 +116,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 ## 20. Gridiron student plays, hotkeys, Coach Career
 - `arcade-server/tests/career.test.mjs` (round robin, full season, carry-over, free agents, training, strength matters, engine honours roster/opponent) plus the updated playbook test; 295 passing overall.
 - Browser: `node scripts/gridiron-career-e2e.mjs --url http://localhost:3100 --shots <dir>` (R/Shift/W hotkeys, new career, train, sign, sim week, reload persistence, one live game to the final, week advances).
+
+## 21. Pack Rush
+- `arcade-server/tests/packs.test.mjs` (cards, packs, odds vs simulation, coupon-collector expectation, income/levels, upgrades, unlocks, free pack, auto-ripper, offline, reboot + tree, determinism, human-speed economy bands). 309 passing overall.
+- Browser: `node scripts/packs-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (no page scroll, cards inside the table, tabs without overflow, save persists, odds lab runs).

@@ -71,7 +71,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (inRoom) return <>{children}</>;
   // Abyss's play screens are full-bleed pixel scenes with their own HUD: no app bars
-  const immersive = path === "/arcade/abyss" || path.startsWith("/arcade/abyss/play") || path.startsWith("/arcade/abyss/unlimited") || path.startsWith("/arcade/gridiron") || path.startsWith("/arcade/telatro");
+  const immersive = path === "/arcade/abyss" || path.startsWith("/arcade/abyss/play") || path.startsWith("/arcade/abyss/unlimited") || path.startsWith("/arcade/gridiron") || path.startsWith("/arcade/packs");
   if (immersive) return <div className="app-shell abyss immersive"><div className="app-body" key={path}>{children}</div></div>;
   const active = (t: (typeof TABS)[number]) => (t.exact ? path === t.href : t.match.some((m) => path === m || path.startsWith(m + "/")));
   const bestStreak = Math.max(streak, abyssStreak);
