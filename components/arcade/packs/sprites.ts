@@ -178,6 +178,7 @@ export async function loadArt(cards: { seed: number; set: number }[], sets: { hu
       cards.forEach((c, i) => {
         const sx = (i % cols) * cell, sy = Math.floor(i / cols) * cell; if (sx + cell > img.width || sy + cell > img.height) return;
         const cvs = cv(cell, cell), g = cvs.getContext("2d")!; g.imageSmoothingEnabled = false;
+        { const probe = cv(cell, cell).getContext("2d", { willReadFrequently: true })!; probe.drawImage(img, sx, sy, cell, cell, 0, 0, cell, cell); const a = probe.getImageData(0, 0, cell, cell).data; let any = false; for (let k = 3; k < a.length; k += 4) if (a[k] > 8) { any = true; break; } if (!any) return; }   // an empty cell keeps the generated art
         if (transparent) { const bgc = cv(), bg = bgc.getContext("2d")!; background(bg, c.set, makeRng(c.seed * 7 + 3)); g.imageSmoothingEnabled = false; g.drawImage(bgc, 0, 0, cell, cell); }
         g.drawImage(img, sx, sy, cell, cell, 0, 0, cell, cell); cache.set(`a${c.seed}`, cvs.toDataURL()); used = true;
       });
