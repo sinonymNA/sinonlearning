@@ -58,6 +58,8 @@ function Inner() {
   const [fused, setFused] = useState<any>(null);
   const [art, setArt] = useState(0);
   const [tools, setTools] = useState(false);
+  const [cardStyle, setCardStyleState] = useState<"classic" | "full">("classic");
+  const setCardStyle = (v: "classic" | "full") => { setCardStyleState(v); try { localStorage.setItem("packrush:cards", v); } catch { /* storage blocked */ } };
 
   const toast = useCallback((m: string) => { setMsg(m); window.setTimeout(() => setMsg((x) => (x === m ? null : x)), 2400); }, []);
   const save = useCallback(() => { try { if (S.current) localStorage.setItem(KEY, JSON.stringify({ st: S.current, at: Date.now() })); } catch { /* storage blocked */ } }, []);
@@ -69,6 +71,7 @@ function Inner() {
     if (gap > 30) { const r = offline(st, gap); if (r.packs > 0 || r.cash > 1) setWelcome(r); }
     S.current = st; last.current = now; bump();
     setTools(new URLSearchParams(location.search).has("art"));
+    try { if (localStorage.getItem("packrush:cards") === "full") setCardStyleState("full"); } catch { /* ignore */ }
     void loadArt(CARDS as any, SETS as any).then((ok) => { if (ok) setArt((a) => a + 1); });
   }, []);
 
@@ -145,7 +148,7 @@ function Inner() {
   const nextOrder = st.missions.find((x: any) => x.p >= x.n) || [...st.missions].sort((a: any, b: any) => b.p / b.n - a.p / a.n)[0];
 
   return (
-    <div className="pk-root" data-tab={tab}>
+    <div className="pk-root" data-tab={tab} data-cards={cardStyle}>
       <header className="pk-top">
         <Link href="/arcade/solo" className="pk-btn sm" aria-label="Back to arcade">←</Link>
         <div className="pk-cash" ref={cashRef}><b><Count value={st.cash} /></b><small>{album}/{ALBUM_TOTAL} album</small></div>
@@ -269,6 +272,7 @@ function Inner() {
         {tab === "album" && (
           <section className="pk-list wide">
             <h2>ALBUM <small>{album}/{ALBUM_TOTAL} finishes found · +{album}% sell price from your collection. Tap a card to look closer.</small></h2>
+            <span className="pk-style" role="group" aria-label="Card style">Card style <button className={`pk-btn sm ${cardStyle === "classic" ? "go" : ""}`} aria-pressed={cardStyle === "classic"} onClick={() => setCardStyle("classic")}>CLASSIC</button><button className={`pk-btn sm ${cardStyle === "full" ? "go" : ""}`} aria-pressed={cardStyle === "full"} onClick={() => setCardStyle("full")}>FULL ART</button></span>
             {SETS.map((s: any, k: number) => (
               <div key={s.id} className="pk-set" style={{ ["--h" as any]: s.hue }}>
                 <h3>{s.name} <small>{ownedInSet(st, k)}/{SET_SIZE} cards</small></h3>
@@ -296,6 +300,7 @@ function Inner() {
           <div className="pk-viewer" onClick={(e) => e.stopPropagation()}>
             <CardFace id={view.id} variant={view.v} value={cardValue(st, CARDS.find((c: any) => c.id === view.id), VARIANTS.findIndex((v: any) => v.id === view.v))} className="big" tilt />
             <div className="pk-vtabs">{VARIANTS.map((v: any, i: number) => { const have = st.dex[view.id]?.vars[i] > 0; return <button key={v.id} className={`pk-btn sm ${view.v === v.id ? "go" : ""}`} disabled={!have} onClick={() => setView({ id: view.id, v: v.id })}>{have ? v.name : "🔒"}</button>; })}</div>
+            <span className="pk-style" role="group" aria-label="Card style">Card style <button className={`pk-btn sm ${cardStyle === "classic" ? "go" : ""}`} aria-pressed={cardStyle === "classic"} onClick={() => setCardStyle("classic")}>CLASSIC</button><button className={`pk-btn sm ${cardStyle === "full" ? "go" : ""}`} aria-pressed={cardStyle === "full"} onClick={() => setCardStyle("full")}>FULL ART</button></span>
             <button className="pk-btn" onClick={() => setView(null)}>CLOSE</button>
           </div>
         </div>

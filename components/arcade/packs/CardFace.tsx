@@ -23,7 +23,7 @@ export default function CardFace({ id, variant = "standard", value, locked, tilt
       <div className="cf-art"><img src={artUrl(card, set.hue)} alt="" draggable={false} /></div>
       <span className="cf-foil" aria-hidden /><span className="cf-stars" aria-hidden><i /><i /><i /><i /><i /><i /><b /><b /><b /></span><span className="cf-sheen" aria-hidden />
       <div className="cf-top"><b>{locked ? "???" : card.name}</b>{value !== undefined && !locked && <span className="cf-val">${fmt(value)}</span>}</div>
-      <div className="cf-bot"><span className="cf-line"><i>{locked ? "?" : rar.name}</i>{variant !== "standard" && !locked && <em>{v.name}</em>}</span><small>{locked ? "not found yet" : `${set.name} · ${String(idx + 1).padStart(3, "0")}/${CARDS.length}`}</small></div>
+      <div className="cf-bot"><span className="cf-line"><i>{locked ? "?" : rar.name}</i>{variant !== "standard" && !locked && <em>{v.name}</em>}</span><p className="cf-flavor">{locked ? "Open more packs to find this card." : card.flavor}</p><small>{locked ? "not found yet" : `${set.name} · ${String(idx + 1).padStart(3, "0")}/${CARDS.length}`}</small></div>
     </div>
   );
 }

@@ -143,3 +143,30 @@
 a.pk-btn { color: inherit; }
 @media (orientation: landscape) and (max-height: 560px) { .pk-meters { flex-direction: row; } .pk-meters > * { flex: 1; min-width: 0; } .pk-combo { height: 28px; } }
 @media (prefers-reduced-motion: reduce) { .num, .ring, .coin, .rv-rays, .rv-back.hot, .rv-gold, .tp-sparkle, .shake-1, .shake-2, .shake-3, .shake-4, .pk-order.done { animation: none !important; } }
+
+/* ---- Classic trading-card layout (default): framed rectangle, name bar, art window, info strip, text box, collector number. data-cards="full" keeps the full-art look. */
+.cf-flavor { display: none; margin: 0; }
+[data-cards="classic"] .cf { border: .45em solid transparent; border-radius: .75em; background: linear-gradient(160deg, hsl(var(--h) 62% 90%), hsl(var(--h) 48% 74%)) padding-box, linear-gradient(135deg, hsl(var(--h) 80% 68%), hsl(var(--h) 70% 40%) 50%, hsl(var(--h) 80% 70%)) border-box; color: #1c1630;
+  box-shadow: 0 .4em 0 #0008, 0 0 .8em color-mix(in srgb, var(--rc) 45%, transparent), inset 0 0 0 .12em rgba(0, 0, 0, .35); }
+[data-cards="classic"] .cf::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; border-radius: .3em; box-shadow: inset 0 0 0 .1em rgba(255, 255, 255, .55); }
+[data-cards="classic"] .cf-top { top: 0; left: 0; right: 0; height: 2.1em; padding: .35em .5em 0; background: none; align-items: center; }
+[data-cards="classic"] .cf-top b { color: #1c1630; text-shadow: none; font-size: 1.15em; }
+[data-cards="classic"] .cf-val { color: #0b5a2b; background: rgba(255, 255, 255, .8); border: .13em solid #0b5a2b; font-size: .58em; }
+[data-cards="classic"] .cf-art, [data-cards="classic"] .cf-foil, [data-cards="classic"] .cf-stars, [data-cards="classic"] .cf-sheen { inset: auto; left: .35em; right: .35em; top: 2.15em; height: 5.6em; }
+[data-cards="classic"] .cf-art { border: .14em solid #1c1630; box-shadow: 0 0 0 .1em hsl(var(--h) 80% 75%), inset 0 0 .3em #0008; overflow: hidden; background: #000; }
+[data-cards="classic"] .cf-foil, [data-cards="classic"] .cf-stars, [data-cards="classic"] .cf-sheen { overflow: hidden; }
+[data-cards="classic"] .cf-bot { top: 8em; left: .35em; right: .35em; bottom: .35em; padding: 0; background: none; box-shadow: none; gap: .25em; justify-content: flex-start; }
+[data-cards="classic"] .cf-line { background: linear-gradient(180deg, hsl(var(--h) 40% 30%), hsl(var(--h) 45% 18%)); color: #fff; padding: .1em .5em; font-size: .85em; border-radius: .25em; box-shadow: inset 0 0 0 .1em rgba(255, 255, 255, .3); } [data-cards="classic"] .cf-line i { color: #fff; text-shadow: none; } [data-cards="classic"] .cf-line em { color: #ffe08a; }
+[data-cards="classic"] .cf-flavor { display: block; flex: 1; min-height: 0; overflow: hidden; padding: .3em .45em; font-size: .78em; line-height: 1.05; font-style: italic; background: rgba(255, 255, 255, .62); border: .1em solid hsl(var(--h) 40% 35%); border-radius: .25em; box-shadow: inset 0 0 .3em rgba(0, 0, 0, .15); color: #2a2140; }
+[data-cards="classic"] .cf-bot small { position: absolute; right: .35em; bottom: .15em; z-index: 4; font-size: .6em; opacity: .8; color: #2a2140; text-align: right; letter-spacing: .06em; padding: 0 .2em; background: rgba(255, 255, 255, .55); border-radius: .2em; }
+@container (max-width: 140px) { [data-cards="classic"] .cf-flavor { display: none; } [data-cards="classic"] .cf-line { font-size: .8em; } }
+@container (max-width: 92px) { [data-cards="classic"] .cf-line, [data-cards="classic"] .cf-bot small { display: none; } [data-cards="classic"] .cf-art { height: 7.4em; } }
+/* finishes on the classic frame */
+[data-cards="classic"] .v-chrome.cf { background: linear-gradient(160deg, #f4f7fb, #aab4c4) padding-box, linear-gradient(135deg, #fff, #8b95a6 45%, #fff) border-box; }
+[data-cards="classic"] .v-holo.cf { background: linear-gradient(160deg, #f6eefc, #cfe3f5) padding-box, linear-gradient(115deg, #ff4fa8, #ffd23f, #4fffd8, #8a6bff, #ff4fa8) border-box; background-size: 100% 100%, 300% 100%; }
+[data-cards="classic"] .v-gold.cf { background: linear-gradient(160deg, #fff4c8, #e8bd4a) padding-box, linear-gradient(135deg, #fff2a0, #b8860b 50%, #ffe27a) border-box; }
+[data-cards="classic"] .v-negative.cf { background: linear-gradient(160deg, #15101f, #2a1744) padding-box, linear-gradient(135deg, #fff, #888 50%, #fff) border-box; color: #f2eaff; } [data-cards="classic"] .v-negative .cf-top b { color: #00ffd0; } [data-cards="classic"] .v-negative .cf-flavor { background: rgba(0, 0, 0, .55); color: #e8dcff; border-color: #fff; } [data-cards="classic"] .v-negative .cf-bot small { color: #cbb8ff; } [data-cards="classic"] .v-negative .cf-val { background: #000; color: #7cf0a0; }
+[data-cards="classic"] .v-glitch.cf { background: linear-gradient(160deg, #06180f, #1a0630) padding-box, linear-gradient(135deg, #00ffcc, #ff0066 50%, #00ffcc) border-box; color: #e8fff8; } [data-cards="classic"] .v-glitch .cf-top b { color: #fff; } [data-cards="classic"] .v-glitch .cf-flavor { background: rgba(0, 0, 0, .55); color: #d6fff2; border-color: #00ffcc; } [data-cards="classic"] .v-glitch .cf-bot small { color: #9fe8d4; } [data-cards="classic"] .v-glitch .cf-val { background: #000; color: #00ffcc; border-color: #00ffcc; }
+[data-cards="classic"] .cf.locked { filter: saturate(.3); } [data-cards="classic"] .cf.locked .cf-flavor { opacity: .6; }
+.pk-style { display: inline-flex; gap: 4px; align-items: center; font-size: .85em; color: #9fb4e8; }
+[data-cards="classic"] .cf-art img { object-position: 50% 46%; } [data-cards="classic"] .cf-flavor { font-size: .72em; padding: .25em .4em 1em; line-height: 1; }

@@ -11,7 +11,7 @@ Use art that you (or a student) drew, that someone gave you permission to use, o
 Open `/arcade/packs?art=1`, go to the ODDS tab, tap MAKE SHEETS. Or use the ready-made copies in `public/arcade/packs/template/` (`cards.png`, `packs.png`). Paint over them in Aseprite, Piskel, LibreSprite, Photoshop, anything that saves PNG.
 
 ## Card art: `cards.png`
-- Cards are **full-art, portrait 5:7** (like a real trading card). The art fills the entire card; the game floats the name and value on top, a text panel at the bottom, and adds the foil, sparkles and finish effects. So leave the top ~12% calm (title bar) and the bottom ~22% quiet (text panel), and **do not draw frames, text, stars or foil**.
+- Cards are **portrait 5:7** (like a real trading card) and the game has two layouts: **Classic** (framed card: name bar, art window, text box, collector number) and **Full art** (the art fills the card). The same art works for both; Classic crops the middle. In Full art the art fills the entire card; the game floats the name and value on top, a text panel at the bottom, and adds the foil, sparkles and finish effects. So leave the top ~12% calm (title bar) and the bottom ~22% quiet (text panel), and **do not draw frames, text, stars or foil**.
 - A grid, **12 columns**, cells in the order of the table below (left to right, then next row). 72 cells = 6 rows.
 - Every cell is the same **portrait size, 5:7**. The template uses 40x56; 64x90 is a good size. Use whole-pixel art, no blur.
 - Two styles, set in `art.json` with `"transparent"`:

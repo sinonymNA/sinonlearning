@@ -130,3 +130,6 @@ User: make Pack Rush as good as possible, better pack art, sprite sheets, mechan
 
 
 User: wants cards like a full-art holographic trading card (art fills the whole card). Done: CardFace rebuilt (portrait 5:7 full-bleed art, floating name/value, bottom text panel, per-finish foil, star sparkles, pointer-tilt sheen), portrait procedural art, portrait sheet support in loader + build script, portrait ChatGPT prompts, template sheets regenerated.
+
+
+User: does not need holo; wants the Pokemon/trading-card rectangular feel with distinct card arts. Done: Classic trading-card frame as default (name bar, art window, finish strip, flavour text, collector number) with Full art as a toggle; flavour text per card; same art serves both layouts.

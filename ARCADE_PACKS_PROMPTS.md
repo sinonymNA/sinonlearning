@@ -2,6 +2,8 @@
 
 One sheet per pack set = **12 creatures in a 4 columns x 3 rows grid** (4x3, not 4x2, because 4x2 only fits 8). Card art is **portrait 5:7** and the game shows it full-bleed with the name and text floating on top, like a full-art holographic card. Six sheets = all 72 cards. Each prompt below is ready to paste into ChatGPT (use a chat that can generate images).
 
+The game shows cards in two layouts you can switch between: **Classic** (a framed trading card: name bar, art window, text box) and **Full art** (art fills the card). One piece of art serves both, because Classic crops the middle of the portrait picture. That is why every prompt keeps the creature in the middle 55% and the top and bottom calm.
+
 There are two kinds of prompt for each set. **Pick one kind for all six sets** (the game uses one mode at a time):
 - **A. Full card art (recommended).** Each of the 12 cells is a finished tall portrait illustration (5:7, like a trading card): the creature in front of a themed scene filling the whole card. Build with `--scene`.
 - **B. Creature only.** Creatures on a flat colour; the game paints its own scene behind them. Build without `--scene`.

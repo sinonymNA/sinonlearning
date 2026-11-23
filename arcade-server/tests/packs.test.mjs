@@ -7,7 +7,7 @@ import { human } from "../../scripts/packs-econ.mjs";
 test("72 unique creatures, 12 per set with the fixed rarity layout; 6 finishes give 432 album entries", () => {
   assert.equal(CARDS.length, 72); assert.equal(new Set(CARDS.map((c) => c.id)).size, 72); assert.equal(new Set(CARDS.map((c) => c.name)).size, 72); assert.equal(new Set(CARDS.map((c) => c.seed)).size, 72);
   for (let k = 0; k < 6; k++) { const s = CARDS.filter((c) => c.set === k); assert.equal(s.length, SET_SIZE); assert.equal(s.filter((c) => c.rarity === "legendary").length, 1); }
-  assert.equal(VARIANTS.length, 6); assert.equal(ALBUM_TOTAL, 432);
+  assert.equal(VARIANTS.length, 6); assert.equal(ALBUM_TOTAL, 432); for (const c of CARDS) assert.match(c.flavor, /^A [a-z]+ [a-z ]+ from (the (Meadow|Cave|Reef|Sky|Void)|Neon City)\./, c.name);
 });
 
 test("rarity and finish odds sum to 1, luck and shiny shift them, and simulation matches", () => {

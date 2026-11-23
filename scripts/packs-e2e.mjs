@@ -39,7 +39,9 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   await q.click(`[role=tab]:nth-child(1)`); for (let i = 0; i < 4; i++) { await q.locator(".tp").first().click({ force: true }); await q.waitForTimeout(120); }
   check((await q.locator(".pk-combo.on").count()) === 1, `${name}: fast taps light the combo meter`); check((await q.locator(".num").count()) >= 1, `${name}: damage numbers appear`);
   if (["iphone-p", "ipad-l"].includes(name)) await q.screenshot({ path: `${SHOTS}/packs-${name}-combo.png` });
-  await q.click(`[role=tab]:nth-child(5)`); await q.locator(".pk-grid .cf:not(.locked)").nth(11).click(); await q.waitForSelector(".pk-viewer .cf"); if (name === "iphone-p") await q.screenshot({ path: `${SHOTS}/packs-${name}-viewer.png` });
+  await q.click(`[role=tab]:nth-child(5)`); check((await q.locator(".pk-root[data-cards='classic']").count()) === 1, `${name}: classic card style is the default`); if (name === "iphone-p") await q.screenshot({ path: `${SHOTS}/packs-${name}-classic.png` });
+  await q.click("text=FULL ART"); check((await q.locator(".pk-root[data-cards='full']").count()) === 1, `${name}: switch to full art`); if (name === "iphone-p") await q.screenshot({ path: `${SHOTS}/packs-${name}-fullart.png` }); await q.click("text=CLASSIC");
+  await q.locator(".pk-grid .cf:not(.locked)").nth(11).click(); await q.waitForSelector(".pk-viewer .cf"); if (name === "iphone-p") await q.screenshot({ path: `${SHOTS}/packs-${name}-viewer.png` });
   await q.click(".pk-viewer .pk-btn >> text=CLOSE"); await q.click(`[role=tab]:nth-child(6)`); await q.click(".pk-row .pk-btn"); await q.waitForSelector("text=expected"); check(true, `${name}: odds lab runs`);
   await c2.close();
 }
