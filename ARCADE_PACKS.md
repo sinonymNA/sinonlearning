@@ -4,7 +4,7 @@ Route `/arcade/packs`. Engine `arcade-server/packs/` (pure ESM, tested), client 
 
 ## How it plays (v2, rebuilt after feedback that v1 felt like a spreadsheet)
 - **Shop -> table -> tap.** Buy a pack from the shop (stock restocks over time). It lands on your table. **Tap it repeatedly**: each tap damages it (it visibly tears, shakes and sprays foil), and when its HP is gone it bursts and a card pops out, face down, then flips.
-- **Cards**: 72 original creatures in 6 sets (= 6 pack types), each with 6 finishes: Standard, Chrome, Holo, Gold, Negative, Glitch (432 album entries). Each finish has its own look (metal shine, rainbow foil, sparkle, inverted colours, RGB glitch).
+- **Cards are full-art holo style** (art fills the whole 5:7 card; name, value and a text panel float on top; foil, star sparkles and a tilt-with-your-finger sheen over everything; each finish has its own foil). 72 original creatures in 6 sets (= 6 pack types), each with 6 finishes: Standard, Chrome, Holo, Gold, Negative, Glitch (432 album entries). Each finish has its own look (metal shine, rainbow foil, sparkle, inverted colours, RGB glitch).
 - **First copy of a card or finish goes in your album and pays a discovery bonus. Duplicates go to storage (capped) and sell for cash** (Sell All). Full storage sells extras at half price.
 - **Spend cash on**: pack types (unlock), 10 upgrades (tap power, crits, luck, shiny chance, sell price, storage, stock, restock, table slots, bonus card) and 3 staff (Card Opener taps for you, Salesperson sells, Buyer buys). Staff work offline up to 2 hours.
 - **Album bonus**: +1% sell price per finish found. **Odds Lab** shows real chances, average packs to see each outcome, the chance you are *still* waiting, and runs 1,000 packs against the odds.

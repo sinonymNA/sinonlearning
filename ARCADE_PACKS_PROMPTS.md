@@ -1,9 +1,9 @@
 # ChatGPT prompts for the Pack Rush card sheets
 
-One sheet per pack set = **12 creatures in a 4 columns x 3 rows grid** (4x3, not 4x2, because 4x2 only fits 8). Six sheets = all 72 cards. Each prompt below is ready to paste into ChatGPT (use a chat that can generate images).
+One sheet per pack set = **12 creatures in a 4 columns x 3 rows grid** (4x3, not 4x2, because 4x2 only fits 8). Card art is **portrait 5:7** and the game shows it full-bleed with the name and text floating on top, like a full-art holographic card. Six sheets = all 72 cards. Each prompt below is ready to paste into ChatGPT (use a chat that can generate images).
 
 There are two kinds of prompt for each set. **Pick one kind for all six sets** (the game uses one mode at a time):
-- **A. Full card art (recommended).** Each of the 12 cells is a finished little illustration: the creature in front of a themed scene. Build with `--scene`.
+- **A. Full card art (recommended).** Each of the 12 cells is a finished tall portrait illustration (5:7, like a trading card): the creature in front of a themed scene filling the whole card. Build with `--scene`.
 - **B. Creature only.** Creatures on a flat colour; the game paints its own scene behind them. Build without `--scene`.
 
 ## How to use
@@ -27,19 +27,19 @@ There are two kinds of prompt for each set. **Pick one kind for all six sets** (
 ### A. Full card art (recommended), gutter colour: pure magenta #FF00FF
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: a bright sunny meadow: rolling green hills, blue sky with a few small white clouds, tufts of grass and tiny flowers. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: a bright sunny meadow: rolling green hills, blue sky with a few small white clouds, tufts of grass and tiny flowers. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Meadow, a sunny grassland: bunnies, caterpillars, bees, sprouts, flower-and-leaf creatures. Creature colours lean towards greens, yellows, soft pinks and sky blues.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Wobzard (common)
 2. Tambble (common)
 3. Blobun (common)
@@ -99,19 +99,19 @@ ORIGINALITY: every design must be completely original. Do not copy or imitate Po
 ### A. Full card art (recommended), gutter colour: pure magenta #FF00FF
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: a glowing crystal cave: dark rock walls, stalactites, clusters of teal and amber crystals giving off soft light. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: a glowing crystal cave: dark rock walls, stalactites, clusters of teal and amber crystals giving off soft light. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Cave, a glowing crystal cave: rock critters, bats, moles, lizards, gem-backed creatures. Creature colours lean towards warm oranges, browns, amber and a few teal crystal accents.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Pipkin (common)
 2. Pipling (common)
 3. Tamnix (common)
@@ -171,19 +171,19 @@ ORIGINALITY: every design must be completely original. Do not copy or imitate Po
 ### A. Full card art (recommended), gutter colour: pure magenta #FF00FF
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: an underwater coral reef: blue water in pixel bands from light to deep, bubbles, colourful coral, seaweed and a sandy floor. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: an underwater coral reef: blue water in pixel bands from light to deep, bubbles, colourful coral, seaweed and a sandy floor. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Reef, a coral reef: fish, crabs, shells, jellyfish, sea bunnies, bubbly sea creatures. Creature colours lean towards teals, aqua blues, coral orange and sandy yellow.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Wobmoth (common)
 2. Grukin (common)
 3. Pipnix (common)
@@ -243,19 +243,19 @@ ORIGINALITY: every design must be completely original. Do not copy or imitate Po
 ### A. Full card art (recommended), gutter colour: pure magenta #FF00FF
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure magenta (#FF00FF) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure magenta anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: high above the world: a sky gradient in pixel bands, big puffy clouds, a few distant floating islands and tiny birds. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: high above the world: a sky gradient in pixel bands, big puffy clouds, a few distant floating islands and tiny birds. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Sky, high among the clouds: cloud puffs, birds, wind spirits, star-and-lightning creatures. Creature colours lean towards whites, light blues and pale yellows with gold accents.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Wobtuff (common)
 2. Wobkin (common)
 3. Mobun (common)
@@ -315,19 +315,19 @@ ORIGINALITY: every design must be completely original. Do not copy or imitate Po
 ### A. Full card art (recommended), gutter colour: pure bright green #00FF00
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure bright green (#00FF00) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure bright green anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure bright green (#00FF00) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure bright green anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: outer space: a deep purple and black starfield, a soft nebula, a distant ringed planet and a few small moons. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: outer space: a deep purple and black starfield, a soft nebula, a distant ringed planet and a few small moons. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Void, deep space: star critters, moons, comet tails, shadow creatures, creatures with extra eyes. Creature colours lean towards deep purples, indigo and black-blue, with glowing star-white and violet highlights.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Mobble (common)
 2. Gruzard (common)
 3. Krukin (common)
@@ -387,19 +387,19 @@ ORIGINALITY: every design must be completely original. Do not copy or imitate Po
 ### A. Full card art (recommended), gutter colour: pure bright green #00FF00
 
 ```
-Create ONE image: 12 separate square pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. All 12 squares are exactly the same size, with sharp straight edges.
+Create ONE SQUARE image (1:1 aspect ratio) containing 12 separate tall portrait pixel-art illustrations arranged in a grid of 4 columns by 3 rows (4 across, 3 down), read left to right then top to bottom. Each illustration is a portrait rectangle with 5:7 proportions (like a standard trading card, taller than wide). All 12 are exactly the same size, with sharp straight edges and square corners.
 
-LAYOUT: between the squares and around the outside edge leave a flat, solid pure bright green (#00FF00) gutter about 5% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure bright green anywhere inside the illustrations.
+LAYOUT: between the illustrations and around the outside edge leave a flat, solid pure bright green (#00FF00) gutter about 3% of the image width wide. The gutter is only that flat colour: nothing drawn on it. Do not use pure bright green anywhere inside the illustrations.
 
-EACH SQUARE is a complete small scene that fills the whole square edge to edge: one creature in front of a themed background. No frame, no border, no rounded corners, no card layout, no text, no numbers, no labels. The creature is full-body, centred, standing in the lower-middle of the square, about 60 to 70 percent of the square's height, with room above its head.
+EACH ILLUSTRATION is the complete full-bleed artwork for one trading card: one creature in front of a themed background that fills the whole portrait edge to edge. No frame, no border, no card layout, no text, no numbers, no labels, no stars, no sparkles, no rainbow foil or shine effects (the game adds all of those). COMPOSITION: leave the top 12 percent as calm background (a title bar will sit there). The creature is full-body, centred, and big, filling roughly the middle 55 percent of the height. Leave the bottom 22 percent as calm ground or background with no important details (a text panel will cover it).
 
-SCENE: a neon city at night: a glowing grid floor, a skyline of lit-up towers, light streaks and scattered neon signs without readable text. Give each of the 12 squares a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets sparkles, a golden glow or light rays behind the creature.
+SCENE: a neon city at night: a glowing grid floor, a skyline of lit-up towers, light streaks and scattered neon signs without readable text. Give each of the 12 illustrations a slightly different version of this scene (different time of day, angle or props) but the same overall palette. Common cards get a simple background. The legendary card gets a more dramatic, richer background with a golden glow behind the creature.
 
 STYLE: chunky retro pixel art like a 16-bit game. It should look as if each picture was drawn on a tiny 48x48 pixel canvas and enlarged with nearest-neighbor scaling: big, clearly visible square pixels, hard edges, NO anti-aliasing, NO blur, NO smooth gradients. Limited palette of about 16 to 24 colours per picture. A 1-pixel dark outline around every creature. Simple 3-tone shading with light from the top-left. Cute chunky mascot proportions, big expressive eyes with one white highlight pixel. Exactly the same pixel size and the same style for all 12.
 
 THEME: Neon, a neon cyber city at night: glowing circuit-pattern creatures, robot animals, light-up critters. Creature colours lean towards hot pinks, electric cyan, violet and dark navy.
 
-THE 12 CREATURES, in this exact order (square 1 is top-left, square 4 is top-right, square 12 is bottom-right):
+THE 12 CREATURES, in this exact order (illustration 1 is top-left, 4 is top-right, 12 is bottom-right):
 1. Flikin (common)
 2. Kruling (common)
 3. Monix (common)

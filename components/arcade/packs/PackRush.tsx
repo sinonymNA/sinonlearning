@@ -294,7 +294,7 @@ function Inner() {
       {view && (
         <div className="pk-modal" role="dialog" aria-label="Card close-up" onClick={() => setView(null)}>
           <div className="pk-viewer" onClick={(e) => e.stopPropagation()}>
-            <CardFace id={view.id} variant={view.v} value={cardValue(st, CARDS.find((c: any) => c.id === view.id), VARIANTS.findIndex((v: any) => v.id === view.v))} className="big" />
+            <CardFace id={view.id} variant={view.v} value={cardValue(st, CARDS.find((c: any) => c.id === view.id), VARIANTS.findIndex((v: any) => v.id === view.v))} className="big" tilt />
             <div className="pk-vtabs">{VARIANTS.map((v: any, i: number) => { const have = st.dex[view.id]?.vars[i] > 0; return <button key={v.id} className={`pk-btn sm ${view.v === v.id ? "go" : ""}`} disabled={!have} onClick={() => setView({ id: view.id, v: v.id })}>{have ? v.name : "🔒"}</button>; })}</div>
             <button className="pk-btn" onClick={() => setView(null)}>CLOSE</button>
           </div>
@@ -304,7 +304,7 @@ function Inner() {
         <div className="pk-modal" role="dialog" aria-label="Fusion result" onClick={() => setFused(null)}>
           <div className="pk-viewer" onClick={(e) => e.stopPropagation()}>
             <h2>FUSED!</h2><div className="rv-rays on" aria-hidden />
-            <CardFace id={fused.id} variant={fused.variant} value={fused.value} className="big" />
+            <CardFace id={fused.id} variant={fused.variant} value={fused.value} className="big" tilt />
             <p>{fused.isNewVariant ? `New finish for your album! +$${fmt(fused.value * 2)}` : "Added to storage."}</p>
             <button className="pk-btn go" onClick={() => setFused(null)}>NICE</button>
           </div>
@@ -351,7 +351,7 @@ function Reveal({ data }: { data: any }) {
             <div key={i} className="rv-col" style={{ ["--d" as any]: `${i * 120}ms` }}>
               <div className={`rv ${flip ? "flip" : ""}`}>
                 <div className={`rv-back ${hot && !flip ? `hot r-${c.rarity}` : ""}`} style={{ ["--h" as any]: (SETS[card.set] as any).hue, ["--rc" as any]: (RARITIES[ROR[c.rarity]] as any).color }}><span>?</span></div>
-                <div className="rv-front"><CardFace id={c.id} variant={c.variant} value={c.value} /></div>
+                <div className="rv-front"><CardFace id={c.id} variant={c.variant} value={c.value} tilt /></div>
               </div>
               <div className={`rv-tag ${flip ? "on" : ""} ${c.isNewVariant ? "new" : ""}`}>
                 {c.isNewCard ? `NEW CARD! +$${fmt(c.value * 2)}` : c.isNewVariant ? `NEW FINISH! +$${fmt(c.value * 2)}` : c.fate === "stored" ? "Stored for sale" : `Storage full: sold $${fmt(c.value / 2)}`}

@@ -127,3 +127,6 @@ User feedback: Pack Rush felt like a robot idle game; cards were icons. Rebuilt 
 
 User: make Pack Rush as good as possible, better pack art, sprite sheets, mechanics, feel
 - Done: combo, golden packs, fusion lab, orders, layered peeling pack art with light leak, damage numbers, shake, rarity suspense + rays, coin flights, counting cash, pitch-rising tap sound, sprite-sheet loader + template sheets + artist guide (ARCADE_PACKS_ART.md).
+
+
+User: wants cards like a full-art holographic trading card (art fills the whole card). Done: CardFace rebuilt (portrait 5:7 full-bleed art, floating name/value, bottom text panel, per-finish foil, star sparkles, pointer-tilt sheen), portrait procedural art, portrait sheet support in loader + build script, portrait ChatGPT prompts, template sheets regenerated.

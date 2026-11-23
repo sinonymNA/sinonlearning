@@ -11,12 +11,13 @@ Use art that you (or a student) drew, that someone gave you permission to use, o
 Open `/arcade/packs?art=1`, go to the ODDS tab, tap MAKE SHEETS. Or use the ready-made copies in `public/arcade/packs/template/` (`cards.png`, `packs.png`). Paint over them in Aseprite, Piskel, LibreSprite, Photoshop, anything that saves PNG.
 
 ## Card art: `cards.png`
+- Cards are **full-art, portrait 5:7** (like a real trading card). The art fills the entire card; the game floats the name and value on top, a text panel at the bottom, and adds the foil, sparkles and finish effects. So leave the top ~12% calm (title bar) and the bottom ~22% quiet (text panel), and **do not draw frames, text, stars or foil**.
 - A grid, **12 columns**, cells in the order of the table below (left to right, then next row). 72 cells = 6 rows.
-- Every cell is the **same square size**. The template uses 40x40; 48 or 64 is better if you want more detail. Pixel art scales up crisply, so use whole-pixel art, no blur or anti-aliasing.
+- Every cell is the same **portrait size, 5:7**. The template uses 40x56; 64x90 is a good size. Use whole-pixel art, no blur.
 - Two styles, set in `art.json` with `"transparent"`:
   - `false`: each cell is the finished picture, scene and creature together (full control).
-  - `true`: each cell is just the creature on a **transparent** background; the game paints the set's background behind it.
-- The frame, name banner, rarity gem, finishes (chrome, holo, gold, negative, glitch) and sell value are drawn by the game around your picture, so do not draw those.
+  - `true`: each cell is just the creature on a **transparent** background; the game paints the set's scene behind it.
+- `art.json` needs `"cell"` (width) and `"cellH"` (height) for portrait art; the build script writes them for you. Old square art still works (leave `cellH` out).
 
 ## Pack art: `packs.png`
 - One row, **6 packs** side by side in set order (Meadow, Cave, Reef, Sky, Void, Neon). Template cell: 48x64.
@@ -25,7 +26,7 @@ Open `/arcade/packs?art=1`, go to the ODDS tab, tap MAKE SHEETS. Or use the read
 ## `art.json`
 ```json
 {
-  "cards": { "sheet": "cards.png", "cell": 64, "cols": 12, "transparent": true },
+  "cards": { "sheet": "cards.png", "cell": 64, "cellH": 90, "cols": 12, "transparent": false },
   "packs": { "sheet": "packs.png", "w": 48, "h": 64, "cols": 6 }
 }
 ```

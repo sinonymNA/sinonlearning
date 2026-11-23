@@ -109,15 +109,23 @@ function creature(card: { seed: number; rarity: string }, hue: number): HTMLCanv
   return c;
 }
 
-/** The finished 40x40 card picture. */
+export const ART_W = 40, ART_H = 56;   // portrait 5:7: the art fills the whole card
+const TOP = 5;   // the 40x40 scene sits 5 rows down: a little headroom for the card name, the rest of the height (ground) sits under the text panel
+/** The scene only (no creature), portrait: the 40x40 scene with its top and bottom rows stretched into the extra height. */
+function portraitScene(set: number, seed: number): HTMLCanvasElement {
+  const sq = cv(), g0 = sq.getContext("2d")!; background(g0, set, makeRng(seed * 7 + 3));
+  const c = cv(ART_W, ART_H), g = c.getContext("2d")!;
+  g.imageSmoothingEnabled = false; g.drawImage(sq, 0, 0, S, 1, 0, 0, S, TOP); g.drawImage(sq, 0, TOP); g.drawImage(sq, 0, S - 1, S, 1, 0, TOP + S, S, ART_H - TOP - S);
+  return c;
+}
+/** The finished portrait card picture: scene + creature (+ sparkles for the rare ones). */
 export function artUrl(card: { seed: number; set: number; rarity: string }, hue: number): string {
   const key = `a${card.seed}`; const hit = cache.get(key); if (hit) return hit;
-  const c = cv(), g = c.getContext("2d")!, rng = makeRng(card.seed * 7 + 3);
-  background(g, card.set, rng);
-  g.fillStyle = "rgba(0,0,0,.28)"; g.beginPath(); g.ellipse(20, 37, 11, 2.2, 0, 0, 6.3); g.fill();
-  g.drawImage(creature(card, hue), 0, 0);
+  const c = portraitScene(card.set, card.seed), g = c.getContext("2d")!, rng = makeRng(card.seed * 7 + 3);
+  g.fillStyle = "rgba(0,0,0,.28)"; g.beginPath(); g.ellipse(20, 37 + TOP, 11, 2.2, 0, 0, 6.3); g.fill();
+  g.drawImage(creature(card, hue), 0, TOP);
   const sp = card.rarity === "legendary" ? 12 : card.rarity === "epic" ? 6 : 0, col = card.rarity === "legendary" ? "#fff6b0" : "#ead0ff";
-  for (let i = 0; i < sp; i++) { const x = 2 + Math.floor(rng() * 36), y = 2 + Math.floor(rng() * 28); px(g, x, y, col); px(g, x - 1, y, col); px(g, x + 1, y, col); px(g, x, y - 1, col); px(g, x, y + 1, col); }
+  for (let i = 0; i < sp; i++) { const x = 2 + Math.floor(rng() * 36), y = 2 + Math.floor(rng() * 36); px(g, x, y, col); px(g, x - 1, y, col); px(g, x + 1, y, col); px(g, x, y - 1, col); px(g, x, y + 1, col); }
   const url = c.toDataURL(); cache.set(key, url); return url;
 }
 
@@ -165,7 +173,7 @@ export function packArt(set: number, hue: number): PackArt {
 export const packUrl = (set: number, hue: number) => packArt(set, hue).full;
 
 // ---------------------------------------------------------------- sprite sheets (optional): drop art in public/arcade/packs and it replaces the generated art
-export type ArtManifest = { cards?: { sheet: string; cell: number; cols: number; transparent?: boolean }; packs?: { sheet: string; w: number; h: number; cols: number } };
+export type ArtManifest = { cards?: { sheet: string; cell: number; cellH?: number; cols: number; transparent?: boolean }; packs?: { sheet: string; w: number; h: number; cols: number } };
 const loadImg = (src: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("no " + src)); i.src = src; });
 export async function loadArt(cards: { seed: number; set: number }[], sets: { hue: number }[]): Promise<boolean> {
   let used = false;
@@ -174,13 +182,13 @@ export async function loadArt(cards: { seed: number; set: number }[], sets: { hu
     const r = await fetch("/arcade/packs/art.json", { cache: "no-cache", signal: ac.signal }).finally(() => clearTimeout(to)); if (!r.ok) return false;
     const m: ArtManifest = await r.json();
     if (m.cards) {
-      const img = await loadImg("/arcade/packs/" + m.cards.sheet), { cell, cols, transparent } = m.cards;
+      const img = await loadImg("/arcade/packs/" + m.cards.sheet), { cell, cols, transparent } = m.cards, cellH = m.cards.cellH ?? cell;   // cellH > cell = portrait art (5:7 is 64 x 90)
       cards.forEach((c, i) => {
-        const sx = (i % cols) * cell, sy = Math.floor(i / cols) * cell; if (sx + cell > img.width || sy + cell > img.height) return;
-        const cvs = cv(cell, cell), g = cvs.getContext("2d")!; g.imageSmoothingEnabled = false;
-        { const probe = cv(cell, cell).getContext("2d", { willReadFrequently: true })!; probe.drawImage(img, sx, sy, cell, cell, 0, 0, cell, cell); const a = probe.getImageData(0, 0, cell, cell).data; let any = false; for (let k = 3; k < a.length; k += 4) if (a[k] > 8) { any = true; break; } if (!any) return; }   // an empty cell keeps the generated art
-        if (transparent) { const bgc = cv(), bg = bgc.getContext("2d")!; background(bg, c.set, makeRng(c.seed * 7 + 3)); g.imageSmoothingEnabled = false; g.drawImage(bgc, 0, 0, cell, cell); }
-        g.drawImage(img, sx, sy, cell, cell, 0, 0, cell, cell); cache.set(`a${c.seed}`, cvs.toDataURL()); used = true;
+        const sx = (i % cols) * cell, sy = Math.floor(i / cols) * cellH; if (sx + cell > img.width || sy + cellH > img.height) return;
+        const cvs = cv(cell, cellH), g = cvs.getContext("2d")!; g.imageSmoothingEnabled = false;
+        { const probe = cv(cell, cellH).getContext("2d", { willReadFrequently: true })!; probe.drawImage(img, sx, sy, cell, cellH, 0, 0, cell, cellH); const a = probe.getImageData(0, 0, cell, cellH).data; let any = false; for (let k = 3; k < a.length; k += 4) if (a[k] > 8) { any = true; break; } if (!any) return; }   // an empty cell keeps the generated art
+        if (transparent) g.drawImage(portraitScene(c.set, c.seed), 0, 0, cell, cellH);
+        g.drawImage(img, sx, sy, cell, cellH, 0, 0, cell, cellH); cache.set(`a${c.seed}`, cvs.toDataURL()); used = true;
       });
     }
     if (m.packs) {
@@ -197,8 +205,8 @@ export async function loadArt(cards: { seed: number; set: number }[], sets: { hu
 }
 /** Template sheets drawn from the generated art, in exactly the layout loadArt() expects. Handy for artists. */
 export async function makeTemplates(cards: { seed: number; set: number; rarity: string }[], sets: { hue: number }[]) {
-  const cols = 12, rows = Math.ceil(cards.length / cols), c = cv(cols * S, rows * S), g = c.getContext("2d")!;
-  for (let i = 0; i < cards.length; i++) { const im = new Image(); im.src = artUrl(cards[i], sets[cards[i].set].hue); await im.decode(); g.drawImage(im, (i % cols) * S, Math.floor(i / cols) * S); }
+  const cols = 12, rows = Math.ceil(cards.length / cols), c = cv(cols * ART_W, rows * ART_H), g = c.getContext("2d")!;
+  for (let i = 0; i < cards.length; i++) { const im = new Image(); im.src = artUrl(cards[i], sets[cards[i].set].hue); await im.decode(); g.drawImage(im, (i % cols) * ART_W, Math.floor(i / cols) * ART_H); }
   const pc = cv(PACK_W * sets.length, PACK_H), pg = pc.getContext("2d")!; sets.forEach((s, t) => pg.drawImage(drawPack(t, s.hue), t * PACK_W, 0));
   return { cards: c.toDataURL(), packs: pc.toDataURL() };
 }
