@@ -807,3 +807,24 @@
 .th-card { display: grid; gap: 4px; padding: 12px 14px; text-decoration: none; color: #fff; background: linear-gradient(150deg, color-mix(in srgb, var(--t1) 28%, #0a1230), #0a1230 70%); box-shadow: inset 0 0 0 3px var(--t1); transition: transform .12s; } .th-card:hover { transform: translateY(-3px) rotate(-.4deg); box-shadow: inset 0 0 0 3px var(--t2); }
 .th-card b { font-size: 1.5rem; letter-spacing: .1em; color: var(--t2); } .th-card small { font-size: 1.05rem; line-height: 1.05; color: #cfe0ff; opacity: .9; } .th-card em { font-style: normal; font-size: 1rem; letter-spacing: .12em; color: var(--t1); } .th-icon { font-size: 2rem; line-height: 1; }
 .px-play.themed .px-sign { box-shadow: inset 0 0 0 3px var(--t1), 0 0 24px color-mix(in srgb, var(--t1) 35%, transparent); } .px-play.themed .px-signtag { color: var(--t2); } .px-play.themed .px-banner { filter: drop-shadow(0 0 10px var(--t1)); }
+
+/* ---- Hub v2: calm by default, mood shelves, compact cards ---- */
+.hb-calm .hb-in, .hb-calm .hb-head, .hb-calm .hb-shopbody { animation: none; }
+.hb-calm .hb-daily::after, .hb-calm .hb-daily-art, .hb-calm .art-float, .hb-calm .bub, .hb-calm .art-wave, .hb-calm .art-multi .kid, .hb-calm .art-potato, .hb-calm .art-pack, .hb-calm .art-pack .shine, .hb-calm .spark, .hb-calm .hb-game-art { animation: none; }
+.hb-calm .hb-ticker { display: none; }
+.hb-shelves { display: grid; gap: 22px; }
+.hb-shelf { display: grid; gap: 8px; }
+.hb-shelf-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; } .hb-shelf-head h2 { margin: 0; font-family: var(--f-head); font-size: .8rem; letter-spacing: .22em; color: #ffe985; } .hb-shelf-head span { color: #9fb4e8; font-size: .95rem; }
+.hb-cards { display: grid; grid-template-columns: 1fr; gap: 10px; } @media (min-width: 640px) { .hb-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } } @media (min-width: 1000px) { .hb-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hb-card { --edge: #6ee7ff; --c1: #0f4c81; --c2: #0a1f55; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 76px; padding: 10px 14px 10px 10px; color: #fff; text-decoration: none; background: linear-gradient(150deg, var(--c1), var(--c2)); box-shadow: inset 0 0 0 3px var(--edge); transition: transform .12s ease, box-shadow .12s ease; }
+.hb-card:hover, .hb-card:focus-visible { transform: translateY(-2px); box-shadow: inset 0 0 0 3px var(--edge), 0 6px 0 rgba(0, 0, 0, .3); outline: none; } .hb-card:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.hb-card.c-cyan { --edge: #6ee7ff; --c1: #0f4c81; --c2: #0a1f55; } .hb-card.c-pink { --edge: #ff5d9e; --c1: #7a1f6a; --c2: #2a0f55; } .hb-card.c-violet { --edge: #a98bff; --c1: #43309a; --c2: #1d1450; } .hb-card.c-yellow { --edge: #ffd23f; --c1: #7a5a0a; --c2: #2f2305; } .hb-card.c-green { --edge: #86efac; --c1: #166534; --c2: #0a2a1a; }
+.hb-card-art { display: grid; place-items: center; width: 54px; height: 54px; font-size: 1.9rem; background: rgba(0, 0, 0, .25); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .18); }
+.hb-card-body { display: grid; gap: 2px; min-width: 0; } .hb-card-body b { font-family: var(--f-head); font-size: .8rem; letter-spacing: .06em; line-height: 1.3; } .hb-card-body small { color: #d6e6ff; font-size: .95rem; line-height: 1.1; } .hb-card-body em { font-style: normal; color: #9fb4e8; font-size: .85rem; line-height: 1.1; } .hb-card-body em.hot { color: #ffe985; }
+.hb-card-go { color: var(--edge); font-size: .9rem; }
+.hb-more { justify-self: start; background: none; border: 0; padding: 4px 0; color: #9fb4e8; font: inherit; text-decoration: underline; cursor: pointer; } .hb-more:hover { color: #fff; }
+@media (prefers-reduced-motion: reduce) { .hb-card { transition: none; } .hb-card:hover { transform: none; } }
+.hb-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.hb-pill { --edge: #6ee7ff; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 8px 12px; color: #fff; text-decoration: none; background: rgba(10, 18, 56, .85); box-shadow: inset 0 0 0 2px var(--edge); } .hb-pill:hover, .hb-pill:focus-visible { background: rgba(30, 44, 110, .95); outline: none; } .hb-pill:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.hb-pill b { font-family: var(--f-head); font-size: .72rem; letter-spacing: .05em; white-space: nowrap; } .hb-pill small { color: #9fb4e8; font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .hb-pill small.hot { color: #ffe985; }
+.hb-pill.c-cyan { --edge: #6ee7ff; } .hb-pill.c-pink { --edge: #ff5d9e; } .hb-pill.c-violet { --edge: #a98bff; } .hb-pill.c-yellow { --edge: #ffd23f; } .hb-pill.c-green { --edge: #86efac; }

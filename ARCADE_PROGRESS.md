@@ -133,3 +133,6 @@ User: wants cards like a full-art holographic trading card (art fills the whole 
 
 
 User: does not need holo; wants the Pokemon/trading-card rectangular feel with distinct card arts. Done: Classic trading-card frame as default (name bar, art window, finish strip, flavour text, collector number) with Full art as a toggle; flavour text per card; same art serves both layouts.
+
+
+User: more games without overstimulating. Done: catalog-driven hub with mood shelves (max 3 cards each, See all), Continue pills, calm-by-default hub CSS, intro animation once per device, tests + browser check. Not done: teacher class playlist.

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { RECENT_KEY, gameForPath, pushRecent } from "@/lib/arcadeHub";
 import { useCallback, useEffect, useState } from "react";
 import PotatoSvg from "./PotatoSvg";
 import { api } from "./useRoom";
@@ -50,6 +51,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [abyssStreak, setAbyssStreak] = useState(0);
   const [boot, setBoot] = useState(false);
 
+  // remember the last games played on this device, for the hub's Continue row
+  useEffect(() => {
+    const id = gameForPath(path); if (!id) return;
+    try { const cur = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); localStorage.setItem(RECENT_KEY, JSON.stringify(pushRecent(Array.isArray(cur) ? cur : [], id, Date.now()))); } catch { /* storage blocked */ }
+  }, [path]);
+
   const refresh = useCallback(() => {
     api("/api/arcade/economy", { type: "me" }).then(setMe).catch(() => setMe({ signedIn: false }));
     api("/api/arcade/daily", { type: "get" }).then((d) => setStreak(d.state?.streak ?? 0)).catch(() => undefined);
@@ -65,7 +72,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     if (path !== "/arcade") return;
     try {
       const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!calm && !sessionStorage.getItem("arcade:booted")) { sessionStorage.setItem("arcade:booted", "1"); setBoot(true); }
+      if (!calm && !localStorage.getItem("arcade:booted")) { localStorage.setItem("arcade:booted", "1"); setBoot(true); }   // the intro plays once per device, not every visit
     } catch { /* storage blocked: skip the intro */ }
   }, [path]);
 

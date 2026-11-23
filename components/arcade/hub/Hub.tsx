@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import Avatar from "../Avatar";
 import GameArt from "../GameArt";
-import PotatoSvg from "../PotatoSvg";
 import QuickJoin from "../QuickJoin";
 import { PrefsProvider } from "../prefs";
 import { api } from "../useRoom";
-import TiltCard from "./Tilt";
 import { GAME_CATALOG, GAME_IDS } from "@/lib/arcadeCatalog";
+import { HUB_GAMES, RECENT_KEY, shelves, type HubGame, type Recent, type Shelf } from "@/lib/arcadeHub";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 function useHubData() {
   const [me, setMe] = useState<any>(null);
   const [daily, setDaily] = useState<any>(null);
@@ -33,29 +31,67 @@ export const HubTitle = ({ kicker, title, sub }: { kicker: string; title: string
   </header>
 );
 
-/* ---------- animated portal art ---------- */
-function SoloArt() {
+/* ---------- shelves: Continue row + one shelf per mood. Quiet on purpose: one line per game, no chips, no looping animation. ---------- */
+type Status = { text: string; hot?: boolean };
+const rj = (key: string) => { try { return JSON.parse(localStorage.getItem(key) || "null"); } catch { return null; } };
+
+/** What each game can tell you at a glance, read from this device's saves plus the server data the hub already loads. */
+function useStatuses({ daily, ab, me }: { daily: any; ab: any; me: any }): Record<string, Status> {
+  const [local, setLocal] = useState<Record<string, Status>>({});
+  useEffect(() => {
+    const out: Record<string, Status> = {};
+    const pk = rj("packrush:v2")?.st;
+    if (pk?.v === 2 && pk.dex) {
+      const found = Object.values(pk.dex).reduce((n: number, d: any) => n + d.vars.filter((c: number) => c > 0).length, 0), ready = (pk.missions || []).filter((m: any) => m.p >= m.n).length;
+      out.packs = ready ? { text: `${ready} order${ready > 1 ? "s" : ""} ready to claim`, hot: true } : { text: `${found} of 432 found` };
+    }
+    const c = rj("gridiron:career:v1");
+    if (c?.v === 1) out.gridiron = { text: c.phase === "offseason" ? `${c.teamName}: season ${c.season} finished` : `${c.teamName}: season ${c.season}, week ${Math.min(c.week, 7)}` };
+    setLocal(out);
+  }, []);
+  const abToday = ab?.today, dailyDone = !!daily?.state?.done;
+  return {
+    ...local,
+    abyss: { text: !ab?.signedIn ? "Guest play" : !abToday ? "Not played today" : abToday.done ? `Today: ${abToday.depth.toLocaleString("en-US")} m` : "Dive in progress", hot: !!ab?.signedIn && !abToday },
+    daily: { text: dailyDone ? "Done for today" : "Ready to play", hot: !dailyDone },
+    practice: { text: me?.signedIn ? "Earn up to 80 coins a day" : "Sign in to earn coins" },
+  };
+}
+function useRecent(): Recent[] {
+  const [r, setR] = useState<Recent[]>([]);
+  useEffect(() => { const j = rj(RECENT_KEY); if (Array.isArray(j)) setR(j.filter((x: any) => x && typeof x.id === "string" && HUB_GAMES.some((g) => g.id === x.id))); }, []);
+  return r;
+}
+function GameCard({ g, status }: { g: HubGame; status?: Status }) {
   return (
-    <div className="art-solo" aria-hidden>
-      <i className="bub b1" /><i className="bub b2" /><i className="bub b3" /><i className="bub b4" />
-      <div className="art-float"><Avatar id="f-bubbles" size={118} /></div>
-      <span className="art-wave" />
-    </div>
+    <Link href={g.href} className={`hb-card c-${g.color}`}>
+      <span className="hb-card-art" aria-hidden>{g.icon}</span>
+      <span className="hb-card-body"><b>{g.name}</b><small>{g.tagline}</small>{status && <em className={status.hot ? "hot" : ""}>{status.hot ? "● " : ""}{status.text}</em>}</span>
+      <span className="hb-card-go" aria-hidden>▶</span>
+    </Link>
   );
 }
-function MultiArt() {
+function ShelfView({ s, statuses }: { s: Shelf; statuses: Record<string, Status> }) {
+  const [open, setOpen] = useState(false), list = open ? [...s.shown, ...s.more] : s.shown;
   return (
-    <div className="art-multi" aria-hidden>
-      {["rk-sun", "rk-moon", "rk-leaf", "rk-wave"].map((id, i) => <div key={id} className={`kid k${i}`}><Avatar id={id} size={64} /></div>)}
-      <div className="art-potato"><PotatoSvg heat={2} size={74} /></div>
-    </div>
+    <section className="hb-shelf" aria-labelledby={`shelf-${s.id}`}>
+      <div className="hb-shelf-head"><h2 id={`shelf-${s.id}`}>{s.name.toUpperCase()}</h2><span>{s.sub}</span></div>
+      <div className="hb-cards">{list.map((g) => <GameCard key={g.id} g={g} status={statuses[g.id]} />)}</div>
+      {s.more.length > 0 && <button className="hb-more" onClick={() => setOpen((v) => !v)} aria-expanded={open}>{open ? "Show fewer" : `See all ${s.shown.length + s.more.length}`}</button>}
+    </section>
   );
 }
-function ShopArt() {
+function Shelves({ daily, ab, me, hide = [] }: { daily: any; ab: any; me: any; hide?: string[] }) {
+  const statuses = useStatuses({ daily, ab, me }), recent = useRecent(), games = recent.map((r) => HUB_GAMES.find((g) => g.id === r.id)).filter(Boolean).slice(0, 3) as HubGame[];
   return (
-    <div className="art-shop" aria-hidden>
-      <i className="spark s1">✦</i><i className="spark s2">✦</i><i className="spark s3">✧</i>
-      <svg viewBox="0 0 120 150" width="104" className="art-pack"><path d="M8 10 l7 -7 l7 7 l7 -7 l7 7 l7 -7 l7 7 l7 -7 l7 7 l7 -7 l7 7 l7 -7 l7 7 V140 l-7 7 l-7 -7 l-7 7 l-7 -7 l-7 7 l-7 -7 l-7 7 l-7 -7 l-7 7 l-7 -7 l-7 7 l-7 -7 l-7 7 Z" fill="#ffc233" stroke="#14163a" strokeWidth="5" strokeLinejoin="round" /><rect x="20" y="26" width="80" height="98" rx="8" fill="#fff8ea" stroke="#14163a" strokeWidth="4" /><path d="M60 52 l8 17 l19 2 l-14 13 l4 19 l-17 -10 l-17 10 l4 -19 l-14 -13 l19 -2Z" fill="#ff5d9e" stroke="#14163a" strokeWidth="4" strokeLinejoin="round" /><rect className="shine" x="-20" y="10" width="14" height="140" fill="#fff" opacity=".5" /></svg>
+    <div className="hb-shelves">
+      {games.length > 0 && (
+        <section className="hb-shelf hb-cont" aria-labelledby="shelf-continue">
+          <div className="hb-shelf-head"><h2 id="shelf-continue">CONTINUE</h2><span>Pick up where you left off</span></div>
+          <div className="hb-pills">{games.map((g) => <Link key={g.id} href={g.href} className={`hb-pill c-${g.color}`}><span aria-hidden>{g.icon}</span><b>{g.name}</b>{statuses[g.id] && <small className={statuses[g.id].hot ? "hot" : ""}>{statuses[g.id].text}</small>}</Link>)}</div>
+        </section>
+      )}
+      {shelves(HUB_GAMES.filter((g) => !hide.includes(g.id))).map((s) => <ShelfView key={s.id} s={s} statuses={statuses} />)}
     </div>
   );
 }
@@ -70,7 +106,7 @@ export function HubHome() {
   const teacher = me?.role === "teacher";
   return (
     <PrefsProvider>
-      <main className="hb">
+      <main className="hb hb-calm">
         <Stagger i={0} className="hb-hero">
           <div className="hb-welcome">
             <p className="hb-kicker">{me?.signedIn ? "WELCOME BACK" : "WELCOME"}</p>
@@ -84,7 +120,7 @@ export function HubHome() {
           <Link href="/arcade/daily" className={`hb-daily ${doneToday ? "done" : ""}`}>
             <span className="hb-daily-art" aria-hidden>🧩</span>
             <span className="hb-daily-body">
-              <small>DAILY PUZZLE · NEW EVERY DAY</small>
+              <small>DAILY PUZZLE</small>
               <b>{doneToday ? `DONE - ${solved}/${total} SOLVED` : "5 QUICK PUZZLES"}</b>
               <span className="hb-pips">{Array.from({ length: total }, (_, i) => <i key={i} className={results[i] ? (results[i].ok ? "ok" : "miss") : ""} />)}</span>
             </span>
@@ -92,29 +128,7 @@ export function HubHome() {
           </Link>
         </Stagger>
 
-        <div className="hb-portals">
-          <Stagger i={1}><TiltCard href="/arcade/solo" className="hb-portal solo" label="Solo games">
-            <SoloArt />
-            <div className="hb-portal-text"><small>PLAY ON YOUR OWN</small><h2>SOLO GAMES</h2><p>Abyss, practice against bots, Mastery Peak and the daily puzzle.</p></div>
-            <span className="hb-go">ENTER ▶</span>
-          </TiltCard></Stagger>
-          <Stagger i={2}><TiltCard href="/arcade/multiplayer" className="hb-portal multi" label="Multiplayer games">
-            <MultiArt />
-            <div className="hb-portal-text"><small>PLAY WITH THE CLASS</small><h2>MULTIPLAYER</h2><p>Join a room with a code. Seven party games, one winner.</p></div>
-            <span className="hb-go">ENTER ▶</span>
-          </TiltCard></Stagger>
-          <Stagger i={3}><TiltCard href="/arcade/shop" className="hb-portal shop" label="Shop">
-            <ShopArt />
-            <div className="hb-portal-text"><small>SPEND WHAT YOU EARN</small><h2>SHOP</h2><p>Packs, characters and fish. New deals every day.</p></div>
-            <span className="hb-go">ENTER ▶</span>
-          </TiltCard></Stagger>
-        </div>
-
-        <Stagger i={4} className="hb-ticker" >
-          <div className="hb-ticker-track" aria-label="Party games">
-            {[...GAME_IDS, ...GAME_IDS].map((id: string, i: number) => <span key={i} className="hb-tick" style={{ borderColor: GAME_CATALOG[id].color }}><GameArt id={id} size={30} />{GAME_CATALOG[id].name.toUpperCase()}</span>)}
-          </div>
-        </Stagger>
+        <Shelves daily={daily} ab={ab} me={me} hide={["daily"]} />   {/* the daily banner above already covers it */}
 
         {teacher && (
           <Stagger i={5} className="hb-teacher">
@@ -129,37 +143,14 @@ export function HubHome() {
   );
 }
 
-/* ---------- Solo hub ---------- */
+/* ---------- Games page (the Solo tab): the same shelves without the welcome banner ---------- */
 export function SoloHub() {
   const { me, daily, ab } = useHubData();
-  const abToday = ab?.today;
-  const abStatus = !ab?.signedIn ? "Guest play" : !abToday ? "Not played today" : abToday.done ? `Today: ${abToday.depth.toLocaleString("en-US")} m` : "Dive in progress";
-  const dailyDone = !!daily?.state?.done;
-  const games = [
-    { href: "/arcade/abyss", cls: "cyan", art: <Avatar id={ab?.profile?.fish ?? "f-bubbles"} size={92} />, name: "ABYSS", tag: "Daily dive", blurb: "Type rare answers to sink deeper. Daily dives, endless dives, and themed worlds for movies, sports, music, TV and games.", chips: ["⏱ 5 MIN", "🦪 PEARLS"], status: abStatus, good: !!abToday?.done },
-    { href: "/arcade/gridiron", cls: "green", art: <span className="big-emoji">🏈</span>, name: "RETRO GRIDIRON", tag: "Pixel football", blurb: "Call the play, read the defence, throw to A B C D, then run it in. Quick games or a two-minute drill.", chips: ["🏈 VS CPU", "⏱ 5 MIN"], status: "Landscape-friendly. No sign-in needed", good: false },
-    { href: "/arcade/packs", cls: "yellow", art: <span className="big-emoji">🎴</span>, name: "PACK RUSH", tag: "Rip-and-collect", blurb: "Tap packs until they tear open, pull cards in six shiny finishes, sell duplicates, hire staff. 72 creatures, 432 to find.", chips: ["🎴 TAP TO RIP", "💾 SAVES HERE"], status: "Phone, tablet or laptop. No sign-in needed", good: false },
-    { href: "/arcade/solo/practice", cls: "pink", art: <GameArt id="hot_potato" size={92} />, name: "PRACTICE", tag: "Vs bots", blurb: "Play any party game alone against bots. Earn coins for packs.", chips: ["🤖 BOTS", "🪙 COINS"], status: me?.signedIn ? "Earn up to 80 coins a day" : "Sign in to earn coins", good: false },
-    { href: "/arcade/peak", cls: "violet", art: <span className="big-emoji">⛰️</span>, name: "MASTERY PEAK", tag: "Learn it for real", blurb: "Climb a mountain of ideas. Miss one and it teaches you, then asks again.", chips: ["🧠 LEARN", "🚩 SUMMIT"], status: "Set from your teacher or try the starter", good: false },
-    { href: "/arcade/daily", cls: "yellow", art: <span className="big-emoji">🧩</span>, name: "DAILY PUZZLE", tag: "5 puzzles", blurb: "Unscramble, spot the pattern, find the odd one out. Fresh every day.", chips: ["🔥 STREAK", "🪙 COINS"], status: dailyDone ? "Done for today" : "Ready to play", good: dailyDone },
-  ];
   return (
     <PrefsProvider>
-      <main className="hb">
-        <HubTitle kicker="PLAY ON YOUR OWN" title="SOLO GAMES" sub="No room code needed. Pick a game and go." />
-        <div className="hb-grid">
-          {games.map((g, i) => (
-            <Stagger key={g.name} i={i}><TiltCard href={g.href} className={`hb-game ${g.cls}`}>
-              <div className="hb-game-art">{g.art}</div>
-              <div className="hb-game-body">
-                <small>{g.tag.toUpperCase()}</small><h2>{g.name}</h2><p>{g.blurb}</p>
-                <div className="hb-tags">{g.chips.map((c) => <span key={c}>{c}</span>)}</div>
-                <p className={`hb-status ${g.good ? "good" : ""}`}>{g.good ? "✓ " : "● "}{g.status}</p>
-              </div>
-              <span className="hb-go">PLAY ▶</span>
-            </TiltCard></Stagger>
-          ))}
-        </div>
+      <main className="hb hb-calm">
+        <HubTitle kicker="PICK A MOOD" title="GAMES" sub="Everything saves on its own. Pick something and go." />
+        <Shelves daily={daily} ab={ab} me={me} />
       </main>
     </PrefsProvider>
   );
@@ -171,7 +162,7 @@ export function MultiplayerHub() {
   const teacher = me?.role === "teacher";
   return (
     <PrefsProvider>
-      <main className="hb">
+      <main className="hb hb-calm">
         <HubTitle kicker="PLAY WITH THE CLASS" title="MULTIPLAYER" sub="Your teacher starts a room. You join with the code on the board." />
         <div className="hb-two">
           <Stagger i={0} className="hb-panel join">

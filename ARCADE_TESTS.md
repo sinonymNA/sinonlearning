@@ -121,3 +121,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - v2.1 additions covered: combo, golden packs, fusion, orders; browser test also checks lab, fusing, combo meter, damage numbers, orders.
 - `arcade-server/tests/packs.test.mjs` (cards/finishes, odds vs simulation, buy/slots/stock, tap damage and crits, album discovery vs storage vs overflow, selling, unlocks/upgrades/staff, restock and staff jobs, free sample, offline, expected value, determinism, human-speed economy bands).
 - Browser: `node scripts/packs-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (buy, tap damages pack, burst reveals a card on screen, save persists, every tab without overflow, album close-up, odds lab) using a seeded save to show every finish.
+
+## 22. Hub shelves
+- `arcade-server/tests/hub.test.mjs`: catalog valid (unique ids/links, known moods, taglines <= 5 words), every link has a real page, shelf cap and See all, path-to-game mapping, recent list ordering/cap.
+- Browser: `node scripts/hub-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (3 to 4 mood shelves, never more than 3 cards per shelf, no Continue for new visitors, Continue newest first after playing, no looping animations in the hub, no horizontal overflow, intro remembered per device).
