@@ -2,7 +2,7 @@
 
 Short answer: **yes, sprite sheets make the game look much better**, and the game already loads them. Drop PNGs in `public/arcade/packs/`, edit `art.json`, redeploy. No code changes. Anything you do not supply keeps the generated art, so you can replace the art a little at a time.
 
-**Making cards with ChatGPT?** Use the ready-made prompts in `ARCADE_PACKS_PROMPTS.md` (one 4x3 sheet of 12 creatures per pack set) and run `node scripts/packs-art-build.mjs` to turn the sheets in `art-src/` into the `cards.png` the game loads.
+**Making cards with ChatGPT?** Use the ready-made prompts in `ARCADE_PACKS_PROMPTS.md` (one 4x3 sheet of 12 creatures per pack set) and run `node scripts/packs-art-build.mjs --scene` (full card art) or `node scripts/packs-art-build.mjs` (creature only) to turn the sheets in `art-src/` into the `cards.png` the game loads.
 
 ## Only use art you have the rights to
 Use art that you (or a student) drew, that someone gave you permission to use, or that is public-domain/CC0 or licensed for this use. **Do not use art ripped from other games** (Crack the Pack, Balatro, Pokemon...). It would put a school site at legal risk and it is not what we want to ship.
