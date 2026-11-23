@@ -121,16 +121,83 @@ export function artUrl(card: { seed: number; set: number; rarity: string }, hue:
   const url = c.toDataURL(); cache.set(key, url); return url;
 }
 
-/** Pack wrapper art, 36x48: crimped foil, bands, a gem. The set name is drawn by the page so it stays crisp. */
-export function packUrl(set: number, hue: number): string {
-  const key = `p${set}`; const hit = cache.get(key); if (hit) return hit;
-  const W = 36, H = 48, c = cv(W, H), g = c.getContext("2d")!;
-  px(g, 0, 0, hsl(hue, 35, 12), W, H);
-  for (let y = 2; y < H - 2; y++) { const t = (y % 12) / 12; px(g, 2, y, hsl(hue + t * 14, 68, 46 + (1 - t) * 14), W - 4, 1); }
-  for (let y = 4; y < H - 4; y += 12) px(g, 2, y, hsl(hue, 80, 78), W - 4, 1);
-  for (let x = 1; x < W - 1; x += 2) { px(g, x, 1, hsl(hue, 55, 30), 1, 3); px(g, x, H - 4, hsl(hue, 55, 30), 1, 3); px(g, x, 4, hsl(hue, 80, 74), 1, 1); px(g, x, H - 5, hsl(hue, 45, 30), 1, 1); }
-  tri(g, [18, 14], [27, 24], [18, 34], "#fff"); tri(g, [18, 14], [9, 24], [18, 34], "#e6efff"); tri(g, [18, 16], [24, 24], [18, 31], hsl(hue + 20, 80, 55)); tri(g, [18, 16], [12, 24], [18, 31], hsl(hue + 20, 80, 42)); px(g, 16, 19, "#fff", 2, 2);
-  for (let i = 0; i < 6; i++) { const x = 3 + ((i * 7) % 30), y = 6 + ((i * 11) % 36); px(g, x, y, "#ffffffaa"); }
-  g.globalCompositeOperation = "destination-out"; for (const [x, y] of [[0, 0], [W - 1, 0], [0, H - 1], [W - 1, H - 1]]) px(g, x, y, "#000");
-  const url = c.toDataURL(); cache.set(key, url); return url;
+// ---------------------------------------------------------------- packs
+export const PACK_W = 48, PACK_H = 64, FLAP_Y = 15;
+const tearLine = (x: number) => FLAP_Y + ((x * 7) % 5 < 2 ? 1 : 0) + (x % 6 < 3 ? 0 : 2);   // the jagged edge where a pack tears
+
+function drawPack(set: number, hue: number): HTMLCanvasElement {
+  const W = PACK_W, H = PACK_H, c = cv(W, H), g = c.getContext("2d")!;
+  px(g, 0, 0, hsl(hue, 40, 10), W, H);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { // foil body with diagonal sheen
+    const t = y / H, base = 40 + Math.sin(t * Math.PI) * 18, sheen = ((x + y) % 16) < 3 ? 12 : ((x - y + 64) % 22) < 2 ? 8 : 0;
+    px(g, x, y, hsl(hue + (x / W) * 18, 66, base + sheen));
+  }
+  px(g, 3, 6, hsl(hue, 50, 30, 0.55), 1, H - 12); px(g, W - 4, 6, hsl(hue, 50, 30, 0.55), 1, H - 12);              // fold lines
+  for (let x = 1; x < W - 1; x++) { const on = x % 2 === 0; for (let y = 1; y < 6; y++) { px(g, x, y, on ? hsl(hue, 55, 62 - y * 3) : hsl(hue, 55, 28)); px(g, x, H - 1 - y, on ? hsl(hue, 55, 50 - y * 3) : hsl(hue, 55, 24)); } px(g, x, 6, hsl(hue, 80, 80, 0.8)); }
+  // title ribbon (the page prints the set name on top of it)
+  px(g, 2, 42, hsl(hue, 70, 18), W - 4, 10); px(g, 2, 42, hsl(hue, 80, 70), W - 4, 1); px(g, 2, 51, hsl(hue, 60, 10), W - 4, 1);
+  // emblem
+  const cx = 24, cy = 26; blob(g, cx, cy, 13, 13, { main: "#ffffff", shade: "#cfd9ee", light: "#ffffff" }); blob(g, cx, cy, 11, 11, { main: hsl(hue + 12, 70, 40), shade: hsl(hue + 12, 70, 28), light: hsl(hue + 12, 75, 52) });
+  const L = hsl(hue, 90, 85), Y = "#ffd23f";
+  if (set === 0) { blob(g, cx, cy + 1, 5, 8, { main: "#5fd04a", shade: "#2f8f2e", light: "#a8f08a" }); px(g, cx, cy - 6, "#1d6b22", 1, 13); for (let k = -1; k <= 1; k += 2) for (let j = 0; j < 3; j++) px(g, cx + k * (j + 1), cy - 2 + j * 2, "#1d6b22"); blob(g, cx + 6, cy - 7, 2, 2, { main: Y, shade: "#f2b01e", light: "#fff0a0" }); }
+  else if (set === 1) { tri(g, [cx - 7, cy + 8], [cx - 3, cy - 6], [cx, cy + 8], "#7be8ff"); tri(g, [cx - 1, cy + 8], [cx + 3, cy - 9], [cx + 8, cy + 8], "#4cc3ff"); tri(g, [cx - 4, cy + 8], [cx - 2, cy - 2], [cx + 1, cy + 8], "#d9f8ff"); tri(g, [cx + 2, cy + 8], [cx + 3, cy - 5], [cx + 5, cy + 8], "#d9f8ff"); }
+  else if (set === 2) { for (let k = -4; k <= 4; k++) tri(g, [cx, cy + 8], [cx + k * 2.6 - 1.3, cy - 5 + Math.abs(k)], [cx + k * 2.6 + 1.3, cy - 5 + Math.abs(k)], k % 2 ? "#ffd7a8" : "#ff9f6b"); blob(g, cx, cy + 6, 3, 2, { main: "#fff0d8", shade: "#e0b890", light: "#fff" }); }
+  else if (set === 3) { blob(g, cx - 3, cy + 2, 6, 3.5, { main: "#fff", shade: "#cfe0f5", light: "#fff" }); blob(g, cx + 3, cy, 5, 4, { main: "#fff", shade: "#cfe0f5", light: "#fff" }); tri(g, [cx + 1, cy + 3], [cx + 6, cy + 3], [cx + 3, cy + 11], Y); tri(g, [cx + 2, cy + 6], [cx + 7, cy + 6], [cx + 1, cy + 12], "#fff0a0"); }
+  else if (set === 4) { for (let a = 0; a < 18; a += 0.18) { const r = 1 + a * 0.55; px(g, cx + Math.cos(a) * r, cy + Math.sin(a) * r, a > 12 ? "#ffd7ff" : "#c77dff", 2, 2); } px(g, cx - 1, cy - 1, "#fff", 3, 3); }
+  else { tri(g, [cx + 3, cy - 10], [cx - 6, cy + 1], [cx - 0.5, cy + 1], "#ff4fd8"); tri(g, [cx - 3, cy + 10], [cx + 6, cy - 1], [cx + 0.5, cy - 1], "#4ff3ff"); px(g, cx - 1, cy - 1, "#fff", 3, 2); }
+  void L;
+  for (let i = 0; i < 9; i++) { const x = 4 + ((i * 13) % 40), y = 8 + ((i * 17) % 28); if (Math.hypot(x - cx, y - cy) > 14) px(g, x, y, "#ffffffcc"); }
+  px(g, 0, 0, "#000", 1, 1); g.clearRect(0, 0, 1, 1); g.clearRect(W - 1, 0, 1, 1); g.clearRect(0, H - 1, 1, 1); g.clearRect(W - 1, H - 1, 1, 1);
+  return c;
+}
+/** Split a finished pack picture into the flap (top, torn off as you tap) and the body (the rest). Both keep the full size so they line up exactly. */
+function splitPack(full: HTMLCanvasElement) {
+  const W = full.width, H = full.height, k = W / PACK_W, mk = () => cv(W, H), flap = mk(), body = mk(), fg = flap.getContext("2d")!, bg = body.getContext("2d")!;
+  fg.drawImage(full, 0, 0); bg.drawImage(full, 0, 0);
+  for (let x = 0; x < W; x++) { const ly = Math.round(tearLine(Math.floor(x / k)) * k); fg.clearRect(x, ly, 1, H - ly); bg.clearRect(x, 0, 1, ly); }
+  return { flap: flap.toDataURL(), body: body.toDataURL(), full: full.toDataURL() };
+}
+export type PackArt = { flap: string; body: string; full: string };
+export function packArt(set: number, hue: number): PackArt {
+  const key = `P${set}`, hit = cache.get(key); if (hit) return JSON.parse(hit);
+  const art = splitPack(drawPack(set, hue)); cache.set(key, JSON.stringify(art)); return art;
+}
+export const packUrl = (set: number, hue: number) => packArt(set, hue).full;
+
+// ---------------------------------------------------------------- sprite sheets (optional): drop art in public/arcade/packs and it replaces the generated art
+export type ArtManifest = { cards?: { sheet: string; cell: number; cols: number; transparent?: boolean }; packs?: { sheet: string; w: number; h: number; cols: number } };
+const loadImg = (src: string) => new Promise<HTMLImageElement>((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("no " + src)); i.src = src; });
+export async function loadArt(cards: { seed: number; set: number }[], sets: { hue: number }[]): Promise<boolean> {
+  let used = false;
+  try {
+    const ac = new AbortController(), to = setTimeout(() => ac.abort(), 4000);   // never let a missing or slow manifest hold the page
+    const r = await fetch("/arcade/packs/art.json", { cache: "no-cache", signal: ac.signal }).finally(() => clearTimeout(to)); if (!r.ok) return false;
+    const m: ArtManifest = await r.json();
+    if (m.cards) {
+      const img = await loadImg("/arcade/packs/" + m.cards.sheet), { cell, cols, transparent } = m.cards;
+      cards.forEach((c, i) => {
+        const sx = (i % cols) * cell, sy = Math.floor(i / cols) * cell; if (sx + cell > img.width || sy + cell > img.height) return;
+        const cvs = cv(cell, cell), g = cvs.getContext("2d")!; g.imageSmoothingEnabled = false;
+        if (transparent) { const bgc = cv(), bg = bgc.getContext("2d")!; background(bg, c.set, makeRng(c.seed * 7 + 3)); g.imageSmoothingEnabled = false; g.drawImage(bgc, 0, 0, cell, cell); }
+        g.drawImage(img, sx, sy, cell, cell, 0, 0, cell, cell); cache.set(`a${c.seed}`, cvs.toDataURL()); used = true;
+      });
+    }
+    if (m.packs) {
+      const img = await loadImg("/arcade/packs/" + m.packs.sheet), { w, h, cols } = m.packs;
+      sets.forEach((_, t) => {
+        const sx = (t % cols) * w, sy = Math.floor(t / cols) * h; if (sx + w > img.width || sy + h > img.height) return;
+        const cvs = cv(w, h), g = cvs.getContext("2d")!; g.imageSmoothingEnabled = false; g.drawImage(img, sx, sy, w, h, 0, 0, w, h);
+        // custom packs are split by the same torn edge, scaled to their size
+        cache.set(`P${t}`, JSON.stringify(splitPack(cvs))); used = true;
+      });
+    }
+  } catch { /* no custom art: keep the generated art */ }
+  return used;
+}
+/** Template sheets drawn from the generated art, in exactly the layout loadArt() expects. Handy for artists. */
+export async function makeTemplates(cards: { seed: number; set: number; rarity: string }[], sets: { hue: number }[]) {
+  const cols = 12, rows = Math.ceil(cards.length / cols), c = cv(cols * S, rows * S), g = c.getContext("2d")!;
+  for (let i = 0; i < cards.length; i++) { const im = new Image(); im.src = artUrl(cards[i], sets[cards[i].set].hue); await im.decode(); g.drawImage(im, (i % cols) * S, Math.floor(i / cols) * S); }
+  const pc = cv(PACK_W * sets.length, PACK_H), pg = pc.getContext("2d")!; sets.forEach((s, t) => pg.drawImage(drawPack(t, s.hue), t * PACK_W, 0));
+  return { cards: c.toDataURL(), packs: pc.toDataURL() };
 }

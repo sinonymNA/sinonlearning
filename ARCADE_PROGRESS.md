@@ -123,3 +123,7 @@ User: replace the Telatro embed (an unofficial Balatro port) with an original id
 
 User feedback: Pack Rush felt like a robot idle game; cards were icons. Rebuilt as shop -> table -> tap-to-tear packs -> framed cards with 6 finishes -> sell duplicates -> staff.
 - Done: engine v2, parts-based card art, tear/flip/particle UI, album close-ups, odds lab, tests, econ sim, browser smoke. Reboot tree dropped.
+
+
+User: make Pack Rush as good as possible, better pack art, sprite sheets, mechanics, feel
+- Done: combo, golden packs, fusion lab, orders, layered peeling pack art with light leak, damage numbers, shake, rarity suspense + rays, coin flights, counting cash, pitch-rising tap sound, sprite-sheet loader + template sheets + artist guide (ARCADE_PACKS_ART.md).

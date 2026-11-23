@@ -33,6 +33,19 @@ export function sfx(name: "pop" | "good" | "bad" | "boom" | "tick" | "whoosh" | 
   } catch { /* audio is optional */ }
 }
 
+/** One short tone with a chosen pitch (for rising tap-combo sounds). Honours the mute toggle. */
+export function tone(freq: number, dur = 0.05, type: OscillatorType = "square", vol = 0.1) {
+  if (typeof window === "undefined" || current.muted) return;
+  try {
+    audio ??= new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const ctx = audio; if (ctx.state === "suspended") void ctx.resume();
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 0.6, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch { /* audio is optional */ }
+}
+
 const Ctx = createContext<{ prefs: Prefs; set: (p: Partial<Prefs>) => void }>({ prefs: current, set: () => undefined });
 export const usePrefs = () => useContext(Ctx);
 

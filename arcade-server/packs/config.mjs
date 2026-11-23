@@ -58,3 +58,20 @@ export const STAFF = [
   { id: "seller", name: "Salesperson", icon: "🧑‍💼", desc: "Sells your stored duplicates every few seconds.", max: 12, base: 600, growth: 2.4 },
   { id: "buyer", name: "Buyer", icon: "🛒", desc: "Buys your selected pack whenever there is room and stock.", max: 12, base: 900, growth: 2.4 },
 ];
+
+// ---- v2.1: combo, golden packs, fusion, orders
+export const COMBO_WINDOW = 0.6;                 // seconds between taps to keep a combo alive
+export const COMBO_STEP = 0.04, COMBO_MAX = 25;  // +4% tap damage per combo tap, up to x2
+export const GOLDEN_CHANCE = 0.04;               // chance a bought pack turns out golden (+0.4% per Lucky Charm level)
+export const GOLDEN = { hp: 1.6, rarity: 3, shine: 2, extra: 1 };   // golden packs: tougher, rare+ x3, finishes x2, one extra card
+export const FUSE_COST = 3;                      // 3 stored copies of a finish fuse into one copy of the next finish
+export const MISSION_SLOTS = 3;
+/** Orders from the shop. w = reward in "units" (the price of your best unlocked pack) per point of target. */
+export const MISSION_TYPES = [
+  { k: "open", text: (n) => `Tear open ${n} packs`, n: [6, 10, 15], w: 0.8 },
+  { k: "rare", text: (n) => `Pull ${n} Rare or better cards`, n: [2, 3, 5], w: 4 },
+  { k: "shiny", text: (n) => `Pull ${n} cards with a special finish`, n: [2, 3, 4], w: 5 },
+  { k: "sell", text: (n) => `Sell ${n} cards`, n: [8, 12, 20], w: 0.5 },
+  { k: "fuse", text: (n) => (n === 1 ? "Fuse cards once" : `Fuse cards ${n} times`), n: [1, 2, 3], w: 9 },
+  { k: "discover", text: (n) => `Discover ${n} new card finishes`, n: [3, 5, 8], w: 3 },
+];

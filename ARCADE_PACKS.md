@@ -8,6 +8,12 @@ Route `/arcade/packs`. Engine `arcade-server/packs/` (pure ESM, tested), client 
 - **First copy of a card or finish goes in your album and pays a discovery bonus. Duplicates go to storage (capped) and sell for cash** (Sell All). Full storage sells extras at half price.
 - **Spend cash on**: pack types (unlock), 10 upgrades (tap power, crits, luck, shiny chance, sell price, storage, stock, restock, table slots, bonus card) and 3 staff (Card Opener taps for you, Salesperson sells, Buyer buys). Staff work offline up to 2 hours.
 - **Album bonus**: +1% sell price per finish found. **Odds Lab** shows real chances, average packs to see each outcome, the chance you are *still* waiting, and runs 1,000 packs against the odds.
+- **Combo**: tap fast (a tap within 0.6s of the last) and each tap adds +4% damage, up to x2. Staff taps never combo. Damage numbers, crit callouts and a rising-pitch tap sound make it feel good.
+- **Golden packs**: ~4% of bought packs turn out golden: tougher, rare+ x3, finishes x2, one extra card. Shown on the odds screen.
+- **Fusion Lab**: 3 stored copies of a finish fuse into 1 copy of the next finish (Standard > Chrome > Holo > Gold > Negative > Glitch). Deterministic, no luck.
+- **Orders**: three shop orders at a time (tear open N packs, pull N rare cards, sell N cards, fuse, discover finishes). Rewards scale with your best unlocked pack.
+- **Feel**: packs visibly peel (flap lifts, light leaks), particles and screen shake scale with rarity, rare cards glow through their back and flip after a suspense beat, coins fly to your cash on a sale, cash counts up.
+- **Art**: parts-based generated creatures and packs, or your own sprite sheets (see `ARCADE_PACKS_ART.md`).
 - Never stuck: if you are broke with nothing to open or sell, a free sample pack arrives after 6 seconds.
 - Keys on desktop: 1-8 tap a slot, Space taps the weakest, B buys, S sells.
 
@@ -19,7 +25,7 @@ Route `/arcade/packs`. Engine `arcade-server/packs/` (pure ESM, tested), client 
 ## Honest limits
 - Balance is tuned against a bot. A perfect player finishes the pack types in roughly 1.5 hours; real players will be slower. Expect to retune after real play.
 - Procedural art has a ceiling: some creatures look odd. Hand-drawn art would be better if you have an artist (a student!).
-- Not built yet from the Crack-the-Pack inspiration: museum, card battles, fusion lab, cloning, 50/50 packs (skipped on purpose: gambling flavour on a school site). Reboot/prestige from v1 was dropped in the rebuild.
+- Not built yet from the Crack-the-Pack inspiration: museum, card battles, cloning, 50/50 packs (skipped on purpose: gambling flavour on a school site). Reboot/prestige from v1 was dropped in the rebuild.
 - Saves are per browser: clearing site data deletes progress.
 - Verified in headless Chromium at six viewports (iPhone/iPad both orientations, laptop, 320px phone); not on physical devices.
 - Next planned: Fantasy Football idle game on the same engine pattern.

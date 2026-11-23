@@ -1,12 +1,12 @@
 // Economy simulator for Pack Rush v2: a human who taps ~4 times a second, buys packs, sells duplicates and shops for upgrades.
 // Usage: node scripts/packs-econ.mjs [minutes] [seed] [tapsPerSecond]
-import { newState, advance, hit, buyPack, unlockTier, sellAll, buyUpgrade, hire, upgradeCost, freeSlot, mods, albumCount, ALBUM_TOTAL, dupeCount, packPrice } from "../arcade-server/packs/engine.mjs";
+import { newState, advance, hit, claimMission, buyPack, unlockTier, sellAll, buyUpgrade, hire, upgradeCost, freeSlot, mods, albumCount, ALBUM_TOTAL, dupeCount, packPrice } from "../arcade-server/packs/engine.mjs";
 import { SETS, UPGRADES, STAFF, MAX_SLOTS } from "../arcade-server/packs/config.mjs";
 
 export function human(seed, seconds, { cps = 4 } = {}) {
   const st = newState(seed), log = {}; let cheapest;
   for (let s = 0; s < seconds; s++) {
-    advance(st, 1);
+    advance(st, 0.001);
     // shopping: unlock the next pack, hire staff, upgrades; whichever is cheapest and costs under 40% of cash
     cheapest = null;
     const nextTier = st.unlocked.indexOf(false);
@@ -21,11 +21,13 @@ export function human(seed, seconds, { cps = 4 } = {}) {
     let t = SETS.length - 1; while (t > 0 && (!st.unlocked[t] || packPrice(t) > st.cash * 0.7 || st.stock[t] < 1)) t--;
     st.tier = Math.max(st.tier, 0); st.tier = t;
     for (let k = 0; k < cps; k++) {
+      advance(st, 1 / cps);
       const free = freeSlot(st); if (free >= 0) { try { buyPack(st, t); } catch { /* broke or out of stock */ } }
       let best = -1; for (let i = 0; i < MAX_SLOTS; i++) if (st.table[i] && (best < 0 || st.table[i].hp < st.table[best].hp)) best = i;
       if (best >= 0) hit(st, best);
     }
     if (s % 4 === 0 || dupeCount(st) >= mods(st).cap) sellAll(st);
+    for (let i = st.missions.length - 1; i >= 0; i--) if (st.missions[i].p >= st.missions[i].n) claimMission(st, i);   // a human collects finished orders
     if (albumCount(st) >= ALBUM_TOTAL * 0.25) log.album25 ??= s;
   }
   return { st, log };
