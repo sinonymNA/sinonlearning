@@ -177,3 +177,26 @@
 .cg-calm .hm-cloud, .cg-calm .hm-spark { display: none; }
 @media (prefers-reduced-motion: reduce) { .hm *, .cg-banner span, .cg-combo, .cg-cell.rip, .mp-me.arrive, .cg-chips span, .cg-dots i, .cg-fish img.gain { animation: none !important; } .hm-cloud, .hm-spark { display: none; } }
 .hm-shop, .hm-stats > span { min-height: 40px; } .hm-shop { min-height: 44px; }
+
+/* ---- v5: a fuller, livelier map: textured worlds, a real road, scattered scenery, weather, cats to meet ---- */
+.mp-area { background: var(--tile) 0 0 / 72px 72px, linear-gradient(180deg, var(--sky), var(--ground)); image-rendering: pixelated; }
+.mp-track { max-width: none; }
+.mp-prop { opacity: 1; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .16)); } .mp-prop.hero { filter: drop-shadow(0 6px 0 rgba(0, 0, 0, .22)); }
+.mp-road { position: absolute; inset: 0; pointer-events: none; overflow: visible; } .mp-road path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mp-road .b { stroke: rgba(40, 24, 10, .38); stroke-width: 32; } .mp-road .r { stroke: color-mix(in srgb, var(--accent) 20%, #f3e6c4); stroke-width: 24; } .mp-road .c { stroke: rgba(255, 255, 255, .75); stroke-width: 3; stroke-dasharray: 8 12; }
+.mp-node { z-index: 3; } .mp-stars { z-index: 3; }
+.mp-flag { position: absolute; left: -30px; top: -14px; width: 22px; height: auto; pointer-events: none; image-rendering: pixelated; transform-origin: 10% 100%; animation: mp-wave 2s ease-in-out infinite; } @keyframes mp-wave { 50% { transform: skewY(-6deg); } }
+.mp-npc { position: absolute; transform: translate(-50%, -100%); width: 52px; padding: 0; background: none; border: 0; z-index: 2; }
+.mp-npc img { width: 52px; height: auto; image-rendering: pixelated; display: block; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .3)); animation: mp-nbob 2.6s ease-in-out infinite; } .mp-npc:nth-of-type(even) img { animation-delay: -1.1s; }
+.mp-npc.talk img { animation: mp-nhop .5s cubic-bezier(.3, 1.6, .5, 1); } @keyframes mp-nbob { 50% { transform: translateY(-3px) scale(1.02, .98); } } @keyframes mp-nhop { 0% { transform: none; } 40% { transform: translateY(-16px) scale(.95, 1.1); } 100% { transform: none; } }
+.mp-say { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: max-content; max-width: 150px; margin-bottom: 8px; padding: 5px 9px; background: #fffaf0; color: #1c1630; line-height: 1.05; text-align: center; box-shadow: 0 0 0 3px #1c1630, 0 4px 0 3px rgba(0, 0, 0, .3); z-index: 6; animation: hm-bubble .3s cubic-bezier(.2, 1.5, .4, 1) both; pointer-events: none; }
+.mp-fx { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; } .mp-fx i { position: absolute; width: calc(var(--s) * 4px); height: calc(var(--s) * 4px); opacity: .85; }
+.fx-petal i, .fx-snow i, .fx-crumb i { top: -12px !important; animation: fx-fall var(--t) linear var(--d) infinite; } .fx-petal i { background: #ffb3d0; border-radius: 70% 0; } .fx-snow i { background: #fff; border-radius: 50%; } .fx-crumb i { background: #8a5a2b; }
+.fx-bubble i { top: auto !important; bottom: -12px; border: 2px solid #ffffffcc; border-radius: 50%; animation: fx-rise var(--t) linear var(--d) infinite; }
+.fx-dust i { background: #f0d29a; border-radius: 50%; animation: fx-drift calc(var(--t) * 2) linear var(--d) infinite; }
+.fx-glow i, .fx-spark i { border-radius: 50%; animation: fx-twinkle calc(var(--t) / 2) ease-in-out var(--d) infinite; } .fx-glow i { background: #ffef7a; box-shadow: 0 0 8px 3px #ffef7aaa; } .fx-spark i { background: #fff3a0; box-shadow: 0 0 6px 2px #ffd23fcc; border-radius: 0; transform: rotate(45deg); }
+@keyframes fx-fall { 0% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(14px, 450px) rotate(180deg); } 100% { transform: translate(-6px, 900px) rotate(360deg); opacity: .2; } }
+@keyframes fx-rise { from { transform: translate(0, 0); } 50% { transform: translate(10px, -450px); } to { transform: translate(-4px, -900px); opacity: .2; } }
+@keyframes fx-drift { from { transform: translateX(-40px); } to { transform: translateX(110vw); } } @keyframes fx-twinkle { 0%, 100% { opacity: 0; transform: scale(.3); } 50% { opacity: 1; transform: scale(1); } }
+.cg-calm .mp-fx, .cg-calm .mp-flag { display: none; } .cg-calm .mp-npc img { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .mp-fx { display: none; } .mp-npc img, .mp-flag { animation: none !important; } }

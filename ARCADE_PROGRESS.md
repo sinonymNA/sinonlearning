@@ -148,3 +148,6 @@ User: swipe to draw X's; the X marks did not look like X's; candy-crush style ma
 
 
 User: significant upgrades (difficulty, power-ups, level generation, animation, gameplay, a home screen). Done: Home screen; Daily Puzzle with streaks; Endless (size x difficulty); Sweep and Sardine power-ups + yarn shop; combo, speed bolt, ripple and win-banner animations; generator region styles per world (levels rebuilt); the pixel font name fixed for Meowdoku.
+
+
+User: improve the Meowdoku map so it is more fun and fills the blank space. Done: ground textures, a real road, scattered props/decor/landmarks sized to the screen, per-world weather, tappable cats that talk, checkpoint flags.

@@ -75,3 +75,11 @@ export function makeLogo(scale = 8): string {
   for (let x = 4; x <= 43; x++) if (inside(x, 3)) px(g, x, 3, "rgba(255,255,255,.35)");   // gloss
   const out = cv(S * scale, S * scale), og = out.getContext("2d")!; og.imageSmoothingEnabled = false; og.drawImage(c, 0, 0, S * scale, S * scale); return out.toDataURL();
 }
+
+/** The same cat in another coat (0 tuxedo, 1 orange tabby, 2 grey, 3 cream, 4 brown) for the cats you meet on the map. */
+const COATS: [string, string][] = [["#25253a", "#3b3b58"], ["#e8903a", "#f4b86a"], ["#7c8196", "#a4a9bd"], ["#e8d3a8", "#f6e8c8"], ["#8a5a3a", "#aa7a56"]];
+export function npcCatUrl(coat: number, mood: Mood = "normal"): string {
+  const key = `npc:${coat}:${mood}`, hit = cache.get(key); if (hit) return hit; const c = catCanvas(mood), g = c.getContext("2d")!, d = g.getImageData(0, 0, c.width, c.height), a = d.data, hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), [d1, d2] = [hex(COATS[0][0]), hex(COATS[0][1])], [n1, n2] = [hex(COATS[coat % 5][0]), hex(COATS[coat % 5][1])];
+  for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; const m = (t: number[]) => a[i] === t[0] && a[i + 1] === t[1] && a[i + 2] === t[2]; if (m(d1)) { a[i] = n1[0]; a[i + 1] = n1[1]; a[i + 2] = n1[2]; } else if (m(d2)) { a[i] = n2[0]; a[i + 1] = n2[1]; a[i + 2] = n2[2]; } }
+  g.putImageData(d, 0, 0); const url = c.toDataURL(); cache.set(key, url); return url;
+}

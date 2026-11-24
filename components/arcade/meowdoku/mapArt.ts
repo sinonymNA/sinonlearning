@@ -83,3 +83,36 @@ export const cloudUrl = () => icon("cloud", 32, 12, (g) => { ell(g, 9, 8, 7, 3.6
 export const sparkUrl = () => icon("spark", 9, 9, (g) => { R(g, 4, 0, 1, 9, "#fff6b8"); R(g, 0, 4, 9, 1, "#fff6b8"); R(g, 3, 3, 3, 3, "#ffffff"); });
 /** A lightning bolt (the speed badge), 9x13. */
 export const boltUrl = () => icon("bolt", 9, 13, (g) => { tri(g, [5.5, 0], [0.5, 7], [4.5, 7], "#ffe66d"); tri(g, [4.5, 5.5], [8.5, 5.5], [3, 13], "#ffd23f"); });
+
+// ---- extra map scenery: small decor in each world's palette, a repeating ground tile, a checkpoint flag
+type Pal = { g1: string; g2: string; f1: string; f2: string; r: string };
+const PAL: Pal[] = [
+  { g1: "#4f9a3a", g2: "#78c25a", f1: "#ff8fb3", f2: "#ffd23f", r: "#b8b8c8" }, { g1: "#3f9b3f", g2: "#5fbb4f", f1: "#ffffff", f2: "#ff7ab5", r: "#b8c0d8" },
+  { g1: "#ff9ec4", g2: "#ffe3f1", f1: "#ffffff", f2: "#ff6fa5", r: "#ffb3cf" }, { g1: "#1f6a3a", g2: "#3fbf6a", f1: "#b57bff", f2: "#7cf0c0", r: "#2f5a4a" },
+  { g1: "#c4743a", g2: "#e8b373", f1: "#ff8fb3", f2: "#ffffff", r: "#a0642d" }, { g1: "#e8c878", g2: "#ffe6a8", f1: "#ff8fb3", f2: "#ffffff", r: "#8fe0ff" },
+  { g1: "#b88246", g2: "#d8b27a", f1: "#ffd23f", f2: "#e8703a", r: "#8a5a2b" }, { g1: "#cfe0ff", g2: "#ffffff", f1: "#8fd0ff", f2: "#ffffff", r: "#9fb4d8" },
+  { g1: "#3a3a7a", g2: "#5a5aa0", f1: "#ffd23f", f2: "#ff9f1c", r: "#4a4a7a" }, { g1: "#e8c14a", g2: "#f5d36a", f1: "#ff4d6d", f2: "#ffffff", r: "#d8d8e8" },
+];
+const tuft = (p: Pal): Prop => ({ w: 11, h: 9, draw: (g) => { for (const [x, h, c] of [[1, 5, p.g1], [4, 8, p.g2], [7, 6, p.g1], [9, 4, p.g2]] as [number, number, string][]) R(g, x, 9 - h, 2, h, c); } });
+const bloom = (p: Pal): Prop => ({ w: 11, h: 11, draw: (g) => { for (const [x, y] of [[5, 1], [1, 5], [9, 5], [5, 9]]) ell(g, x, y, 1.9, 1.9, p.f1); ell(g, 5, 5, 2, 2, p.f2); R(g, 5, 7, 1, 4, p.g1); } });
+const pebble = (p: Pal): Prop => ({ w: 12, h: 8, draw: (g) => { ell(g, 6, 5, 5.5, 3, p.r, "#00000033"); px(g, 3, 3, "#ffffff66", 3, 1); } });
+const bush = (p: Pal): Prop => ({ w: 20, h: 13, draw: (g) => { ell(g, 6, 8, 5.5, 4.5, p.g1, "#00000022"); ell(g, 14, 8, 5.5, 4.5, p.g1, "#00000022"); ell(g, 10, 6, 6.5, 5.5, p.g2, p.g1); px(g, 7, 4, p.f1, 2, 2); px(g, 13, 6, p.f2, 2, 2); } });
+const gem = (p: Pal): Prop => ({ w: 10, h: 10, draw: (g) => { tri(g, [5, 0], [0, 5], [10, 5], p.f2); tri(g, [0, 5], [10, 5], [5, 10], p.f1); } });
+/** Small decor sprites for a world (tufts, blooms, pebbles, bushes, gems). */
+export function decorUrl(area: number, i: number): { src: string; w: number; h: number } {
+  const p = PAL[area % 10], list = [tuft(p), bloom(p), pebble(p), bush(p), tuft(p), gem(p)], k = i % list.length, key = `d${area}:${k}`, d = list[k], hit = cache.get(key);
+  if (hit) return { src: hit, w: d.w, h: d.h };
+  const c = cv(d.w, d.h), g = c.getContext("2d")!; d.draw(g); outline(c); const src = c.toDataURL(); cache.set(key, src); return { src, w: d.w, h: d.h };
+}
+/** A 24x24 repeating ground texture for a world: a few specks in the world's colours (the CSS tiles it). */
+export function tileUrl(area: number): string {
+  const key = `tile${area}`, hit = cache.get(key); if (hit) return hit;
+  const p = PAL[area % 10], c = cv(24, 24), g = c.getContext("2d")!; let s = 1234 + area * 77; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < 16; i++) { const x = Math.floor(rnd() * 22), y = Math.floor(rnd() * 22), k = i % 3; g.globalAlpha = 0.5; px(g, x, y, k === 0 ? p.g2 : k === 1 ? p.g1 : "#ffffff", k === 1 ? 2 : 1, k === 2 ? 1 : 2); }
+  if (area === 5) { g.globalAlpha = 0.35; for (let x = 0; x < 24; x += 6) px(g, x, 8 + (x % 12 ? 0 : 2), "#ffffff", 4, 1); }   // wave ripples on the shores
+  if (area === 6) { g.globalAlpha = 0.25; for (let y = 0; y < 24; y += 4) px(g, 0, y, "#5a3d1d", 24, 1); }                               // cardboard corrugation
+  if (area === 9) { g.globalAlpha = 0.18; for (let i = 0; i < 24; i += 12) for (let j = 0; j < 24; j += 12) px(g, i, j, "#ffffff", 6, 6); }  // checker tiles
+  g.globalAlpha = 1; const url = c.toDataURL(); cache.set(key, url); return url;
+}
+/** A little checkpoint flag, 12x16. */
+export const flagUrl = () => icon("flag", 12, 16, (g) => { R(g, 1, 0, 2, 16, "#8a5a2b"); tri(g, [3, 1], [3, 8], [11, 4.5], "#ff4d6d"); });
