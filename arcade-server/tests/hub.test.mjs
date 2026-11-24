@@ -5,6 +5,10 @@ import { HUB_GAMES, MOODS, MAX_VISIBLE, shelves, gameForPath, pushRecent, valida
 
 test("the catalog is valid: unique ids and links, known moods, taglines of at most 5 words", () => { assert.deepEqual(validateCatalog(), []); });
 
+test("every hub image icon exists in public/", () => {
+  for (const g of HUB_GAMES) if (g.icon.startsWith("/")) assert.ok(fs.existsSync(new URL(`../../public${g.icon}`, import.meta.url)), `${g.icon} is missing: run its logo script`);
+});
+
 test("every hub link points at a real page", () => {
   for (const g of HUB_GAMES) assert.ok(fs.existsSync(new URL(`../../app${g.href}/page.tsx`, import.meta.url)), `${g.href} has no page.tsx`);
 });

@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       { source: "/teaching-lab", destination: "/teachers", permanent: true },
       { source: "/teaching-lab/:path*", destination: "/teachers", permanent: true },
       { source: "/classboard", destination: "/dash", permanent: true },
+      { source: "/arcade/catgrid", destination: "/arcade/meowdoku", permanent: true },   // the game was first called Cat Grid
     ];
   },
 };

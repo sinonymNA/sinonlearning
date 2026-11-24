@@ -9,7 +9,7 @@ import { api } from "../useRoom";
 import { GAME_CATALOG, GAME_IDS } from "@/lib/arcadeCatalog";
 import { HUB_GAMES, RECENT_KEY, shelves, type HubGame, type Recent, type Shelf } from "@/lib/arcadeHub";
 
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
+/* eslint-disable @next/next/no-img-element, @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 function useHubData() {
   const [me, setMe] = useState<any>(null);
   const [daily, setDaily] = useState<any>(null);
@@ -65,7 +65,7 @@ function useRecent(): Recent[] {
 function GameCard({ g, status }: { g: HubGame; status?: Status }) {
   return (
     <Link href={g.href} className={`hb-card c-${g.color}`}>
-      <span className="hb-card-art" aria-hidden>{g.icon}</span>
+      <span className="hb-card-art" aria-hidden>{g.icon.startsWith("/") ? <img src={g.icon} alt="" draggable={false} /> : g.icon}</span>
       <span className="hb-card-body"><b>{g.name}</b><small>{g.tagline}</small>{status && <em className={status.hot ? "hot" : ""}>{status.hot ? "● " : ""}{status.text}</em>}</span>
       <span className="hb-card-go" aria-hidden>▶</span>
     </Link>
@@ -88,7 +88,7 @@ function Shelves({ daily, ab, me, hide = [] }: { daily: any; ab: any; me: any; h
       {games.length > 0 && (
         <section className="hb-shelf hb-cont" aria-labelledby="shelf-continue">
           <div className="hb-shelf-head"><h2 id="shelf-continue">CONTINUE</h2><span>Pick up where you left off</span></div>
-          <div className="hb-pills">{games.map((g) => <Link key={g.id} href={g.href} className={`hb-pill c-${g.color}`}><span aria-hidden>{g.icon}</span><b>{g.name}</b>{statuses[g.id] && <small className={statuses[g.id].hot ? "hot" : ""}>{statuses[g.id].text}</small>}</Link>)}</div>
+          <div className="hb-pills">{games.map((g) => <Link key={g.id} href={g.href} className={`hb-pill c-${g.color}`}><span aria-hidden>{g.icon.startsWith("/") ? <img src={g.icon} alt="" className="hb-pill-img" draggable={false} /> : g.icon}</span><b>{g.name}</b>{statuses[g.id] && <small className={statuses[g.id].hot ? "hot" : ""}>{statuses[g.id].text}</small>}</Link>)}</div>
         </section>
       )}
       {shelves(HUB_GAMES.filter((g) => !hide.includes(g.id))).map((s) => <ShelfView key={s.id} s={s} statuses={statuses} />)}

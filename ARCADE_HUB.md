@@ -10,7 +10,7 @@
 - **Calm by default**: hub pages carry `hb-calm`, which turns off the stagger-in, wobbling art, sweeps and the marquee. The first-time intro animation now plays once per device instead of every session.
 
 ## Adding a game (the only step)
-Add one entry to `arcade-server/hub.mjs` (`HUB_GAMES`): `id`, `href`, `name`, `mood`, `tagline` (**max 5 words**), `minutes`, `icon`, `color`, optional `match` (extra paths that count as playing it). The hub, Home, Games page and Continue row pick it up. `npm run arcade:test` fails if the mood is unknown, the tagline is too long, a link has no page, or ids/links repeat.
+Add one entry to `arcade-server/hub.mjs` (`HUB_GAMES`): `id`, `href`, `name`, `mood`, `tagline` (**max 5 words**), `minutes`, `icon` (an emoji, or a path like `/arcade/meowdoku-logo.png` for an image), `color`, optional `match` (extra paths that count as playing it). The hub, Home, Games page and Continue row pick it up. `npm run arcade:test` fails if the mood is unknown, the tagline is too long, a link has no page, or ids/links repeat.
 - Do not add a new top-level card or tile anywhere else.
 - A shelf with more than 3 games is fine (extras go behind "See all"), but ask whether an old game should retire instead.
 - Fantasy football (planned) goes on the Sports shelf.

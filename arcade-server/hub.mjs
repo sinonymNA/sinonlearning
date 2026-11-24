@@ -9,13 +9,14 @@ export const MOODS = [
   { id: "brain", name: "Brain", sub: "Think it through, learn something" },
   { id: "party", name: "Party", sub: "Against bots now, with your class when a room opens" },
 ];
-/** match = extra path prefixes that count as "playing this game" for the Continue row. */
+/** icon: an emoji, or a path starting with "/" for an image (shown pixelated).
+ *  match = extra path prefixes that count as "playing this game" for the Continue row. */
 export const HUB_GAMES = [
   { id: "packs", href: "/arcade/packs", name: "Pack Rush", mood: "chill", tagline: "Rip packs, collect cards", minutes: "5+", icon: "🎴", color: "yellow", match: [] },
   { id: "daily", href: "/arcade/daily", name: "Daily Puzzle", mood: "chill", tagline: "Five quick puzzles", minutes: "3", icon: "🧩", color: "yellow", match: [] },
   { id: "gridiron", href: "/arcade/gridiron", name: "Retro Gridiron", mood: "sports", tagline: "Pixel football, call the plays", minutes: "5+", icon: "🏈", color: "green", match: [] },
   { id: "abyss", href: "/arcade/abyss", name: "Abyss", mood: "brain", tagline: "Rare answers, deeper dives", minutes: "5", icon: "🌊", color: "cyan", match: [] },
-  { id: "catgrid", href: "/arcade/catgrid", name: "Cat Grid", mood: "brain", tagline: "Place cats, no touching", minutes: "3+", icon: "🐱", color: "pink", match: [] },
+  { id: "meowdoku", href: "/arcade/meowdoku", name: "Meowdoku", mood: "brain", tagline: "Place cats, no touching", minutes: "3+", icon: "/arcade/meowdoku-logo.png", color: "pink", match: [] },
   { id: "peak", href: "/arcade/peak", name: "Mastery Peak", mood: "brain", tagline: "Climb by learning it", minutes: "10", icon: "⛰️", color: "violet", match: [] },
   { id: "practice", href: "/arcade/solo/practice", name: "Practice", mood: "party", tagline: "Party games against bots", minutes: "3", icon: "🥔", color: "pink", match: [] },
   { id: "class", href: "/arcade/multiplayer", name: "Class Games", mood: "party", tagline: "Join with a room code", minutes: "5-20", icon: "👥", color: "pink", match: ["/arcade/join", "/arcade/room"] },

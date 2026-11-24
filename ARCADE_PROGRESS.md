@@ -138,4 +138,7 @@ User: does not need holo; wants the Pokemon/trading-card rectangular feel with d
 User: more games without overstimulating. Done: catalog-driven hub with mood shelves (max 3 cards each, See all), Continue pills, calm-by-default hub CSS, intro animation once per device, tests + browser check. Not done: teacher class playlist.
 
 
-User: build a Meowdoku-style game in our pixel style. Done: Cat Grid (/arcade/catgrid): generator with unique-solution repair, 200 pre-built levels, teaching hint engine, original pixel cats and fish, responsive board 5x5 to 9x9, hub Brain shelf entry, tests and browser check.
+User: build a Meowdoku-style game in our pixel style. Done: Meowdoku (/arcade/meowdoku): generator with unique-solution repair, 200 pre-built levels, teaching hint engine, original pixel cats and fish, responsive board 5x5 to 9x9, hub Brain shelf entry, tests and browser check.
+
+
+User feedback on Meowdoku (iPhone): too hard, double-tap unreliable, not smooth, rename + pixel logo. Done: difficulty tiers and a gentle 4x4 start (levels rebuilt), deterministic gestures + TAP switch + free coach, animation pass, how-to card, rename to Meowdoku with a pixel logo and redirect from /arcade/catgrid.

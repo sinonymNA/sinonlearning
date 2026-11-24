@@ -1,12 +1,15 @@
-// Cat Grid engine: place one cat in every row, every column and every colour region, and no two cats may touch (corners count).
+// Meowdoku engine: place one cat in every row, every column and every colour region, and no two cats may touch (corners count).
 // Pure ESM, JSON state, seeded RNG (a level number always makes the same puzzle). No Date.now/Math.random: callers pass elapsed seconds.
 import { makeRng } from "../gridiron/rng.mjs";
 
 export const MAX_FISH = 3;
 export const MAX_POWERUPS = 9;
-export const LOGIC_LEVELS = Infinity;   // every level is guaranteed solvable by the four teachable ideas (so a hint can always explain a move)
 /** Board size by level: 5x5 for the first levels, growing to 9x9. */
-export const sizeFor = (level) => (level <= 4 ? 5 : level <= 9 ? 6 : level <= 16 ? 7 : level <= 24 ? 8 : 9);
+export const sizeFor = (level) => (level <= 2 ? 4 : level <= 6 ? 5 : level <= 12 ? 6 : level <= 20 ? 7 : level <= 30 ? 8 : 9);
+/** The hardest technique tier a level may need: levels 1-4 only ever need "one spot left"; the ladder opens slowly after that. */
+export const tierFor = (level) => (level <= 4 ? 0 : level <= 10 ? 1 : level <= 20 ? 2 : 3);
+/** ...and the easiest it may be, so the ladder keeps climbing instead of staying flat. */
+export const minTierFor = (level) => (level <= 6 ? 0 : level <= 12 ? 1 : level <= 22 ? 1 : 2);
 const key = (r, c) => `${r},${c}`;
 
 // ---------------------------------------------------------------- puzzles
@@ -20,14 +23,17 @@ function randomCats(n, rng) {
   };
   return go(0) ? cols : null;
 }
-/** Grow n connected colour regions out of the n cat cells until every cell belongs to one. */
-function growRegions(n, cols, rng) {
+/** Grow n connected colour regions out of the n cat cells until every cell belongs to one. `frozen` regions stay tiny (they only grow if nothing else can), which makes obvious "only one spot" moves for easy levels. */
+function growRegions(n, cols, rng, frozen = new Set()) {
   const reg = Array.from({ length: n }, () => Array(n).fill(-1)); for (let r = 0; r < n; r++) reg[r][cols[r]] = r;
   let left = n * n - n;
   while (left > 0) {
-    const open = [];
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (reg[r][c] < 0) { const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => (reg[r + a]?.[c + b] ?? -1)).filter((x) => x >= 0); if (near.length) open.push([r, c, near]); }
-    const [r, c, near] = open[rng.int(open.length)]; reg[r][c] = near[rng.int(near.length)]; left--;
+    const open = [], any = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (reg[r][c] < 0) {
+      const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => (reg[r + a]?.[c + b] ?? -1)).filter((x) => x >= 0); if (!near.length) continue;
+      any.push([r, c, near]); const free = near.filter((g) => !frozen.has(g)); if (free.length) open.push([r, c, free]);
+    }
+    const pool = open.length ? open : any, [r, c, near] = pool[rng.int(pool.length)]; reg[r][c] = near[rng.int(near.length)]; left--;
   }
   return reg;
 }
@@ -65,22 +71,27 @@ function repair(regions, cols, rng) {
   }
   return countSolutions(regions, 2) === 1;
 }
-/** Can this puzzle be solved with only the teachable ideas the hint uses (one spot left, groups confined to rows/columns/colours, look-ahead)? */
-export function logicSolvable(puzzle) {
-  const st = newGame(0, puzzle);
-  for (let step = 0; step < 400 && !st.won; step++) {
-    const h = hint(st, true); if (h.kind === "cat") st.marks[h.cell[0]][h.cell[1]] = 2; else if (h.kind === "cross") { for (const [r, c] of h.cells) st.marks[r][c] = 1; } else return false;
-    if (conflictCells(st).size) return false; if (cats(st).length === st.n) st.won = true;
+/** Solve a puzzle with only hint techniques up to `maxTier` (0 = "one spot left", 1 = a colour/row confined to one line, 2 = pairs, 3 = bigger groups and look-ahead). Returns the number of steps, or -1 if it cannot be done. */
+export function logicSteps(puzzle, maxTier = 3) {
+  const st = newGame(0, puzzle); let steps = 0;
+  for (; steps < 400 && !st.won; steps++) {
+    const h = hint(st, true, maxTier); if (h.kind === "cat") st.marks[h.cell[0]][h.cell[1]] = 2; else if (h.kind === "cross") { for (const [r, c] of h.cells) st.marks[r][c] = 1; } else return -1;
+    if (conflictCells(st).size) return -1; if (cats(st).length === st.n) st.won = true;
   }
-  return st.won;
+  return st.won ? steps : -1;
 }
-/** The puzzle for a level: {n, regions[n][n] (0..n-1), solution[n] (column of the cat in each row)}. Deterministic. */
-export function generate(level) {
-  const n = sizeFor(level), rng = makeRng((level * 7919 + 13) >>> 0);
-  for (let attempt = 0; attempt < 200; attempt++) {
+export const logicSolvable = (puzzle, maxTier = 3) => logicSteps(puzzle, maxTier) >= 0;
+/** How hard a puzzle is: the lowest technique tier that solves it (0 easiest), 4 if even tier 3 is not enough. */
+export function puzzleTier(puzzle) { for (let t = 0; t <= 3; t++) if (logicSolvable(puzzle, t)) return t; return 4; }
+/** The puzzle for a level: {n, regions[n][n] (0..n-1), solution[n] (column of the cat in each row)}. Deterministic.
+ *  It has exactly one solution and its hardest needed technique tier fits the level (tierFor), never easier than minTierFor. */
+export function generate(level, opts = {}) {
+  const n = sizeFor(level), rng = makeRng((level * 7919 + 13) >>> 0), maxTier = opts.maxTier ?? tierFor(level), minTier = opts.minTier ?? minTierFor(level);
+  for (let attempt = 0; attempt < 600; attempt++) {
     const cols = randomCats(n, rng); if (!cols) continue;
-    const regions = growRegions(n, cols, rng); if (!repair(regions, cols, rng)) continue;
-    if (level <= LOGIC_LEVELS && !logicSolvable({ n, regions, solution: cols })) continue;   // the early levels can always be reasoned out
+    const frozen = new Set(); const f = maxTier === 0 ? (n <= 4 ? 1 : 2) : maxTier === 1 ? 1 : 0; while (frozen.size < f) frozen.add(rng.int(n));
+    const regions = growRegions(n, cols, rng, frozen); if (!repair(regions, cols, rng)) continue;
+    const draft = { n, regions, solution: cols }; if (!logicSolvable(draft, maxTier)) continue; if (minTier > 0 && logicSolvable(draft, minTier - 1)) continue;   // too easy for this level
     const perm = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = rng.int(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }   // shuffle which colour each region gets
     return { n, regions: regions.map((row) => row.map((g) => perm[g])), solution: cols };
   }
@@ -116,15 +127,25 @@ function settle(st) {
   if (cs.length === st.n && conflictCells(st).size === 0) { st.done = true; st.won = true; }
   else if (st.fish <= 0) { st.done = true; st.lost = true; }
 }
-/** Tap a cell: empty -> X (a note) -> cat -> empty. Placing a cat that breaks a rule costs a fish. */
-export function tap(st, r, c) {
+/** Put exactly this mark on a cell (0 empty, 1 X note, 2 cat). A cat that breaks a rule costs a fish. The one place marks change, so gestures can never disagree. */
+export function setCell(st, r, c, mark) {
   if (st.done) return { changed: false };
-  const before = st.marks[r][c], after = (before + 1) % 3; st.history.push([r, c, before]); st.marks[r][c] = after; st.moves++;
-  let conflict = false;
-  if (after === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; }
-  settle(st); return { changed: true, mark: after, conflict, won: st.won, lost: st.lost };
+  const before = st.marks[r][c]; if (before === mark) return { changed: false };
+  st.marks[r][c] = mark; st.moves++;
+  let conflict = false; if (mark === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; }
+  st.history.push([r, c, before, conflict ? 1 : 0]); settle(st); return { changed: true, mark, before, conflict, won: st.won, lost: st.lost };
 }
+/** X note on or off (a cat is simply taken off). */
+export const toggleX = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 0 ? 1 : 0);
+/** Cat on or off. Always ends in a cat unless there was one already. */
+export const toggleCat = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 2 ? 0 : 2);
 export function setMark(st, r, c, mark) { st.history.push([r, c, st.marks[r][c]]); st.marks[r][c] = mark; settle(st); }
+/** Cancel the move that was JUST made (the first tap of a double-tap), including the fish it cost. Not for general use: Undo keeps lost fish. */
+export function retract(st) {
+  if (st.done || !st.history.length) return false;
+  const [r, c, before, fish] = st.history.pop(); st.marks[r][c] = before; st.moves = Math.max(0, st.moves - 1); if (fish) { st.fish = Math.min(MAX_FISH, st.fish + 1); st.mistakes = Math.max(0, st.mistakes - 1); }
+  return true;
+}
 /** Take back the last change (a fish you lost stays lost). */
 export function undo(st) {
   if (st.done || !st.history.length) return false;
@@ -141,7 +162,7 @@ function candidates(st, useX = false) {
 const REG_NAME = ["green", "red", "pink", "orange", "purple", "yellow", "blue", "teal", "tan"];
 export const regionName = (g) => REG_NAME[g] ?? `colour ${g + 1}`;
 /** A hint that teaches: a cat that is forced (and why), or cells that can be crossed out (and why), else a gentle nudge toward a real cat. */
-export function hint(st, useX = false) {
+export function hint(st, useX = false, maxTier = 3) {
   const bad = conflictCells(st);
   if (bad.size) return { kind: "conflict", cells: [...bad].map((k) => k.split(",").map(Number)), text: "These cats break a rule. Take one of them away." };
   const cand = candidates(st, useX), n = st.n, cs = cats(st), rows = new Set(cs.map(([r]) => r)), colsU = new Set(cs.map(([, c]) => c)), regs = new Set(cs.map(([r, c]) => st.regions[r][c]));
@@ -155,7 +176,7 @@ export function hint(st, useX = false) {
   const label = (kind, i) => (kind === 0 ? `the ${regionName(i)} area` : kind === 1 ? `row ${i + 1}` : `column ${i + 1}`);
   const free = (kind) => [...Array(n).keys()].filter((i) => !(kind === 0 ? regs : kind === 1 ? rows : colsU).has(i));
   const combos = (arr, k) => (k === 0 ? [[]] : arr.flatMap((x, i) => combos(arr.slice(i + 1), k - 1).map((rest) => [x, ...rest])));
-  for (let k = 1; k <= 4; k++) for (const a of kinds) for (const bk of kinds) {
+  for (let k = 1; k <= (maxTier >= 3 ? 4 : maxTier >= 2 ? 2 : maxTier >= 1 ? 1 : 0); k++) for (const a of kinds) for (const bk of kinds) {
     if (a === bk) continue;
     for (const S of combos(free(a), k)) {
       const mine = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (cand[r][c] && S.includes(val(a, r, c))) mine.push([r, c]);
@@ -167,7 +188,7 @@ export function hint(st, useX = false) {
     }
   }
   // look ahead one move: if a cat here would leave some row, column or colour with nowhere to go, this spot cannot hold a cat
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+  if (maxTier >= 3) for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
     if (!cand[r][c]) continue; const g = st.regions[r][c], gone = (a, b) => a === r || b === c || st.regions[a][b] === g || (Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1);
     for (const u of units) {
       if (u.name === `row ${r + 1}` || u.name === `column ${c + 1}` || u.region === g) continue;   // that cat would fill this unit itself
@@ -194,7 +215,7 @@ export function wink(st) {
 // ---------------------------------------------------------------- score and profile
 /** Points for a finished level: more for bigger boards and speed, a bonus for each fish left, small cost for using help. */
 export function levelScore(st, seconds) { return Math.max(0, Math.round(st.n * 100 + Math.max(0, st.n * 45 - seconds) * 3 + st.fish * 50 - st.helps * 30)); }
-export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0 });
+export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0, seenHelp: false });
 /** Apply a won level to the profile: points, next level, and a power-up or two as a reward. */
 export function completeLevel(p, st, seconds) {
   const pts = levelScore(st, seconds); p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak);
@@ -215,10 +236,10 @@ export function transformPuzzle(p, k, rng) {
   for (let r = 0; r < n; r++) { const [a, b] = f(r, p.solution[r]); solution[a] = b; }
   return { n, regions, solution };
 }
-/** The puzzle for a level: from the shipped table (made by scripts/catgrid-build-levels.mjs), recycled with rotations and new colours after that. */
+/** The puzzle for a level: from the shipped table (made by scripts/meowdoku-build-levels.mjs), recycled with rotations and new colours after that. */
 export function puzzleFor(level) {
   if (!LEVELS.length) return generate(level);
   if (level >= 1 && level <= LEVELS.length) return decode(LEVELS[level - 1]);
-  const hard = Math.min(24, LEVELS.length - 1), base = decode(LEVELS[hard + ((level - 1 - hard) % (LEVELS.length - hard))]);
+  const hard = Math.max(0, LEVELS.findIndex((l) => l.startsWith("9:"))), base = decode(LEVELS[hard + ((level - 1 - hard) % (LEVELS.length - hard))]);   // recycle the 9x9 levels
   return transformPuzzle(base, level * 5 + 1, makeRng((level * 31 + 7) >>> 0));
 }
