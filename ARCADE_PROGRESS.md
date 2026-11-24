@@ -154,3 +154,6 @@ User: improve the Meowdoku map so it is more fun and fills the blank space. Done
 
 
 User: build the nut sort game without lag. Done: Bolt Sort (/arcade/nuts), pre-rendered 3D-look sprites + GPU transforms, solvable generator, hints/undo/extra bolts/mystery nuts/colour-blind symbols, hub entry on Chill.
+
+
+User: the nut/bolt skin looked 2D and the bolt tip showed behind the top nut; asked for a theme that works in 2D. Done: reskinned as Cat Stack (pixel cats in glass tubes, mystery cats in boxes), same engine; renamed paths to stack/catstack; hub entry updated.

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { specFor, generate, newGame, canMove, move, undo, addBolt, hint, isSolved, stuck, solve, topRun, boltDone, starsFor, newProfile, normalizeProfile, completeLevel, totalStars, MAX_EXTRA, MAX_COLORS } from "../nuts/index.mjs";
+import { specFor, generate, newGame, canMove, move, undo, addBolt, hint, isSolved, stuck, solve, topRun, boltDone, starsFor, newProfile, normalizeProfile, completeLevel, totalStars, MAX_EXTRA, MAX_COLORS } from "../stack/index.mjs";
 
 const mk = (rows, cap = 4) => ({ v: 1, level: 1, cap, colors: 3, par: 5, moves: 0, extra: 0, history: [], done: false, won: false, bolts: rows.map((r, bi) => r.map((c, i) => ({ id: bi * 100 + i, c: Math.abs(c), q: c < 0 }))) });   // negative = hidden "?" nut
 
