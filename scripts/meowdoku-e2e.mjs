@@ -29,10 +29,8 @@ const only = arg("only", ""); for (const [name, [w, h]] of Object.entries(sizes)
   const r1 = 1, near = P1.solution[0] + 1 < 4 ? P1.solution[0] + 1 : P1.solution[0] - 1; await p.waitForTimeout(500);
   await p.click(".cg-mode button:has-text('CAT')"); await cell(p, r1, near).click(); check((await mark(p, r1, near)) === "cat", `${name}: with the TAP switch on CAT, one tap puts a cat`); check((await p.locator(".cg-fish img.lost").count()) === 1, `${name}: a cat that touches another costs a fish`);
   await p.waitForTimeout(500); await dbl(p, r1, near); check((await mark(p, r1, near)) === "x", `${name}: double-tapping a cat (cat mode) turns it into an X`); check((await p.locator(".cg-fish img.lost").count()) === 1, `${name}: ...and does not refund a fish lost earlier`);
-  // within one double-tap: a wrong cat placed by the first tap is cancelled and its fish refunded
-  await p.waitForTimeout(500); await cell(p, r1, near).click(); await p.waitForTimeout(500); await dbl(p, r1, near); await p.waitForTimeout(500); await dbl(p, r1, near);   // clear to empty, then one fast double-tap from empty
-  await cell(p, r1, near).click(); await p.waitForTimeout(500); const before = await p.locator(".cg-fish img.lost").count();
-  await dbl(p, r1, near); check((await p.locator(".cg-fish img.lost").count()) <= before, `${name}: a double-tap never costs more than the fish already lost (${before})`);
+  // one fast double-tap on an X square while in cat mode: the first tap would place a wrong cat (a fish), the second cancels it and refunds that fish
+  await p.waitForTimeout(500); await dbl(p, r1, near); check((await p.locator(".cg-fish img.lost").count()) === 1, `${name}: a fast double-tap refunds the fish its first tap cost (still 1 lost)`); check((await mark(p, r1, near)) !== "cat", `${name}: ...and leaves no wrong cat behind`);
   await p.click(".cg-mode button:has-text('X')"); await p.waitForTimeout(500);
   // hint and solving through the real UI, level by level, with double taps
   await p.locator(".cg-pw", { hasText: "HINT" }).click(); check((await p.locator(".cg-say p").innerText()).length > 15, `${name}: a hint explains itself`); check((await p.locator(".cg-pw", { hasText: "HINT" }).locator("i").innerText()) === "2", `${name}: a hint uses one up`);
