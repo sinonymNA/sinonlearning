@@ -118,7 +118,7 @@ export const parFor = (n) => n * n * 4;
 /** opts: mode ("campaign" | "daily" | "endless"), label, fish (lives, default 3), tier (shown difficulty 0-3), seed. */
 export function newGame(level, puzzle = puzzleFor(level), opts = {}) {
   const { n, regions, solution } = puzzle, fish = opts.fish ?? MAX_FISH;
-  return { v: 1, level, mode: opts.mode || "campaign", label: opts.label || "", tier: opts.tier ?? (level > 0 ? tierFor(level) : 1), n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish, maxFish: opts.maxFish ?? (fish < MAX_FISH ? fish + 1 : fish), moves: 0, mistakes: 0, helps: 0, combo: 0, bestCombo: 0, history: [], stroke: 0, curStroke: 0, done: false, won: false, lost: false };
+  return { v: 1, level, mode: opts.mode || "campaign", label: opts.label || "", tier: opts.tier ?? (level > 0 ? tierFor(level) : 1), n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish, startFish: fish, maxFish: opts.maxFish ?? (fish < MAX_FISH ? fish + 1 : fish), moves: 0, mistakes: 0, helps: 0, combo: 0, bestCombo: 0, history: [], stroke: 0, curStroke: 0, done: false, won: false, lost: false };
 }
 export const cats = (st) => { const out = []; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) if (st.marks[r][c] === 2) out.push([r, c]); return out; };
 /** Cats that break a rule with another cat (same row, column, colour, or touching). Returns a Set of "r,c". */

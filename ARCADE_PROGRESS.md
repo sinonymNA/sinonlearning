@@ -145,3 +145,6 @@ User feedback on Meowdoku (iPhone): too hard, double-tap unreliable, not smooth,
 
 
 User: swipe to draw X's; the X marks did not look like X's; candy-crush style map with 100 levels in 10 themed worlds. Done: swipe-to-draw (strokes undone together), X bug fixed (bars rotated about their left end), 100-level map with 10 worlds and pixel scenery, stars, unlocks, area theming, difficulty ramp stretched over 100 levels (levels rebuilt).
+
+
+User: significant upgrades (difficulty, power-ups, level generation, animation, gameplay, a home screen). Done: Home screen; Daily Puzzle with streaks; Endless (size x difficulty); Sweep and Sardine power-ups + yarn shop; combo, speed bolt, ripple and win-banner animations; generator region styles per world (levels rebuilt); the pixel font name fixed for Meowdoku.

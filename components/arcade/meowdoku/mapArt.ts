@@ -63,3 +63,23 @@ function icon(key: string, w: number, h: number, draw: (g: G) => void): string {
 export const starUrl = (on: boolean) => icon(`star:${on}`, 13, 13, (g) => { const c = on ? "#ffd23f" : "#4a4468"; tri(g, [6.5, 1], [4, 5.5], [9, 5.5], c); tri(g, [1.5, 5], [11.5, 5], [6.5, 9.5], c); tri(g, [6.5, 8], [3, 12], [6.5, 10], c); tri(g, [6.5, 8], [10, 12], [6.5, 10], c); if (on) px(g, 5, 4, "#fff6b0", 2, 2); });
 export const lockUrl = () => icon("lock", 14, 16, (g) => { px(g, 4, 1, "#c9c4e8", 6, 2); px(g, 3, 3, "#c9c4e8", 2, 5); px(g, 9, 3, "#c9c4e8", 2, 5); R(g, 2, 7, 10, 8, "#8d86b8"); px(g, 6, 10, dark, 2, 3); });
 export const crownUrl = () => icon("crown", 18, 13, (g) => { R(g, 2, 7, 14, 5, "#ffd23f"); for (const x of [2, 7, 12]) tri(g, [x, 7], [x + 2, 1], [x + 4, 7], "#ffd23f"); px(g, 4, 9, "#e53935", 2, 2); px(g, 8, 9, "#2fa4ff", 2, 2); px(g, 12, 9, "#7cf0a0", 2, 2); });
+
+// ---- icons for the power-ups, the shop and the home screen
+/** A ball of yarn (the shop money), 14x14. */
+export const yarnUrl = () => icon("yarn", 14, 14, (g) => { ell(g, 7, 7, 6, 6, "#ff7ab5", "#d94f90"); px(g, 3, 5, "#ffb3d6", 5, 1); px(g, 2, 8, "#ffb3d6", 7, 1); px(g, 4, 11, "#ffb3d6", 6, 1); px(g, 5, 3, "#ffb3d6", 4, 1); px(g, 10, 9, "#d94f90", 3, 1); R(g, 11, 11, 3, 1, "#ff7ab5"); });
+/** A broom (Sweep), 14x14. */
+export const broomUrl = () => icon("broom", 14, 14, (g) => { for (let i = 0; i < 8; i++) px(g, 11 - i, 1 + i, "#a0693a", 2, 1); tri(g, [1, 13], [3, 7], [8, 9], "#ffd23f"); tri(g, [1, 13], [8, 9], [7, 13], "#e8a317"); px(g, 4, 11, "#a37410", 1, 2); px(g, 6, 11, "#a37410", 1, 2); });
+/** A light bulb (Hint), 14x14. */
+export const bulbUrl = () => icon("bulb", 14, 14, (g) => { ell(g, 7, 5.5, 4.5, 4.8, "#ffe66d", "#f5b800"); px(g, 4, 4, "#fffbd0", 2, 2); R(g, 5, 10, 4, 2, "#9a96b8"); R(g, 6, 12, 2, 1, "#6f6a92"); });
+/** A calendar page (Daily Puzzle), 14x14. */
+export const calendarUrl = () => icon("calendar", 14, 14, (g) => { R(g, 1, 2, 12, 11, "#fffaf0"); R(g, 1, 2, 12, 3, "#e5484d"); R(g, 3, 0, 2, 3, "#c9c4e8"); R(g, 9, 0, 2, 3, "#c9c4e8"); for (const [x, y] of [[3, 7], [6, 7], [9, 7], [3, 10], [6, 10]]) R(g, x, y, 2, 2, "#4a4468"); px(g, 9, 10, "#e5484d", 2, 2); });
+/** A flame (streaks), 11x14. */
+export const flameUrl = () => icon("flame", 11, 14, (g) => { ell(g, 5.5, 9, 4.6, 4.8, "#ff7a00", "#e5484d"); tri(g, [5.5, 0], [2.5, 8], [8.5, 8], "#ff9f1c"); ell(g, 5.5, 10, 2.4, 2.8, "#ffd23f"); });
+/** An infinity loop (Endless), 16x9. */
+export const loopUrl = () => icon("loop", 16, 9, (g) => { for (const cx of [4.5, 11.5]) { ell(g, cx, 4.5, 3.6, 3.4, "#4cc3ff"); ell(g, cx, 4.5, 1.6, 1.6, "#0e1b44"); } R(g, 6, 3, 4, 3, "#4cc3ff"); });
+/** A soft pixel cloud for the home screen, 32x12. */
+export const cloudUrl = () => icon("cloud", 32, 12, (g) => { ell(g, 9, 8, 7, 3.6, "#ffffff"); ell(g, 17, 6, 8, 4.8, "#ffffff"); ell(g, 25, 8, 6, 3.4, "#ffffff"); R(g, 6, 8, 20, 3, "#ffffff"); });
+/** A sparkle, 9x9 (twinkles on the home screen and result cards). */
+export const sparkUrl = () => icon("spark", 9, 9, (g) => { R(g, 4, 0, 1, 9, "#fff6b8"); R(g, 0, 4, 9, 1, "#fff6b8"); R(g, 3, 3, 3, 3, "#ffffff"); });
+/** A lightning bolt (the speed badge), 9x13. */
+export const boltUrl = () => icon("bolt", 9, 13, (g) => { tri(g, [5.5, 0], [0.5, 7], [4.5, 7], "#ffe66d"); tri(g, [4.5, 5.5], [8.5, 5.5], [3, 13], "#ffd23f"); });

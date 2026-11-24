@@ -3,14 +3,14 @@
 // The Meowdoku world map: 10 cat-themed areas of 10 levels, climbing upward like a candy-style level path. World 1 is at the bottom; the map opens on your current level.
 import { useEffect, useRef } from "react";
 import { AREAS, AREA_SIZE, LEVEL_COUNT, isFinale } from "../../../arcade-server/meowdoku/index.mjs";
-import { propUrl, starUrl, lockUrl, crownUrl } from "./mapArt";
+import { propUrl, starUrl, lockUrl, crownUrl, boltUrl } from "./mapArt";
 import { catUrl } from "./sprites";
 
 const ROW = 88, TOP = 40, BOTTOM = 52, TRACK_H = TOP + (AREA_SIZE - 1) * ROW + BOTTOM;
 const nodeX = (area: number, i: number) => 50 + 25 * Math.sin(i * 0.95 + area * 1.9);
 const nodeY = (i: number) => TRACK_H - BOTTOM - i * ROW;
 
-export default function LevelMap({ profile, onPlay }: { profile: any; onPlay: (level: number) => void }) {
+export default function LevelMap({ profile, onPlay, arrived = 0 }: { profile: any; onPlay: (level: number) => void; arrived?: number }) {
   const cur = useRef<HTMLButtonElement>(null);
   const frontier = Math.min(profile.level, LEVEL_COUNT), stars: Record<number, number> = profile.stars || {};
   useEffect(() => { cur.current?.scrollIntoView({ block: "center" }); }, []);
@@ -28,11 +28,12 @@ export default function LevelMap({ profile, onPlay }: { profile: any; onPlay: (l
                 {Array.from({ length: AREA_SIZE }, (_, i) => {
                   const level = ai * AREA_SIZE + i + 1, st = stars[level] || 0, locked = level > frontier, here = level === frontier, finale = isFinale(level);
                   return (
-                    <button key={level} ref={here ? cur : undefined} data-level={level} role="listitem" disabled={locked} aria-label={locked ? `Level ${level}, locked` : `Level ${level}, ${st} of 3 stars${here ? ", your next level" : ""}${finale ? ", area finale" : ""}`}
+                    <button key={level} ref={here ? cur : undefined} data-level={level} role="listitem" disabled={locked} aria-label={locked ? `Level ${level}, locked` : `Level ${level}, ${st} of 3 stars${profile.fast?.[level] ? ", speedy" : ""}${here ? ", your next level" : ""}${finale ? ", area finale" : ""}`}
                       className={`mp-node ${locked ? "locked" : st ? "done" : "now"} ${here ? "here" : ""} ${finale ? "finale" : ""}`} style={{ left: `${nodeX(ai, i)}%`, top: nodeY(i) }} onClick={() => !locked && onPlay(level)}>
-                      {here && <img className="mp-me" src={catUrl("happy")} alt="" draggable={false} />}
+                      {here && <img className={`mp-me ${arrived === level ? "arrive" : ""}`} src={catUrl("happy")} alt="" draggable={false} />}
                       {finale && !locked && <img className="mp-crown" src={crownUrl()} alt="" draggable={false} />}
                       {locked ? <img className="mp-lock" src={lockUrl()} alt="" draggable={false} /> : <b>{level}</b>}
+                      {!locked && profile.fast?.[level] && <img className="mp-bolt" src={boltUrl()} alt="" draggable={false} />}
                       {!locked && <span className="mp-stars">{[1, 2, 3].map((k) => <img key={k} src={starUrl(k <= st)} alt="" draggable={false} />)}</span>}
                     </button>
                   );
