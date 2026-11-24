@@ -51,8 +51,8 @@
 .cg-cell.cat img { animation: cg-bounce .42s cubic-bezier(.3, 1.8, .5, 1) both, cg-idle 3.6s ease-in-out .5s infinite; animation-delay: 0s, calc(var(--i, 0) * 420ms + .5s); transform-origin: 50% 90%; will-change: transform; }
 @keyframes cg-bounce { 0% { transform: scale(0) translateY(30%); opacity: 0; } 55% { transform: scale(1.22) translateY(-6%); opacity: 1; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
 @keyframes cg-idle { 0%, 88%, 100% { transform: scale(1, 1); } 92% { transform: scale(1.04, .94); } 96% { transform: scale(.98, 1.04); } }
-.cg-cell .x::before, .cg-cell .x::after { animation: cg-stroke .16s ease-out both; transform-origin: 50% 50%; } .cg-cell .x::after { animation-delay: .06s; }
-@keyframes cg-stroke { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.cg-cell .x::before, .cg-cell .x::after { transform-origin: 50% 50%; } .cg-cell .x { animation: cg-xpop .14s ease-out both; }
+@keyframes cg-xpop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .puff { position: absolute; inset: 0; pointer-events: none; z-index: 4; } .puff i { position: absolute; left: 50%; top: 50%; width: 14%; aspect-ratio: 1; margin: -7% 0 0 -7%; background: #fff; box-shadow: 0 0 0 2px #14102a; animation: cg-puff .5s ease-out both; } .puff i:nth-child(odd) { background: #ffd23f; }
 @keyframes cg-puff { from { transform: rotate(var(--a)) translateX(0) scale(1); opacity: 1; } to { transform: rotate(var(--a)) translateX(210%) scale(.2); opacity: 0; } }
 .cg-fish img.hit { animation: cg-fish .7s ease-out both; } @keyframes cg-fish { 0% { transform: translateY(0) rotate(0) scale(1.35); filter: brightness(2); } 35% { transform: translateY(-14px) rotate(-18deg) scale(1.25); } 100% { transform: translateY(0) rotate(0) scale(1); } }
@@ -77,7 +77,7 @@
 @media (max-height: 460px) { .cg-top .cg-logo { width: 32px; height: 32px; } .cg-mode button { min-height: 30px; } }
 @media (max-width: 400px) and (orientation: portrait) { .cg-top .cg-logo { display: none; } }
 .cg-calm *, .cg-calm *::before, .cg-calm *::after { animation: none !important; transition: none !important; }
-@media (prefers-reduced-motion: reduce) { .cg-cell, .cg-cell.cat img, .cg-cell .x::before, .cg-cell .x::after, .puff i, .cg-fish img.hit, .cg-board.won, .cg-board.won .cg-cell.cat img, .cg-cell.hint, .cg-card, .cg-card .cg-hero, .cg-confetti i, .cg-logo-big, .cg-slots span.on img { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .cg-cell, .cg-cell.cat img, .cg-cell .x, .cg-cell .x::before, .cg-cell .x::after, .puff i, .cg-fish img.hit, .cg-board.won, .cg-board.won .cg-cell.cat img, .cg-cell.hint, .cg-card, .cg-card .cg-hero, .cg-confetti i, .cg-logo-big, .cg-slots span.on img { animation: none !important; } }
 /* short screens: the rules live in the how-to card, so give the board the room */
 @media (max-height: 660px) and (orientation: portrait) { .cg-rules { display: none; } .cg-slots span { width: 22px; } .cg-pw { min-height: 50px; } .cg-say { min-height: 2.6em; } }
 
