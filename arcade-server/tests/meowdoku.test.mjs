@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generate, puzzleFor, transformPuzzle, countSolutions, solutions, logicSolvable, logicSteps, puzzleTier, tierFor, minTierFor, sizeFor, newGame, setCell, toggleX, toggleCat, setMark, undo, retract, clearBoard, cats, conflictCells, blocked, hint, smartHint, wink, levelScore, newProfile, completeLevel, MAX_FISH, MAX_POWERUPS, encodePuzzle } from "../meowdoku/engine.mjs";
+import { generate, puzzleFor, transformPuzzle, countSolutions, solutions, logicSolvable, logicSteps, puzzleTier, tierFor, minTierFor, sizeFor, newGame, setCell, toggleX, toggleCat, markX, setMark, undo, retract, clearBoard, cats, conflictCells, blocked, hint, smartHint, wink, levelScore, newProfile, completeLevel, MAX_FISH, MAX_POWERUPS, encodePuzzle } from "../meowdoku/engine.mjs";
 import { LEVELS } from "../meowdoku/levels.mjs";
 import { makeRng } from "../gridiron/rng.mjs";
 
@@ -48,6 +48,8 @@ test("gestures are deterministic: X toggles on and off, a cat toggles on and off
   // double tap = undo the first tap, then do the other thing; from empty, X and cat alike it must end as a cat (or an off-cat from a cat)
   for (const start of [0, 1]) { const g = newGame(1); if (start) g.marks[r][c] = 1; toggleX(g, r, c); undo(g); toggleCat(g, r, c); assert.equal(g.marks[r][c], 2, `from mark ${start}`); }
   const onCat = newGame(1); onCat.marks[r][c] = 2; toggleX(onCat, r, c); undo(onCat); toggleCat(onCat, r, c); assert.equal(onCat.marks[r][c], 0, "a double-tap on a cat takes it off");
+  const m = newGame(1); m.marks[r][c] = 2; assert.equal(markX(m, r, c).mark, 1, "markX turns a cat into an X"); assert.equal(markX(m, r, c).mark, 0, "and toggles an X off");
+  const dc = newGame(1); dc.marks[r][c] = 2; toggleCat(dc, r, c); undo(dc); markX(dc, r, c); assert.equal(dc.marks[r][c], 1, "cat-mode double-tap on a cat ends as an X");
   assert.equal(setCell(st, r, c, 0).changed, false, "setting the same mark is a no-op");
 });
 

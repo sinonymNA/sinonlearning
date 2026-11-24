@@ -137,6 +137,8 @@ export function setCell(st, r, c, mark) {
 }
 /** X note on or off (a cat is simply taken off). */
 export const toggleX = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 0 ? 1 : 0);
+/** Put an X here (a cat is replaced by the X), or take the X off. Used by the double-tap in cat mode and the X key. */
+export const markX = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 1 ? 0 : 1);
 /** Cat on or off. Always ends in a cat unless there was one already. */
 export const toggleCat = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 2 ? 0 : 2);
 export function setMark(st, r, c, mark) { st.history.push([r, c, st.marks[r][c]]); st.marks[r][c] = mark; settle(st); }

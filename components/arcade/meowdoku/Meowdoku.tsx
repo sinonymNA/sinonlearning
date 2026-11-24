@@ -5,7 +5,7 @@
 //   Tap = one kind of mark, double-tap = the other (which is which depends on the TAP switch). Gestures are explicit, so a double-tap always gives the same result.
 import Link from "next/link";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { newGame, toggleX, toggleCat, setMark, undo as undoMove, retract, clearBoard, cats, conflictCells, blocked, smartHint, wink, newProfile, completeLevel, MAX_FISH, regionName } from "../../../arcade-server/meowdoku/index.mjs";
+import { newGame, toggleX, toggleCat, markX, setMark, undo as undoMove, retract, clearBoard, cats, conflictCells, blocked, smartHint, wink, newProfile, completeLevel, MAX_FISH, regionName } from "../../../arcade-server/meowdoku/index.mjs";
 import { PrefsProvider, PrefsButtons, usePrefs, sfx, tone } from "../prefs";
 import { catUrl, fishUrl, makeLogo } from "./sprites";
 import "./meowdoku.css";
@@ -105,7 +105,7 @@ function Inner() {
   const onCell = (r: number, c: number, at: number) => {
     const x = S.current; if (!x || x.game.done) return; const st = x.game, key = `${r},${c}`, catMode = x.settings.mode === "cat"; setFocus([r, c]);
     const p = last.current, dbl = !!p && p.key === key && at - p.t < DOUBLE_MS;
-    if (dbl) { retract(st); last.current = null; const res = catMode ? toggleX(st, r, c) : toggleCat(st, r, c); afterMove(st, r, c, { ...res, changed: true }); return; }
+    if (dbl) { retract(st); last.current = null; const res = catMode ? markX(st, r, c) : toggleCat(st, r, c); afterMove(st, r, c, { ...res, changed: true }); return; }
     const res = catMode ? toggleCat(st, r, c) : toggleX(st, r, c); last.current = res.changed ? { key, t: at } : null; if (res.changed) afterMove(st, r, c, res);
   };
   const useHint = () => {
@@ -136,7 +136,7 @@ function Inner() {
     const x = S.current; if (!x || x.game.done) return; const st = x.game, n = st.n; let [r, c] = focus;
     if (e.key === "ArrowUp") r = (r + n - 1) % n; else if (e.key === "ArrowDown") r = (r + 1) % n; else if (e.key === "ArrowLeft") c = (c + n - 1) % n; else if (e.key === "ArrowRight") c = (c + 1) % n;
     else if (e.key === " " || e.key === "Enter") { e.preventDefault(); onCell(r, c, -1e9); return; }
-    else if (e.key.toLowerCase() === "x") { e.preventDefault(); const res = toggleX(st, r, c); if (res.changed) afterMove(st, r, c, res); return; }
+    else if (e.key.toLowerCase() === "x") { e.preventDefault(); const res = markX(st, r, c); if (res.changed) afterMove(st, r, c, res); return; }
     else if (e.key.toLowerCase() === "c") { e.preventDefault(); const res = toggleCat(st, r, c); if (res.changed) afterMove(st, r, c, res); return; }
     else if (e.key === "Backspace") { e.preventDefault(); if (st.marks[r][c]) { const res = toggleX(st, r, c); if (res.mark === 1) toggleX(st, r, c); afterMove(st, r, c, { ...res, mark: 0, changed: true }); } return; } else return;
     e.preventDefault(); setFocus([r, c]); requestAnimationFrame(() => document.getElementById(`cg-${r}-${c}`)?.focus());
