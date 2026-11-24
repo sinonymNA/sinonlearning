@@ -151,3 +151,6 @@ User: significant upgrades (difficulty, power-ups, level generation, animation, 
 
 
 User: improve the Meowdoku map so it is more fun and fills the blank space. Done: ground textures, a real road, scattered props/decor/landmarks sized to the screen, per-world weather, tappable cats that talk, checkpoint flags.
+
+
+User: build the nut sort game without lag. Done: Bolt Sort (/arcade/nuts), pre-rendered 3D-look sprites + GPU transforms, solvable generator, hints/undo/extra bolts/mystery nuts/colour-blind symbols, hub entry on Chill.
