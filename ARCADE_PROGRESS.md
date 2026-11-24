@@ -142,3 +142,6 @@ User: build a Meowdoku-style game in our pixel style. Done: Meowdoku (/arcade/me
 
 
 User feedback on Meowdoku (iPhone): too hard, double-tap unreliable, not smooth, rename + pixel logo. Done: difficulty tiers and a gentle 4x4 start (levels rebuilt), deterministic gestures + TAP switch + free coach, animation pass, how-to card, rename to Meowdoku with a pixel logo and redirect from /arcade/catgrid.
+
+
+User: swipe to draw X's; the X marks did not look like X's; candy-crush style map with 100 levels in 10 themed worlds. Done: swipe-to-draw (strokes undone together), X bug fixed (bars rotated about their left end), 100-level map with 10 worlds and pixel scenery, stars, unlocks, area theming, difficulty ramp stretched over 100 levels (levels rebuilt).

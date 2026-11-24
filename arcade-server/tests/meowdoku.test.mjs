@@ -1,19 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generate, puzzleFor, transformPuzzle, countSolutions, solutions, logicSolvable, logicSteps, puzzleTier, tierFor, minTierFor, sizeFor, newGame, setCell, toggleX, toggleCat, markX, setMark, undo, retract, clearBoard, cats, conflictCells, blocked, hint, smartHint, wink, levelScore, newProfile, completeLevel, MAX_FISH, MAX_POWERUPS, encodePuzzle } from "../meowdoku/engine.mjs";
+import { AREAS, LEVEL_COUNT, areaOf, areaIndex, levelInArea, isFinale, entersNewArea } from "../meowdoku/areas.mjs";
+import { beginStroke, endStroke, starsFor, totalStars, generate, puzzleFor, transformPuzzle, countSolutions, solutions, logicSolvable, logicSteps, puzzleTier, tierFor, minTierFor, sizeFor, newGame, setCell, toggleX, toggleCat, markX, setMark, undo, retract, clearBoard, cats, conflictCells, blocked, hint, smartHint, wink, levelScore, newProfile, completeLevel, MAX_FISH, MAX_POWERUPS, encodePuzzle } from "../meowdoku/engine.mjs";
 import { LEVELS } from "../meowdoku/levels.mjs";
 import { makeRng } from "../gridiron/rng.mjs";
 
 const connectedRegions = (p) => { for (let g = 0; g < p.n; g++) { const cells = []; for (let r = 0; r < p.n; r++) for (let c = 0; c < p.n; c++) if (p.regions[r][c] === g) cells.push([r, c]); const seen = new Set([cells[0].join()]), q = [cells[0]]; while (q.length) { const [r, c] = q.pop(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (p.regions[r + a]?.[c + b] === g && !seen.has(`${r + a},${c + b}`)) { seen.add(`${r + a},${c + b}`); q.push([r + a, c + b]); } } if (seen.size !== cells.length) return false; } return true; };
 const valid = (p) => { const n = p.n, cs = p.solution.map((c, r) => [r, c]); return new Set(p.solution).size === n && new Set(cs.map(([r, c]) => p.regions[r][c])).size === n && cs.every(([r, c], i) => i === 0 || Math.abs(c - cs[i - 1][1]) >= 2); };
 
-test("board size grows slowly: 4x4 for the first two levels, up to 9x9", () => { assert.deepEqual([1, 2, 3, 6, 7, 12, 13, 20, 21, 30, 31, 99].map(sizeFor), [4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]); });
+test("board size grows slowly over 100 levels: 4x4 for the first two, 9x9 from level 66", () => { assert.deepEqual([1, 2, 3, 8, 9, 20, 21, 40, 41, 65, 66, 100].map(sizeFor), [4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9]); });
 
-test("difficulty ramp: levels 1-4 need only 'one spot left' moves, tiers never exceed the level's allowance, and later levels are never trivial", () => {
-  assert.deepEqual([1, 4, 5, 10, 11, 20, 21].map(tierFor), [0, 0, 1, 1, 2, 2, 3]); assert.ok(minTierFor(40) >= 2 && minTierFor(1) === 0);
-  for (let L = 1; L <= 4; L++) { const p = puzzleFor(L); assert.equal(puzzleTier(p), 0, `level ${L} is tier 0`); assert.ok(logicSteps(p, 0) <= p.n + 1, `level ${L}: no more than a step per cat`); }
+test("difficulty ramp: levels 1-6 need only 'one spot left' moves, tiers never exceed the level's allowance, and later levels are never trivial", () => {
+  assert.deepEqual([1, 6, 7, 25, 26, 55, 56, 100].map(tierFor), [0, 0, 1, 1, 2, 2, 3, 3]); assert.ok(minTierFor(60) >= 2 && minTierFor(1) === 0);
+  for (let L = 1; L <= 6; L++) { const p = puzzleFor(L); assert.equal(puzzleTier(p), 0, `level ${L} is tier 0`); assert.ok(logicSteps(p, 0) <= p.n + 1, `level ${L}: no more than a step per cat`); }
   assert.ok(puzzleFor(1).regions.flat().filter((g) => g === puzzleFor(1).regions[0].find((x) => x !== undefined)).length >= 1);
-  for (const L of [1, 3, 5, 8, 12, 15, 21, 28, 35, 60, 120, 200]) { const p = puzzleFor(L); assert.ok(puzzleTier(p) <= tierFor(L), `level ${L} tier ${puzzleTier(p)} <= ${tierFor(L)}`); assert.ok(puzzleTier(p) >= Math.min(minTierFor(L), 2) - 0 || L > 200, `level ${L} not trivial`); }
+  for (const L of [1, 3, 5, 8, 12, 15, 21, 28, 35, 60, 90, 100]) { const p = puzzleFor(L); assert.ok(puzzleTier(p) <= tierFor(L), `level ${L} tier ${puzzleTier(p)} <= ${tierFor(L)}`); assert.ok(puzzleTier(p) >= Math.min(minTierFor(L), 2) - 0 || L > 200, `level ${L} not trivial`); }
   const small = (L) => { const p = puzzleFor(L), sizes = new Map(); p.regions.flat().forEach((g) => sizes.set(g, (sizes.get(g) || 0) + 1)); return Math.min(...sizes.values()); };
   assert.equal(small(1), 1, "level 1 has a one-square colour: an obvious first cat");
 });
@@ -27,7 +28,7 @@ test("generated puzzles are valid: n connected colours, a legal cat layout, exac
 });
 
 test("shipped levels: a full table that is valid and unique, and levels past it recycle with rotations", () => {
-  assert.ok(LEVELS.length >= 100, "run scripts/meowdoku-build-levels.mjs"); const sampleLevels = [1, 2, 7, 12, 20, 31, 77, LEVELS.length];
+  assert.equal(LEVELS.length, LEVEL_COUNT, "run scripts/meowdoku-build-levels.mjs"); const sampleLevels = [1, 2, 7, 12, 20, 31, 66, 77, LEVELS.length];
   for (const L of sampleLevels) { const p = puzzleFor(L); assert.equal(p.n, sizeFor(L)); assert.ok(valid(p) && connectedRegions(p)); assert.equal(countSolutions(p.regions, 2), 1); }
   for (const L of [LEVELS.length + 1, LEVELS.length + 57, 999]) { const p = puzzleFor(L); assert.equal(p.n, 9); assert.ok(valid(p) && connectedRegions(p)); assert.equal(countSolutions(p.regions, 2), 1, "a rotated, recoloured puzzle is still unique"); assert.deepEqual(puzzleFor(L), p); }
   assert.equal(new Set(LEVELS).size, LEVELS.length, "no duplicate levels");
@@ -97,11 +98,35 @@ test("Cat Helper removes a wrong cat first, then places right ones; it counts as
   for (let i = 0; i < st.n; i++) { const w = wink(st); if (!w) break; assert.equal(w.placed, true); assert.equal(st.solution[w.cell[0]], w.cell[1]); } assert.ok(st.won); assert.equal(st.helps, st.n + 1);
 });
 
-test("scoring and profile: bigger, faster, fewer helps and more fish score more; rewards stay capped", () => {
+test("scoring: bigger, faster, fewer helps and more fish score more", () => {
   const a = newGame(1), b = newGame(30); assert.ok(levelScore(b, 60) > levelScore(a, 60)); assert.ok(levelScore(a, 5) > levelScore(a, 500)); const c = newGame(1); c.helps = 3; assert.ok(levelScore(c, 30) < levelScore(a, 30)); const d = newGame(1); d.fish = 1; assert.ok(levelScore(d, 30) < levelScore(a, 30));
-  const p = newProfile(), st = newGame(1); st.won = true; const r = completeLevel(p, st, 40); assert.equal(p.level, 2); assert.equal(p.score, r.points); assert.equal(p.hints, 4); assert.equal(p.streak, 1);
-  for (let i = 0; i < 30; i++) completeLevel(p, newGame(1), 10); assert.ok(p.hints <= MAX_POWERUPS && p.winks <= MAX_POWERUPS);
-  const m = newGame(1); m.mistakes = 1; completeLevel(p, m, 10); assert.equal(p.streak, 0); assert.ok(p.bestStreak >= 31);
+});
+
+test("stars: 3 for a clean level, one lost for a mistake and one for help, never below 1", () => {
+  const st = newGame(1); assert.equal(starsFor(st), 3); st.mistakes = 1; assert.equal(starsFor(st), 2); st.helps = 1; assert.equal(starsFor(st), 1); st.mistakes = 5; st.helps = 9; assert.equal(starsFor(st), 1);
+});
+
+test("profile: first clear pays points and rewards and unlocks the next level; a replay only raises stars; rewards stay capped; 100 is the end", () => {
+  const p = newProfile(), st = newGame(1); st.won = true; const r = completeLevel(p, st, 40);
+  assert.equal(p.level, 2); assert.equal(p.score, r.points); assert.ok(r.first && r.points > 0); assert.equal(p.hints, 4); assert.equal(p.stars[1], 3); assert.equal(p.streak, 1);
+  const again = newGame(1); again.mistakes = 2; const r2 = completeLevel(p, again, 10); assert.equal(r2.first, false); assert.equal(r2.points, 0); assert.equal(p.hints, 4, "no reward for a replay"); assert.equal(p.stars[1], 3, "a worse replay never lowers stars");
+  const better = newProfile(); const w = newGame(2); w.mistakes = 1; completeLevel(better, w, 30); assert.equal(better.stars[2], 2); const w2 = newGame(2); completeLevel(better, w2, 30); assert.equal(better.stars[2], 3, "a cleaner replay raises stars"); assert.equal(totalStars(better), 3);
+  const q = newProfile(); for (let L = 1; L <= 40; L++) completeLevel(q, newGame(L), 10); assert.ok(q.hints <= MAX_POWERUPS && q.winks <= MAX_POWERUPS); assert.equal(q.level, 41);
+  const last = newProfile(); last.level = 100; completeLevel(last, newGame(100), 10); assert.equal(last.level, LEVEL_COUNT + 1);
+  const m = newGame(1); m.mistakes = 1; q.streak = 5; completeLevel(q, Object.assign(newGame(41), { mistakes: 1 }), 10); assert.equal(q.streak, 0);
+});
+
+test("areas: the 10 named cat worlds cover levels 1-100, 10 levels each, finale on every tenth", () => {
+  assert.deepEqual(AREAS.map((a) => a.name), ["Whisker Village", "Yarn Meadows", "Milkshake Falls", "Catnip Forest", "Biscuit Bakery", "Sardine Shores", "Cardboard Canyon", "Purrmafrost Peaks", "Midnight Rooftops", "The Royal Catdom"]);
+  assert.equal(LEVEL_COUNT, 100); assert.equal(areaOf(1).id, "whisker-village"); assert.equal(areaOf(10).id, "whisker-village"); assert.equal(areaOf(11).id, "yarn-meadows"); assert.equal(areaOf(100).id, "royal-catdom"); assert.equal(areaIndex(101), 9);
+  assert.equal(levelInArea(1), 1); assert.equal(levelInArea(10), 10); assert.equal(levelInArea(11), 1); assert.ok(isFinale(10) && isFinale(100) && !isFinale(9)); assert.ok(entersNewArea(10) && !entersNewArea(100) && !entersNewArea(11));
+  for (const a of AREAS) { for (const k of ["blurb", "sky", "ground", "accent", "bgA", "bgB"]) assert.ok(a[k], `${a.id}.${k}`); assert.ok(a.blurb.length > 30); }
+});
+
+test("swipe strokes: everything marked in one swipe is undone together", () => {
+  const st = newGame(3); toggleX(st, 0, 0); beginStroke(st); for (let c = 1; c < 5; c++) setCell(st, 2, c, 1); endStroke(st);
+  assert.equal(st.marks[2].filter((m) => m === 1).length, 4); assert.ok(undo(st)); assert.equal(st.marks[2].filter((m) => m === 1).length, 0, "the whole swipe went"); assert.equal(st.marks[0][0], 1, "earlier marks stay"); assert.ok(undo(st)); assert.equal(st.marks[0][0], 0);
+  beginStroke(st); setCell(st, 1, 1, 1); endStroke(st); beginStroke(st); setCell(st, 1, 2, 1); setCell(st, 1, 3, 1); endStroke(st); undo(st); assert.equal(st.marks[1][3] + st.marks[1][2], 0); assert.equal(st.marks[1][1], 1, "a different swipe is separate");
 });
 
 test("state is plain JSON", () => { const st = newGame(4); toggleX(st, 0, 0); assert.deepEqual(JSON.parse(JSON.stringify(st)), st); });

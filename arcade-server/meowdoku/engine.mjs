@@ -3,13 +3,14 @@
 import { makeRng } from "../gridiron/rng.mjs";
 
 export const MAX_FISH = 3;
+export const LEVEL_COUNT = 100;
 export const MAX_POWERUPS = 9;
 /** Board size by level: 5x5 for the first levels, growing to 9x9. */
-export const sizeFor = (level) => (level <= 2 ? 4 : level <= 6 ? 5 : level <= 12 ? 6 : level <= 20 ? 7 : level <= 30 ? 8 : 9);
+export const sizeFor = (level) => (level <= 2 ? 4 : level <= 8 ? 5 : level <= 20 ? 6 : level <= 40 ? 7 : level <= 65 ? 8 : 9);
 /** The hardest technique tier a level may need: levels 1-4 only ever need "one spot left"; the ladder opens slowly after that. */
-export const tierFor = (level) => (level <= 4 ? 0 : level <= 10 ? 1 : level <= 20 ? 2 : 3);
+export const tierFor = (level) => (level <= 6 ? 0 : level <= 25 ? 1 : level <= 55 ? 2 : 3);
 /** ...and the easiest it may be, so the ladder keeps climbing instead of staying flat. */
-export const minTierFor = (level) => (level <= 6 ? 0 : level <= 12 ? 1 : level <= 22 ? 1 : 2);
+export const minTierFor = (level) => (level <= 8 ? 0 : level <= 40 ? 1 : 2);
 const key = (r, c) => `${r},${c}`;
 
 // ---------------------------------------------------------------- puzzles
@@ -101,7 +102,7 @@ export function generate(level, opts = {}) {
 // ---------------------------------------------------------------- game state
 export function newGame(level, puzzle = puzzleFor(level)) {
   const { n, regions, solution } = puzzle;
-  return { v: 1, level, n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish: MAX_FISH, moves: 0, mistakes: 0, helps: 0, history: [], done: false, won: false, lost: false };
+  return { v: 1, level, n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish: MAX_FISH, moves: 0, mistakes: 0, helps: 0, history: [], stroke: 0, curStroke: 0, done: false, won: false, lost: false };
 }
 export const cats = (st) => { const out = []; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) if (st.marks[r][c] === 2) out.push([r, c]); return out; };
 /** Cats that break a rule with another cat (same row, column, colour, or touching). Returns a Set of "r,c". */
@@ -133,7 +134,7 @@ export function setCell(st, r, c, mark) {
   const before = st.marks[r][c]; if (before === mark) return { changed: false };
   st.marks[r][c] = mark; st.moves++;
   let conflict = false; if (mark === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; }
-  st.history.push([r, c, before, conflict ? 1 : 0]); settle(st); return { changed: true, mark, before, conflict, won: st.won, lost: st.lost };
+  st.history.push([r, c, before, conflict ? 1 : 0, st.curStroke || 0]); settle(st); return { changed: true, mark, before, conflict, won: st.won, lost: st.lost };
 }
 /** X note on or off (a cat is simply taken off). */
 export const toggleX = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 0 ? 1 : 0);
@@ -148,10 +149,15 @@ export function retract(st) {
   const [r, c, before, fish] = st.history.pop(); st.marks[r][c] = before; st.moves = Math.max(0, st.moves - 1); if (fish) { st.fish = Math.min(MAX_FISH, st.fish + 1); st.mistakes = Math.max(0, st.mistakes - 1); }
   return true;
 }
-/** Take back the last change (a fish you lost stays lost). */
+/** A swipe across the board is one stroke: everything it marks is undone together. */
+export function beginStroke(st) { st.stroke = (st.stroke || 0) + 1; st.curStroke = st.stroke; }
+export function endStroke(st) { st.curStroke = 0; }
+/** Take back the last change, or the whole last swipe (a fish you lost stays lost). */
 export function undo(st) {
   if (st.done || !st.history.length) return false;
-  const [r, c, before] = st.history.pop(); st.marks[r][c] = before; return true;
+  const [r, c, before, , stroke] = st.history.pop(); st.marks[r][c] = before;
+  if (stroke) while (st.history.length && st.history[st.history.length - 1][4] === stroke) { const [a, b, bf] = st.history.pop(); st.marks[a][b] = bf; }
+  return true;
 }
 export function clearBoard(st) { if (st.done) return; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) st.marks[r][c] = 0; st.history = []; }
 
@@ -217,12 +223,17 @@ export function wink(st) {
 // ---------------------------------------------------------------- score and profile
 /** Points for a finished level: more for bigger boards and speed, a bonus for each fish left, small cost for using help. */
 export function levelScore(st, seconds) { return Math.max(0, Math.round(st.n * 100 + Math.max(0, st.n * 45 - seconds) * 3 + st.fish * 50 - st.helps * 30)); }
-export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0, seenHelp: false });
-/** Apply a won level to the profile: points, next level, and a power-up or two as a reward. */
+export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0, seenHelp: false, stars: {} });
+/** 1 to 3 stars: a clean level (no wrong cat, no help) is 3; each of those costs one star, never below 1. */
+export const starsFor = (st) => Math.max(1, 3 - (st.mistakes > 0 ? 1 : 0) - (st.helps > 0 ? 1 : 0));
+export const totalStars = (p) => Object.values(p.stars || {}).reduce((a, b) => a + b, 0);
+/** Apply a won level to the profile. Points and rewards only the first time a level is cleared; replays can only raise its stars. */
 export function completeLevel(p, st, seconds) {
-  const pts = levelScore(st, seconds); p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak);
-  const reward = { hint: 1, wink: p.solved % 3 === 0 ? 1 : 0 }; p.hints = Math.min(MAX_POWERUPS, p.hints + reward.hint); p.winks = Math.min(MAX_POWERUPS, p.winks + reward.wink); p.level = Math.max(p.level, st.level + 1);
-  return { points: pts, reward };
+  p.stars ||= {}; const stars = starsFor(st), first = !(p.stars[st.level] > 0), pts = first ? levelScore(st, seconds) : 0;
+  p.stars[st.level] = Math.max(p.stars[st.level] || 0, stars); p.level = Math.min(LEVEL_COUNT + 1, Math.max(p.level, st.level + 1));
+  const reward = { hint: 0, wink: 0 };
+  if (first) { p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak); reward.hint = 1; reward.wink = p.solved % 3 === 0 ? 1 : 0; p.hints = Math.min(MAX_POWERUPS, p.hints + reward.hint); p.winks = Math.min(MAX_POWERUPS, p.winks + reward.wink); }
+  return { points: pts, reward, stars, first };
 }
 
 // ---------------------------------------------------------------- shipped levels

@@ -1,14 +1,14 @@
 // Pixel art for Meowdoku, drawn in code on tiny canvases (no image files). The cat is a tuxedo cat made of a few shapes; fish are the lives.
 const cache = new Map<string, string>();
-type G = CanvasRenderingContext2D;
-const cv = (w: number, h: number) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
-const px = (g: G, x: number, y: number, c: string, w = 1, h = 1) => { g.fillStyle = c; g.fillRect(Math.floor(x), Math.floor(y), w, h); };
-function ell(g: G, cx: number, cy: number, rx: number, ry: number, c: string, c2?: string) {
+export type G = CanvasRenderingContext2D;
+export const cv = (w: number, h: number) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
+export const px = (g: G, x: number, y: number, c: string, w = 1, h = 1) => { g.fillStyle = c; g.fillRect(Math.floor(x), Math.floor(y), w, h); };
+export function ell(g: G, cx: number, cy: number, rx: number, ry: number, c: string, c2?: string) {
   for (let y = Math.floor(cy - ry - 1); y <= Math.ceil(cy + ry + 1); y++) for (let x = Math.floor(cx - rx - 1); x <= Math.ceil(cx + rx + 1); x++) {
     const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry; if (dx * dx + dy * dy <= 1) px(g, x, y, c2 && dx * 0.5 + dy * 0.85 > 0.55 ? c2 : c);
   }
 }
-function tri(g: G, a: number[], b: number[], c: number[], col: string) {
+export function tri(g: G, a: number[], b: number[], c: number[], col: string) {
   const s = (p: number[], q: number[], r: number[]) => (p[0] - r[0]) * (q[1] - r[1]) - (q[0] - r[0]) * (p[1] - r[1]);
   for (let y = Math.floor(Math.min(a[1], b[1], c[1])); y <= Math.ceil(Math.max(a[1], b[1], c[1])); y++) for (let x = Math.floor(Math.min(a[0], b[0], c[0])); x <= Math.ceil(Math.max(a[0], b[0], c[0])); x++) {
     const p = [x + 0.5, y + 0.5], d1 = s(p, a, b), d2 = s(p, b, c), d3 = s(p, c, a); if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) px(g, x, y, col);
