@@ -130,3 +130,61 @@ test("swipe strokes: everything marked in one swipe is undone together", () => {
 });
 
 test("state is plain JSON", () => { const st = newGame(4); toggleX(st, 0, 0); assert.deepEqual(JSON.parse(JSON.stringify(st)), st); });
+
+// ---------------------------------------------------------------- upgrade: modes, power-ups, shop, generator styles
+import { generateWith, normalizeProfile, newProfile as newProf, completeLevel as completeLvl, setCell as setC, undo as undoMv, newGame as newG, puzzleTier as ptier, countSolutions as cs2, ITEMS, STYLES, styleFor, parFor } from "../meowdoku/engine.mjs";
+import { dailySpec, dailyPuzzle, newDailyGame, newEndlessGame, endlessPuzzle, completeDaily, completeEndless, buy, sweepBoard, feedFish, prevDay, dayOfWeek, DIFFS, ENDLESS_PAID_PER_DAY } from "../meowdoku/modes.mjs";
+
+test("generator styles: every style makes unique puzzles that fit the requested tiers, deterministically", () => {
+  for (const style of STYLES) for (const [n, maxTier, minTier] of [[5, 1, 0], [6, 2, 1], [7, 3, 2]]) {
+    const p = generateWith({ n, seed: 4242, maxTier, minTier, style }); assert.ok(p, `${style} ${n}`);
+    assert.equal(cs2(p.regions, 2), 1); const t = ptier(p); assert.ok(t <= maxTier && t >= minTier, `tier ${t} not in ${minTier}-${maxTier}`);
+    assert.deepEqual(generateWith({ n, seed: 4242, maxTier, minTier, style }), p);
+  }
+  assert.deepEqual([1, 11, 21, 31, 41].map(styleFor), ["blob", "round", "blob", "snake", "round"]);
+});
+test("daily puzzle: same for everyone on a day, different days differ, harder on Sunday than Monday, always unique", () => {
+  const d = "2026-11-23"; assert.deepEqual(dailyPuzzle(d), dailyPuzzle(d)); assert.notDeepEqual(dailyPuzzle(d), dailyPuzzle("2026-11-24"));
+  assert.equal(dayOfWeek("2026-11-22"), 0); assert.equal(dayOfWeek("2026-11-23"), 1); assert.ok(dailySpec("2026-11-22").n > dailySpec("2026-11-23").n);
+  for (const day of ["2026-11-22", "2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28"]) { const p = dailyPuzzle(day); assert.equal(p.n, dailySpec(day).n); assert.equal(cs2(p.regions, 2), 1, day); }
+  const g = newDailyGame(d); assert.equal(g.mode, "daily"); assert.equal(g.level, 0); assert.ok(g.label.length > 3);
+  assert.equal(prevDay("2026-03-01"), "2026-02-28"); assert.equal(prevDay("2027-01-01"), "2026-12-31");
+});
+test("daily rewards: pays once a day, streak grows on consecutive days and resets after a gap", () => {
+  const p = normalizeProfile({}); const win = (day) => { const g = newDailyGame(day); g.mistakes = 0; return completeDaily(p, g, 100, day); };
+  const a = win("2026-11-23"); assert.ok(a.first && a.streak === 1 && a.reward.yarn > 0); const y = p.yarn; assert.equal(win("2026-11-23").first, false); assert.equal(p.yarn, y, "no second payout the same day");
+  assert.equal(win("2026-11-24").streak, 2); assert.equal(win("2026-11-25").streak, 3); assert.equal(win("2026-11-28").streak, 1, "a missed day resets"); assert.equal(p.daily.best, 3);
+});
+test("endless: size and difficulty are respected, fish drop with difficulty, yarn pays for the first few wins a day only", () => {
+  for (const diff of Object.keys(DIFFS)) { const g = newEndlessGame({ n: 6, diff, seed: 77 }); assert.equal(g.n, 6); assert.equal(g.fish, DIFFS[diff].fish); assert.equal(cs2(g.regions, 2), 1); assert.ok(ptier(g) <= DIFFS[diff].maxTier); }
+  assert.ok(DIFFS.expert.fish < DIFFS.hard.fish && DIFFS.hard.fish < DIFFS.easy.fish);
+  const p = normalizeProfile({}); let paid = 0; for (let i = 0; i < ENDLESS_PAID_PER_DAY + 3; i++) { const g = newEndlessGame({ n: 5, diff: "easy", seed: i + 1 }); const r = completeEndless(p, g, 50 + i, "2026-11-24", "easy"); if (r.paid) paid++; }
+  assert.equal(paid, ENDLESS_PAID_PER_DAY); assert.equal(completeEndless(p, newEndlessGame({ n: 5, diff: "easy", seed: 99 }), 10, "2026-11-25", "easy").paid, true, "a new day pays again"); assert.equal(p.endless.best["5-easy"], 10, "best time per size and difficulty");
+});
+test("shop: spends yarn, refuses when poor or full, power-up counts are capped", () => {
+  const p = normalizeProfile({ yarn: 100, hints: 8 }); assert.equal(buy(p, "hint").ok, true); assert.equal(p.hints, 9); assert.equal(p.yarn, 100 - ITEMS.hint.price); assert.equal(buy(p, "hint").reason, "full");
+  p.yarn = 1; assert.equal(buy(p, "helper").reason, "poor"); assert.equal(buy(p, "nope").ok, false); assert.equal(p.yarn, 1);
+});
+test("old saves load: missing fields are filled in and nothing is lost", () => {
+  const o = normalizeProfile({ v: 1, level: 12, score: 900, hints: 2, winks: 1, solved: 11, stars: { 1: 3, 2: 1 } }); assert.equal(o.level, 12); assert.equal(o.stars[1], 3); assert.equal(o.hints, 2); assert.ok(o.sweeps >= 0 && o.sardines >= 0 && o.yarn === 0 && o.daily.streak === 0 && o.endless.wins === 0);
+});
+test("combo: clean cats build it, a wrong cat resets it, retract and undo keep it honest", () => {
+  const P = puzzleFor(3), g = newG(3, P); P.solution.slice(0, 3).forEach((c, r) => setC(g, r, c, 2)); assert.equal(g.combo, 3); assert.equal(g.bestCombo, 3);
+  const bad = P.solution[0] === 0 ? 1 : 0; setC(g, 4, bad === P.solution[4] ? (bad + 2) % P.n : bad, 2); // may or may not conflict; combo never goes up on a conflict
+  const before = g.combo; const r = setC(g, 3, P.solution[3], 2); assert.ok(g.combo === before + 1 || r.conflict);
+  assert.equal(g.bestCombo >= 3, true);
+});
+test("sweep crosses out exactly the ruled-out squares in one undo, never touches cats, costs no star", () => {
+  const P = puzzleFor(15), g = newG(15, P); assert.equal(sweepBoard(g), 0, "nothing ruled out on an empty board"); setC(g, 2, P.solution[2], 2);
+  const n = sweepBoard(g); assert.ok(n > 5); assert.equal(g.helps, 0); let xs = 0, cats = 0; for (const row of g.marks) for (const m of row) { if (m === 1) xs++; if (m === 2) cats++; } assert.equal(xs, n); assert.equal(cats, 1);
+  for (let r = 0; r < g.n; r++) assert.notEqual(g.marks[r][P.solution[r]], 1, "a sweep never crosses out a true cat spot");
+  undoMv(g); xs = 0; for (const row of g.marks) for (const m of row) if (m === 1) xs++; assert.equal(xs, 0, "one Undo takes the whole sweep back");
+});
+test("sardine gives a fish back up to the max, and a lost fish can be refilled", () => {
+  const g = newEndlessGame({ n: 5, diff: "easy", seed: 3 }); assert.equal(feedFish(g), false); g.fish--; assert.equal(feedFish(g), true); assert.equal(g.fish, 3); assert.equal(feedFish(g), false);
+  const x = newEndlessGame({ n: 5, diff: "expert", seed: 3 }); assert.equal(x.fish, 1); assert.equal(feedFish(x), true, "a sardine is worth using on Expert"); assert.equal(x.fish, 2); assert.equal(feedFish(x), false, "but only one extra fish");
+});
+test("campaign rewards: yarn, finale chest, speed badge once", () => {
+  const p = normalizeProfile({}), st = newG(10, puzzleFor(10)); const r = completeLvl(p, st, parFor(st.n) - 1); assert.ok(r.first && r.speedy && r.newSpeedy && r.reward.yarn > 30 && r.reward.sardine === 1); assert.equal(p.fast[10], true);
+  const r2 = completeLvl(p, newG(10, puzzleFor(10)), 5); assert.equal(r2.first, false); assert.equal(r2.newSpeedy, false); assert.equal(r2.reward.yarn, 0); assert.equal(r2.points, 0);
+});

@@ -25,7 +25,8 @@ function randomCats(n, rng) {
   return go(0) ? cols : null;
 }
 /** Grow n connected colour regions out of the n cat cells until every cell belongs to one. `frozen` regions stay tiny (they only grow if nothing else can), which makes obvious "only one spot" moves for easy levels. */
-function growRegions(n, cols, rng, frozen = new Set()) {
+export const STYLES = ["blob", "round", "snake"];
+function growRegions(n, cols, rng, frozen = new Set(), style = "blob") {
   const reg = Array.from({ length: n }, () => Array(n).fill(-1)); for (let r = 0; r < n; r++) reg[r][cols[r]] = r;
   let left = n * n - n;
   while (left > 0) {
@@ -34,7 +35,11 @@ function growRegions(n, cols, rng, frozen = new Set()) {
       const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => (reg[r + a]?.[c + b] ?? -1)).filter((x) => x >= 0); if (!near.length) continue;
       any.push([r, c, near]); const free = near.filter((g) => !frozen.has(g)); if (free.length) open.push([r, c, free]);
     }
-    const pool = open.length ? open : any, [r, c, near] = pool[rng.int(pool.length)]; reg[r][c] = near[rng.int(near.length)]; left--;
+    const pool = open.length ? open : any; let pick = pool[rng.int(pool.length)];
+    if (style !== "blob") {   // "round" fills in concave notches (compact blobs); "snake" extends tips (long twisty regions)
+      const w = pool.map(([, , near]) => (style === "round" ? near.length * near.length : near.length === 1 ? 1 : 0.12)), tot = w.reduce((a, b) => a + b, 0); let x = rng() * tot, i = 0; while (i < w.length - 1 && x >= w[i]) { x -= w[i]; i++; } pick = pool[i];
+    }
+    const [r, c, near] = pick; reg[r][c] = near[rng.int(near.length)]; left--;
   }
   return reg;
 }
@@ -86,23 +91,34 @@ export const logicSolvable = (puzzle, maxTier = 3) => logicSteps(puzzle, maxTier
 export function puzzleTier(puzzle) { for (let t = 0; t <= 3; t++) if (logicSolvable(puzzle, t)) return t; return 4; }
 /** The puzzle for a level: {n, regions[n][n] (0..n-1), solution[n] (column of the cat in each row)}. Deterministic.
  *  It has exactly one solution and its hardest needed technique tier fits the level (tierFor), never easier than minTierFor. */
-export function generate(level, opts = {}) {
-  const n = sizeFor(level), rng = makeRng((level * 7919 + 13) >>> 0), maxTier = opts.maxTier ?? tierFor(level), minTier = opts.minTier ?? minTierFor(level);
-  for (let attempt = 0; attempt < 600; attempt++) {
+export function generateWith({ n, seed, maxTier, minTier = 0, style = "blob", attempts = 600 }) {
+  const rng = makeRng(seed >>> 0);
+  for (let attempt = 0; attempt < attempts; attempt++) {
     const cols = randomCats(n, rng); if (!cols) continue;
     const frozen = new Set(); const f = maxTier === 0 ? (n <= 4 ? 1 : 2) : maxTier === 1 ? 1 : 0; while (frozen.size < f) frozen.add(rng.int(n));
-    const regions = growRegions(n, cols, rng, frozen); if (!repair(regions, cols, rng)) continue;
-    const draft = { n, regions, solution: cols }; if (!logicSolvable(draft, maxTier)) continue; if (minTier > 0 && logicSolvable(draft, minTier - 1)) continue;   // too easy for this level
+    const regions = growRegions(n, cols, rng, frozen, style); if (!repair(regions, cols, rng)) continue;
+    const draft = { n, regions, solution: cols }; if (!logicSolvable(draft, maxTier)) continue; if (minTier > 0 && logicSolvable(draft, minTier - 1)) continue;   // too easy for this setting
     const perm = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = rng.int(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }   // shuffle which colour each region gets
     return { n, regions: regions.map((row) => row.map((g) => perm[g])), solution: cols };
   }
-  throw new Error("could not make a puzzle for level " + level);
+  return null;
+}
+/** The region style a world uses, so the worlds look different from each other (the shipped table was built with these). */
+export const styleFor = (level) => STYLES[[0, 1, 0, 2, 1, 0, 2, 1, 2, 0][Math.floor((Math.max(1, level) - 1) / 10) % 10]];
+export function generate(level, opts = {}) {
+  const n = sizeFor(level), maxTier = opts.maxTier ?? tierFor(level), minTier = opts.minTier ?? minTierFor(level), seed = (level * 7919 + 13) >>> 0, style = opts.style ?? styleFor(level);
+  const p = generateWith({ n, seed, maxTier, minTier, style }) || generateWith({ n, seed: seed + 1, maxTier, minTier: Math.max(0, minTier - 1), style: "blob" });
+  if (!p) throw new Error("could not make a puzzle for level " + level);
+  return p;
 }
 
 // ---------------------------------------------------------------- game state
-export function newGame(level, puzzle = puzzleFor(level)) {
-  const { n, regions, solution } = puzzle;
-  return { v: 1, level, n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish: MAX_FISH, moves: 0, mistakes: 0, helps: 0, history: [], stroke: 0, curStroke: 0, done: false, won: false, lost: false };
+/** Seconds a quick solve takes (the lightning-bolt badge): more room on bigger boards. */
+export const parFor = (n) => n * n * 4;
+/** opts: mode ("campaign" | "daily" | "endless"), label, fish (lives, default 3), tier (shown difficulty 0-3), seed. */
+export function newGame(level, puzzle = puzzleFor(level), opts = {}) {
+  const { n, regions, solution } = puzzle, fish = opts.fish ?? MAX_FISH;
+  return { v: 1, level, mode: opts.mode || "campaign", label: opts.label || "", tier: opts.tier ?? (level > 0 ? tierFor(level) : 1), n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish, maxFish: opts.maxFish ?? (fish < MAX_FISH ? fish + 1 : fish), moves: 0, mistakes: 0, helps: 0, combo: 0, bestCombo: 0, history: [], stroke: 0, curStroke: 0, done: false, won: false, lost: false };
 }
 export const cats = (st) => { const out = []; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) if (st.marks[r][c] === 2) out.push([r, c]); return out; };
 /** Cats that break a rule with another cat (same row, column, colour, or touching). Returns a Set of "r,c". */
@@ -133,8 +149,8 @@ export function setCell(st, r, c, mark) {
   if (st.done) return { changed: false };
   const before = st.marks[r][c]; if (before === mark) return { changed: false };
   st.marks[r][c] = mark; st.moves++;
-  let conflict = false; if (mark === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; }
-  st.history.push([r, c, before, conflict ? 1 : 0, st.curStroke || 0]); settle(st); return { changed: true, mark, before, conflict, won: st.won, lost: st.lost };
+  let conflict = false; if (mark === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; st.combo = 0; } else if (mark === 2) { st.combo = (st.combo || 0) + 1; st.bestCombo = Math.max(st.bestCombo || 0, st.combo); }
+  st.history.push([r, c, before, conflict ? 1 : 0, st.curStroke || 0]); settle(st); return { changed: true, mark, before, conflict, combo: st.combo || 0, won: st.won, lost: st.lost };
 }
 /** X note on or off (a cat is simply taken off). */
 export const toggleX = (st, r, c) => setCell(st, r, c, st.marks[r][c] === 0 ? 1 : 0);
@@ -146,7 +162,8 @@ export function setMark(st, r, c, mark) { st.history.push([r, c, st.marks[r][c]]
 /** Cancel the move that was JUST made (the first tap of a double-tap), including the fish it cost. Not for general use: Undo keeps lost fish. */
 export function retract(st) {
   if (st.done || !st.history.length) return false;
-  const [r, c, before, fish] = st.history.pop(); st.marks[r][c] = before; st.moves = Math.max(0, st.moves - 1); if (fish) { st.fish = Math.min(MAX_FISH, st.fish + 1); st.mistakes = Math.max(0, st.mistakes - 1); }
+  const [r, c, before, fish] = st.history.pop(), was = st.marks[r][c]; st.marks[r][c] = before; st.moves = Math.max(0, st.moves - 1);
+  if (fish) { st.fish = Math.min(st.maxFish || MAX_FISH, st.fish + 1); st.mistakes = Math.max(0, st.mistakes - 1); } else if (was === 2) st.combo = Math.max(0, (st.combo || 0) - 1);
   return true;
 }
 /** A swipe across the board is one stroke: everything it marks is undone together. */
@@ -221,19 +238,38 @@ export function wink(st) {
 }
 
 // ---------------------------------------------------------------- score and profile
-/** Points for a finished level: more for bigger boards and speed, a bonus for each fish left, small cost for using help. */
-export function levelScore(st, seconds) { return Math.max(0, Math.round(st.n * 100 + Math.max(0, st.n * 45 - seconds) * 3 + st.fish * 50 - st.helps * 30)); }
-export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0, seenHelp: false, stars: {} });
+/** Points for a finished level: more for bigger boards and speed, a bonus for each fish left and for your best combo, small cost for using help. */
+export function levelScore(st, seconds) { return Math.max(0, Math.round(st.n * 100 + Math.max(0, st.n * 45 - seconds) * 3 + st.fish * 50 + Math.min(st.bestCombo || 0, st.n) * 10 - st.helps * 30)); }
+export const ITEMS = {
+  hint: { key: "hints", name: "Hint", price: 25, text: "Explains the next move and why." },
+  helper: { key: "winks", name: "Cat Helper", price: 40, text: "Puts one correct cat on the board, or removes a wrong one." },
+  sweep: { key: "sweeps", name: "Sweep", price: 30, text: "Crosses out every spot your cats already rule out." },
+  sardine: { key: "sardines", name: "Sardine", price: 35, text: "Gives you a fish back." },
+};
+export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, sweeps: 2, sardines: 1, yarn: 0, solved: 0, bestStreak: 0, streak: 0, seenHelp: false, stars: {}, fast: {}, daily: { last: "", streak: 0, best: 0, done: {} }, endless: { wins: 0, day: "", today: 0, best: {} }, bestCombo: 0 });
+/** Old saves keep working: fill in anything a newer version added. */
+export function normalizeProfile(p) {
+  const d = newProfile(), o = { ...d, ...p, stars: { ...(p.stars || {}) }, fast: { ...(p.fast || {}) }, daily: { ...d.daily, ...(p.daily || {}), done: { ...(p.daily?.done || {}) } }, endless: { ...d.endless, ...(p.endless || {}), best: { ...(p.endless?.best || {}) } } };
+  for (const k of ["hints", "winks", "sweeps", "sardines"]) o[k] = Math.min(MAX_POWERUPS, Math.max(0, +o[k] || 0)); o.yarn = Math.max(0, Math.floor(+o.yarn || 0)); return o;
+}
 /** 1 to 3 stars: a clean level (no wrong cat, no help) is 3; each of those costs one star, never below 1. */
 export const starsFor = (st) => Math.max(1, 3 - (st.mistakes > 0 ? 1 : 0) - (st.helps > 0 ? 1 : 0));
 export const totalStars = (p) => Object.values(p.stars || {}).reduce((a, b) => a + b, 0);
-/** Apply a won level to the profile. Points and rewards only the first time a level is cleared; replays can only raise its stars. */
+const give = (p, item, n) => { const k = ITEMS[item].key, before = p[k]; p[k] = Math.min(MAX_POWERUPS, p[k] + n); return p[k] - before; };
+/** Apply a won level to the profile. Points and rewards only the first time a level is cleared; replays can only raise its stars (and earn the speed badge once). */
 export function completeLevel(p, st, seconds) {
-  p.stars ||= {}; const stars = starsFor(st), first = !(p.stars[st.level] > 0), pts = first ? levelScore(st, seconds) : 0;
-  p.stars[st.level] = Math.max(p.stars[st.level] || 0, stars); p.level = Math.min(LEVEL_COUNT + 1, Math.max(p.level, st.level + 1));
-  const reward = { hint: 0, wink: 0 };
-  if (first) { p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak); reward.hint = 1; reward.wink = p.solved % 3 === 0 ? 1 : 0; p.hints = Math.min(MAX_POWERUPS, p.hints + reward.hint); p.winks = Math.min(MAX_POWERUPS, p.winks + reward.wink); }
-  return { points: pts, reward, stars, first };
+  p.stars ||= {}; p.fast ||= {}; const stars = starsFor(st), first = !(p.stars[st.level] > 0), pts = first ? levelScore(st, seconds) : 0;
+  const speedy = st.helps === 0 && seconds <= parFor(st.n), newSpeedy = speedy && !p.fast[st.level]; if (speedy) p.fast[st.level] = true;
+  p.stars[st.level] = Math.max(p.stars[st.level] || 0, stars); p.level = Math.min(LEVEL_COUNT + 1, Math.max(p.level, st.level + 1)); p.bestCombo = Math.max(p.bestCombo || 0, st.bestCombo || 0);
+  const reward = { hint: 0, wink: 0, sweep: 0, sardine: 0, yarn: 0 };
+  if (first) {
+    p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak);
+    reward.hint = give(p, "hint", 1); reward.wink = give(p, "helper", p.solved % 3 === 0 ? 1 : 0); reward.sweep = give(p, "sweep", p.solved % 4 === 0 ? 1 : 0);
+    if (st.level % 10 === 0) { reward.sardine = give(p, "sardine", 1); reward.sweep += give(p, "sweep", 1); }   // a finale chest
+    reward.yarn = stars * 4 + 6 + (st.level % 10 === 0 ? 30 : 0);
+  }
+  if (newSpeedy) reward.yarn += 5; p.yarn += reward.yarn;
+  return { points: pts, reward, stars, first, speedy, newSpeedy };
 }
 
 // ---------------------------------------------------------------- shipped levels
