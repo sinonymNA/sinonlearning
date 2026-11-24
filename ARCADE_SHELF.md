@@ -27,8 +27,16 @@ Carts/bins accept anything but must be empty when you finish. Wrapped mystery it
 ## Accessibility
 - Every shelf is a real button labelled like "Shelf 3, shelf for Science books, 4 of 5, top: blue shirt". A settings switch draws a symbol on each shirt; shirts also differ by pattern, and books by emblem.
 
+## Home screen and living backgrounds
+- **Home** (`Home.tsx`): a swinging wooden shop sign, a display stack you can tap (items hop with a thud, and one hops by itself now and then), PLAY / CONTINUE (shows the level and moves in progress), LEVELS, HOW TO PLAY, three department cards with star progress bars, and stats. It never scrolls (320x568 up to desktop; landscape uses two columns). The back arrow in a game returns here; the arrow on Home returns to the arcade.
+- **Scenes** (`Scene.tsx`): one animated shop per department behind the game and the home screen. Clothing Corner: pastel polka-dot wall, swaying bunting, sunlight rays, a few hangers. Book Nook: wallpaper, faint bookcases down both sides, a swinging pendant lamp with a glowing light cone. Boutique: lavender wall, twinkling string lights, spotlights, swaying plants. All have drifting dust motes. Only transform/opacity animate (cheap) and everything is off in Calm mode and with reduced motion. Decorations hang just below the header while playing so they are not hidden.
+- Extra motion: shelves that can take the lifted items glow softly green; lifted items bob; the level sign drops in; screens fade/slide in; unwrapping uses flecks of paper and sparkles.
+
+## Mystery items (the rule)
+- A wrapped item (shirts: a purple gift box with a gold ribbon, a bow and a big "?"; books: kraft paper with twine and a "?") shows nothing about what is inside. **A wrapped item never moves with a run**: `topRun` stops at the first wrapped item, so it can never give its colour away by moving along with the items above it. It is unwrapped only when it becomes the top item, or when its shelf is finished (a finished shelf unwraps everything on it). Undo wraps it again. The solver and the level generator use the same rule (wrapped items are `key + 32`), and tests plus the browser check assert it.
+
 ## Not built yet (deliberately)
-Daily delivery, home screen, shop decorating, teacher class decks, size-order and customer-order levels. Add them only after the levels feel good.
+Daily delivery, shop decorating, teacher class decks, size-order and customer-order levels. Add them only after the levels feel good.
 
 ## Tests
 - `node --test arcade-server/tests/shelf.test.mjs` (rules and refusals, win rule, mystery reveal and undo, carts, every level 1-120 solvable, hints finish levels in every department, stars/profile).

@@ -51,16 +51,21 @@ export function itemUrl(kind: "shirt" | "book", v: number, hidden = false, glyph
   const key = `i:${kind}:${v}:${hidden}:${glyph}`, hit = cache.get(key); if (hit) return hit;
   const { c, g } = mk(SPR_W, SPR_H);
   if (hidden) {
-    if (kind === "shirt") {   // clear plastic bag, knotted on top, with a "?" sticker
-      g.fillStyle = "rgba(43,35,66,.2)"; rr(g, 12, 9, 176, 62, 17); g.fill();
-      g.fillStyle = vgrad(g, 4, 66, "#f4f8fd", "#cdd8e8"); rr(g, 8, 4, 184, 62, 17); g.fill(); g.strokeStyle = "rgba(255,255,255,.9)"; g.lineWidth = 3; rr(g, 12, 8, 176, 54, 13); g.stroke();
-      g.fillStyle = "#b9c6da"; g.beginPath(); g.moveTo(92, 6); g.lineTo(100, -1); g.lineTo(108, 6); g.closePath(); g.fill();
+    if (kind === "shirt") {   // a boxed product: a purple gift box with a gold ribbon, a bow and a big "?"
+      g.fillStyle = "rgba(43,35,66,.24)"; rr(g, 12, 10, 176, 62, 12); g.fill();
+      g.fillStyle = vgrad(g, 14, 66, "#6a5cf0", "#3d30b8"); rr(g, 14, 16, 172, 50, 9); g.fill();                 // the box
+      g.fillStyle = vgrad(g, 4, 26, "#9486ff", "#6252e0"); rr(g, 7, 4, 186, 24, 9); g.fill();                    // the lid
+      g.fillStyle = "rgba(0,0,0,.22)"; g.fillRect(14, 28, 172, 4); g.fillStyle = "rgba(255,255,255,.3)"; g.fillRect(14, 7, 172, 3);
+      g.fillStyle = vgrad(g, 4, 66, "#ffe08a", "#f0b429"); g.fillRect(87, 4, 26, 62);                            // the ribbon
+      g.fillStyle = "#f0b429"; g.beginPath(); g.ellipse(80, 8, 15, 7, -0.25, 0, Math.PI * 2); g.ellipse(120, 8, 15, 7, 0.25, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#c98a00"; g.lineWidth = 1.5; g.stroke();   // the bow
+      g.fillStyle = "#ffd36a"; g.beginPath(); g.arc(100, 9, 6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "rgba(255,255,255,.75)"; for (const [x, y] of [[30, 44], [160, 52], [48, 58], [146, 40]]) { g.fillRect(x - 1, y - 4, 2, 8); g.fillRect(x - 4, y - 1, 8, 2); }   // sparkles
     } else {                  // kraft paper wrap tied with twine
       g.fillStyle = "rgba(43,35,66,.22)"; rr(g, 8, 9, 184, 62, 10); g.fill();
       g.fillStyle = vgrad(g, 4, 66, "#d9b27a", "#b98c52"); rr(g, 4, 4, 192, 62, 10); g.fill(); g.strokeStyle = "#8a6636"; g.lineWidth = 3; g.beginPath(); g.moveTo(52, 4); g.lineTo(52, 66); g.moveTo(148, 4); g.lineTo(148, 66); g.stroke();
     }
-    g.fillStyle = "#3b7cff"; g.beginPath(); g.arc(100, 35, 21, 0, Math.PI * 2); g.fill(); g.lineWidth = 3; g.strokeStyle = "#fff"; g.stroke();
-    g.fillStyle = "#fff"; g.font = "bold 30px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 100, 37);
+    const box = kind === "shirt"; g.fillStyle = box ? "#fff8ee" : "#3b7cff"; g.beginPath(); g.arc(100, 40, 21, 0, Math.PI * 2); g.fill(); g.lineWidth = 3; g.strokeStyle = box ? "#f0b429" : "#fff"; g.stroke();
+    g.fillStyle = box ? "#4638c4" : "#fff"; g.font = "bold 31px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 100, 42);
   } else if (kind === "shirt") {
     shirtBody(g, SHIRT_PAL[v % SHIRT_PAL.length], v);
     if (glyph) { g.font = "bold 30px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 5; g.strokeStyle = "rgba(43,35,66,.5)"; g.strokeText(GLYPHS[v % GLYPHS.length], 100, 43); g.fillStyle = "#fff"; g.fillText(GLYPHS[v % GLYPHS.length], 100, 43); }
@@ -92,4 +97,50 @@ export function stampUrl(): string {
   g.fillStyle = "#ffd23f"; g.beginPath(); for (let i = 0; i < 16; i++) { const a = (i * Math.PI) / 8, r = i % 2 ? 15 : 17.5; g.lineTo(18 + Math.cos(a) * r, 18 + Math.sin(a) * r); } g.closePath(); g.fill(); g.lineWidth = 2; g.strokeStyle = "#c98a00"; g.stroke();
   g.strokeStyle = "#7a4d00"; g.lineWidth = 4.2; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); g.moveTo(10, 18.5); g.lineTo(16, 24); g.lineTo(26.5, 12); g.stroke();
   const url = c.toDataURL(); cache.set("stamp", url); return url;
+}
+
+// ---- scene art for the backgrounds and the home screen (each drawn once, animated with transforms only)
+const grad = (g: G, x0: number, y0: number, x1: number, y1: number, a: string, b: string) => { const gr = g.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, a); gr.addColorStop(1, b); return gr; };
+/** A string of bunting, a 120x56 tile that repeats sideways. */
+export function buntingUrl(): string {
+  const hit = cache.get("bunting"); if (hit) return hit; const { c, g } = mk(120, 56), cols = ["#ff8fab", "#ffd166", "#7bdff2", "#b9f3c9", "#c3a6ff"], sag = (x: number) => 6 + 12 * Math.sin((Math.PI * x) / 120);
+  g.strokeStyle = "#8a6a4a"; g.lineWidth = 2; g.beginPath(); for (let x = 0; x <= 120; x += 4) (x ? g.lineTo(x, sag(x)) : g.moveTo(0, sag(0))); g.stroke();
+  [12, 42, 72, 102].forEach((x, i) => { g.fillStyle = cols[i % cols.length]; g.beginPath(); g.moveTo(x - 12, sag(x - 12)); g.lineTo(x + 12, sag(x + 12)); g.lineTo(x, sag(x) + 30); g.closePath(); g.fill(); g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.moveTo(x - 12, sag(x - 12)); g.lineTo(x - 2, sag(x - 2)); g.lineTo(x - 4, sag(x) + 14); g.closePath(); g.fill(); });
+  const url = c.toDataURL(); cache.set("bunting", url); return url;
+}
+/** A hanger with a little tee on it, 46x72. */
+export function hangerUrl(col: string): string {
+  const key = `hanger:${col}`, hit = cache.get(key); if (hit) return hit; const { c, g } = mk(46, 72);
+  g.strokeStyle = "#7d8aa0"; g.lineWidth = 2.4; g.lineCap = "round"; g.beginPath(); g.arc(23, 9, 4.5, Math.PI * 0.15, Math.PI * 1.6); g.stroke(); g.beginPath(); g.moveTo(23, 14); g.lineTo(23, 19); g.lineTo(4, 27); g.lineTo(42, 27); g.lineTo(23, 19); g.stroke();
+  g.fillStyle = col; g.beginPath(); g.moveTo(10, 28); g.lineTo(17, 28); g.quadraticCurveTo(23, 36, 29, 28); g.lineTo(36, 28); g.lineTo(44, 38); g.lineTo(38, 44); g.lineTo(34, 40); g.lineTo(34, 68); g.lineTo(12, 68); g.lineTo(12, 40); g.lineTo(8, 44); g.lineTo(2, 38); g.closePath(); g.fill(); g.fillStyle = "rgba(0,0,0,.12)"; g.fillRect(12, 56, 22, 2);
+  const url = c.toDataURL(); cache.set(key, url); return url;
+}
+/** A pendant lamp, 64x112: cord, amber shade, glowing bulb. */
+export function lampUrl(): string {
+  const hit = cache.get("lamp"); if (hit) return hit; const { c, g } = mk(64, 112);
+  g.strokeStyle = "#5b4630"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(32, 0); g.lineTo(32, 34); g.stroke();
+  g.fillStyle = grad(g, 0, 34, 0, 84, "#ffcf6b", "#e08a1e"); g.beginPath(); g.moveTo(24, 34); g.lineTo(40, 34); g.quadraticCurveTo(58, 56, 60, 84); g.lineTo(4, 84); g.quadraticCurveTo(6, 56, 24, 34); g.closePath(); g.fill(); g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.moveTo(22, 40); g.quadraticCurveTo(12, 56, 12, 72); g.lineTo(18, 72); g.quadraticCurveTo(18, 56, 26, 42); g.closePath(); g.fill();
+  const bulb = g.createRadialGradient(32, 90, 2, 32, 90, 14); bulb.addColorStop(0, "#fffbe0"); bulb.addColorStop(1, "#ffd86b"); g.fillStyle = bulb; g.beginPath(); g.ellipse(32, 90, 12, 11, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = "#8a6636"; g.fillRect(4, 82, 56, 4);
+  const url = c.toDataURL(); cache.set("lamp", url); return url;
+}
+/** A string of party lights, a 120x44 tile; `lit` 0 or 1 chooses which bulbs glow (two layers alternate to twinkle). */
+export function lightsUrl(lit: 0 | 1): string {
+  const key = `lights:${lit}`, hit = cache.get(key); if (hit) return hit; const { c, g } = mk(120, 44), cols = ["#ff6b9d", "#ffd23f", "#4cc3ff", "#7cd992"], sag = (x: number) => 5 + 9 * Math.sin((Math.PI * x) / 120);
+  g.strokeStyle = "#3b3354"; g.lineWidth = 1.8; g.beginPath(); for (let x = 0; x <= 120; x += 4) (x ? g.lineTo(x, sag(x)) : g.moveTo(0, sag(0))); g.stroke();
+  [15, 45, 75, 105].forEach((x, i) => { const y = sag(x) + 7, on = i % 2 === lit; if (on) { const gl = g.createRadialGradient(x, y, 1, x, y, 15); gl.addColorStop(0, cols[i] + "cc"); gl.addColorStop(1, cols[i] + "00"); g.fillStyle = gl; g.fillRect(x - 16, y - 16, 32, 32); } g.fillStyle = on ? cols[i] : "#6b6586"; g.beginPath(); g.ellipse(x, y, 4.2, 5.4, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = "#3b3354"; g.fillRect(x - 2, y - 8, 4, 3); });
+  const url = c.toDataURL(); cache.set(key, url); return url;
+}
+/** A potted plant, 84x132. */
+export function plantUrl(): string {
+  const hit = cache.get("plant"); if (hit) return hit; const { c, g } = mk(84, 132);
+  const leaf = (x: number, y: number, rx: number, ry: number, rot: number, col: string) => { g.save(); g.translate(x, y); g.rotate(rot); g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2); g.fill(); g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(-rx * 0.8, 0); g.lineTo(rx * 0.8, 0); g.stroke(); g.restore(); };
+  leaf(42, 44, 10, 38, 0, "#3f9b5b"); leaf(26, 58, 9, 32, -0.7, "#4fb06a"); leaf(58, 58, 9, 32, 0.7, "#4fb06a"); leaf(16, 82, 8, 26, -1.15, "#3f9b5b"); leaf(68, 82, 8, 26, 1.15, "#3f9b5b");
+  g.fillStyle = grad(g, 0, 92, 0, 130, "#e0875a", "#b9623a"); g.beginPath(); g.moveTo(20, 92); g.lineTo(64, 92); g.lineTo(58, 130); g.lineTo(26, 130); g.closePath(); g.fill(); g.fillStyle = "#f0a070"; g.fillRect(16, 88, 52, 8);
+  const url = c.toDataURL(); cache.set("plant", url); return url;
+}
+/** A faint backdrop bookcase tile, 160x132, for the Book Nook walls. */
+export function bookcaseUrl(): string {
+  const hit = cache.get("bookcase"); if (hit) return hit; const { c, g } = mk(160, 132), pal = ["#b4532a", "#14a9b8", "#8b5cf6", "#3b7cff", "#f28c28", "#ec4899", "#3f9b3f", "#2d3a8c"];
+  g.fillStyle = "#6b4528"; g.fillRect(0, 0, 160, 132); for (let r = 0; r < 3; r++) { const y = r * 44; g.fillStyle = "#4c301a"; g.fillRect(0, y + 38, 160, 6); let x = 4; let i = r * 3; while (x < 150) { const w = 9 + ((i * 7) % 8), h = 26 + ((i * 11) % 12); g.fillStyle = pal[i % pal.length]; g.fillRect(x, y + 38 - h, w, h); g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(x + 1, y + 38 - h, 2, h); g.fillStyle = "#f6d46a"; g.fillRect(x, y + 38 - h + 5, w, 2); x += w + 1; i++; } }
+  const url = c.toDataURL(); cache.set("bookcase", url); return url;
 }

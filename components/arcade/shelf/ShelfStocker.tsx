@@ -4,11 +4,12 @@
 // Clothing Corner (sort shirts by colour), Book Nook (every shelf has a sign), Boutique (racks for shirts, shelves for books, both mixed up).
 // Built for feel and smoothness: flat cached sprites moved with GPU transforms, one Web Animations arc per item (lift, tilt, glide, drop, squash), dust and sparkle
 // particles made imperatively (no React re-renders), sound and a touch of haptics. React re-renders only when the game state changes. Rules live in arcade-server/shelf.
-import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
 import { newGame, whyNot, move, undo as undoMove, addCart, hint as getHint, hasMoves, bayDone, topRun, newProfile, normalizeProfile, completeLevel, totalStars, specFor, deptOf, DEPTS, SUBJECTS, MAX_EXTRA } from "../../../arcade-server/shelf/index.mjs";
 import { PrefsProvider, PrefsButtons, usePrefs, sfx, tone } from "../prefs";
 import { itemUrl, iconUrl, stampUrl, SPR_W, SPR_H, SHIRT_NAMES } from "./sprites";
+import Scene from "./Scene";
+import Home from "./Home";
 import "./shelf.css";
 
 export const GAME_NAME = "Shelf Stocker";
@@ -45,7 +46,7 @@ const T = (x: number, y: number, rot = 0, sx = 1, sy = 1) => `translate3d(${x}px
 
 function Inner() {
   const S = useRef<Saved | null>(null), stage = useRef<HTMLDivElement>(null), fx = useRef<HTMLDivElement>(null), els = useRef(new Map<number, HTMLImageElement>()), bayEls = useRef<(HTMLElement | null)[]>([]);
-  const pend = useRef<{ ids: number[]; from: Map<number, { x: number; y: number }>; src: number; dst: number; fast: boolean; won: boolean; finished: number[]; revealed: number | null } | null>(null);
+  const pend = useRef<{ ids: number[]; from: Map<number, { x: number; y: number }>; src: number; dst: number; fast: boolean; won: boolean; finished: number[]; revealed: number | null; unwrapped: number[] } | null>(null), bobs = useRef(new Map<number, Animation>());
   const noTrans = useRef(new Set<number>()), hold = useRef(new Set<number>()), timers = useRef<number[]>([]), msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null), roRef = useRef<ResizeObserver | null>(null);
   const { prefs } = usePrefs();
   const [, bump] = useReducer((x: number) => x + 1, 0);
@@ -56,7 +57,7 @@ function Inner() {
   const [msg, setMsg] = useState<{ text: string; kind: string } | null>(null);
   const [hintBays, setHintBays] = useState<number[]>([]);
   const [stamped, setStamped] = useState<Set<number>>(new Set());
-  const [round, setRound] = useState(0);
+  const [round, setRound] = useState(0), [view, setView] = useState<"home" | "play">("home");
 
   const save = useCallback(() => { try { const s = S.current; if (s) localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage blocked */ } }, []);
   useEffect(() => { S.current = load(); bump(); save(); }, [save]);
@@ -66,7 +67,7 @@ function Inner() {
   const flash = (text: string, kind = "info", ms = 2600) => { setMsg({ text, kind }); if (msgTimer.current) clearTimeout(msgTimer.current); msgTimer.current = setTimeout(() => setMsg(null), ms); };
 
   const s = S.current, st = s?.game, dept = st ? deptOf(st.level) : 0;
-  const intro = introOpen !== null ? introOpen : (s && !s.profile.seen[dept] ? dept : null);
+  const intro = introOpen !== null ? introOpen : (s && view === "play" && !s.profile.seen[dept] ? dept : null);
   const lay: Lay | null = useMemo(() => (st ? computeLay(size.w, size.h, st.bays.length, st.cap) : null), [size.w, size.h, st?.bays.length, st?.cap]);   // eslint-disable-line react-hooks/exhaustive-deps
   const reduce = prefs.calm || (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
 
@@ -78,14 +79,14 @@ function Inner() {
   const posOf = (L: Lay, g: any, id: number, selB: number | null) => { for (let b = 0; b < g.bays.length; b++) { const i = g.bays[b].items.findIndex((n: any) => n.id === id); if (i >= 0) { const n = selRun(g, selB), lifted = selB === b && i >= g.bays[b].items.length - n; return itemXY(L, b, i, lifted ? liftFor(L) : 0); } } return null; };
 
   // ---- feel: particles, wobble, sound (all imperative, no React renders)
-  const burst = (x: number, y: number, kind: "dust" | "spark", n = 5, colour = "#fff") => {
+  const burst = (x: number, y: number, kind: "dust" | "spark" | "flake", n = 5, colour = "#fff") => {
     const layer = fx.current; if (!layer || reduce) return;
     for (let i = 0; i < n; i++) {
       const d = document.createElement("i"), a = kind === "dust" ? Math.PI + (i / Math.max(1, n - 1)) * Math.PI * 0 + (i % 2 ? 0.2 : -0.2) + (i - n / 2) * 0.35 : (i / n) * Math.PI * 2, dist = (kind === "dust" ? 18 : 30) + (i % 3) * 8;
-      d.className = `sh-p ${kind}`; d.style.left = `${x}px`; d.style.top = `${y}px`; if (kind === "spark") d.style.color = colour; if (kind === "spark") d.textContent = "✦";
+      d.className = `sh-p ${kind}`; d.style.left = `${x}px`; d.style.top = `${y}px`; if (kind === "spark") d.style.color = colour; if (kind === "flake") d.style.background = i % 2 ? "#ffd23f" : colour; if (kind === "spark") d.textContent = "✦";
       layer.appendChild(d);
-      const dx = kind === "dust" ? (i % 2 ? 1 : -1) * dist * (0.5 + (i % 3) * 0.3) : Math.cos(a) * dist, dy = kind === "dust" ? -4 - (i % 3) * 5 : Math.sin(a) * dist - 8;
-      d.animate([{ transform: "translate(-50%,-50%) scale(.5)", opacity: kind === "dust" ? 0.8 : 1 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${kind === "dust" ? 1.5 : 1})`, opacity: 0 }], { duration: kind === "dust" ? 420 : 640, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" }).onfinish = () => d.remove();
+      const dx = kind === "dust" ? (i % 2 ? 1 : -1) * dist * (0.5 + (i % 3) * 0.3) : Math.cos(a) * dist * (kind === "flake" ? 1.4 : 1), dy = kind === "dust" ? -4 - (i % 3) * 5 : kind === "flake" ? -34 - (i % 4) * 12 : Math.sin(a) * dist - 8;
+      d.animate([{ transform: "translate(-50%,-50%) scale(.5)", opacity: kind === "dust" ? 0.8 : 1 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${kind === "dust" ? 1.5 : 1}) rotate(${kind === "flake" ? (i % 2 ? 260 : -260) : 0}deg)`, opacity: 0 }], { duration: kind === "dust" ? 420 : kind === "flake" ? 760 : 640, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" }).onfinish = () => d.remove();
     }
   };
   const wobble = (b: number, amp = 3) => { const el = bayEls.current[b]; if (!el || reduce) return; el.animate([{ transform: "translateY(0) scale(1,1)" }, { transform: `translateY(${amp}px) scale(1.012,.985)` }, { transform: "translateY(0) scale(1,1)" }], { duration: 240, easing: "ease-out" }); };
@@ -110,8 +111,20 @@ function Inner() {
       later(() => { const cxm = to.x + L.w / 2, floorY = to.y + (SPR_H - 4) * L.u; if (k === 0) { thud(Math.min(1, p.ids.length / 2 + 0.4)); haptic(8); wobble(p.dst, 4); } burst(cxm, floorY - 6 * L.u, "dust", 4); }, delay + dur * 0.84);
     });
     const landed = (p.fast ? 420 : 640) + (p.ids.length - 1) * (p.fast ? 35 : 60);
-    if (p.revealed !== null) later(() => { hold.current.delete(p.revealed!); bump(); sfx("reveal"); const el = els.current.get(p.revealed!); if (el && !reduce) { const b = posOf(L, g, p.revealed!, null); if (b) { el.animate([{ transform: T(b.x, b.y, 0, 1, 1) }, { transform: T(b.x, b.y - 8 * L.u, 0, 1.12, 1.12) }, { transform: T(b.x, b.y, 0, 1, 1) }], { duration: 380, easing: "cubic-bezier(.3,1.6,.5,1)" }); burst(b.x + L.w / 2, b.y + 36 * L.u, "spark", 6, "#ffe27a"); } } }, reduce ? 0 : 330);
+    const unwrap = (id: number, wait: number) => later(() => {
+      hold.current.delete(id); bump(); sfx("reveal"); haptic(6); const el = els.current.get(id), b = posOf(L, g, id, null);
+      if (el && b && !reduce) { el.animate([{ transform: T(b.x, b.y, 0, 0.9, 0.9) }, { transform: T(b.x, b.y - 10 * L.u, 0, 1.14, 1.14), offset: 0.45 }, { transform: T(b.x, b.y) }], { duration: 420, easing: "cubic-bezier(.3,1.6,.5,1)" }); burst(b.x + L.w / 2, b.y + 30 * L.u, "flake", 8, "#8b7cff"); burst(b.x + L.w / 2, b.y + 30 * L.u, "spark", 5, "#ffe27a"); }
+    }, wait);
+    if (p.revealed !== null) unwrap(p.revealed, reduce ? 0 : 330);
+    p.unwrapped.forEach((id, i) => unwrap(id, (reduce ? 0 : landed + 160) + i * 110));
     for (const fb of p.finished) later(() => { setStamped((c) => new Set([...c, fb])); sfx("good"); haptic([10, 30, 12]); const items = g.bays[fb]?.items || []; items.forEach((n: any, i: number) => { const el = els.current.get(n.id), b = posOf(L, g, n.id, null); if (el && b && !reduce) el.animate([{ transform: T(b.x, b.y) }, { transform: T(b.x, b.y - 16 * L.u, 0, 1.04, 1.04) }, { transform: T(b.x, b.y) }], { duration: 420, delay: i * 55, easing: "cubic-bezier(.3,1.5,.5,1)" }); }); burst(L.cx[fb], rimY(L, fb, g.cap), "spark", 8, "#ffd23f"); }, reduce ? 0 : landed);
+  });
+  // lifted items bob gently while you decide where to put them
+  useLayoutEffect(() => {
+    const g = S.current?.game; if (!g) return; const lifted = new Set<number>();
+    if (sel !== null && !reduce) g.bays[sel]?.items.slice(-topRun(g, sel)).forEach((n: any) => lifted.add(n.id));
+    bobs.current.forEach((an, id) => { if (!lifted.has(id)) { an.cancel(); bobs.current.delete(id); } });
+    lifted.forEach((id) => { if (bobs.current.has(id)) return; const el = els.current.get(id); if (el) bobs.current.set(id, el.animate([{ transform: "translateY(0)" }, { transform: "translateY(-4px)" }], { duration: 650, direction: "alternate", iterations: Infinity, easing: "ease-in-out", composite: "add" })); });
   });
   // when a level opens, the items drop onto their shelves one after another
   useLayoutEffect(() => {
@@ -122,8 +135,8 @@ function Inner() {
   const doMove = (a: number, b: number, fast = false) => {
     const x = S.current!, g = x.game, L = lay!, from = new Map<number, { x: number; y: number }>(), run = selRun(g, a);
     for (let i = g.bays[a].items.length - run; i < g.bays[a].items.length; i++) from.set(g.bays[a].items[i].id, itemXY(L, a, i, liftFor(L)));
-    const r = move(g, a, b); if (!r.ok) return; if (r.revealed !== null) hold.current.add(r.revealed);
-    pend.current = { ids: r.ids, from, src: a, dst: b, fast, won: r.won, finished: r.finished ?? [], revealed: r.revealed }; r.ids.forEach((id: number) => noTrans.current.add(id));
+    const r = move(g, a, b); if (!r.ok) return; if (r.revealed !== null) hold.current.add(r.revealed); (r.unwrapped || []).forEach((id: number) => hold.current.add(id));
+    pend.current = { ids: r.ids, from, src: a, dst: b, fast, won: r.won, finished: r.finished ?? [], revealed: r.revealed, unwrapped: r.unwrapped ?? [] }; r.ids.forEach((id: number) => noTrans.current.add(id));
     setSel(null); setHintBays([]); setMsg(null); tone(420 + (g.moves % 5) * 35, 0.05, "triangle", 0.08);
     if (g.won) finish(g, (reduce ? 0 : 640) + r.ids.length * 60); else if (!hasMoves(g)) later(() => flash("No moves left! Undo, or add a cart.", "warn", 5000), 800);
     bump(); save();
@@ -146,7 +159,7 @@ function Inner() {
   };
   const doUndo = () => { const x = S.current!, g = x.game; if (g.done || !g.history.length) return; const h = g.history[g.history.length - 1], L = lay!, from = new Map<number, { x: number; y: number }>();
     for (let i = g.bays[h.b].items.length - h.n; i < g.bays[h.b].items.length; i++) from.set(g.bays[h.b].items[i].id, itemXY(L, h.b, i));
-    const r = undoMove(g); if (!r) return; pend.current = { ids: r.ids, from, src: h.b, dst: h.a, fast: true, won: false, finished: [], revealed: null }; r.ids.forEach((id: number) => noTrans.current.add(id));
+    const r = undoMove(g); if (!r) return; pend.current = { ids: r.ids, from, src: h.b, dst: h.a, fast: true, won: false, finished: [], revealed: null, unwrapped: [] }; r.ids.forEach((id: number) => noTrans.current.add(id));
     setSel(null); setHintBays([]); setMsg(null); setStamped(new Set(g.bays.map((_: any, i: number) => (bayDone(g, i) ? i : -1)).filter((i: number) => i >= 0))); tone(260, 0.05, "triangle", 0.07); bump(); save(); };
   const doHint = () => {
     const x = S.current!, g = x.game; if (g.done) return; if (x.profile.hints < 1) { flash("No hints left. Clear levels to earn more.", "warn"); return; }
@@ -158,28 +171,32 @@ function Inner() {
     if (addCart(g)) { x.profile.carts--; setSel(null); sfx("good"); setMsg(null); bump(); save(); }
   };
   const resetUi = () => { setSel(null); setResult(null); setMsg(null); setHintBays([]); setStamped(new Set()); pend.current = null; hold.current.clear(); timers.current.forEach(clearTimeout); timers.current = []; setRound((v) => v + 1); };
-  const open = (level: number, fresh = false) => { const x = S.current!; if (!fresh && x.game.level === level && !x.game.done) { setPicker(false); return; } x.game = newGame(level); resetUi(); setPicker(false); bump(); save(); };
+  const open = (level: number, fresh = false) => { const x = S.current!; setView("play"); if (!fresh && x.game.level === level && !x.game.done) { setPicker(false); setRound((v) => v + 1); return; } x.game = newGame(level); resetUi(); setPicker(false); bump(); save(); };
   const restart = () => { const x = S.current!; x.game = newGame(x.game.level); resetUi(); bump(); save(); };
   const next = () => { const x = S.current!; x.game = newGame(x.profile.level); resetUi(); bump(); save(); };
+  const goHome = () => { setPanel(false); setPicker(false); setSel(null); setView("home"); save(); bump(); };
+  const play = () => { const x = S.current!; setPanel(false); setView("play"); if (x.game.done || x.game.level !== x.profile.level && x.game.moves === 0) { x.game = newGame(x.profile.level); resetUi(); } else setRound((v) => v + 1); bump(); save(); };
   const closeIntro = () => { const x = S.current!, d = intro ?? dept; x.profile.seen[d] = true; x.fresh = false; setIntro(null); save(); bump(); };
 
   if (!s || !st || !lay) return <div className="sh-root"><div className="sh-loading">OPENING THE SHOP…</div></div>;
-  const sp = specFor(st.level), u = lay.u, w = lay.w, canCart = st.extra < MAX_EXTRA && s.profile.carts > 0, run = sel !== null ? selRun(st, sel) : 0, [bgA, bgB] = DEPT_BG[dept];
+  const homeDept = deptOf(s.profile.level), sp = specFor(st.level), u = lay.u, w = lay.w, canCart = st.extra < MAX_EXTRA && s.profile.carts > 0, run = sel !== null ? selRun(st, sel) : 0, [bgA, bgB] = DEPT_BG[dept];
   const items: any[] = []; st.bays.forEach((bay: any, b: number) => bay.items.forEach((n: any, i: number) => items.push({ n, b, i })));
   const tagOf = (bay: any) => (bay.s ? { icon: "cart", text: "CART" } : typeof bay.a === "number" ? { icon: `s${st.keys[bay.a].v}`, text: SUBJECTS[st.keys[bay.a].v].toUpperCase() } : bay.a === "shirt" ? { icon: "hanger", text: "SHIRTS" } : bay.a === "book" ? { icon: "books", text: "BOOKS" } : null);
   const topName = (bay: any) => { const t = bay.items[bay.items.length - 1]; if (!t) return "empty"; if (t.q) return "a wrapped item"; const k = st.keys[t.k]; return k.kind === "shirt" ? `${SHIRT_NAMES[k.v % SHIRT_NAMES.length]} shirt` : `${SUBJECTS[k.v % SUBJECTS.length]} book`; };
   const deptName = (d: number) => DEPTS[d].name;
 
   return (
-    <div className={`sh-root ${prefs.calm ? "sh-calm" : ""}`} style={{ ["--bgA" as any]: bgA, ["--bgB" as any]: bgB }}>
-      <header className="sh-top">
-        <Link href="/arcade" className="sh-btn round" aria-label="Back to the arcade">←</Link>
-        <button className="sh-level" onClick={() => setPicker(true)} aria-label={`${deptName(dept)}, level ${st.level}. Pick a level`}><small>{deptName(dept).toUpperCase()}</small><b>LEVEL {st.level}</b></button>
+    <div className={`sh-root v-${view} ${prefs.calm ? "sh-calm" : ""}`} style={{ ["--bgA" as any]: bgA, ["--bgB" as any]: bgB }}>
+      <Scene dept={view === "home" ? homeDept : dept} />
+      {view === "home" && <Home profile={s.profile} level={Math.max(1, s.profile.level)} dept={homeDept} resume={!st.done && st.moves > 0 ? { sub: `Level ${st.level} · ${st.moves} moves in` } : null} onPlay={play} onLevels={() => setPicker(true)} onHelp={() => setIntro(homeDept)} onSettings={() => setPanel((v) => !v)} />}
+      {view === "play" && <header className="sh-top">
+        <button className="sh-btn round" onClick={goHome} aria-label="Back to the home screen">←</button>
+        <button key={`lv${round}`} className="sh-level sh-sign-level" onClick={() => setPicker(true)} aria-label={`${deptName(dept)}, level ${st.level}. Pick a level`}><small>{deptName(dept).toUpperCase()}</small><b>LEVEL {st.level}</b></button>
         <div className="sh-stat" aria-label={`${totalStars(s.profile)} stars`}><small>STARS</small><b>★ {totalStars(s.profile)}</b></div>
         <div className="sh-stat dim"><small>MOVES</small><b>{st.moves}</b></div>
         <button className="sh-btn round" onClick={restart} aria-label="Restart this level">⟳</button>
         <button className="sh-btn round" onClick={() => setPanel((v) => !v)} aria-label="Settings" aria-expanded={panel}>⚙</button>
-      </header>
+      </header>}
       {panel && (
         <div className="sh-panel" role="dialog" aria-label="Settings">
           <label><input type="checkbox" checked={s.settings.symbols} onChange={() => { s.settings.symbols = !s.settings.symbols; bump(); save(); }} /> Show a symbol on each shirt (for colour blindness)</label>
@@ -187,11 +204,11 @@ function Inner() {
         </div>
       )}
 
-      <div ref={stageRef} className="sh-stage">
+      {view === "play" && <div ref={stageRef} className="sh-stage">
         {st.bays.map((bay: any, b: number) => {
           const tag = tagOf(bay), kind = bay.s ? "cart" : typeof bay.a === "number" ? "label" : bay.a === "shirt" ? "rack" : bay.a === "book" ? "shelf" : "any", done = bayDone(st, b);
           return (
-            <div key={`b${b}`} ref={(el) => { bayEls.current[b] = el; }} className={`sh-bay k-${kind} ${sel === b ? "sel" : ""} ${hintBays.includes(b) ? "hint" : ""} ${done && stamped.has(b) ? "done" : ""}`}
+            <div key={`b${b}`} ref={(el) => { bayEls.current[b] = el; }} className={`sh-bay k-${kind} ${sel !== null && sel !== b && !whyNot(st, sel, b) ? "ok" : ""} ${sel === b ? "sel" : ""} ${hintBays.includes(b) ? "hint" : ""} ${done && stamped.has(b) ? "done" : ""}`}
               style={{ left: lay.cx[b] - 108 * u, top: rimY(lay, b, st.cap) - 6 * u, width: 216 * u, height: (st.cap * SLOT + 16 + 6) * u + FLOOR * u * 0.55, borderRadius: `${10 * u}px ${10 * u}px ${16 * u}px ${16 * u}px`, borderWidth: Math.max(2, 7 * u) }}>
               {tag && <div className="sh-tag" style={{ top: -44 * u, height: 34 * u, fontSize: Math.max(9, 14 * u), minWidth: 120 * u }}><img src={iconUrl(tag.icon)} alt="" draggable={false} style={{ height: 24 * u }} /><span>{tag.text}</span></div>}
               {done && stamped.has(b) && <img className="sh-stamp" src={stampUrl()} alt="" draggable={false} style={{ width: 36 * u * 1.15, right: -10 * u, top: -52 * u }} />}
@@ -210,13 +227,13 @@ function Inner() {
         })}
         <div ref={fx} className="sh-fx" aria-hidden />
         {msg && <div className={`sh-msg ${msg.kind}`} role="status">{msg.text}</div>}
-      </div>
+      </div>}
 
-      <footer className="sh-bar">
+      {view === "play" && <footer className="sh-bar">
         <button className="sh-act" onClick={doUndo} disabled={st.done || !st.history.length} aria-label="Undo the last move"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden><path d="M9 7H4v5M4 7l3.5-3.5A8 8 0 1 1 5 14" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" /></svg><span>UNDO</span></button>
         <button className="sh-act" onClick={doHint} disabled={st.done} aria-label={`Hint, ${s.profile.hints} left`}><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden><path d="M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z M9.5 19h5 M10.5 21.5h3" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg><span>HINT</span><i>{s.profile.hints}</i></button>
         <button className={`sh-act ${canCart ? "" : "dim"}`} onClick={doAddCart} disabled={st.done} aria-label={`Add a cart, ${s.profile.carts} left`}><img src={iconUrl("cart", "#fff")} alt="" width={28} height={28} draggable={false} /><span>CART</span><i>{s.profile.carts}</i></button>
-      </footer>
+      </footer>}
 
       {intro !== null && (
         <div className="sh-modal" role="dialog" aria-label="How to play" onClick={closeIntro}>

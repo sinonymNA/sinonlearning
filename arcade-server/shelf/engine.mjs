@@ -50,6 +50,7 @@ export function whyNot(st, a, b) {
   if (B.items.length && B.items[B.items.length - 1].k !== k) return "Items must match the one on top.";
   return null;
 }
+const HID = 32;                        // solver items are key (0-31) plus 32 while still wrapped
 const goodEnd = (bays, cap, keys) => bays.every((b) => {   // bays: [{a, s, ks:[keys]}]
   if (b.s) return b.ks.length === 0;
   if (typeof b.a === "number") return b.ks.length === cap && b.ks.every((k) => k === b.a);
@@ -61,7 +62,7 @@ const keyOf = (ks) => ks.map((b) => b.join(",")).join("|");
 function legalMoves(ks, rules, cap, keys) {
   const out = [];
   for (let a = 0; a < ks.length; a++) {
-    const A = ks[a]; if (!A.length) continue; const k = A[A.length - 1], uniform = A.every((x) => x === k);
+    const A = ks[a]; if (!A.length) continue; const k = A[A.length - 1], uniform = A.every((x) => (x & 31) === k);
     if (uniform && A.length === cap && !rules[a].s && accepts(rules[a].a, k, keys) && (typeof rules[a].a !== "number" || rules[a].a === k)) continue;   // already home and full
     for (let b = 0; b < ks.length; b++) {
       if (a === b) continue; const B = ks[b]; if (B.length >= cap || !accepts(rules[b].a, k, keys)) continue;
@@ -72,13 +73,15 @@ function legalMoves(ks, rules, cap, keys) {
   return out;
 }
 function applyMove(ks, a, b, cap) {
-  const A = ks[a], B = ks[b], k = A[A.length - 1]; let n = 0; while (n < A.length && A[A.length - 1 - n] === k) n++;
-  n = Math.min(n, cap - B.length); const next = ks.map((x) => x.slice()); next[b].push(...next[a].splice(next[a].length - n, n)); return next;
+  const A = ks[a], B = ks[b], k = A[A.length - 1]; let n = 0; while (n < A.length && A[A.length - 1 - n] === k) n++;   // a wrapped item (key+32) is not equal, so it stops the run
+  n = Math.min(n, cap - B.length); const next = ks.map((x) => x.slice()); next[b].push(...next[a].splice(next[a].length - n, n));
+  const top = next[a].length - 1; if (top >= 0 && next[a][top] >= HID) next[a][top] -= HID;                                    // the item that comes to light is unwrapped
+  return next;
 }
 function cost(ks, rules, cap) {
   let h = 0;
   for (let i = 0; i < ks.length; i++) {
-    const b = ks[i]; if (rules[i].s) { h += b.length * 2; continue; } if (!b.length) { if (typeof rules[i].a === "number") h += 2; continue; }
+    const b = ks[i].map((x) => x & 31); if (rules[i].s) { h += b.length * 2; continue; } if (!b.length) { if (typeof rules[i].a === "number") h += 2; continue; }
     let changes = 0; for (let j = 1; j < b.length; j++) if (b[j] !== b[j - 1]) changes++; h += changes * 2 + (changes ? 1 : b.length < cap ? 1 : 0);
     if (typeof rules[i].a === "number") for (const k of b) if (k !== rules[i].a) h += 2;
   }
@@ -86,7 +89,7 @@ function cost(ks, rules, cap) {
 }
 /** Weighted best-first search. `ks` is the bays as lists of item keys, `rules` is [{a, s}] per bay. Returns [[from, to], ...] or null if none was found in the node budget. */
 export function solve(ks, rules, cap, keys, budget = 60000) {
-  const view = (arr) => arr.map((b, i) => ({ a: rules[i].a, s: rules[i].s, ks: b }));
+  const view = (arr) => arr.map((b, i) => ({ a: rules[i].a, s: rules[i].s, ks: b.map((x) => x & 31) }));
   if (goodEnd(view(ks), cap, keys)) return [];
   const start = ks.map((b) => b.slice()), seen = new Map([[keyOf(start), 0]]), heap = [[cost(start, rules, cap) * 2, 0, start, null]];
   const push = (e) => { heap.push(e); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
@@ -119,8 +122,9 @@ export function generate(level, seedBump = 0) {
     if (sp.dept === 1) { const cart = sp.bays.findIndex((b) => b.s); ks[cart] = pool.slice(p, p + sp.cap); p += sp.cap; }   // Book Nook: one shelf starts bare and the cart arrives loaded
     if (p !== pool.length) continue;
     if (ks.every((b, i) => !b.length || (typeof rules[i].a === "number" ? b.every((k) => k === rules[i].a) : b.every((k) => k === b[0])))) continue;   // already sorted: reshuffle
-    const path = solve(ks, rules, sp.cap, sp.keys, 50000); if (!path) continue;
-    let id = 0; const bays = sp.bays.map((b, i) => ({ a: b.a, s: b.s, items: ks[i].map((k, j) => ({ id: id++, k, q: sp.hidden > 0 && j < ks[i].length - 1 && rng() < sp.hidden })) }));
+    const flagged = ks.map((bay) => bay.map((k, j) => (sp.hidden > 0 && j < bay.length - 1 && rng() < sp.hidden ? k + HID : k)));   // some items start wrapped (never the top one)
+    const path = solve(flagged, rules, sp.cap, sp.keys, 50000); if (!path) continue;
+    let id = 0; const bays = sp.bays.map((b, i) => ({ a: b.a, s: b.s, items: flagged[i].map((v) => ({ id: id++, k: v & 31, q: v >= HID })) }));
     return { spec: sp, bays, par: Math.max(1, path.length) };
   }
   throw new Error("could not make a Shelf Stocker level " + level);
@@ -130,8 +134,9 @@ export function generate(level, seedBump = 0) {
 export function newGame(level) {
   const g = generate(level); return { v: 2, level: g.spec.level, dept: g.spec.dept, cap: g.spec.cap, keys: g.spec.keys, bays: g.bays, par: g.par, moves: 0, extra: 0, history: [], done: false, won: false, nextId: g.bays.flatMap((b) => b.items).length };
 }
-const plain = (st) => ({ ks: st.bays.map((b) => b.items.map((n) => n.k)), rules: st.bays.map((b) => ({ a: b.a, s: b.s })) });
-export const topRun = (st, a) => { const A = st.bays[a].items; if (!A.length) return 0; const k = A[A.length - 1].k; let n = 0; while (n < A.length && A[A.length - 1 - n].k === k) n++; return n; };
+const plain = (st) => ({ ks: st.bays.map((b) => b.items.map((n) => n.k + (n.q ? HID : 0))), rules: st.bays.map((b) => ({ a: b.a, s: b.s })) });
+/** How many items would move together: the matching items on top, stopping at the first wrapped one (a wrapped item never moves with a run, so it cannot give away its colour). */
+export const topRun = (st, a) => { const A = st.bays[a].items; if (!A.length) return 0; const k = A[A.length - 1].k; let n = 0; while (n < A.length && !A[A.length - 1 - n].q && A[A.length - 1 - n].k === k) n++; return n; };
 export const canMove = (st, a, b) => whyNot(st, a, b) === null;
 export const isSolved = (st) => goodEnd(st.bays.map((b) => ({ a: b.a, s: b.s, ks: b.items.map((n) => n.k) })), st.cap, st.keys);
 /** Is this bay finished: full of the right thing (and not a cart)? */
@@ -141,12 +146,15 @@ export function move(st, a, b) {
   if (!canMove(st, a, b)) return { ok: false };
   const A = st.bays[a].items, B = st.bays[b].items, n = Math.min(topRun(st, a), st.cap - B.length), moved = A.splice(A.length - n, n); B.push(...moved);
   let revealed = null; const top = A[A.length - 1]; if (top && top.q) { top.q = false; revealed = top.id; }
-  st.moves++; st.history.push({ a, b, n, revealed }); if (isSolved(st)) { st.done = true; st.won = true; }
-  return { ok: true, n, ids: moved.map((x) => x.id).reverse(), revealed, from: a, to: b, won: st.won, finished: bayDone(st, b) ? [b] : [] };
+  const unwrapped = []; if (bayDone(st, b)) for (const it of B) if (it.q) { it.q = false; unwrapped.push(it.id); }   // a finished shelf unwraps everything on it
+  st.moves++; st.history.push({ a, b, n, revealed, unwrapped }); if (isSolved(st)) { st.done = true; st.won = true; }
+  return { ok: true, n, ids: moved.map((x) => x.id).reverse(), revealed, unwrapped, from: a, to: b, won: st.won, finished: bayDone(st, b) ? [b] : [] };
 }
 /** Take back the last move (free). */
 export function undo(st) {
-  if (!st.history.length || st.done) return null; const { a, b, n, revealed } = st.history.pop(), B = st.bays[b].items, moved = B.splice(B.length - n, n); st.bays[a].items.push(...moved);
+  if (!st.history.length || st.done) return null; const { a, b, n, revealed, unwrapped = [] } = st.history.pop(), B = st.bays[b].items;
+  for (const id of unwrapped) { const t = B.find((x) => x.id === id); if (t) t.q = true; }                          // wrap them again before moving back
+  const moved = B.splice(B.length - n, n); st.bays[a].items.push(...moved);
   if (revealed !== null) { const t = st.bays[a].items.find((x) => x.id === revealed); if (t) t.q = true; }
   st.moves = Math.max(0, st.moves - 1); return { from: b, to: a, n, ids: moved.map((x) => x.id).reverse() };
 }

@@ -160,3 +160,6 @@ User: the nut/bolt skin looked 2D and the bolt tip showed behind the top nut; as
 
 
 User: replace Cat Stack with Shelf Stocker (shirts, books, mixed levels), emphasise animation/feel/smoothness, not too much. Done: three departments with labelled/typed shelves and carts, flat vector art, arc/squash/dust/sparkle/stamp animations, sound and haptics, hub entry replaced. Deferred on purpose: daily, shop decorating, class decks.
+
+
+User: full upgrade of Shelf Stocker (more animation, background visuals, a home screen), mystery shirts as boxed products, and wrapped items must not move with a colour run. Done: home screen, three animated scenes, purple gift-box mystery shirts with paper-fleck unwrap, engine rule (wrapped items never join a run; finished shelf unwraps all; solver/generator updated), target glow, lifted bob.

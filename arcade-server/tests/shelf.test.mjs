@@ -33,6 +33,14 @@ test("a whole run moves, hidden items come to light on the new top, undo hides t
   undo(st); assert.equal(st.bays[0].items.length, 4); assert.equal(st.bays[0].items[1].q, true); assert.equal(st.moves, 0);
   const cap = mk([["any", false, [0, 0, 0]], ["any", false, [0, 0]], ["any", false, []]], 4); assert.equal(move(cap, 0, 1).n, 2, "only two fit");
 });
+test("a wrapped item never moves with a run, so it cannot give its colour away; a finished shelf unwraps everything and undo wraps it again", () => {
+  const wrap = (st, bay, i) => { st.bays[bay].items[i].q = true; return st; };
+  const st = wrap(mk([["any", false, [0, 0, 0]], ["any", false, []]], 4), 0, 0);   // a wrapped 0 sits under two revealed 0s
+  assert.equal(topRun(st, 0), 2, "the run stops at the wrapped item"); const r = move(st, 0, 1); assert.equal(r.n, 2); assert.equal(st.bays[0].items.length, 1); assert.equal(st.bays[0].items[0].q, false, "it is unwrapped only once it is the top"); assert.equal(r.revealed, st.bays[0].items[0].id);
+  const g = mk([["any", false, [-1, 1, 1]], ["any", false, [1]], ["any", false, []]], 4); assert.equal(topRun(g, 0), 2); const m = move(g, 0, 1); assert.equal(g.bays[1].items.length, 3); assert.equal(m.revealed, g.bays[0].items[0].id);
+  const d2 = wrap(mk([["any", false, [0]], ["any", false, [0, 0, 0]]], 4), 1, 0); const pre = move(d2, 0, 1); assert.ok(pre.ok && pre.finished.includes(1) && pre.unwrapped.length === 1, "the finished shelf unwraps its bottom item"); assert.ok(d2.bays[1].items.every((n) => !n.q));
+  d2.done = false; d2.won = false; undo(d2); assert.equal(d2.bays[1].items.length, 3); assert.equal(d2.bays[1].items[0].q, true, "undo wraps it again");
+});
 test("finishing a bay is reported, and the last move wins", () => {
   const st = mk([["any", false, [0, 0]], ["any", false, [0]], ["shirt", false, [1, 1, 1]], [2, false, [2, 2, 2]], [3, false, [3, 3, 3]], ["any", true, []]]);
   const r = move(st, 1, 0); assert.ok(r.ok && r.finished.includes(0) && r.won === true && st.won === true);
