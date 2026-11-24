@@ -125,3 +125,7 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 ## 22. Hub shelves
 - `arcade-server/tests/hub.test.mjs`: catalog valid (unique ids/links, known moods, taglines <= 5 words), every link has a real page, shelf cap and See all, path-to-game mapping, recent list ordering/cap.
 - Browser: `node scripts/hub-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (3 to 4 mood shelves, never more than 3 cards per shelf, no Continue for new visitors, Continue newest first after playing, no looping animations in the hub, no horizontal overflow, intro remembered per device).
+
+## 23. Cat Grid
+- `arcade-server/tests/catgrid.test.mjs`: puzzles valid (connected colours, legal cat layout, exactly one solution, logic-solvable, deterministic), shipped level table valid and unique, transforms keep uniqueness, rules (rows, columns, colours, corner touching), tap cycle/fish/win/lose/undo, hints are always right and solve sampled levels, smartHint catches a wrong X, Cat Helper, scoring/profile caps.
+- Browser: `node scripts/catgrid-e2e.mjs --url http://localhost:3100 --shots <dir>` at six viewports (tap = X then cat, touching cat costs a fish, hint explains itself, solve level 1 through the UI, next level, save/reload, 9x9 board fits without scrolling, keyboard).

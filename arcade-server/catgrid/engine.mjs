@@ -1,0 +1,224 @@
+// Cat Grid engine: place one cat in every row, every column and every colour region, and no two cats may touch (corners count).
+// Pure ESM, JSON state, seeded RNG (a level number always makes the same puzzle). No Date.now/Math.random: callers pass elapsed seconds.
+import { makeRng } from "../gridiron/rng.mjs";
+
+export const MAX_FISH = 3;
+export const MAX_POWERUPS = 9;
+export const LOGIC_LEVELS = Infinity;   // every level is guaranteed solvable by the four teachable ideas (so a hint can always explain a move)
+/** Board size by level: 5x5 for the first levels, growing to 9x9. */
+export const sizeFor = (level) => (level <= 4 ? 5 : level <= 9 ? 6 : level <= 16 ? 7 : level <= 24 ? 8 : 9);
+const key = (r, c) => `${r},${c}`;
+
+// ---------------------------------------------------------------- puzzles
+function randomCats(n, rng) {
+  const cols = Array(n).fill(-1), used = Array(n).fill(false);
+  const go = (r) => {
+    if (r === n) return true;
+    const order = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = rng.int(i + 1); [order[i], order[j]] = [order[j], order[i]]; }
+    for (const c of order) { if (used[c] || (r > 0 && Math.abs(c - cols[r - 1]) < 2)) continue; cols[r] = c; used[c] = true; if (go(r + 1)) return true; used[c] = false; }
+    cols[r] = -1; return false;
+  };
+  return go(0) ? cols : null;
+}
+/** Grow n connected colour regions out of the n cat cells until every cell belongs to one. */
+function growRegions(n, cols, rng) {
+  const reg = Array.from({ length: n }, () => Array(n).fill(-1)); for (let r = 0; r < n; r++) reg[r][cols[r]] = r;
+  let left = n * n - n;
+  while (left > 0) {
+    const open = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (reg[r][c] < 0) { const near = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => (reg[r + a]?.[c + b] ?? -1)).filter((x) => x >= 0); if (near.length) open.push([r, c, near]); }
+    const [r, c, near] = open[rng.int(open.length)]; reg[r][c] = near[rng.int(near.length)]; left--;
+  }
+  return reg;
+}
+/** All solutions of a colour map, up to `limit` (each is the cat column for every row). */
+export function solutions(regions, limit = 2) {
+  const n = regions.length, cols = Array(n).fill(-1), usedC = Array(n).fill(false), usedR = Array(n).fill(false), out = [];
+  const go = (r) => {
+    if (out.length >= limit) return; if (r === n) { out.push([...cols]); return; }
+    for (let c = 0; c < n; c++) { const g = regions[r][c]; if (usedC[c] || usedR[g] || (r > 0 && Math.abs(c - cols[r - 1]) < 2)) continue; cols[r] = c; usedC[c] = usedR[g] = true; go(r + 1); usedC[c] = usedR[g] = false; }
+  };
+  go(0); return out;
+}
+export const countSolutions = (regions, limit = 2) => solutions(regions, limit).length;
+const connected = (regions, g) => {   // is region g one connected piece?
+  const n = regions.length, cells = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (regions[r][c] === g) cells.push([r, c]);
+  if (!cells.length) return false; const seen = new Set([key(...cells[0])]), q = [cells[0]];
+  while (q.length) { const [r, c] = q.pop(); for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const x = r + a, y = c + b; if (regions[x]?.[y] === g && !seen.has(key(x, y))) { seen.add(key(x, y)); q.push([x, y]); } } }
+  return seen.size === cells.length;
+};
+/** Make a colour map have exactly one solution by recolouring cells that an alternative solution relies on (cat cells and connectivity are protected). */
+function repair(regions, cols, rng) {
+  const n = regions.length, home = new Set(cols.map((c, r) => key(r, c)));
+  for (let iter = 0; iter < 400; iter++) {
+    const sols = solutions(regions, 6); if (sols.length === 1) return true;
+    const alt = sols.find((x) => x.some((c, r) => c !== cols[r])), cells = alt.map((c, r) => [r, c]).filter(([r, c]) => cols[r] !== c && !home.has(key(r, c)));
+    for (let i = cells.length - 1; i > 0; i--) { const j = rng.int(i + 1); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    let improved = false;
+    for (const [r, c] of cells) {
+      const old = regions[r][c], opts = [...new Set([[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => regions[r + a]?.[c + b]).filter((g) => g !== undefined && g !== old))];
+      for (let i = opts.length - 1; i > 0; i--) { const j = rng.int(i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+      for (const g of opts) { regions[r][c] = g; if (connected(regions, old) && countSolutions(regions, 6) < sols.length) { improved = true; break; } regions[r][c] = old; }
+      if (improved) break;
+    }
+    if (!improved && cells.length) { const [r, c] = cells[rng.int(cells.length)], old = regions[r][c], opts = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => regions[r + a]?.[c + b]).filter((g) => g !== undefined && g !== old); if (opts.length) { const g = opts[rng.int(opts.length)]; regions[r][c] = g; if (!connected(regions, old)) regions[r][c] = old; } }
+  }
+  return countSolutions(regions, 2) === 1;
+}
+/** Can this puzzle be solved with only the teachable ideas the hint uses (one spot left, groups confined to rows/columns/colours, look-ahead)? */
+export function logicSolvable(puzzle) {
+  const st = newGame(0, puzzle);
+  for (let step = 0; step < 400 && !st.won; step++) {
+    const h = hint(st, true); if (h.kind === "cat") st.marks[h.cell[0]][h.cell[1]] = 2; else if (h.kind === "cross") { for (const [r, c] of h.cells) st.marks[r][c] = 1; } else return false;
+    if (conflictCells(st).size) return false; if (cats(st).length === st.n) st.won = true;
+  }
+  return st.won;
+}
+/** The puzzle for a level: {n, regions[n][n] (0..n-1), solution[n] (column of the cat in each row)}. Deterministic. */
+export function generate(level) {
+  const n = sizeFor(level), rng = makeRng((level * 7919 + 13) >>> 0);
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const cols = randomCats(n, rng); if (!cols) continue;
+    const regions = growRegions(n, cols, rng); if (!repair(regions, cols, rng)) continue;
+    if (level <= LOGIC_LEVELS && !logicSolvable({ n, regions, solution: cols })) continue;   // the early levels can always be reasoned out
+    const perm = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = rng.int(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }   // shuffle which colour each region gets
+    return { n, regions: regions.map((row) => row.map((g) => perm[g])), solution: cols };
+  }
+  throw new Error("could not make a puzzle for level " + level);
+}
+
+// ---------------------------------------------------------------- game state
+export function newGame(level, puzzle = puzzleFor(level)) {
+  const { n, regions, solution } = puzzle;
+  return { v: 1, level, n, regions, solution, marks: Array.from({ length: n }, () => Array(n).fill(0)), fish: MAX_FISH, moves: 0, mistakes: 0, helps: 0, history: [], done: false, won: false, lost: false };
+}
+export const cats = (st) => { const out = []; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) if (st.marks[r][c] === 2) out.push([r, c]); return out; };
+/** Cats that break a rule with another cat (same row, column, colour, or touching). Returns a Set of "r,c". */
+export function conflictCells(st) {
+  const cs = cats(st), bad = new Set();
+  for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) {
+    const [a, b] = cs[i], [x, y] = cs[j];
+    if (a === x || b === y || st.regions[a][b] === st.regions[x][y] || (Math.abs(a - x) <= 1 && Math.abs(b - y) <= 1)) { bad.add(key(a, b)); bad.add(key(x, y)); }
+  }
+  return bad;
+}
+/** Cells that cannot hold a cat because of the cats already placed (their row, column, colour and neighbours). */
+export function blocked(st) {
+  const g = Array.from({ length: st.n }, () => Array(st.n).fill(false));
+  for (const [r, c] of cats(st)) for (let a = 0; a < st.n; a++) for (let b = 0; b < st.n; b++) {
+    if (a === r && b === c) continue;
+    if (a === r || b === c || st.regions[a][b] === st.regions[r][c] || (Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1)) g[a][b] = true;
+  }
+  return g;
+}
+function settle(st) {
+  const cs = cats(st);
+  if (cs.length === st.n && conflictCells(st).size === 0) { st.done = true; st.won = true; }
+  else if (st.fish <= 0) { st.done = true; st.lost = true; }
+}
+/** Tap a cell: empty -> X (a note) -> cat -> empty. Placing a cat that breaks a rule costs a fish. */
+export function tap(st, r, c) {
+  if (st.done) return { changed: false };
+  const before = st.marks[r][c], after = (before + 1) % 3; st.history.push([r, c, before]); st.marks[r][c] = after; st.moves++;
+  let conflict = false;
+  if (after === 2 && conflictCells(st).has(key(r, c))) { conflict = true; st.mistakes++; st.fish--; }
+  settle(st); return { changed: true, mark: after, conflict, won: st.won, lost: st.lost };
+}
+export function setMark(st, r, c, mark) { st.history.push([r, c, st.marks[r][c]]); st.marks[r][c] = mark; settle(st); }
+/** Take back the last change (a fish you lost stays lost). */
+export function undo(st) {
+  if (st.done || !st.history.length) return false;
+  const [r, c, before] = st.history.pop(); st.marks[r][c] = before; return true;
+}
+export function clearBoard(st) { if (st.done) return; for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) st.marks[r][c] = 0; st.history = []; }
+
+// ---------------------------------------------------------------- help
+/** Candidate grid: cells where a cat could still go given the cats placed (ignores your X notes). */
+function candidates(st, useX = false) {
+  const b = blocked(st), cs = cats(st), rows = new Set(cs.map(([r]) => r)), colsU = new Set(cs.map(([, c]) => c)), regs = new Set(cs.map(([r, c]) => st.regions[r][c]));
+  return Array.from({ length: st.n }, (_, r) => Array.from({ length: st.n }, (_, c) => st.marks[r][c] !== 2 && !(useX && st.marks[r][c] === 1) && !b[r][c] && !rows.has(r) && !colsU.has(c) && !regs.has(st.regions[r][c])));
+}
+const REG_NAME = ["green", "red", "pink", "orange", "purple", "yellow", "blue", "teal", "tan"];
+export const regionName = (g) => REG_NAME[g] ?? `colour ${g + 1}`;
+/** A hint that teaches: a cat that is forced (and why), or cells that can be crossed out (and why), else a gentle nudge toward a real cat. */
+export function hint(st, useX = false) {
+  const bad = conflictCells(st);
+  if (bad.size) return { kind: "conflict", cells: [...bad].map((k) => k.split(",").map(Number)), text: "These cats break a rule. Take one of them away." };
+  const cand = candidates(st, useX), n = st.n, cs = cats(st), rows = new Set(cs.map(([r]) => r)), colsU = new Set(cs.map(([, c]) => c)), regs = new Set(cs.map(([r, c]) => st.regions[r][c]));
+  const units = [];
+  for (let r = 0; r < n; r++) if (!rows.has(r)) units.push({ name: `row ${r + 1}`, cells: [...Array(n).keys()].map((c) => [r, c]) });
+  for (let c = 0; c < n; c++) if (!colsU.has(c)) units.push({ name: `column ${c + 1}`, cells: [...Array(n).keys()].map((r) => [r, c]) });
+  for (let g = 0; g < n; g++) if (!regs.has(g)) { const cells = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (st.regions[r][c] === g) cells.push([r, c]); units.push({ name: `the ${regionName(g)} area`, cells, region: g }); }
+  for (const u of units) { const open = u.cells.filter(([r, c]) => cand[r][c]); if (open.length === 1) return { kind: "cat", cell: open[0], text: `${u.name[0].toUpperCase() + u.name.slice(1)} has only one spot left. A cat goes here.` }; }
+  // groups: k units of one kind (colours, rows or columns) whose open spots all sit inside exactly k units of another kind. Those k units are used up by the group, so everything else in them can be crossed out.
+  const kinds = [0, 1, 2], val = (kind, r, c) => (kind === 0 ? st.regions[r][c] : kind === 1 ? r : c);
+  const label = (kind, i) => (kind === 0 ? `the ${regionName(i)} area` : kind === 1 ? `row ${i + 1}` : `column ${i + 1}`);
+  const free = (kind) => [...Array(n).keys()].filter((i) => !(kind === 0 ? regs : kind === 1 ? rows : colsU).has(i));
+  const combos = (arr, k) => (k === 0 ? [[]] : arr.flatMap((x, i) => combos(arr.slice(i + 1), k - 1).map((rest) => [x, ...rest])));
+  for (let k = 1; k <= 4; k++) for (const a of kinds) for (const bk of kinds) {
+    if (a === bk) continue;
+    for (const S of combos(free(a), k)) {
+      const mine = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (cand[r][c] && S.includes(val(a, r, c))) mine.push([r, c]);
+      const T = [...new Set(mine.map(([r, c]) => val(bk, r, c)))]; if (T.length !== k) continue;
+      const out = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (cand[r][c] && T.includes(val(bk, r, c)) && !S.includes(val(a, r, c))) out.push([r, c]);
+      if (!out.length) continue;
+      const names = (kind, list) => list.map((i) => label(kind, i)).join(" and "), text = `${names(a, S)} can only use ${names(bk, T)}${k > 1 ? ` (${k} of ${k})` : ""}, so no other cat can go there. Cross these out.`;
+      return { kind: "cross", cells: out, text: text[0].toUpperCase() + text.slice(1), why: mine };
+    }
+  }
+  // look ahead one move: if a cat here would leave some row, column or colour with nowhere to go, this spot cannot hold a cat
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    if (!cand[r][c]) continue; const g = st.regions[r][c], gone = (a, b) => a === r || b === c || st.regions[a][b] === g || (Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1);
+    for (const u of units) {
+      if (u.name === `row ${r + 1}` || u.name === `column ${c + 1}` || u.region === g) continue;   // that cat would fill this unit itself
+      if (u.cells.every(([a, b]) => !cand[a][b] || gone(a, b))) return { kind: "cross", cells: [[r, c]], text: `A cat in row ${r + 1}, column ${c + 1} would leave ${u.name} with no spot, so cross this one out.`, why: [[r, c]] };
+    }
+  }
+  const missing = st.solution.map((c, r) => [r, c]).filter(([r, c]) => st.marks[r][c] !== 2);
+  if (!missing.length) return { kind: "done", text: "You already have every cat." };
+  const pick = missing[0]; return { kind: "nudge", cell: pick, text: "No easy move here. Look at this spot: a cat belongs in it." };
+}
+/** The hint a player gets: first catch a wrong X of their own, otherwise hint() while trusting their other X notes. */
+export function smartHint(st) {
+  for (let r = 0; r < st.n; r++) if (st.marks[r][st.solution[r]] === 1) return { kind: "badx", cells: [[r, st.solution[r]]], text: "This X is in a spot where a cat belongs. Take the X off." };
+  return hint(st, true);
+}
+/** Cat Helper: remove a wrong cat, or place one correct cat. Returns the cell touched. */
+export function wink(st) {
+  if (st.done) return null; st.helps++;
+  for (let r = 0; r < st.n; r++) for (let c = 0; c < st.n; c++) if (st.marks[r][c] === 2 && st.solution[r] !== c) { setMark(st, r, c, 0); return { cell: [r, c], placed: false }; }
+  for (let r = 0; r < st.n; r++) if (st.marks[r][st.solution[r]] !== 2) { setMark(st, r, st.solution[r], 2); return { cell: [r, st.solution[r]], placed: true }; }
+  return null;
+}
+
+// ---------------------------------------------------------------- score and profile
+/** Points for a finished level: more for bigger boards and speed, a bonus for each fish left, small cost for using help. */
+export function levelScore(st, seconds) { return Math.max(0, Math.round(st.n * 100 + Math.max(0, st.n * 45 - seconds) * 3 + st.fish * 50 - st.helps * 30)); }
+export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0 });
+/** Apply a won level to the profile: points, next level, and a power-up or two as a reward. */
+export function completeLevel(p, st, seconds) {
+  const pts = levelScore(st, seconds); p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak);
+  const reward = { hint: 1, wink: p.solved % 3 === 0 ? 1 : 0 }; p.hints = Math.min(MAX_POWERUPS, p.hints + reward.hint); p.winks = Math.min(MAX_POWERUPS, p.winks + reward.wink); p.level = Math.max(p.level, st.level + 1);
+  return { points: pts, reward };
+}
+
+// ---------------------------------------------------------------- shipped levels
+import { LEVELS } from "./levels.mjs";
+const decode = (str) => { const [n, reg, sol] = str.split(":"), size = +n; return { n: size, regions: Array.from({ length: size }, (_, r) => [...reg.slice(r * size, r * size + size)].map(Number)), solution: [...sol].map(Number) }; };
+export const encodePuzzle = (p) => `${p.n}:${p.regions.map((r) => r.join("")).join("")}:${p.solution.join("")}`;
+/** Rotate/mirror a puzzle (rules are symmetric, so it stays valid and unique) and shuffle its colours: free variety for levels past the shipped table. */
+export function transformPuzzle(p, k, rng) {
+  const n = p.n, f = [(r, c) => [r, c], (r, c) => [c, n - 1 - r], (r, c) => [n - 1 - r, n - 1 - c], (r, c) => [n - 1 - c, r], (r, c) => [r, n - 1 - c], (r, c) => [n - 1 - r, c], (r, c) => [c, r], (r, c) => [n - 1 - c, n - 1 - r]][k % 8];
+  const perm = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = rng.int(i + 1); [perm[i], perm[j]] = [perm[j], perm[i]]; }
+  const regions = Array.from({ length: n }, () => Array(n).fill(0)), solution = Array(n).fill(0);
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) { const [a, b] = f(r, c); regions[a][b] = perm[p.regions[r][c]]; }
+  for (let r = 0; r < n; r++) { const [a, b] = f(r, p.solution[r]); solution[a] = b; }
+  return { n, regions, solution };
+}
+/** The puzzle for a level: from the shipped table (made by scripts/catgrid-build-levels.mjs), recycled with rotations and new colours after that. */
+export function puzzleFor(level) {
+  if (!LEVELS.length) return generate(level);
+  if (level >= 1 && level <= LEVELS.length) return decode(LEVELS[level - 1]);
+  const hard = Math.min(24, LEVELS.length - 1), base = decode(LEVELS[hard + ((level - 1 - hard) % (LEVELS.length - hard))]);
+  return transformPuzzle(base, level * 5 + 1, makeRng((level * 31 + 7) >>> 0));
+}
