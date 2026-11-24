@@ -13,7 +13,7 @@ export const MOODS = [
  *  match = extra path prefixes that count as "playing this game" for the Continue row. */
 export const HUB_GAMES = [
   { id: "packs", href: "/arcade/packs", name: "Pack Rush", mood: "chill", tagline: "Rip packs, collect cards", minutes: "5+", icon: "🎴", color: "yellow", match: [] },
-  { id: "catstack", href: "/arcade/catstack", name: "Cat Stack", mood: "chill", tagline: "Sort cats into cozy tubes", minutes: "2+", icon: "🐈", color: "cyan", match: [] },
+  { id: "shelf", href: "/arcade/shelf", name: "Shelf Stocker", mood: "chill", tagline: "Stock the shelves, sort everything", minutes: "2+", icon: "🧺", color: "cyan", match: [] },
   { id: "daily", href: "/arcade/daily", name: "Daily Puzzle", mood: "chill", tagline: "Five quick puzzles", minutes: "3", icon: "🧩", color: "yellow", match: [] },
   { id: "gridiron", href: "/arcade/gridiron", name: "Retro Gridiron", mood: "sports", tagline: "Pixel football, call the plays", minutes: "5+", icon: "🏈", color: "green", match: [] },
   { id: "abyss", href: "/arcade/abyss", name: "Abyss", mood: "brain", tagline: "Rare answers, deeper dives", minutes: "5", icon: "🌊", color: "cyan", match: [] },

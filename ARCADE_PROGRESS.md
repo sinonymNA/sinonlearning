@@ -157,3 +157,6 @@ User: build the nut sort game without lag. Done: Bolt Sort (/arcade/nuts), pre-r
 
 
 User: the nut/bolt skin looked 2D and the bolt tip showed behind the top nut; asked for a theme that works in 2D. Done: reskinned as Cat Stack (pixel cats in glass tubes, mystery cats in boxes), same engine; renamed paths to stack/catstack; hub entry updated.
+
+
+User: replace Cat Stack with Shelf Stocker (shirts, books, mixed levels), emphasise animation/feel/smoothness, not too much. Done: three departments with labelled/typed shelves and carts, flat vector art, arc/squash/dust/sparkle/stamp animations, sound and haptics, hub entry replaced. Deferred on purpose: daily, shop decorating, class decks.
