@@ -78,3 +78,5 @@
 @media (max-width: 400px) and (orientation: portrait) { .cg-top .cg-logo { display: none; } }
 .cg-calm *, .cg-calm *::before, .cg-calm *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .cg-cell, .cg-cell.cat img, .cg-cell .x::before, .cg-cell .x::after, .puff i, .cg-fish img.hit, .cg-board.won, .cg-board.won .cg-cell.cat img, .cg-cell.hint, .cg-card, .cg-card .cg-hero, .cg-confetti i, .cg-logo-big, .cg-slots span.on img { animation: none !important; } }
+/* short screens: the rules live in the how-to card, so give the board the room */
+@media (max-height: 660px) and (orientation: portrait) { .cg-rules { display: none; } .cg-slots span { width: 22px; } .cg-pw { min-height: 50px; } .cg-say { min-height: 2.6em; } }
