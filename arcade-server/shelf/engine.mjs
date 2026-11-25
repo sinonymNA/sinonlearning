@@ -273,7 +273,7 @@ export function move(st, a, b) {
   const unwrapped = []; if (bayDone(st, b)) for (const it of B) if (it.q) { it.q = false; unwrapped.push(it.id); }   // a finished shelf unwraps everything on it
   const unlocked = F.locks ? st.bays.map((bay, i) => (before[i] && !lockedNow(st, bay, doneCount(st)) ? i : -1)).filter((i) => i >= 0) : [];
   st.moves++; st.history.push({ a, b, n, revealed, unwrapped, worn }); if (isSolved(st)) { st.done = true; st.won = true; }
-  return { ok: true, n, ids: moved.map((x) => x.id).reverse(), revealed, unwrapped, unlocked, from: a, to: b, won: st.won, finished: bayDone(st, b) ? [b] : [], cracked: moved.filter((it) => brittle(it) && it.x === 0).map((it) => it.id) };
+  return { ok: true, n, ids: moved.map((x) => x.id).reverse(), revealed, unwrapped, unlocked, from: a, to: b, won: st.won, finished: bayDone(st, b) ? [b] : [], cracked: F.fragile ? moved.filter((it) => brittle(it) && it.x === 0).map((it) => it.id) : [] };
 }
 /** Take back the last move (free). Jars get their move back. */
 export function undo(st) {

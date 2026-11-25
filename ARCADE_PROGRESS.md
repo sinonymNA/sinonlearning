@@ -167,3 +167,6 @@ User: full upgrade of Shelf Stocker (more animation, background visuals, a home 
 
 
 User: do the plan. Done: measured difficulty curve with a pre-picked level table and near-optimal par, stricter stars + perfect, breathers and Stock Take bosses, guided first move on levels 1-3 of each department, two new departments (Toy Aisle size order, Pantry fragile jars) with their own scenes, art and e2e coverage.
+
+
+User: do them all. Done: drag-to-move, animated ghost hint, dead-end nudge, a synthesized sound pass with music, Shoe Wall (pairs), Gift Corner (padlocks), Customer Orders (bag + ticket), Mixed Day (two rules), Daily Delivery with streaks, coins and a decor shop, seasonal scene variants; level table rebuilt for 180 levels; a bug fixed where non-fragile levels reported cracked jars.

@@ -47,7 +47,7 @@ function shirtBody(g: G, base: string, variant: number) {
   g.fillStyle = "#fff8ee"; g.beginPath(); g.ellipse(100, 6, 21, 11, 0, 0, Math.PI); g.fill(); g.fillStyle = dark; g.beginPath(); g.ellipse(100, 6, 14, 6.5, 0, 0, Math.PI); g.fill();   // the collar
 }
 /** One item sprite. kind "shirt" (v = colour 0-9) or "book" (v = subject 0-7). `hidden` draws the mystery wrapping (no hint of what is inside); `glyph` adds a symbol on shirts. */
-export type Kind = "shirt" | "book" | "toy" | "jar" | "tin";
+export type Kind = "shirt" | "book" | "toy" | "jar" | "tin" | "shoe" | "gift";
 export function itemUrl(kind: Kind, v: number, hidden = false, glyph = false, x = 0, cap = 0): string {
   const key = `i:${kind}:${v}:${hidden}:${glyph}:${hidden ? 0 : x}:${hidden ? 0 : cap}`, hit = cache.get(key); if (hit) return hit;
   const { c, g } = mk(SPR_W, SPR_H);
@@ -67,6 +67,22 @@ export function itemUrl(kind: Kind, v: number, hidden = false, glyph = false, x 
     }
     const box = kind !== "book"; g.fillStyle = box ? "#fff8ee" : "#3b7cff"; g.beginPath(); g.arc(100, 40, 21, 0, Math.PI * 2); g.fill(); g.lineWidth = 3; g.strokeStyle = box ? "#f0b429" : "#fff"; g.stroke();
     g.fillStyle = box ? "#4638c4" : "#fff"; g.font = "bold 31px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 100, 42);
+  } else if (kind === "shoe") {   // a sneaker in profile: a right shoe faces right, a left shoe faces left (x = 1 left, 2 right); the sole carries an L or R
+    const base = SHIRT_PAL[v % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.28), dark = mix(base, "#000000", 0.24);
+    g.save(); if (x === 1) { g.translate(200, 0); g.scale(-1, 1); }
+    g.fillStyle = "rgba(43,35,66,.22)"; rr(g, 22, 40, 164, 30, 12); g.fill();
+    g.fillStyle = vgrad(g, 6, 50, top, dark); g.beginPath(); g.moveTo(24, 52); g.lineTo(24, 22); g.quadraticCurveTo(24, 8, 44, 8); g.lineTo(74, 8); g.quadraticCurveTo(86, 8, 92, 20); g.quadraticCurveTo(104, 34, 150, 34); g.quadraticCurveTo(184, 36, 184, 52); g.closePath(); g.fill();
+    g.fillStyle = "rgba(255,255,255,.4)"; for (const lx of [84, 100, 116]) rr(g, lx, 24, 12, 5, 2.5), g.fill();                           // laces
+    g.fillStyle = "#fff8ee"; rr(g, 18, 50, 172, 16, 8); g.fill(); g.fillStyle = "rgba(0,0,0,.12)"; g.fillRect(22, 60, 164, 4);                     // the sole
+    g.fillStyle = dark; g.beginPath(); g.ellipse(176, 44, 10, 8, 0, 0, Math.PI * 2); g.fill();                                                     // toe cap shading
+    g.restore();
+    g.font = "bold 13px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#4638c4"; g.fillText(x === 1 ? "L" : "R", 100, 59);
+  } else if (kind === "gift") {   // a wrapped present with a ribbon and a bow
+    const base = SHIRT_PAL[v % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.25), dark = mix(base, "#000000", 0.26), rib = "#fff8ee";
+    g.fillStyle = "rgba(43,35,66,.24)"; rr(g, 12, 11, 176, 60, 10); g.fill(); g.fillStyle = vgrad(g, 10, 66, top, dark); rr(g, 10, 14, 180, 52, 9); g.fill();
+    g.fillStyle = vgrad(g, 4, 28, mix(base, "#ffffff", 0.35), top); rr(g, 6, 4, 188, 22, 8); g.fill(); g.fillStyle = "rgba(0,0,0,.16)"; g.fillRect(10, 26, 180, 3);
+    g.fillStyle = rib; g.fillRect(88, 4, 24, 62); g.fillStyle = "rgba(0,0,0,.08)"; g.fillRect(88, 4, 3, 62);
+    g.fillStyle = rib; g.beginPath(); g.ellipse(80, 8, 15, 7, -0.25, 0, Math.PI * 2); g.ellipse(120, 8, 15, 7, 0.25, 0, Math.PI * 2); g.fill(); g.strokeStyle = "rgba(0,0,0,.18)"; g.lineWidth = 1.5; g.stroke(); g.fillStyle = "#ffe9c4"; g.beginPath(); g.arc(100, 9, 6, 0, Math.PI * 2); g.fill();
   } else if (kind === "toy") {   // a stacking ring: a pill whose width shows its size, with its number on it
     const f = cap > 1 ? 0.4 + 0.6 * ((x - 1) / (cap - 1)) : 1, w = 184 * f, x0 = 100 - w / 2, base = SHIRT_PAL[v % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.3), dark = mix(base, "#000000", 0.25);
     g.fillStyle = "rgba(43,35,66,.22)"; rr(g, x0 + 3, 12, w, 58, 28); g.fill(); g.fillStyle = vgrad(g, 6, 64, top, dark); rr(g, x0, 7, w, 58, 28); g.fill(); g.fillStyle = "rgba(255,255,255,.4)"; rr(g, x0 + 12, 12, Math.max(10, w - 24), 9, 4.5); g.fill(); g.strokeStyle = "rgba(0,0,0,.14)"; g.lineWidth = 2; rr(g, x0 + 1, 8, w - 2, 56, 27); g.stroke();
@@ -107,6 +123,11 @@ export function iconUrl(name: string, col = INK): string {
   if (name === "hanger") { g.beginPath(); g.arc(20, 11, 4, Math.PI * 0.2, Math.PI * 1.65); g.stroke(); g.beginPath(); g.moveTo(20, 15); g.lineTo(20, 20); g.lineTo(4, 31); g.lineTo(36, 31); g.lineTo(20, 20); g.stroke(); }
   else if (name === "books") { g.fillRect(5, 8, 7, 26); g.fillRect(14, 4, 7, 30); g.save(); g.translate(28, 33); g.rotate(-0.28); g.fillRect(-3, -27, 7, 28); g.restore(); g.fillRect(2, 34, 36, 3); }
   else if (name === "cart") { g.beginPath(); g.moveTo(3, 6); g.lineTo(9, 6); g.lineTo(13, 24); g.lineTo(31, 24); g.lineTo(34, 11); g.lineTo(10, 11); g.stroke(); g.beginPath(); g.arc(15, 32, 3, 0, 7); g.arc(29, 32, 3, 0, 7); g.fill(); }
+  else if (name === "shoe") { g.beginPath(); g.moveTo(4, 30); g.lineTo(4, 16); g.quadraticCurveTo(4, 8, 12, 8); g.lineTo(18, 8); g.quadraticCurveTo(22, 20, 36, 22); g.quadraticCurveTo(38, 30, 36, 30); g.closePath(); g.fill(); }
+  else if (name === "gift") { g.strokeRect(6, 16, 28, 18); g.strokeRect(4, 10, 32, 6); g.beginPath(); g.moveTo(20, 10); g.lineTo(20, 34); g.stroke(); g.beginPath(); g.moveTo(20, 10); g.quadraticCurveTo(10, 0, 12, 8); g.moveTo(20, 10); g.quadraticCurveTo(30, 0, 28, 8); g.stroke(); }
+  else if (name === "tin") { g.strokeRect(8, 10, 24, 22); g.beginPath(); g.moveTo(8, 16); g.lineTo(32, 16); g.moveTo(8, 26); g.lineTo(32, 26); g.stroke(); }
+  else if (name === "bag") { g.strokeRect(8, 14, 24, 22); g.beginPath(); g.moveTo(14, 14); g.quadraticCurveTo(14, 4, 20, 4); g.quadraticCurveTo(26, 4, 26, 14); g.stroke(); }
+  else if (name === "lock") { g.fillRect(8, 18, 24, 18); g.beginPath(); g.arc(20, 18, 8, Math.PI, 0); g.stroke(); }
   else if (name === "toy") { for (const [w, y] of [[30, 28], [22, 18], [14, 8]] as [number, number][]) { g.beginPath(); g.roundRect(20 - w / 2, y, w, 9, 4.5); g.fill(); } }
   else if (name === "jar") { g.beginPath(); g.roundRect(8, 12, 24, 24, 6); g.stroke(); g.fillRect(11, 6, 18, 6); g.beginPath(); g.moveTo(14, 22); g.lineTo(26, 22); g.stroke(); }
   else if (name.startsWith("s")) emblem(g, Number(name.slice(1)), 20, 20, 30, col);
@@ -180,4 +201,30 @@ export function herbsUrl(): string {
   g.strokeStyle = "#8a6636"; g.lineWidth = 2; g.beginPath(); g.moveTo(20, 0); g.lineTo(20, 30); g.stroke(); g.fillStyle = "#8a6636"; g.fillRect(14, 28, 12, 5);
   for (const [dx, h, col] of [[-12, 58, "#4fa05b"], [-5, 66, "#3f8c4c"], [3, 70, "#5db36a"], [11, 60, "#3f8c4c"], [0, 52, "#6bbf74"]] as [number, number, string][]) { g.fillStyle = col; g.beginPath(); g.moveTo(20, 32); g.quadraticCurveTo(20 + dx * 1.6, 32 + h * 0.5, 20 + dx, 32 + h); g.quadraticCurveTo(20 + dx * 0.4 + 4, 32 + h * 0.5, 20, 32); g.fill(); }
   const url = c.toDataURL(); cache.set("herbs", url); return url;
+}
+
+/** A coin, 24x24 (Daily rewards and the decor shop). */
+export function coinUrl(): string {
+  const hit = cache.get("coin"); if (hit) return hit; const { c, g } = mk(24, 24);
+  g.fillStyle = "#c98a00"; g.beginPath(); g.arc(12, 13, 10, 0, Math.PI * 2); g.fill(); g.fillStyle = grad(g, 0, 2, 0, 22, "#ffe27a", "#f0b429"); g.beginPath(); g.arc(12, 11.5, 10, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#c98a00"; g.lineWidth = 1.6; g.stroke();
+  g.fillStyle = "#c98a00"; g.font = "bold 13px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("S", 12, 12);
+  const url = c.toDataURL(); cache.set("coin", url); return url;
+}
+/** A padlock for locked shelves, 40x44. */
+export function padlockUrl(): string {
+  const hit = cache.get("padlock"); if (hit) return hit; const { c, g } = mk(40, 44);
+  g.strokeStyle = "#8d99ae"; g.lineWidth = 5; g.beginPath(); g.arc(20, 17, 9, Math.PI, 0); g.lineTo(29, 22); g.moveTo(11, 17); g.lineTo(11, 22); g.stroke();
+  g.fillStyle = grad(g, 0, 18, 0, 42, "#ffd86b", "#e0a21c"); rr(g, 5, 20, 30, 21, 6); g.fill(); g.strokeStyle = "#a8740f"; g.lineWidth = 2; g.stroke(); g.fillStyle = "#6b4a10"; g.beginPath(); g.arc(20, 29, 3.6, 0, Math.PI * 2); g.fill(); g.fillRect(18.6, 30, 2.8, 7);
+  const url = c.toDataURL(); cache.set("padlock", url); return url;
+}
+/** A shop pet to sit beside the display stack, 80x72: "cat" or "dog". */
+export function petUrl(kind: "cat" | "dog"): string {
+  const key = `pet:${kind}`, hit = cache.get(key); if (hit) return hit; const { c, g } = mk(80, 72), fur = kind === "cat" ? "#f0a35e" : "#c9a27a", dark = kind === "cat" ? "#d4843c" : "#8d6a46";
+  g.fillStyle = "rgba(43,35,66,.18)"; g.beginPath(); g.ellipse(40, 68, 26, 5, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = fur; g.beginPath(); g.ellipse(40, 50, 24, 20, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.ellipse(40, 26, 19, 17, 0, 0, Math.PI * 2); g.fill();
+  if (kind === "cat") { g.beginPath(); g.moveTo(24, 18); g.lineTo(22, 2); g.lineTo(36, 11); g.closePath(); g.moveTo(56, 18); g.lineTo(58, 2); g.lineTo(44, 11); g.closePath(); g.fill(); g.fillStyle = "#ffb3c1"; g.beginPath(); g.moveTo(26, 14); g.lineTo(25, 7); g.lineTo(32, 11); g.closePath(); g.moveTo(54, 14); g.lineTo(55, 7); g.lineTo(48, 11); g.closePath(); g.fill(); g.strokeStyle = dark; g.lineWidth = 3; g.lineCap = "round"; g.beginPath(); g.moveTo(62, 60); g.quadraticCurveTo(78, 56, 72, 40); g.stroke(); }
+  else { g.fillStyle = dark; g.beginPath(); g.ellipse(22, 26, 7, 14, 0.3, 0, Math.PI * 2); g.ellipse(58, 26, 7, 14, -0.3, 0, Math.PI * 2); g.fill(); g.fillStyle = "#fff8ee"; g.beginPath(); g.ellipse(40, 34, 10, 8, 0, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = "#2b2342"; g.beginPath(); g.arc(32, 25, 2.6, 0, Math.PI * 2); g.arc(48, 25, 2.6, 0, Math.PI * 2); g.fill(); g.fillStyle = "#ff8fa8"; g.beginPath(); g.ellipse(40, 31, 3, 2.2, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.ellipse(34, 14, 6, 3, -0.4, 0, Math.PI * 2); g.fill();
+  const url = c.toDataURL(); cache.set(key, url); return url;
 }

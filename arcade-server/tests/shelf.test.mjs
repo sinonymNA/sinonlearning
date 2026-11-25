@@ -134,3 +134,17 @@ test("coins: levels pay coins on the first clear, bosses pay more, a first perfe
 test("looksStuck: a board with no moves, or no way out, is flagged; a fresh level is not", () => {
   const dead = mk([["any", false, [0, 1, 0]], ["any", false, [1, 0, 1]]], 3); assert.equal(looksStuck(dead), true); assert.equal(looksStuck(newGame(3)), false);
 });
+
+import { DECOR, SLOTS, buyDecor, equipDecor, isEquipped, decorById } from "../shelf/index.mjs";
+test("decor: free defaults are owned and equipped, buying spends coins and equips, you cannot buy twice or without coins, equipping needs ownership", () => {
+  const p = normalizeProfile({}); assert.ok(DECOR.length >= 20 && SLOTS.length === 6); for (const s of SLOTS) assert.ok(DECOR.some((d) => d.slot === s.id && d.price === 0), `a free default for ${s.id}`);
+  assert.ok(isEquipped(p, "sign:wood") && isEquipped(p, "finish:oak")); assert.deepEqual(buyDecor(p, "pet:cat"), { ok: false, reason: "poor" }); p.coins = 200;
+  assert.equal(buyDecor(p, "pet:cat").ok, true); assert.equal(p.coins, 90); assert.ok(isEquipped(p, "pet:cat")); assert.equal(buyDecor(p, "pet:cat").reason, "owned"); assert.equal(buyDecor(p, "nope").reason, "unknown");
+  assert.equal(equipDecor(p, "pet:dog").ok, false, "not owned"); assert.equal(equipDecor(p, "pet:none").ok, true); assert.ok(!isEquipped(p, "pet:cat")); assert.equal(equipDecor(p, "pet:cat").ok, true); assert.equal(decorById("rug:round").price, 45);
+  const old = normalizeProfile({ coins: 5, decor: { owned: ["plant:fern"], equipped: { plant: "fern" } } }); assert.ok(old.decor.owned.includes("plant:fern") && old.decor.owned.includes("sign:wood") && old.decor.equipped.plant === "fern");
+});
+
+test("only fragile levels ever report a cracked jar (items elsewhere default to x = 0 and must not count)", () => {
+  const st = mk([["any", false, [0, 0]], ["any", false, []]], 3); const r = move(st, 0, 1); assert.ok(r.ok); assert.deepEqual(r.cracked, [], "a plain shirt is never a cracked jar");
+  for (const L of [1, 21, 31, 51, 61, 71, 81]) { const g = newGame(L), h = hint(g), m = move(g, h.from, h.to); assert.deepEqual(m.cracked, [], `level ${L}`); }
+});

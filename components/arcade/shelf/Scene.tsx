@@ -29,6 +29,21 @@ export default function Scene({ dept }: { dept: number }) {
         <div className="sc-tiles" /><div className="sc-rays pantry" />
         <div className="sc-herbs">{[12, 50, 84].map((l, i) => <img key={i} src={herbsUrl()} alt="" draggable={false} style={{ left: `${l}%`, animationDelay: `${-i * 1.4}s` }} />)}</div>
       </>)}
+      {dept === 5 && (<>
+        <div className="sc-stripes" /><div className="sc-bunting teal" style={{ backgroundImage: `url(${buntingUrl()})` }} />
+        <div className="sc-hangers">{[5, 6, 0].map((c, i) => <img key={i} src={hangerUrl(SHIRT_PAL[c])} alt="" draggable={false} style={{ animationDelay: `${-i * 1.1}s` }} />)}</div>
+      </>)}
+      {dept === 6 && (<>
+        <div className="sc-wrap" />
+        <div className="sc-lights a" style={{ backgroundImage: `url(${lightsUrl(0)})` }} /><div className="sc-lights b" style={{ backgroundImage: `url(${lightsUrl(1)})` }} />
+      </>)}
+      {dept === 7 && (<>
+        <div className="sc-tiles" /><div className="sc-clock"><i /><b /></div><div className="sc-open">OPEN</div>
+      </>)}
+      {dept === 8 && (<>
+        <div className="sc-rainbow" /><div className="sc-bunting" style={{ backgroundImage: `url(${buntingUrl()})` }} /><div className="sc-spot l" /><div className="sc-spot r" />
+        <div className="sc-lights a" style={{ backgroundImage: `url(${lightsUrl(0)})` }} /><div className="sc-lights b" style={{ backgroundImage: `url(${lightsUrl(1)})` }} />
+      </>)}
       <div className="sc-motes">{Array.from({ length: 10 }, (_, i) => <i key={i} style={{ left: `${(i * 37 + 8) % 96}%`, animationDelay: `${-(i * 1.7) % 12}s`, animationDuration: `${11 + (i % 4) * 3}s`, width: 3 + (i % 3) * 2, height: 3 + (i % 3) * 2 }} />)}</div>
       <div className="sc-vig" />
     </div>
