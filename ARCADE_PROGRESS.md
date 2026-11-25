@@ -170,3 +170,4 @@ User: do the plan. Done: measured difficulty curve with a pre-picked level table
 
 
 User: do them all. Done: drag-to-move, animated ghost hint, dead-end nudge, a synthesized sound pass with music, Shoe Wall (pairs), Gift Corner (padlocks), Customer Orders (bag + ticket), Mixed Day (two rules), Daily Delivery with streaks, coins and a decor shop, seasonal scene variants; level table rebuilt for 180 levels; a bug fixed where non-fragile levels reported cracked jars.
+User: new game, crates of old newspapers where each level is a paper with a time limit; starts with only a crossword and adds sudoku, word search, cryptogram and more puzzles per paper. Done: Back Issues (engine, generators, 10 crates, UI with on-screen keyboard, timeout/relaxed mode, hints, stars, hub entry). See ARCADE_ISSUES.md.

@@ -18,6 +18,7 @@ export const HUB_GAMES = [
   { id: "gridiron", href: "/arcade/gridiron", name: "Retro Gridiron", mood: "sports", tagline: "Pixel football, call the plays", minutes: "5+", icon: "🏈", color: "green", match: [] },
   { id: "abyss", href: "/arcade/abyss", name: "Abyss", mood: "brain", tagline: "Rare answers, deeper dives", minutes: "5", icon: "🌊", color: "cyan", match: [] },
   { id: "meowdoku", href: "/arcade/meowdoku", name: "Meowdoku", mood: "brain", tagline: "Place cats, no touching", minutes: "3+", icon: "/arcade/meowdoku-logo.png", color: "pink", match: [] },
+  { id: "backissues", href: "/arcade/backissues", name: "Back Issues", mood: "brain", tagline: "Old newspapers, every puzzle", minutes: "3+", icon: "📰", color: "yellow", match: [] },
   { id: "peak", href: "/arcade/peak", name: "Mastery Peak", mood: "brain", tagline: "Climb by learning it", minutes: "10", icon: "⛰️", color: "violet", match: [] },
   { id: "practice", href: "/arcade/solo/practice", name: "Practice", mood: "party", tagline: "Party games against bots", minutes: "3", icon: "🥔", color: "pink", match: [] },
   { id: "class", href: "/arcade/multiplayer", name: "Class Games", mood: "party", tagline: "Join with a room code", minutes: "5-20", icon: "👥", color: "pink", match: ["/arcade/join", "/arcade/room"] },
