@@ -148,7 +148,7 @@ function Inner() {
     const r = move(g, a, b); if (!r.ok) return; if (levelPos(g.level) <= 3 && !g.daily) x.profile.coached[g.level] = true; if (r.revealed !== null) hold.current.add(r.revealed); (r.unwrapped || []).forEach((id: number) => hold.current.add(id));
     pend.current = { ids: r.ids, from, src: a, dst: b, fast, won: r.won, finished: r.finished ?? [], revealed: r.revealed, unwrapped: r.unwrapped ?? [], unlocked: r.unlocked ?? [] }; r.ids.forEach((id: number) => noTrans.current.add(id));
     setSelBoth(null); setHintBays([]); setMsg(null); setNudge(false);
-    if (r.cracked?.length) later(() => { play("crack"); flash("That jar used its last move! It can't be moved again.", "warn", 3800); }, reduce ? 0 : 700);
+    if (r.cracked?.length && r.cracked.some((id: number) => g.bays.some((bay: any) => bay.items.some((it: any) => it.id === id && g.keys[it.k]?.kind === "jar")))) later(() => { play("crack"); flash("That jar used its last move! It can't be moved again.", "warn", 3800); }, reduce ? 0 : 700);   // only real jars can crack
     if (g.won) finish(g, (reduce ? 0 : 640) + r.ids.length * 60);
     else if (!hasMoves(g)) later(() => { setNudge(true); flash("No moves left! Undo, or add a cart.", "warn", 5000); }, 800);
     else if (g.moves >= 4 && g.moves % 2 === 0) later(() => { const gg = S.current?.game; if (gg !== g || gg.done || !hasMoves(g)) return; if (looksStuck(g, 9000)) { setNudge(true); play("refuse"); flash("Hmm, this might be a dead end. Try Undo?", "warn", 6500); } }, 1500);

@@ -91,7 +91,8 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   const signs = await p.locator(".sh-tag span").allInnerTexts(); check(signs.filter((t) => /^(SCIENCE|HISTORY|FICTION|MATH|ART|MUSIC|NATURE|SPACE)$/.test(t)).length === g.keys.length && signs.includes("CART"), `${name}: every labelled shelf has a subject sign and there is a CART (${signs.join(", ")})`);
   // a book that does not belong on a labelled shelf is refused with the subject named
   let tried = false; for (let a = 0; a < g.bays.length && !tried; a++) for (let b = 0; b < g.bays.length && !tried; b++) { const w2 = whyNot(g, a, b); if (w2 && /is for/.test(w2)) { await tap(p, a); await tap(p, b); await settle(p, 300); check(/is for .* books/.test(await p.locator(".sh-msg").innerText()), `${name}: a wrong subject is refused: "${(await p.locator(".sh-msg").innerText()).trim()}"`); tried = true; } }
-  check(tried, `${name}: found a wrong-subject move to try`); await p.click("[aria-label='Restart this level']"); await settle(p, 900);
+  check(tried, `${name}: found a wrong-subject move to try`);
+  { await p.click("[aria-label='Restart this level']"); await settle(p, 900); const gg = (await save(p)).game, mv = solveGame(gg)[0]; await tap(p, mv[0]); await tap(p, mv[1]); await settle(p, 1500); const t = (await p.locator(".sh-msg").count()) ? await p.locator(".sh-msg").innerText() : ""; check(!/jar|crack/i.test(t), `${name}: a normal Book Nook move never mentions jars ("${t.trim()}")`); } await p.click("[aria-label='Restart this level']"); await settle(p, 900);
   await play(p, name, "Book Nook level 11"); g = (await save(p)).game; check(g.bays.every((b, i) => (b.s ? b.items.length === 0 : true)), `${name}: the carts are empty at the end`);
   if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/shelf-${name}-nook-win.png` });
   await ctx.close();
