@@ -5,7 +5,7 @@
 // Built for feel and smoothness: flat cached sprites moved with GPU transforms, one Web Animations arc per item (lift, tilt, glide, drop, squash), dust and sparkle
 // particles made imperatively (no React re-renders), sound and a touch of haptics. React re-renders only when the game state changes. Rules live in arcade-server/shelf.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
-import { newGame, whyNot, move, undo as undoMove, addCart, hint as getHint, hasMoves, bayDone, topRun, newProfile, normalizeProfile, completeLevel, totalStars, specFor, deptOf, DEPTS, SUBJECTS, MAX_EXTRA } from "../../../arcade-server/shelf/index.mjs";
+import { newGame, whyNot, move, undo as undoMove, addCart, hint as getHint, hasMoves, bayDone, topRun, newProfile, normalizeProfile, completeLevel, totalStars, specFor, deptOf, posOf as levelPos, DEPTS, DEPT_COUNT, SUBJECTS, MAX_EXTRA } from "../../../arcade-server/shelf/index.mjs";
 import { PrefsProvider, PrefsButtons, usePrefs, sfx, tone } from "../prefs";
 import { itemUrl, iconUrl, stampUrl, SPR_W, SPR_H, SHIRT_NAMES } from "./sprites";
 import Scene from "./Scene";
@@ -17,7 +17,8 @@ const KEY = "shelfstocker:v1";
 type Settings = { symbols: boolean };
 type Saved = { profile: any; game: any; settings: Settings; fresh?: boolean };
 const SLOT = 68, FLOOR = 18;                                  // design units: one item's step, and the gap under the floor of a bay
-const DEPT_BG = [["#dff4ea", "#b7e2cf"], ["#fbefd2", "#efd3a0"], ["#e9e0fb", "#cdbff0"]];
+const DEPT_BG = [["#dff4ea", "#b7e2cf"], ["#fbefd2", "#efd3a0"], ["#e9e0fb", "#cdbff0"], ["#fff3c4", "#ffe08a"], ["#fff7ea", "#f1ddba"]];
+const COACH = ["Tap this shelf to lift its top shirts, then tap the shelf they should go on.", "Every shelf has a sign. Lift a book, then tap the shelf for its subject.", "Shirts go on racks and books on shelves. Try this move.", "Smaller toys sit on bigger ones. Lift this toy and drop it here.", "Jars can only be moved a few times (see the dots on the lid). Try this move."];
 
 export default function ShelfStocker() { return <PrefsProvider><Inner /></PrefsProvider>; }
 
@@ -46,7 +47,7 @@ const T = (x: number, y: number, rot = 0, sx = 1, sy = 1) => `translate3d(${x}px
 
 function Inner() {
   const S = useRef<Saved | null>(null), stage = useRef<HTMLDivElement>(null), fx = useRef<HTMLDivElement>(null), els = useRef(new Map<number, HTMLImageElement>()), bayEls = useRef<(HTMLElement | null)[]>([]);
-  const pend = useRef<{ ids: number[]; from: Map<number, { x: number; y: number }>; src: number; dst: number; fast: boolean; won: boolean; finished: number[]; revealed: number | null; unwrapped: number[] } | null>(null), bobs = useRef(new Map<number, Animation>());
+  const pend = useRef<{ ids: number[]; from: Map<number, { x: number; y: number }>; src: number; dst: number; fast: boolean; won: boolean; finished: number[]; revealed: number | null; unwrapped: number[] } | null>(null), bobs = useRef(new Map<number, Animation>()), coachRef = useRef<{ key: string; move: any } | null>(null);
   const noTrans = useRef(new Set<number>()), hold = useRef(new Set<number>()), timers = useRef<number[]>([]), msgTimer = useRef<ReturnType<typeof setTimeout> | null>(null), roRef = useRef<ResizeObserver | null>(null);
   const { prefs } = usePrefs();
   const [, bump] = useReducer((x: number) => x + 1, 0);
@@ -135,9 +136,10 @@ function Inner() {
   const doMove = (a: number, b: number, fast = false) => {
     const x = S.current!, g = x.game, L = lay!, from = new Map<number, { x: number; y: number }>(), run = selRun(g, a);
     for (let i = g.bays[a].items.length - run; i < g.bays[a].items.length; i++) from.set(g.bays[a].items[i].id, itemXY(L, a, i, liftFor(L)));
-    const r = move(g, a, b); if (!r.ok) return; if (r.revealed !== null) hold.current.add(r.revealed); (r.unwrapped || []).forEach((id: number) => hold.current.add(id));
+    const r = move(g, a, b); if (!r.ok) return; if (levelPos(g.level) <= 3) x.profile.coached[g.level] = true; if (r.revealed !== null) hold.current.add(r.revealed); (r.unwrapped || []).forEach((id: number) => hold.current.add(id));
     pend.current = { ids: r.ids, from, src: a, dst: b, fast, won: r.won, finished: r.finished ?? [], revealed: r.revealed, unwrapped: r.unwrapped ?? [] }; r.ids.forEach((id: number) => noTrans.current.add(id));
     setSel(null); setHintBays([]); setMsg(null); tone(420 + (g.moves % 5) * 35, 0.05, "triangle", 0.08);
+    if (r.cracked?.length) later(() => { sfx("bad"); flash("That jar used its last move! It can't be moved again.", "warn", 3800); }, reduce ? 0 : 700);
     if (g.won) finish(g, (reduce ? 0 : 640) + r.ids.length * 60); else if (!hasMoves(g)) later(() => flash("No moves left! Undo, or add a cart.", "warn", 5000), 800);
     bump(); save();
   };
@@ -170,6 +172,7 @@ function Inner() {
     const x = S.current!, g = x.game; if (g.done) return; if (g.extra >= MAX_EXTRA) { flash(`You can add ${MAX_EXTRA} extra carts per level.`, "warn"); return; } if (x.profile.carts < 1) { flash("No carts left. Clear levels to earn more.", "warn"); return; }
     if (addCart(g)) { x.profile.carts--; setSel(null); sfx("good"); setMsg(null); bump(); save(); }
   };
+  useEffect(() => { const g = S.current?.game; if (!g || view !== "play" || g.moves > 0) return; const id = window.setTimeout(() => { if (g.boss) flash("STOCK TAKE! A bigger delivery and a bigger reward.", "info", 3600); else if (g.breather) flash("A breather: this one is a little easier.", "info", 3000); }, 900); return () => clearTimeout(id); }, [round, view]);   // eslint-disable-line react-hooks/exhaustive-deps
   const resetUi = () => { setSel(null); setResult(null); setMsg(null); setHintBays([]); setStamped(new Set()); pend.current = null; hold.current.clear(); timers.current.forEach(clearTimeout); timers.current = []; setRound((v) => v + 1); };
   const open = (level: number, fresh = false) => { const x = S.current!; setView("play"); if (!fresh && x.game.level === level && !x.game.done) { setPicker(false); setRound((v) => v + 1); return; } x.game = newGame(level); resetUi(); setPicker(false); bump(); save(); };
   const restart = () => { const x = S.current!; x.game = newGame(x.game.level); resetUi(); bump(); save(); };
@@ -180,9 +183,12 @@ function Inner() {
 
   if (!s || !st || !lay) return <div className="sh-root"><div className="sh-loading">OPENING THE SHOP…</div></div>;
   const homeDept = deptOf(s.profile.level), sp = specFor(st.level), u = lay.u, w = lay.w, canCart = st.extra < MAX_EXTRA && s.profile.carts > 0, run = sel !== null ? selRun(st, sel) : 0, [bgA, bgB] = DEPT_BG[dept];
+  const coachOn = view === "play" && levelPos(st.level) <= 3 && !s.profile.coached[st.level] && st.moves === 0 && !st.done && intro === null && !result && !picker;
+  if (coachOn && (!coachRef.current || coachRef.current.key !== `${st.level}:${round}`)) coachRef.current = { key: `${st.level}:${round}`, move: getHint(st) };
+  const cm = coachOn ? coachRef.current?.move : null, coachPos = cm ? { a: itemXY(lay, cm.from, st.bays[cm.from].items.length - 1), b: itemXY(lay, cm.to, Math.min(st.cap - 1, st.bays[cm.to].items.length)) } : null;
   const items: any[] = []; st.bays.forEach((bay: any, b: number) => bay.items.forEach((n: any, i: number) => items.push({ n, b, i })));
   const tagOf = (bay: any) => (bay.s ? { icon: "cart", text: "CART" } : typeof bay.a === "number" ? { icon: `s${st.keys[bay.a].v}`, text: SUBJECTS[st.keys[bay.a].v].toUpperCase() } : bay.a === "shirt" ? { icon: "hanger", text: "SHIRTS" } : bay.a === "book" ? { icon: "books", text: "BOOKS" } : null);
-  const topName = (bay: any) => { const t = bay.items[bay.items.length - 1]; if (!t) return "empty"; if (t.q) return "a wrapped item"; const k = st.keys[t.k]; return k.kind === "shirt" ? `${SHIRT_NAMES[k.v % SHIRT_NAMES.length]} shirt` : `${SUBJECTS[k.v % SUBJECTS.length]} book`; };
+  const topName = (bay: any) => { const t = bay.items[bay.items.length - 1]; if (!t) return "empty"; if (t.q) return "a wrapped item"; const k = st.keys[t.k], col = SHIRT_NAMES[(k.v + (k.kind === "tin" ? 5 : 0)) % SHIRT_NAMES.length]; return k.kind === "shirt" ? `${col} shirt` : k.kind === "book" ? `${SUBJECTS[k.v % SUBJECTS.length]} book` : k.kind === "toy" ? `${col} toy, size ${t.x}` : k.kind === "jar" ? `${col} jar, ${t.x} moves left` : `${col} tin`; };
   const deptName = (d: number) => DEPTS[d].name;
 
   return (
@@ -191,7 +197,7 @@ function Inner() {
       {view === "home" && <Home profile={s.profile} level={Math.max(1, s.profile.level)} dept={homeDept} resume={!st.done && st.moves > 0 ? { sub: `Level ${st.level} · ${st.moves} moves in` } : null} onPlay={play} onLevels={() => setPicker(true)} onHelp={() => setIntro(homeDept)} onSettings={() => setPanel((v) => !v)} />}
       {view === "play" && <header className="sh-top">
         <button className="sh-btn round" onClick={goHome} aria-label="Back to the home screen">←</button>
-        <button key={`lv${round}`} className="sh-level sh-sign-level" onClick={() => setPicker(true)} aria-label={`${deptName(dept)}, level ${st.level}. Pick a level`}><small>{deptName(dept).toUpperCase()}</small><b>LEVEL {st.level}</b></button>
+        <button key={`lv${round}`} className="sh-level sh-sign-level" onClick={() => setPicker(true)} aria-label={`${deptName(dept)}, level ${st.level}. Pick a level`}><small>{deptName(dept).toUpperCase()}{st.boss ? " · STOCK TAKE" : st.breather ? " · BREATHER" : ""}</small><b>LEVEL {st.level}</b></button>
         <div className="sh-stat" aria-label={`${totalStars(s.profile)} stars`}><small>STARS</small><b>★ {totalStars(s.profile)}</b></div>
         <div className="sh-stat dim"><small>MOVES</small><b>{st.moves}</b></div>
         <button className="sh-btn round" onClick={restart} aria-label="Restart this level">⟳</button>
@@ -217,7 +223,7 @@ function Inner() {
         })}
         {items.map(({ n, b, i }) => {
           const lifted = sel === b && i >= st.bays[b].items.length - run, p = itemXY(lay, b, i, lifted ? liftFor(lay) : 0), k = st.keys[n.k], hidden = n.q || hold.current.has(n.id);
-          return <img key={n.id} data-id={n.id} ref={(el) => { if (el) els.current.set(n.id, el); else els.current.delete(n.id); }} className={`sh-item ${lifted ? "lifted" : ""}`} src={itemUrl(k.kind, k.v, hidden, s.settings.symbols)} alt="" draggable={false}
+          return <img key={n.id} data-id={n.id} ref={(el) => { if (el) els.current.set(n.id, el); else els.current.delete(n.id); }} className={`sh-item ${lifted ? "lifted" : ""}`} src={itemUrl(k.kind, k.v, hidden, s.settings.symbols, n.x || 0, st.cap)} alt="" draggable={false}
             style={{ width: w, transform: lifted ? T(p.x, p.y, 0, 1.03, 1.03) : T(p.x, p.y), zIndex: lay.row[b] * 100 + i + (lifted ? 60 : 0), transition: noTrans.current.has(n.id) ? "none" : undefined }} />;
         })}
         {st.bays.map((bay: any, b: number) => {
@@ -225,6 +231,12 @@ function Inner() {
           return <button key={`t${b}`} className="sh-hit" style={{ left: lay.cx[b] - wd / 2, top: rimY(lay, b, st.cap) - 52 * u, width: wd, height: h + 16 * u }} onClick={() => tap(b)} aria-pressed={sel === b}
             aria-label={`Shelf ${b + 1}, ${rule}, ${bay.items.length} of ${st.cap}, top: ${topName(bay)}${bayDone(st, b) ? ", finished" : ""}`} />;
         })}
+        {coachPos && <>
+          <div className="sh-coachtip" role="note">{COACH[dept]}</div>
+          <div className="sh-hand" aria-hidden style={{ ["--x1" as any]: `${coachPos.a.x + w * 0.5 - 6}px`, ["--y1" as any]: `${coachPos.a.y + 26 * u}px`, ["--x2" as any]: `${coachPos.b.x + w * 0.5 - 6}px`, ["--y2" as any]: `${coachPos.b.y + 26 * u}px` }}>
+            <svg viewBox="0 0 32 40" width="38" height="46"><path d="M12 3a3 3 0 0 1 6 0v14l3-1.5a3 3 0 0 1 4 1.5l1 1.5a4 4 0 0 1 1.2 3L26 31c-.5 4-3.5 7-8 7h-3c-4 0-6-2-8-5L4 25a3 3 0 0 1 5-3l3 3V3z" fill="#fff" stroke="#2b2342" strokeWidth="2" strokeLinejoin="round" /></svg>
+          </div>
+        </>}
         <div ref={fx} className="sh-fx" aria-hidden />
         {msg && <div className={`sh-msg ${msg.kind}`} role="status">{msg.text}</div>}
       </div>}
@@ -239,7 +251,7 @@ function Inner() {
         <div className="sh-modal" role="dialog" aria-label="How to play" onClick={closeIntro}>
           <div className="sh-card" onClick={(e) => e.stopPropagation()}>
             <h2>{deptName(intro).toUpperCase()}</h2>
-            <div className="sh-demo" aria-hidden>{intro === 0 ? [0, 0, 1].map((v, i) => <img key={i} src={itemUrl("shirt", v === 0 ? 0 : 6)} alt="" />) : intro === 1 ? [2, 0, 6].map((v, i) => <img key={i} src={itemUrl("book", v)} alt="" />) : [<img key="a" src={itemUrl("shirt", 6)} alt="" />, <img key="b" src={itemUrl("book", 3)} alt="" />]}</div>
+            <div className="sh-demo" aria-hidden>{intro === 0 ? [0, 0, 1].map((v, i) => <img key={i} src={itemUrl("shirt", v === 0 ? 0 : 6)} alt="" />) : intro === 1 ? [2, 0, 6].map((v, i) => <img key={i} src={itemUrl("book", v)} alt="" />) : intro === 2 ? [<img key="a" src={itemUrl("shirt", 6)} alt="" />, <img key="b" src={itemUrl("book", 3)} alt="" />] : intro === 3 ? [3, 2, 1].map((x) => <img key={x} src={itemUrl("toy", 6, false, false, x, 3)} alt="" />) : [<img key="a" src={itemUrl("jar", 0, false, false, 2, 0)} alt="" />, <img key="b" src={itemUrl("tin", 5)} alt="" />, <img key="c" src={itemUrl("jar", 6, false, false, 0, 0)} alt="" />]}</div>
             <p>{DEPTS[intro].rule}</p>
             <div className="sh-how"><p><b>Tap</b> a shelf to lift its top items, then <b>tap</b> another shelf to move them. Items stack on a matching one, or on an empty spot. Undo is free.</p></div>
             <button className="sh-btn go big" onClick={closeIntro}>START STOCKING ▶</button>
@@ -250,8 +262,8 @@ function Inner() {
         <div className="sh-modal" role="dialog" aria-label="Pick a level" onClick={() => setPicker(false)}>
           <div className="sh-card wide" onClick={(e) => e.stopPropagation()}>
             <h2>LEVELS</h2>
-            <div className="sh-levels">{Array.from({ length: Math.ceil(Math.max(30, s.profile.level + 9) / 10) }, (_, sec) => (
-              <section key={sec}><h3>{deptName(sec % 3)}{sec >= 3 ? ` ${["", "", "", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][Math.floor(sec / 3) + 1] || ""}` : ""}</h3>
+            <div className="sh-levels">{Array.from({ length: Math.ceil(Math.max(50, s.profile.level + 9) / 10) }, (_, sec) => (
+              <section key={sec}><h3>{deptName(sec % DEPT_COUNT)}{sec >= DEPT_COUNT ? ` ${["", "II", "III", "IV", "V", "VI", "VII", "VIII"][Math.floor(sec / DEPT_COUNT)] || ""}` : ""}</h3>
                 <div className="sh-grid">{Array.from({ length: 10 }, (_, i) => { const l = sec * 10 + i + 1, locked = l > s.profile.level, stars = s.profile.stars[l] || 0; return <button key={l} className={`sh-lv ${locked ? "locked" : ""} ${l === st.level ? "here" : ""}`} disabled={locked} onClick={() => open(l, true)} aria-label={`Level ${l}${locked ? ", locked" : `, ${stars} of 3 stars`}`}><b>{l}</b><small>{locked ? "🔒" : "★".repeat(stars) + "☆".repeat(3 - stars)}</small></button>; })}</div></section>
             ))}</div>
             <button className="sh-btn" onClick={() => setPicker(false)}>CLOSE</button>
@@ -264,6 +276,8 @@ function Inner() {
             <h2>LEVEL {result.level} STOCKED!</h2>
             <div className="sh-stars" aria-label={`${result.stars} of 3 stars`}>{[1, 2, 3].map((k) => <span key={k} className={k <= result.stars ? "on" : ""} style={{ animationDelay: `${k * 180}ms` }}>★</span>)}</div>
             <ul className="sh-sum"><li><span>Moves</span><b>{result.moves}</b></li><li><span>Par</span><b>{result.par}</b></li><li><span>Items</span><b>{sp.keys.length * sp.cap}</b></li></ul>
+            {result.perfect && <p className="sh-perfect">✦ PERFECT: you matched the best solution! ✦</p>}
+            {result.boss && <p className="sh-new"><b>Stock Take cleared!</b> Bonus supplies delivered.</p>}
             {result.nextDept && <p className="sh-new">Next up: <b>{result.nextDept}</b></p>}
             {(result.reward.hint > 0 || result.reward.cart > 0) && <div className="sh-chips">{result.reward.hint > 0 && <span>+1 hint</span>}{result.reward.cart > 0 && <span>+1 cart</span>}</div>}
             <div className="sh-row"><button className="sh-btn" onClick={() => open(result.level, true)}>REPLAY</button><button className="sh-btn go big" onClick={next}>NEXT LEVEL ▶</button></div>

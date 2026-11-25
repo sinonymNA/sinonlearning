@@ -2,21 +2,29 @@
 
 You are the new stock clerk. Every level is a delivery that arrived mis-shelved; tap a shelf to lift its top items, tap another shelf to move them. Items stack on a matching item or onto an empty spot. Undo is free. Replaces the earlier Cat Stack (which replaced the first 3D-looking nuts-and-bolts version, rejected because static sprites cannot look 3D). Original name and art (the genre is generic; do not copy another game's name or assets).
 
-## Three departments, one new rule each (10 levels each, repeating with more items)
+## Five departments, one new rule each (10 levels each, repeating every 50 levels with more items)
 | Department | Items | Rule |
 |---|---|---|
 | Clothing Corner | folded shirts | sort so every stack is one colour (any empty shelf will do) |
 | Book Nook | books with subjects (Science, History, Fiction, Math, Art, Music, Nature, Space) | every shelf has a sign: a book may only go on its own subject's shelf. The delivery starts mixed up; one shelf starts bare and the cart arrives loaded |
 | Boutique | shirts and books together | racks take only shirts, book shelves take only books; sort both. The bin is just for moving things around |
+| Toy Aisle | stacking rings (sizes 1 to 5) | **size order**: a bigger toy can never sit on a smaller one, runs must nest (each smaller than the one below), and a set is finished only when sorted biggest at the bottom |
+| Pantry | glass jars and tins | **fragile jars**: the dots on a jar's lid are the moves it has left; at zero it cracks and cannot be moved again (shown with a crack and a red lid). Tins never wear out. Undo gives the move back |
+
+Every 5th level of a department is a **breather** (smaller, no wrapped items) and every 10th is a **Stock Take** boss (bigger, special banner, bonus hint and cart on the first clear).
 
 Carts/bins accept anything but must be empty when you finish. Wrapped mystery items (a shirt in a plastic bag, a book in kraft paper) show their contents once they reach the top. Refused moves always say why ("That shelf is for Science books.", "Only shirts go on a rack.").
 
 ## The engine (`arcade-server/shelf/engine.mjs`, pure ESM, no Date.now/Math.random)
-- `specFor(level)` builds a level from its department and position (3 to 8 kinds of item, 4 to 8 high, wrapped items from the 7th level of a department). A bay rule is `a`: `"any"`, `"shirt"`, `"book"` or a number (that one kind only), plus `s` (cart).
+- `specFor(level)` builds a level from its department and position (2 to 10 kinds of item, 3 to 8 high, wrapped items from the 7th level of a department, breather at position 5, boss at 10). `mode` is `free`, `size` or `fragile`. A bay rule is `a`: `"any"`, `"shirt"`, `"book"` or a number (that one kind only), plus `s` (cart). Items are `{id, k, q, x}`: `x` is the toy size or the jar's moves left (7 = a tin that never wears out).
 - `generate(level)` deals a mess (random, filling bays) and proves it solvable with the solver; `par` = solver move count. Tests assert levels 1-120 are all solvable and fully dealt.
 - `solve()` is a weighted best-first search that understands bay rules (used for par, hints, tests). `hint(st)` returns the next move of a real solution.
 - `whyNot(st, a, b)` is the single source of truth for legality and for the message shown. `move`, `undo` (free; re-hides a revealed item), `addCart` (max 2 per level), `isSolved`, `bayDone`, `hasMoves`.
-- Stars: 3 within 125% of par, 2 within 160%, else 1. First clears earn a hint every 2nd level and a cart every 4th. Profile + game live in localStorage `shelfstocker:v1`; nothing is stored on a server.
+- **The difficulty curve is measured, not guessed.** `targetPar(level)` is the solution length a level should need (it climbs through a department, dips on a breather, peaks on a boss). `scripts/shelf-build-levels.mjs` deals 10 candidate boards for each of the first 100 levels, keeps the one closest to the target and records a near-optimal par from a slower search; the result is `arcade-server/shelf/levels.mjs` (`PICKS[level-1] = [seed bump, par]`). Rebuild it whenever the generator, a rule or the curve changes (about 20 seconds). A test checks that at least 80 of the 100 levels land near the curve.
+- Stars: 3 within 10% of the best known solution, 2 within 40%, else 1. **Perfect** means you matched it (a gold line on the result card and a count on the home screen). First clears earn a hint every 2nd level and a cart every 4th. Profile + game live in localStorage `shelfstocker:v1`; nothing is stored on a server.
+
+## Guided first move
+The first three levels of every department show a pointing hand that taps the source shelf and then the target, with one line of advice for that department's rule, taken from the solver's first move (free, not a hint). It disappears after the first move and never comes back for that level (`profile.coached`).
 
 ## Feel (the point of this version)
 - Flat vector art (shirts, books with subject emblems, wrapped items, shelf signs) drawn once on canvases at 2x and reused as images. No WebGL, no per-frame React state.
@@ -36,7 +44,7 @@ Carts/bins accept anything but must be empty when you finish. Wrapped mystery it
 - A wrapped item (shirts: a purple gift box with a gold ribbon, a bow and a big "?"; books: kraft paper with twine and a "?") shows nothing about what is inside. **A wrapped item never moves with a run**: `topRun` stops at the first wrapped item, so it can never give its colour away by moving along with the items above it. It is unwrapped only when it becomes the top item, or when its shelf is finished (a finished shelf unwraps everything on it). Undo wraps it again. The solver and the level generator use the same rule (wrapped items are `key + 32`), and tests plus the browser check assert it.
 
 ## Not built yet (deliberately)
-Daily delivery, shop decorating, teacher class decks, size-order and customer-order levels. Add them only after the levels feel good.
+Daily delivery, shop decorating, teacher class decks, and the other planned rules (Shoe Wall pairs, Gift Corner locks, Customer Orders). Add them only after the levels feel good.
 
 ## Tests
 - `node --test arcade-server/tests/shelf.test.mjs` (rules and refusals, win rule, mystery reveal and undo, carts, every level 1-120 solvable, hints finish levels in every department, stars/profile).
@@ -45,7 +53,7 @@ Daily delivery, shop decorating, teacher class decks, size-order and customer-or
 ## App icon
 `public/arcade/shelf-icon.png` (512x512) is pixel art drawn in code on a 64x64 grid by `node scripts/shelf-icon.mjs` (no browser needed): three stacked cable-knit sweaters, two books, a wooden shelf and a sparkle on a peach tile. It is the hub card icon. The in-game art is smooth vector on purpose (feel and smoothness); only the icon is pixel, like the other hub icons.
 
-## Roadmap: levelling the game up (plan, not built yet)
+## Roadmap: levelling the game up (Phase 1 and the Toy Aisle and Pantry departments are DONE; the rest is still a plan)
 **Where it is weak today.** Levels are generated and only three rules exist, so levels past 30 repeat the same three ideas with more items. Par comes from a heuristic solver, so 3 stars is not always meaningful. There is no authored teaching, no variety inside a department, and no reason to come back tomorrow.
 
 **Phase 1: a better difficulty curve and a real tutorial (do first).**

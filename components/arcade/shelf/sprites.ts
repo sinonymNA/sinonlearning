@@ -47,11 +47,12 @@ function shirtBody(g: G, base: string, variant: number) {
   g.fillStyle = "#fff8ee"; g.beginPath(); g.ellipse(100, 6, 21, 11, 0, 0, Math.PI); g.fill(); g.fillStyle = dark; g.beginPath(); g.ellipse(100, 6, 14, 6.5, 0, 0, Math.PI); g.fill();   // the collar
 }
 /** One item sprite. kind "shirt" (v = colour 0-9) or "book" (v = subject 0-7). `hidden` draws the mystery wrapping (no hint of what is inside); `glyph` adds a symbol on shirts. */
-export function itemUrl(kind: "shirt" | "book", v: number, hidden = false, glyph = false): string {
-  const key = `i:${kind}:${v}:${hidden}:${glyph}`, hit = cache.get(key); if (hit) return hit;
+export type Kind = "shirt" | "book" | "toy" | "jar" | "tin";
+export function itemUrl(kind: Kind, v: number, hidden = false, glyph = false, x = 0, cap = 0): string {
+  const key = `i:${kind}:${v}:${hidden}:${glyph}:${hidden ? 0 : x}:${hidden ? 0 : cap}`, hit = cache.get(key); if (hit) return hit;
   const { c, g } = mk(SPR_W, SPR_H);
   if (hidden) {
-    if (kind === "shirt") {   // a boxed product: a purple gift box with a gold ribbon, a bow and a big "?"
+    if (kind !== "book") {   // a boxed product: a purple gift box with a gold ribbon, a bow and a big "?"
       g.fillStyle = "rgba(43,35,66,.24)"; rr(g, 12, 10, 176, 62, 12); g.fill();
       g.fillStyle = vgrad(g, 14, 66, "#6a5cf0", "#3d30b8"); rr(g, 14, 16, 172, 50, 9); g.fill();                 // the box
       g.fillStyle = vgrad(g, 4, 26, "#9486ff", "#6252e0"); rr(g, 7, 4, 186, 24, 9); g.fill();                    // the lid
@@ -64,8 +65,26 @@ export function itemUrl(kind: "shirt" | "book", v: number, hidden = false, glyph
       g.fillStyle = "rgba(43,35,66,.22)"; rr(g, 8, 9, 184, 62, 10); g.fill();
       g.fillStyle = vgrad(g, 4, 66, "#d9b27a", "#b98c52"); rr(g, 4, 4, 192, 62, 10); g.fill(); g.strokeStyle = "#8a6636"; g.lineWidth = 3; g.beginPath(); g.moveTo(52, 4); g.lineTo(52, 66); g.moveTo(148, 4); g.lineTo(148, 66); g.stroke();
     }
-    const box = kind === "shirt"; g.fillStyle = box ? "#fff8ee" : "#3b7cff"; g.beginPath(); g.arc(100, 40, 21, 0, Math.PI * 2); g.fill(); g.lineWidth = 3; g.strokeStyle = box ? "#f0b429" : "#fff"; g.stroke();
+    const box = kind !== "book"; g.fillStyle = box ? "#fff8ee" : "#3b7cff"; g.beginPath(); g.arc(100, 40, 21, 0, Math.PI * 2); g.fill(); g.lineWidth = 3; g.strokeStyle = box ? "#f0b429" : "#fff"; g.stroke();
     g.fillStyle = box ? "#4638c4" : "#fff"; g.font = "bold 31px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", 100, 42);
+  } else if (kind === "toy") {   // a stacking ring: a pill whose width shows its size, with its number on it
+    const f = cap > 1 ? 0.4 + 0.6 * ((x - 1) / (cap - 1)) : 1, w = 184 * f, x0 = 100 - w / 2, base = SHIRT_PAL[v % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.3), dark = mix(base, "#000000", 0.25);
+    g.fillStyle = "rgba(43,35,66,.22)"; rr(g, x0 + 3, 12, w, 58, 28); g.fill(); g.fillStyle = vgrad(g, 6, 64, top, dark); rr(g, x0, 7, w, 58, 28); g.fill(); g.fillStyle = "rgba(255,255,255,.4)"; rr(g, x0 + 12, 12, Math.max(10, w - 24), 9, 4.5); g.fill(); g.strokeStyle = "rgba(0,0,0,.14)"; g.lineWidth = 2; rr(g, x0 + 1, 8, w - 2, 56, 27); g.stroke();
+    g.font = "bold 30px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 5; g.strokeStyle = "rgba(43,35,66,.45)"; g.strokeText(String(x), 100, 38); g.fillStyle = "#fff"; g.fillText(String(x), 100, 38);
+  } else if (kind === "jar") {   // a glass jar of jam, its lid showing how many moves it has left (dots); cracked at zero
+    const base = SHIRT_PAL[v % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.25), dark = mix(base, "#000000", 0.2), cracked = x <= 0;
+    g.fillStyle = "rgba(43,35,66,.22)"; rr(g, 30, 13, 148, 58, 16); g.fill();
+    g.fillStyle = "rgba(235,246,255,.9)"; rr(g, 24, 10, 152, 58, 16); g.fill(); g.fillStyle = vgrad(g, 20, 66, top, dark); rr(g, 30, 22, 140, 42, 12); g.fill();
+    g.fillStyle = "rgba(255,255,255,.55)"; rr(g, 38, 26, 16, 34, 6); g.fill(); g.fillStyle = "#fff8ee"; rr(g, 70, 30, 60, 26, 5); g.fill(); g.fillStyle = base; g.fillRect(78, 36, 44, 4); g.fillRect(78, 45, 30, 4);
+    g.strokeStyle = "#9fb4c8"; g.lineWidth = 2.5; rr(g, 24, 10, 152, 58, 16); g.stroke();
+    g.fillStyle = cracked ? "#c9453f" : "#aab2c0"; rr(g, 52, 2, 96, 13, 4); g.fill(); g.fillStyle = "rgba(0,0,0,.14)"; for (let lx = 60; lx < 144; lx += 8) g.fillRect(lx, 4, 2, 9);
+    if (!cracked) { g.fillStyle = "#ffd23f"; for (let i = 0; i < x && i < 5; i++) { g.beginPath(); g.arc(100 + (i - (Math.min(x, 5) - 1) / 2) * 14, 8.5, 3.2, 0, Math.PI * 2); g.fill(); } }
+    else { g.strokeStyle = "#2b2342"; g.lineWidth = 3; g.lineCap = "round"; g.lineJoin = "round"; g.beginPath(); g.moveTo(112, 12); g.lineTo(104, 30); g.lineTo(118, 40); g.lineTo(108, 54); g.lineTo(116, 66); g.stroke(); }
+  } else if (kind === "tin") {   // a tin can with a coloured label and metal rims (its colours are offset from the jars so a red tin never looks like a red jar)
+    const base = SHIRT_PAL[(v + 5) % SHIRT_PAL.length], top = mix(base, "#ffffff", 0.22), dark = mix(base, "#000000", 0.22);
+    g.fillStyle = "rgba(43,35,66,.24)"; rr(g, 16, 13, 172, 58, 12); g.fill(); g.fillStyle = vgrad(g, 6, 66, "#eef2f8", "#9aa5b8"); rr(g, 12, 7, 176, 58, 12); g.fill();
+    g.fillStyle = vgrad(g, 10, 62, top, dark); g.fillRect(34, 12, 132, 48); g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(34, 14, 132, 5); g.fillStyle = "#fff8ee"; rr(g, 62, 25, 76, 24, 5); g.fill(); g.fillStyle = base; g.fillRect(70, 31, 60, 4); g.fillRect(70, 39, 40, 4);
+    g.strokeStyle = "rgba(60,70,90,.5)"; g.lineWidth = 2; for (const lx of [24, 30, 170, 176]) { g.beginPath(); g.moveTo(lx, 10); g.lineTo(lx, 62); g.stroke(); }
   } else if (kind === "shirt") {
     shirtBody(g, SHIRT_PAL[v % SHIRT_PAL.length], v);
     if (glyph) { g.font = "bold 30px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 5; g.strokeStyle = "rgba(43,35,66,.5)"; g.strokeText(GLYPHS[v % GLYPHS.length], 100, 43); g.fillStyle = "#fff"; g.fillText(GLYPHS[v % GLYPHS.length], 100, 43); }
@@ -88,6 +107,8 @@ export function iconUrl(name: string, col = INK): string {
   if (name === "hanger") { g.beginPath(); g.arc(20, 11, 4, Math.PI * 0.2, Math.PI * 1.65); g.stroke(); g.beginPath(); g.moveTo(20, 15); g.lineTo(20, 20); g.lineTo(4, 31); g.lineTo(36, 31); g.lineTo(20, 20); g.stroke(); }
   else if (name === "books") { g.fillRect(5, 8, 7, 26); g.fillRect(14, 4, 7, 30); g.save(); g.translate(28, 33); g.rotate(-0.28); g.fillRect(-3, -27, 7, 28); g.restore(); g.fillRect(2, 34, 36, 3); }
   else if (name === "cart") { g.beginPath(); g.moveTo(3, 6); g.lineTo(9, 6); g.lineTo(13, 24); g.lineTo(31, 24); g.lineTo(34, 11); g.lineTo(10, 11); g.stroke(); g.beginPath(); g.arc(15, 32, 3, 0, 7); g.arc(29, 32, 3, 0, 7); g.fill(); }
+  else if (name === "toy") { for (const [w, y] of [[30, 28], [22, 18], [14, 8]] as [number, number][]) { g.beginPath(); g.roundRect(20 - w / 2, y, w, 9, 4.5); g.fill(); } }
+  else if (name === "jar") { g.beginPath(); g.roundRect(8, 12, 24, 24, 6); g.stroke(); g.fillRect(11, 6, 18, 6); g.beginPath(); g.moveTo(14, 22); g.lineTo(26, 22); g.stroke(); }
   else if (name.startsWith("s")) emblem(g, Number(name.slice(1)), 20, 20, 30, col);
   const url = c.toDataURL(); cache.set(key, url); return url;
 }
@@ -143,4 +164,20 @@ export function bookcaseUrl(): string {
   const hit = cache.get("bookcase"); if (hit) return hit; const { c, g } = mk(160, 132), pal = ["#b4532a", "#14a9b8", "#8b5cf6", "#3b7cff", "#f28c28", "#ec4899", "#3f9b3f", "#2d3a8c"];
   g.fillStyle = "#6b4528"; g.fillRect(0, 0, 160, 132); for (let r = 0; r < 3; r++) { const y = r * 44; g.fillStyle = "#4c301a"; g.fillRect(0, y + 38, 160, 6); let x = 4; let i = r * 3; while (x < 150) { const w = 9 + ((i * 7) % 8), h = 26 + ((i * 11) % 12); g.fillStyle = pal[i % pal.length]; g.fillRect(x, y + 38 - h, w, h); g.fillStyle = "rgba(255,255,255,.22)"; g.fillRect(x + 1, y + 38 - h, 2, h); g.fillStyle = "#f6d46a"; g.fillRect(x, y + 38 - h + 5, w, 2); x += w + 1; i++; } }
   const url = c.toDataURL(); cache.set("bookcase", url); return url;
+}
+
+/** A party balloon on a string, 44x96 (Toy Aisle scene). */
+export function balloonUrl(col: string): string {
+  const key = `balloon:${col}`, hit = cache.get(key); if (hit) return hit; const { c, g } = mk(44, 96);
+  g.strokeStyle = "rgba(43,35,66,.45)"; g.lineWidth = 1.6; g.beginPath(); g.moveTo(22, 56); g.bezierCurveTo(14, 66, 30, 76, 22, 94); g.stroke();
+  g.fillStyle = col; g.beginPath(); g.ellipse(22, 28, 19, 25, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(22, 52); g.lineTo(17, 59); g.lineTo(27, 59); g.closePath(); g.fill();
+  g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.ellipse(14, 17, 4.5, 8, -0.5, 0, Math.PI * 2); g.fill(); g.fillStyle = "rgba(0,0,0,.1)"; g.beginPath(); g.ellipse(28, 38, 9, 14, 0.2, 0, Math.PI * 2); g.fill();
+  const url = c.toDataURL(); cache.set(key, url); return url;
+}
+/** A hanging bundle of herbs tied with twine, 40x104 (Pantry scene). */
+export function herbsUrl(): string {
+  const hit = cache.get("herbs"); if (hit) return hit; const { c, g } = mk(40, 104);
+  g.strokeStyle = "#8a6636"; g.lineWidth = 2; g.beginPath(); g.moveTo(20, 0); g.lineTo(20, 30); g.stroke(); g.fillStyle = "#8a6636"; g.fillRect(14, 28, 12, 5);
+  for (const [dx, h, col] of [[-12, 58, "#4fa05b"], [-5, 66, "#3f8c4c"], [3, 70, "#5db36a"], [11, 60, "#3f8c4c"], [0, 52, "#6bbf74"]] as [number, number, string][]) { g.fillStyle = col; g.beginPath(); g.moveTo(20, 32); g.quadraticCurveTo(20 + dx * 1.6, 32 + h * 0.5, 20 + dx, 32 + h); g.quadraticCurveTo(20 + dx * 0.4 + 4, 32 + h * 0.5, 20, 32); g.fill(); }
+  const url = c.toDataURL(); cache.set("herbs", url); return url;
 }

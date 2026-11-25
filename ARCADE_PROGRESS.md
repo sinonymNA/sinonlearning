@@ -164,3 +164,6 @@ User: replace Cat Stack with Shelf Stocker (shirts, books, mixed levels), emphas
 
 User: full upgrade of Shelf Stocker (more animation, background visuals, a home screen), mystery shirts as boxed products, and wrapped items must not move with a colour run. Done: home screen, three animated scenes, purple gift-box mystery shirts with paper-fleck unwrap, engine rule (wrapped items never join a run; finished shelf unwraps all; solver/generator updated), target glow, lifted bob.
 - Shelf Stocker icon: public/arcade/shelf-icon.png made by scripts/shelf-icon.mjs; roadmap written in ARCADE_SHELF.md.
+
+
+User: do the plan. Done: measured difficulty curve with a pre-picked level table and near-optimal par, stricter stars + perfect, breathers and Stock Take bosses, guided first move on levels 1-3 of each department, two new departments (Toy Aisle size order, Pantry fragile jars) with their own scenes, art and e2e coverage.

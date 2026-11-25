@@ -19,7 +19,7 @@ export default function Home({ profile, level, dept, resume, onPlay, onLevels, o
   };
   useEffect(() => { const id = window.setInterval(() => { if (!busy.current && !document.hidden) hop(Math.floor(Math.random() * DISPLAY.length), false); }, 2600); return () => clearInterval(id); }, []);   // the display stack comes to life now and then
   const starsIn = (d: number) => { let n = 0; for (let l = d * 10 + 1; l <= d * 10 + 10; l++) n += profile.stars[l] || 0; return n; };
-  const icons = ["hanger", "books", "cart"];
+  const icons = ["hanger", "books", "cart", "toy", "jar"];
   return (
     <main className="sh-home" aria-label="Shelf Stocker home">
       <Link href="/arcade" className="sh-btn round sh-hl" aria-label="Back to the arcade">←</Link>
@@ -31,8 +31,8 @@ export default function Home({ profile, level, dept, resume, onPlay, onLevels, o
       <nav className="sh-hmenu" aria-label="Menu">
         <button className="sh-btn go big sh-play" onClick={onPlay}><b>{resume ? "CONTINUE" : "PLAY"}</b><small>{resume ? resume.sub : `Level ${level} · ${DEPTS[dept].name}`}</small></button>
         <div className="sh-two"><button className="sh-btn" onClick={onLevels}>LEVELS</button><button className="sh-btn" onClick={onHelp}>HOW TO PLAY</button></div>
-        <div className="sh-depts" role="list">{DEPTS.map((d: any, i: number) => <div key={d.id} role="listitem" className={`sh-dept ${i === dept ? "here" : ""}`}><img src={iconUrl(icons[i])} alt="" draggable={false} /><b>{d.name}</b><span className="bar"><i style={{ width: `${(starsIn(i) / 30) * 100}%` }} /></span><small>★ {starsIn(i)}/30</small></div>)}</div>
-        <div className="sh-hstats"><span><b>★ {Object.values(profile.stars as Record<string, number>).reduce((a, b) => a + b, 0)}</b> stars</span><span><b>{profile.solved}</b> levels stocked</span></div>
+        <div className="sh-depts" role="list">{DEPTS.map((d: any, i: number) => <div key={d.id} role="listitem" aria-label={`${d.name}, ${starsIn(i)} of 30 stars`} className={`sh-dept ${i === dept ? "here" : ""}`}><img src={iconUrl(icons[i])} alt="" draggable={false} /><b>{d.short}</b><span className="bar"><i style={{ width: `${(starsIn(i) / 30) * 100}%` }} /></span><small>★ {starsIn(i)}/30</small></div>)}</div>
+        <div className="sh-hstats"><span><b>★ {Object.values(profile.stars as Record<string, number>).reduce((a, b) => a + b, 0)}</b> stars</span><span><b>{profile.solved}</b> levels stocked</span><span><b>{Object.keys(profile.perfect || {}).length}</b> perfect</span></div>
       </nav>
     </main>
   );

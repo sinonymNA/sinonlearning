@@ -2,7 +2,7 @@
 // Plays real levels from all three departments through the UI (the saved game holds the board, the engine's solver finds the moves), checks the rules and their messages,
 // the layout at every screen size, and measures frame times and long tasks while items fly: the "smooth and not laggy" check.
 import { chromium } from "playwright";
-import { solve, whyNot } from "../arcade-server/shelf/index.mjs";
+import { solveState, whyNot } from "../arcade-server/shelf/index.mjs";
 const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ? process.argv[i + 1] : d; };
 const BASE = arg("url", "http://localhost:3100") + "/arcade/shelf", SHOTS = arg("shots", "/tmp");
 const errors = [], ok = [], check = (c, m) => (c ? ok : errors).push((c ? "" : "FAIL ") + m);
@@ -17,8 +17,7 @@ const mkCtx = async (w, h, level, seen = true) => {
 const save = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("shelfstocker:v1")));
 const hit = (p, b) => p.locator(".sh-hit").nth(b);
 const tap = async (p, b) => { const r = await hit(p, b).boundingBox(); await p.mouse.click(r.x + r.width / 2, r.y + r.height * 0.65); };
-const plain = (g) => ({ ks: g.bays.map((b) => b.items.map((n) => n.k)), rules: g.bays.map((b) => ({ a: b.a, s: b.s })) });
-const solveGame = (g) => { const { ks, rules } = plain(g); return solve(ks, rules, g.cap, g.keys, 90000); };
+const solveGame = (g) => solveState(g, 120000);   // the engine's own solver reads the saved game (rules, wrapped items, toy sizes, jar moves)
 const settle = (p, ms = 760) => p.waitForTimeout(ms);
 const enter = async (p) => { await p.waitForSelector(".sh-home"); await p.click(".sh-play"); await p.waitForSelector(".sh-stage .sh-item"); };
 const perf = async (p, fn) => {
@@ -48,20 +47,21 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   // the home screen: sign, tappable display stack, PLAY, department progress; fits one screen
   const hm = await p.evaluate(() => { const r = (q) => document.querySelector(q)?.getBoundingClientRect(); const bs = [".sh-play", ".sh-two .sh-btn", ".sh-dept"].filter((q) => document.querySelector(q)?.offsetParent !== null).map((q) => { const b = r(q); return b && { t: b.top, b: b.bottom, l: b.left, rt: b.right, h: b.height }; }); return { bs, sh: document.documentElement.scrollHeight, h: innerHeight, sw: document.documentElement.scrollWidth, w: innerWidth, title: document.querySelector(".sh-sign h1")?.textContent, depts: document.querySelectorAll(".sh-dept").length, scene: document.querySelectorAll(".sc").length, motes: document.querySelectorAll(".sc-motes i").length }; });
   check(/SHELF\s*STOCKER/.test(hm.title || "") && hm.bs.every((b) => b && b.t >= 0 && b.b <= hm.h && b.l >= 0 && b.rt <= hm.w), `${name}: home shows the sign, PLAY, LEVELS and the departments inside the screen`); check(hm.sh <= hm.h + 1 && hm.sw <= hm.w + 1, `${name}: the home screen never scrolls`); check(hm.bs.every((b) => b.h >= 36), `${name}: home buttons are big enough to tap`);
-  check(hm.depts === 3 && hm.scene === 1 && hm.motes >= 8, `${name}: home has 3 department cards and an animated shop scene behind it`);
+  check(hm.depts === 5 && hm.scene === 1 && hm.motes >= 8, `${name}: home has 5 department cards and an animated shop scene behind it`);
   if (w >= 800 || h >= 700) { const hopped = await p.evaluate(async () => { const img = document.querySelector(".sh-dstack img"); if (!img || img.offsetParent === null) return "hidden"; img.click(); await new Promise((r) => setTimeout(r, 80)); return [...document.querySelectorAll(".sh-dstack img")].some((e) => e.getAnimations().length > 0); }); check(hopped === true || hopped === "hidden", `${name}: tapping the display stack makes an item hop`); }
   if (["iphone-p", "laptop", "iphone-l", "tiny"].includes(name)) await p.screenshot({ path: `${SHOTS}/shelf-${name}-home.png` });
   await p.click(".sh-play"); await p.waitForSelector(".sh-stage .sh-item");
   check((await p.locator(".sh-card h2").innerText()) === "CLOTHING CORNER", `${name}: PLAY on a first visit shows the Clothing Corner how-to card`); if (name === "iphone-p") await p.screenshot({ path: `${SHOTS}/shelf-${name}-intro.png` });
   await p.click("text=START STOCKING"); check((await p.locator(".sh-card").count()) === 0, `${name}: the card closes`); await p.waitForTimeout(900);
   await fit(p, name, "level 1");
+  check((await p.locator(".sh-coachtip").count()) === 1 && (await p.locator(".sh-hand").count()) === 1, `${name}: level 1 shows a guided first move (a hand and one line of advice)`); if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/shelf-${name}-coach.png` });
   let g = (await save(p)).game; check(g.level === 1 && g.bays.length === 5 && g.bays.flatMap((b) => b.items).length === 12, `${name}: level 1 is 3 colours of shirts on 5 shelves`);
   const filled = g.bays.map((b, i) => (b.items.length ? i : -1)).filter((i) => i >= 0), emp = g.bays.map((b, i) => (b.items.length ? -1 : i)).filter((i) => i >= 0);
   await tap(p, filled[0]); check((await p.locator(".sh-bay.sel").count()) === 1 && (await p.locator(".sh-item.lifted").count()) >= 1, `${name}: tapping a shelf lifts its top items`);
   await tap(p, filled[0]); check((await p.locator(".sh-bay.sel").count()) === 0 && (await p.locator(".sh-item.lifted").count()) === 0, `${name}: tapping it again puts them back`);
   const A = filled.find((a) => filled.some((b) => b !== a && whyNot(g, a, b))), Bv = filled.find((b) => b !== A && whyNot(g, A, b));
   await tap(p, A); await tap(p, Bv); await settle(p, 300); g = (await save(p)).game; check(g.moves === 0 && /full|match/.test(await p.locator(".sh-msg").innerText()), `${name}: an illegal drop is refused and says why ("${(await p.locator(".sh-msg").innerText()).trim()}")`);
-  await tap(p, A); if ((await p.locator(".sh-bay.sel").count()) === 0) await tap(p, A); await tap(p, emp[0]); await settle(p, 900); g = (await save(p)).game; check(g.moves === 1 && g.bays[emp[0]].items.length >= 1, `${name}: a legal drop onto an empty shelf moves the shirts`);
+  await tap(p, A); if ((await p.locator(".sh-bay.sel").count()) === 0) await tap(p, A); await tap(p, emp[0]); await settle(p, 900); g = (await save(p)).game; check(g.moves === 1 && g.bays[emp[0]].items.length >= 1, `${name}: a legal drop onto an empty shelf moves the shirts`); check((await p.locator(".sh-coachtip").count()) === 0 && (await save(p)).profile.coached[1] === true, `${name}: the guide goes away after the first move`);
   check(await p.locator("[aria-label='Undo the last move']").isEnabled(), `${name}: undo is available after a move`); await p.click("[aria-label='Undo the last move']"); await settle(p, 700); g = (await save(p)).game; check(g.moves === 0 && g.bays[emp[0]].items.length === 0, `${name}: undo puts the shirts back`);
   await p.click("[aria-label^='Hint']"); check((await p.locator(".sh-bay.hint").count()) === 2 && (await save(p)).profile.hints === 2, `${name}: a hint highlights the two shelves and uses one hint`);
   await p.click("[aria-label^='Add a cart']"); check((await p.locator(".sh-hit").count()) === 6 && (await p.locator(".sh-tag", { hasText: "CART" }).count()) === 1, `${name}: add a cart gives a sixth shelf marked CART`); await fit(p, name, "with a cart");
@@ -81,7 +81,7 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/shelf-${name}-win.png` });
   await p.click("text=NEXT LEVEL"); await settle(p, 400); check((await save(p)).game.level === 2 && /LEVEL 2/.test(await p.locator(".sh-level b").innerText()), `${name}: next level is level 2`);
   await p.waitForTimeout(300); await p.reload({ waitUntil: "networkidle" }); await enter(p); check(/LEVEL 2/.test(await p.locator(".sh-level b").innerText()) && (await p.locator(".sh-card").count()) === 0, `${name}: progress is saved and the how-to does not come back`);
-  await p.click(".sh-level"); check((await p.locator(".sh-card h3").allInnerTexts()).join("|") === "Clothing Corner|Book Nook|Boutique" && (await p.locator(".sh-lv.locked").count()) >= 1, `${name}: the level picker groups levels by department`); await p.click("text=CLOSE");
+  await p.click(".sh-level"); check((await p.locator(".sh-card h3").allInnerTexts()).join("|") === "Clothing Corner|Book Nook|Boutique|Toy Aisle|Pantry" && (await p.locator(".sh-lv.locked").count()) >= 1, `${name}: the level picker groups levels by department`); await p.click("text=CLOSE");
   await ctx.close();
 
   // ---- Book Nook (level 11): signs, labelled shelves, a cart
@@ -105,10 +105,32 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   await play(p, name, "Boutique level 21");
   await ctx.close();
 
+  // ---- Toy Aisle (level 31): size order
+  ctx = await mkCtx(w, h, 31, false); p = await ctx.newPage(); p.on("pageerror", (e) => errors.push(`[${name}/31] pageerror ${e.message}`));
+  await p.goto(BASE, { waitUntil: "networkidle" }); await enter(p); check((await p.locator(".sh-card h2").innerText()) === "TOY AISLE", `${name}: Toy Aisle shows its own how-to card`); await p.click("text=START STOCKING"); await p.waitForTimeout(900);
+  await fit(p, name, "Toy Aisle"); g = (await save(p)).game; check(g.mode === "size" && (await p.locator(".sc.d3").count()) === 1 && (await p.locator(".sc-balloons img").count()) >= 4, `${name}: Toy Aisle has its own balloon scene and size-order rule`);
+  { const first = solveGame(g)[0]; await tap(p, first[0]); await tap(p, first[1]); await settle(p, 800); g = (await save(p)).game; }   // one move frees some room, so a size refusal (not just "full") can happen
+  let t3 = false; for (let a = 0; a < g.bays.length && !t3; a++) for (let b = 0; b < g.bays.length && !t3; b++) { const w2 = whyNot(g, a, b); if (w2 && /bigger toy/.test(w2)) { await tap(p, a); await tap(p, b); await settle(p, 300); check(/bigger toy/.test(await p.locator(".sh-msg").innerText()), `${name}: a bigger toy on a smaller one is refused: "${(await p.locator(".sh-msg").innerText()).trim()}"`); t3 = true; } }
+  check(t3, `${name}: found a size-order refusal to try`); if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/shelf-${name}-toys.png` }); await p.click("[aria-label='Restart this level']"); await settle(p, 900);
+  await play(p, name, "Toy Aisle level 31"); g = (await save(p)).game; check(g.won, `${name}: Toy Aisle level won`);
+  await ctx.close();
+
+  // ---- Pantry (level 41): fragile jars
+  ctx = await mkCtx(w, h, 41, false); p = await ctx.newPage(); p.on("pageerror", (e) => errors.push(`[${name}/41] pageerror ${e.message}`));
+  await p.goto(BASE, { waitUntil: "networkidle" }); await enter(p); check((await p.locator(".sh-card h2").innerText()) === "PANTRY", `${name}: Pantry shows its own how-to card`); await p.click("text=START STOCKING"); await p.waitForTimeout(900);
+  await fit(p, name, "Pantry"); g = (await save(p)).game; check(g.mode === "fragile" && (await p.locator(".sc.d4").count()) === 1 && (await p.locator(".sc-herbs img").count()) >= 3, `${name}: Pantry has its own kitchen scene and fragile-jar rule`);
+  { const jarBay = g.bays.findIndex((b) => b.items.length && g.keys[b.items.at(-1).k].kind === "jar"), emptyBays = g.bays.map((b, i) => (b.items.length ? -1 : i)).filter((i) => i >= 0); let from = jarBay, lastMsg = "", uses = 0;
+    check(jarBay >= 0 && emptyBays.length >= 2, `${name}: there is a jar on top of a shelf and two empty shelves to shuffle it between`);
+    for (let i = 0; i < 6 && !/crack/.test(lastMsg); i++) { const to = from === jarBay ? emptyBays[0] : from === emptyBays[0] ? emptyBays[1] : emptyBays[0]; await tap(p, from); await tap(p, to); await settle(p, 700); const s2 = (await save(p)).game; if (s2.moves > uses) { uses = s2.moves; from = to; } lastMsg = (await p.locator(".sh-msg").count()) ? await p.locator(".sh-msg").innerText() : ""; }
+    check(/crack|last move/.test(lastMsg), `${name}: after enough moves the jar cracks and cannot be moved again ("${lastMsg.trim()}")`); const sj = (await save(p)).game; check(sj.bays.flatMap((b) => b.items).some((n) => g.keys[n.k].kind === "jar" && n.x === 0), `${name}: a worn-out jar has 0 moves left in the saved game`); }
+  if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/shelf-${name}-pantry.png` }); await p.click("[aria-label='Restart this level']"); await settle(p, 900);
+  await play(p, name, "Pantry level 41"); g = (await save(p)).game; check(g.won, `${name}: Pantry level won`);
+  await ctx.close();
+
   // ---- a heavy board (level 30: 8 kinds of items, 11 shelves, hidden items): fits and stays smooth
   ctx = await mkCtx(w, h, 30, false); p = await ctx.newPage(); p.on("pageerror", (e) => errors.push(`[${name}/30] pageerror ${e.message}`));
   await p.goto(BASE, { waitUntil: "networkidle" }); await enter(p); await p.click("text=START STOCKING").catch(() => {}); await p.waitForTimeout(1000);
-  g = (await save(p)).game; check((await p.locator(".sh-item").count()) === g.bays.flatMap((b) => b.items).length && g.bays.length === 11, `${name}: level 30 draws ${g.bays.flatMap((b) => b.items).length} items on 11 shelves`); await fit(p, name, "level 30");
+  g = (await save(p)).game; check((await p.locator(".sh-item").count()) === g.bays.flatMap((b) => b.items).length && g.bays.length === 13, `${name}: level 30 (a Stock Take boss) draws ${g.bays.flatMap((b) => b.items).length} items on ${g.bays.length} shelves`); await fit(p, name, "level 30");
   check((await p.locator(".sh-item[src]").count()) > 0 && g.bays.flatMap((b) => b.items).some((n) => n.q), `${name}: some items are wrapped mystery items`); if (["iphone-p", "tiny", "laptop"].includes(name)) await p.screenshot({ path: `${SHOTS}/shelf-${name}-l30.png` });
   // a wrapped item never lifts or moves with a run: the number of lifted items is exactly the revealed matching run on top, on every shelf
   { let bad = 0, tested = 0; for (let b = 0; b < g.bays.length; b++) { const items = g.bays[b].items; if (!items.length) continue; let n = 0; const k = items.at(-1).k; while (n < items.length && !items[items.length - 1 - n].q && items[items.length - 1 - n].k === k) n++; await tap(p, b); await p.waitForTimeout(260); const lifted = await p.locator(".sh-item.lifted").count(); if (lifted !== n) bad++; tested++; await tap(p, b); await p.waitForTimeout(160); }
