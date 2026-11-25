@@ -1,9 +1,9 @@
 // Pre-picks the best board for each Shelf Stocker level so the difficulty follows the curve (targetPar): for every level it deals several candidate boards
 // (seed bumps), keeps the one whose solution length is closest to the target, and records a near-optimal par for it (a slower, more careful search than the one used at play time).
-// Usage: node scripts/shelf-build-levels.mjs [count=100] [candidates=10]
+// Usage: node scripts/shelf-build-levels.mjs [count=180] [candidates=12]
 import fs from "node:fs";
 import { candidate, targetPar, solveState, newGame } from "../arcade-server/shelf/engine.mjs";
-const count = +(process.argv[2] || 100), tries = +(process.argv[3] || 10), out = [], t0 = Date.now();
+const count = +(process.argv[2] || 180), tries = +(process.argv[3] || 12), out = [], t0 = Date.now();
 for (let L = 1; L <= count; L++) {
   const target = targetPar(L); let best = null;
   for (let bump = 0; bump < tries; bump++) {
@@ -11,7 +11,7 @@ for (let L = 1; L <= count; L++) {
   }
   if (!best) throw new Error("no candidate for level " + L);
   // a careful par: the weight-1 search finds near-optimal solutions; keep the shortest of the two searches
-  const st = { ...best.c.spec, bays: best.c.bays, cap: best.c.spec.cap, keys: best.c.spec.keys, mode: best.c.spec.mode }; let par = best.par;
+  const st = { ...best.c.spec, bays: best.c.bays, cap: best.c.spec.cap, keys: best.c.spec.keys, rules: best.c.spec.rules, order: best.c.order }; let par = best.par;
   for (const w of [1.3, 1]) { const p = solveState(st, 250000, w); if (p && p.length < par) par = p.length; }
   out.push([best.bump, par]); if (L % 10 === 0) console.log(`level ${L}/${count} (${Math.round((Date.now() - t0) / 1000)}s)`);
 }
