@@ -41,3 +41,30 @@ Daily delivery, shop decorating, teacher class decks, size-order and customer-or
 ## Tests
 - `node --test arcade-server/tests/shelf.test.mjs` (rules and refusals, win rule, mystery reveal and undo, carts, every level 1-120 solvable, hints finish levels in every department, stars/profile).
 - `node scripts/shelf-e2e.mjs [--only iphone-p,laptop]` (six sizes): how-to cards, fit, tap rules, refusal messages, undo, hint, carts, real solves of Clothing Corner / Book Nook / Boutique with frame timing, an 11-shelf level 30, symbols switch, save/reload, level picker.
+
+## App icon
+`public/arcade/shelf-icon.png` (512x512) is pixel art drawn in code on a 64x64 grid by `node scripts/shelf-icon.mjs` (no browser needed): three stacked cable-knit sweaters, two books, a wooden shelf and a sparkle on a peach tile. It is the hub card icon. The in-game art is smooth vector on purpose (feel and smoothness); only the icon is pixel, like the other hub icons.
+
+## Roadmap: levelling the game up (plan, not built yet)
+**Where it is weak today.** Levels are generated and only three rules exist, so levels past 30 repeat the same three ideas with more items. Par comes from a heuristic solver, so 3 stars is not always meaningful. There is no authored teaching, no variety inside a department, and no reason to come back tomorrow.
+
+**Phase 1: a better difficulty curve and a real tutorial (do first).**
+- Measure difficulty instead of guessing: a harder-working solver reports optimal-ish par plus a difficulty score (search size, forced moves, how many dead ends). Generate several candidates per level and keep the one closest to a target curve; log the curve in a test.
+- Authored first 3 levels of every department with a guided first move (a pointing hand and a one-line reason), so nobody needs the how-to card.
+- Every 5th level a breather (easier, quick win); every 10th a "Stock Take" boss (bigger, with a unique look and a bigger reward).
+- Meaningful stars: 3 stars = within 10% of the best known solution; add a gold "perfect" shelf-sparkle for optimal.
+**Phase 2: more departments, one new rule each (the real expansion).**
+- Toy Aisle: size order (a smaller item can only sit on a bigger one).
+- Pantry: fragile and heavy (glass jars cannot go under heavy tins; cracks the item if you try).
+- Shoe Wall: pairs (items come in left/right pairs that must end up side by side).
+- Gift Corner: locked shelves (open with a key item you have to sort first).
+- Customer Orders: a ticket asks for "2 red shirts + 1 science book"; pull exactly those items.
+- "Mixed Day" levels combine two earlier rules; the world then repeats on a harder loop. Target 8 departments, 80 authored-curve levels before looping.
+**Phase 3: feel and teaching polish.**
+- Drag-to-move as well as tap-tap; a hint that animates a ghost item along the path instead of only lighting two shelves; a "why am I stuck" nudge (dead-end detection via the solver) with a one-tap undo to the last good state.
+- A sound pass (real sfx set, a soft music loop, mute per type) and a stronger haptic pattern.
+- Seasonal scene variants for the three existing scenes (holiday lights, autumn leaves).
+**Phase 4: reasons to come back (only after the levels feel good).**
+- Daily Delivery (same board for the class), a stock-room streak, shop decorating with the coins levels pay. No timers, no real money, no gambling-style rewards.
+**Later and separate:** teacher class decks (sort by the teacher's own categories), which needs a teacher-facing editor.
+**Quality gates for every phase:** `npm run arcade:test` and `node scripts/shelf-e2e.mjs` at six sizes stay green; every level is solver-proven; a bot playthrough of all levels records moves versus par; the page still never scrolls and frame times stay at 60fps in the browser check.
