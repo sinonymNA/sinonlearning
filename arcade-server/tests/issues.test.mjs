@@ -12,10 +12,10 @@ function solveAll(st) {
   });
 }
 
-test("word bank: 240 unique clean words over 10 themes, every clue present and not containing its own answer, sayings are letters only", () => {
-  assert.equal(THEMES.length, 10); assert.equal(ALL_WORDS.length, 240); assert.equal(new Set(ALL_WORDS.map((w) => w.w)).size, 240);
-  for (const w of ALL_WORDS) { assert.match(w.w, /^[A-Z]{3,10}$/); assert.ok(w.c.length > 8); assert.ok(![1, 2, 3].includes(w.d) === false); assert.ok(!w.c.toUpperCase().split(/[^A-Z]+/).includes(w.w), `clue gives away ${w.w}`); }
-  for (const t of THEMES) assert.equal(WORDS[t].length, 24); for (const s of SAYINGS) assert.match(s, /^[A-Z ]+$/);
+test("word bank: 600+ unique clean words over 10 themes, every clue present and not containing its own answer, sayings are letters only", () => {
+  assert.equal(THEMES.length, 10); assert.ok(ALL_WORDS.length >= 600); assert.equal(new Set(ALL_WORDS.map((w) => w.w)).size, ALL_WORDS.length);
+  for (const w of ALL_WORDS) { assert.match(w.w, /^[A-Z]{3,14}$/); assert.ok(w.c.length > 8); assert.ok(![1, 2, 3].includes(w.d) === false); assert.ok(!w.c.toUpperCase().split(/[^A-Z]+/).includes(w.w), `clue gives away ${w.w}`); }
+  for (const t of THEMES) assert.ok(WORDS[t].length >= 55, `${t} has ${WORDS[t].length}`); for (const s of SAYINGS) assert.match(s, /^[A-Z ]+$/); assert.ok(SAYINGS.length >= 80 && new Set(SAYINGS).size === SAYINGS.length);
 });
 test("crates and the unlock ramp: crossword only for 3 papers, sudoku at 4, word search at 7, cryptogram at 11; every crate has 10 papers and its own theme", () => {
   assert.deepEqual([1, 2, 3].map((l) => puzzlesFor(l).map((p) => p.type)), [["crossword"], ["crossword"], ["crossword"]]);
@@ -76,4 +76,11 @@ test("stars, profile and hints: stars follow time left and hint use, first clear
   const p = newProfile(); const a = completeIssue(p, { ...mk(0.5), level: 1, boss: false }); assert.ok(a.first && p.level === 2 && p.stars[1] === 3 && p.hints === 7 && a.reward.hints === 2); const b = completeIssue(p, { ...mk(0.1), level: 1, boss: false }); assert.equal(b.first, false); assert.equal(p.stars[1], 3, "stars only go up"); assert.equal(p.hints, 7);
   const q = newProfile(); completeIssue(q, { ...mk(0.5), level: 10, boss: true }); assert.equal(q.hints, 10, "a crate-ending paper pays 5 hints"); const r = normalizeProfile({ hints: 99, level: 0 }); assert.equal(r.hints, MAX_HINTS); assert.equal(r.level, 1);
   assert.equal(useHint(q), true); assert.equal(q.hints, 9); const z = newProfile(); z.hints = 0; assert.equal(useHint(z), false); assert.equal(totalStars(p), 3);
+});
+
+test("variety: papers 1-60 use hundreds of different words, a paper never repeats a word across its puzzles, and clue styles ramp up", () => {
+  const seen = {}, styles = { plain: 0, hint: 0, jumble: 0 }; let early = 0;
+  for (let L = 1; L <= 60; L++) { const st = newIssue(L), here = new Set(); for (const p of st.puzzles) { const ws = p.type === "crossword" ? p.data.words.map((w) => w.answer) : p.type === "wordsearch" ? p.data.words.map((w) => w.word) : []; for (const w of ws) { assert.ok(!here.has(w), `paper ${L} repeats ${w}`); here.add(w); seen[w] = (seen[w] || 0) + 1; } if (p.type === "crossword") for (const w of p.data.words) { styles[w.style]++; if (L < 6 && w.style === "jumble") early++; } } }
+  assert.ok(Object.keys(seen).length >= 380, `only ${Object.keys(seen).length} different words in 60 papers`); assert.equal(early, 0, "no unscramble clues before paper 6"); assert.ok(styles.plain > 0 && styles.hint > 0 && styles.jumble > 0, JSON.stringify(styles));
+  const j = newIssue(30).puzzles[0].data.words.find((w) => w.style === "jumble"); if (j) { const m = /^Unscramble ([A-Z]+): /.exec(j.clue); assert.ok(m && [...m[1]].sort().join("") === [...j.answer].sort().join("") && m[1] !== j.answer); }
 });

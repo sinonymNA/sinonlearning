@@ -8,6 +8,8 @@ import { PrefsProvider, PrefsButtons, usePrefs } from "../prefs";
 import { CRATES, PER_CRATE, TYPE_NAMES, newIssue, newProfile, normalizeProfile, completeIssue, advance, relax, puzzleDone, totalStars, introFor, crateInfo, crateOf, posOf, UNLOCK } from "../../../arcade-server/issues/index.mjs";
 import { Crossword, Sudoku, WordSearch, Cipher } from "./Puzzles";
 import { Icon } from "./Icons";
+import FrontPage from "./FrontPage";
+import { ERAS, PUZZLE_NAMES } from "./pageData";
 import { play } from "./audio";
 import "./issues.css";
 
@@ -43,14 +45,15 @@ export default function BackIssues() { return <PrefsProvider><Inner /></PrefsPro
 function Inner() {
   const S = useRef<Saved | null>(null), { prefs } = usePrefs(), [, bump] = useReducer((x: number) => x + 1, 0);
   const [view, setView] = useState<"home" | "pick" | "play">("home"), [crate, setCrate] = useState(0), [tab, setTab] = useState(0);
-  const [bigStamp, setBigStamp] = useState(0), [shake, setShake] = useState(false), [zap, setZap] = useState(0), [opening, setOpening] = useState(false), [round, setRound] = useState(0), [intro, setIntro] = useState<string | null>(null), [menu, setMenu] = useState(false), [result, setResult] = useState<any>(null), [fail, setFail] = useState(false), [msg, setMsg] = useState<string | null>(null), [stampTab, setStampTab] = useState<number | null>(null);
-  const fxRef = useRef<HTMLDivElement>(null), areaRef = useRef<HTMLDivElement>(null), msgT = useRef<any>(null), warned = useRef(0), rewarded = useRef(false), last = useRef(0), saveAt = useRef(0), paused = useRef(true);
+  const [zoom, setZoom] = useState<number | null>(null), [origin, setOrigin] = useState("50% 50%"), [fresh, setFresh] = useState<number | null>(null), [pulse, setPulse] = useState<number | null>(null), [bigStamp, setBigStamp] = useState(0), [shake, setShake] = useState(false), [zap, setZap] = useState(0), [opening, setOpening] = useState(false), [round, setRound] = useState(0), [intro, setIntro] = useState<string | null>(null), [menu, setMenu] = useState(false), [result, setResult] = useState<any>(null), [fail, setFail] = useState(false), [msg, setMsg] = useState<string | null>(null), [stampTab, setStampTab] = useState<number | null>(null);
+  const zoomRef = useRef<number | null>(null), fxRef = useRef<HTMLDivElement>(null), areaRef = useRef<HTMLDivElement>(null), msgT = useRef<any>(null), warned = useRef(0), rewarded = useRef(false), last = useRef(0), saveAt = useRef(0), paused = useRef(true);
   const save = useCallback(() => { try { if (S.current) localStorage.setItem(KEY, JSON.stringify(S.current)); } catch { /* storage blocked */ } }, []);
   useEffect(() => { S.current = load(); setCrate(Math.min(crateOf(S.current.profile.level), 99)); bump(); }, []);
   useEffect(() => { const h = () => save(); window.addEventListener("pagehide", h); return () => { window.removeEventListener("pagehide", h); save(); }; }, [save]);
   const say = useCallback((t: string) => { setMsg(t); clearTimeout(msgT.current); msgT.current = setTimeout(() => setMsg(null), 2600); }, []);
   const s = S.current, st = s?.issue, open = !!(intro || menu || result || fail);
   paused.current = view !== "play" || open || !st;
+  zoomRef.current = zoom;
 
   // the clock: real elapsed time, frozen while a card is open, the tab is hidden or we are not on a paper
   useEffect(() => {
@@ -69,16 +72,17 @@ function Inner() {
     if (!S.current) return; const keep = S.current.issue; let iss = keep && keep.level === level && !keep.done && !fresh ? keep : null;
     if (!iss) iss = newIssue(level); S.current.issue = iss; rewarded.current = false; warned.current = iss.timeLeft; setResult(null); setFail(!!iss.failed); setTab(Math.max(0, iss.puzzles.findIndex((p: any) => !puzzleDone(p)))); setMenu(false); setStampTab(null);
     const t = introFor(level); if (t && !S.current.profile.seen[t]) setIntro(t); else if (level === 1 && !S.current.profile.seen.crossword) setIntro("crossword");
-    setOpening(false); setRound((r) => r + 1); setView("play"); play("paper"); save(); bump();
+    setOpening(false); setZoom(null); setFresh(null); setPulse(iss.puzzles.findIndex((p: any) => !puzzleDone(p))); setRound((r) => r + 1); setView("play"); play("paper"); save(); bump();
   };
   const closeIntro = () => { if (intro && S.current) { S.current.profile.seen[intro] = true; save(); } setIntro(null); last.current = performance.now(); };
   const finishIfWon = (iss: any) => {
     if (!iss.won || rewarded.current || !S.current) return; rewarded.current = true; const r = completeIssue(S.current.profile, iss); save();   // the finished paper stays on screen behind the result card (load() ignores done papers)
-    window.setTimeout(() => { play("paper"); const a = areaRef.current?.getBoundingClientRect(); burst(fxRef.current, (a?.left || 0) + (a?.width || 300) / 2, (a?.top || 0) + 80, 46, 1.3); for (let i = 0; i < r.stars; i++) window.setTimeout(() => { play("star"); setShake(true); window.setTimeout(() => setShake(false), 380); }, 1100 + i * 380); window.setTimeout(() => play("win"), 700); setResult({ ...r, level: iss.level, timeLeft: iss.timeLeft, timeLimit: iss.timeLimit, hintsUsed: iss.hintsUsed, relaxed: iss.relaxed, masthead: iss.masthead, headline: iss.headline, date: iss.date }); }, 900);
+    window.setTimeout(() => { setFresh(iss.puzzles.length - 1); setZoom(null); play("paper"); }, 950);   // zoom back out to the front page so every SOLVED stamp is visible
+    window.setTimeout(() => { play("paper"); const a = fxRef.current?.getBoundingClientRect(); burst(fxRef.current, (a?.width || 300) / 2, (a?.height || 600) * 0.3, 46, 1.3); for (let i = 0; i < r.stars; i++) window.setTimeout(() => { play("star"); setShake(true); window.setTimeout(() => setShake(false), 380); }, 1100 + i * 380); window.setTimeout(() => play("win"), 700); setResult({ ...r, level: iss.level, timeLeft: iss.timeLeft, timeLimit: iss.timeLimit, hintsUsed: iss.hintsUsed, relaxed: iss.relaxed, masthead: iss.masthead, headline: iss.headline, date: iss.date }); }, 2000);
   };
   const after = (r: any, snd?: string) => {
     const iss = S.current?.issue; if (!iss || !r) return;
-    if (r.changed || r.found) { if (snd) play(snd as any); if (r.puzzleDone) { play("stamp"); setStampTab(tab); setBigStamp((k) => k + 1); setShake(true); window.setTimeout(() => setShake(false), 420); window.setTimeout(() => setStampTab(null), 1400); try { navigator.vibrate?.(30); } catch { /* unsupported */ } { const a = areaRef.current?.getBoundingClientRect(); burst(fxRef.current, (a?.left || 0) + (a?.width || 300) / 2, (a?.top || 0) + (a?.height || 300) * 0.45, 26); } const nxt = iss.puzzles.findIndex((p: any) => !puzzleDone(p)); if (nxt >= 0) window.setTimeout(() => setTab(nxt), 900); } finishIfWon(iss); save(); bump(); } else if (snd === "bad") play("bad");
+    if (r.changed || r.found) { if (snd) play(snd as any); if (r.puzzleDone) { play("stamp"); setStampTab(tab); setBigStamp((k) => k + 1); setShake(true); window.setTimeout(() => setShake(false), 420); window.setTimeout(() => setStampTab(null), 1400); try { navigator.vibrate?.(30); } catch { /* unsupported */ } { const a = areaRef.current?.getBoundingClientRect(); burst(fxRef.current, (a?.left || 0) + (a?.width || 300) / 2, (a?.top || 0) + (a?.height || 300) * 0.45, 26); } const nxt = iss.puzzles.findIndex((p: any) => !puzzleDone(p)), idx = tab; if (nxt >= 0) window.setTimeout(() => { if (zoomRef.current === idx) { setFresh(idx); setPulse(nxt); setZoom(null); play("paper"); } }, 1000); } finishIfWon(iss); save(); bump(); } else if (snd === "bad") play("bad");
   };
   const spend = (fn: () => any) => { const p = S.current!.profile; if (p.hints < 1) { say("No hints left. Finish papers to earn more."); play("bad"); return; } const r = fn(); if (r?.changed) { p.hints--; setZap((z) => z + 1); after(r, "hint"); } };
   const retry = () => { if (st) begin(st.level, true); };
@@ -93,24 +97,30 @@ function Inner() {
     : st ? (
       <div className="bi-paper unfold" key={`${st.level}-${round}`}>
         <header className="bi-top">
-          <button className="bi-btn round" onClick={() => { save(); setView("pick"); }} aria-label="Back to crates"><Icon.back /></button>
-          <div className="bi-mast"><b>{st.masthead}</b><small>{st.date} · No. {st.no}{st.boss ? " · SPECIAL EDITION" : ""}</small></div>
+          <button className="bi-btn round" onClick={() => { if (zoom !== null) { setZoom(null); play("paper"); } else { save(); setView("pick"); } }} aria-label={zoom !== null ? "Back to the front page" : "Back to crates"}><Icon.back /></button>
+          <div className="bi-mid">{zoom !== null ? (
+            <div className="bi-chips" role="tablist" aria-label="Puzzles on this paper">{st.puzzles.map((p: any, i: number) => <button key={i} role="tab" aria-selected={i === zoom} data-tab={i} className={`${i === zoom ? "on" : ""} ${puzzleDone(p) ? "done" : ""}`} onClick={() => { setTab(i); setZoom(i); play("tab"); }} aria-label={PUZZLE_NAMES[p.type].title}>{ICON[p.type]()}{puzzleDone(p) && <em>✓</em>}</button>)}</div>
+          ) : <b className="bi-pg">{st.boss ? "SPECIAL EDITION" : "FRONT PAGE"}</b>}</div>
           <div className={`bi-clock ${st.relaxed ? "relaxed" : st.timeLeft <= 30 ? "hot" : ""} ${!st.relaxed && st.timeLeft <= 10 ? "last" : ""}`} aria-label={st.relaxed ? "Timer off" : `${mmss(st.timeLeft)} left`}><b key={!st.relaxed && st.timeLeft <= 10 ? Math.ceil(st.timeLeft) : "t"}>{st.relaxed ? "∞" : mmss(st.timeLeft)}</b><i style={{ transform: `scaleX(${st.relaxed ? 1 : Math.max(0, st.timeLeft / st.timeLimit)})` }} /></div>
           <div key={zap} className={`bi-hints ${zap ? "zap" : ""}`} title="Hints" aria-label={`${prof.hints} hints`}><Icon.bulb /><b>{prof.hints}</b></div>
           <button className="bi-btn round" onClick={() => setMenu(true)} aria-label="Menu"><Icon.menu /></button>
         </header>
-        <div className="bi-tabs" role="tablist">{st.puzzles.map((p: any, i: number) => { const done = puzzleDone(p); return <button key={i} role="tab" aria-selected={i === tab} data-tab={i} className={`${i === tab ? "on" : ""} ${done ? "done" : ""}`} onClick={() => { setTab(i); play("tab"); }}>{ICON[p.type]()}<b>{TYPE_NAMES[p.type as keyof typeof TYPE_NAMES]}</b>{done && <em>SOLVED</em>}</button>; })}</div>
-        <div className={`bi-area ${shake ? "shake" : ""}`} ref={areaRef}>
-          <div className={`bi-vig ${!st.relaxed && st.timeLeft <= 30 && !st.done ? "hot" : ""}`} />
-          {bigStamp > 0 && stampTab !== null && <div key={bigStamp} className="bi-bigstamp" aria-hidden>SOLVED</div>}
-          <div className="bi-slide" key={tab}>{(() => { const p = st.puzzles[tab], P = { st, pi: tab, after, spend, off: open || st.done || st.failed, say }; return p.type === "crossword" ? <Crossword key={`${st.level}-${tab}`} {...P} /> : p.type === "sudoku" ? <Sudoku key={`${st.level}-${tab}`} {...P} /> : p.type === "wordsearch" ? <WordSearch key={`${st.level}-${tab}`} {...P} /> : <Cipher key={`${st.level}-${tab}`} {...P} />; })()}</div>
-        </div>
+        <div className={`bi-vig ${!st.relaxed && st.timeLeft <= 30 && !st.done ? "hot" : ""}`} />
+        {zoom === null ? (
+          <div className="bi-front" key="front"><FrontPage st={st} era={ERAS[crateOf(st.level) % ERAS.length]} crate={crateOf(st.level)} fresh={fresh} pulse={pulse} onOpen={(i, rect) => { setOrigin(`${rect.left + rect.width / 2}px ${rect.top + rect.height / 2}px`); setTab(i); setZoom(i); play("paper"); }} /></div>
+        ) : (
+          <div className={`bi-area bi-lean ${shake ? "shake" : ""}`} ref={areaRef} style={{ transformOrigin: origin }} key="zoom">
+            <div className="bi-ptitle"><b>{PUZZLE_NAMES[st.puzzles[zoom].type].title}</b><span>{st.masthead.toUpperCase()} · NO. {st.no}</span></div>
+            {bigStamp > 0 && stampTab !== null && <div key={bigStamp} className="bi-bigstamp" aria-hidden>SOLVED</div>}
+            <div className="bi-slide" key={zoom}>{(() => { const p = st.puzzles[zoom], P = { st, pi: zoom, after, spend, off: open || st.done || st.failed, say }; return p.type === "crossword" ? <Crossword key={`${st.level}-${zoom}`} {...P} /> : p.type === "sudoku" ? <Sudoku key={`${st.level}-${zoom}`} {...P} /> : p.type === "wordsearch" ? <WordSearch key={`${st.level}-${zoom}`} {...P} /> : <Cipher key={`${st.level}-${zoom}`} {...P} />; })()}</div>
+          </div>
+        )}
         {msg && <div className="bi-msg" role="status">{msg}</div>}
       </div>
     ) : <div className="bi-loading">…</div>
   );
   return (
-    <div className={`bi-root v-${view} ${prefs.calm ? "bi-calm" : ""}`}>
+    <div className={`bi-root v-${view} ${prefs.calm ? "bi-calm" : ""}`} style={(() => { const e = ERAS[(st ? st.crate : crate) % ERAS.length]; return view === "play" && st ? { ["--paper" as any]: e.paper, ["--paper2" as any]: e.paper2, ["--cream" as any]: e.cream, ["--ink" as any]: e.ink, ["--red" as any]: e.accent } : undefined; })()}>
       {stage}
       <div className="bi-fx" ref={fxRef} aria-hidden />
       {intro && <Card className="intro" label="New puzzle"><small>NEW PUZZLE TYPE</small><h2>{TYPE_NAMES[intro as keyof typeof TYPE_NAMES]}</h2><ul>{HOW[intro].map((t, i) => <li key={i}>{t}</li>)}</ul><button className="bi-btn go big" onClick={closeIntro}>GOT IT</button></Card>}

@@ -24,5 +24,11 @@ Crates of old newspapers. Each level is one paper; solve every puzzle on it befo
 - Touch: typewriter-key keyboard, haptic buzz on keys and completions (not in Calm).
 - A finished paper stays on screen behind its result card (saved papers with `done` are ignored on load).
 
+## v3: content and the front page
+- Word bank: 625 words (`words.mjs` + `words2.mjs`, 55-65 per theme, one theme per word), 90 sayings. A paper takes a rotating window of words from a per-crate seeded order (about 25% theme words, the rest guests), so neighbouring papers differ and a paper never repeats a word across its puzzles (tested). Word search draws mostly theme words.
+- Clue styles ramp: plain definitions; hard words get "(starts with X)"; from paper 6 some clues are "Unscramble ABC: definition". Cryptogram sayings step through the list with a coprime stride (no repeat within 90 papers).
+- Each paper is a real front page (`FrontPage.tsx`, `pageData.ts`, `Scene.tsx`): flag, dateline, banner headline, procedural woodcut illustration (sea/sky/town/wild), news columns, In Brief, an advert, and THE PUZZLE PAGE with a live miniature per puzzle. Tapping a box leans in to the puzzle; finishing one zooms back out and stamps its box. Ten era palettes (`ERAS`), one per crate.
+- All news items and adverts are invented (no real papers, brands or people).
+
 ## Ideas not built yet
 Crossword with real black-square grids, class-made papers (teacher clue sets), a daily paper, a rival "editor" ghost time, more puzzle types (nonogram, logic grid, spot-the-difference).

@@ -45,15 +45,37 @@ export function puzzlesFor(level) {
 export const introFor = (level) => TYPES.find((t) => UNLOCK[t] === level) || null;
 
 // ---------------------------------------------------------------- building a newspaper
-function poolFor(level, theme) {
-  const maxD = clamp(1 + Math.floor(level / 14), 1, 3), own = WORDS[theme].filter((w) => w.d <= maxD), others = ALL_WORDS.filter((w) => w.t !== theme && w.d <= maxD);
-  return [...own, ...own, ...others];   // the crate's theme is favoured, other themes fill the gaps
+const shuffle = (rng, arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const k = rng.int(i + 1); [a[i], a[k]] = [a[k], a[i]]; } return a; };
+const maxDiff = (level) => (level < 4 ? 1 : level < 12 ? 2 : 3);
+const THEME_IDX = Object.fromEntries(THEMES.map((t, i) => [t, i]));
+/** A rotating window of words for one paper. One seeded, endlessly repeating order per crate and puzzle slot, mixing the crate's theme words with guests from other themes
+ *  (`pattern`: true = theme word), read from an offset that advances with the paper's place in its crate. Neighbouring papers get different words, and a word only
+ *  comes back after most of its pool has been used. */
+function wordWindow(level, theme, slot, count, maxLen, pattern = [true, false, false, false], exclude = null) {
+  const crate = crateOf(level), rng = makeRng(crate * 7919 + slot * 104729 + THEME_IDX[theme] * 31 + 3), D = maxDiff(level), ok = (w) => w.d <= D && w.w.length <= maxLen && !(exclude && exclude.has(w.w));
+  const own = shuffle(rng, WORDS[theme]), others = shuffle(rng, ALL_WORDS.filter((w) => w.t !== theme)), order = []; let a = 0, b = 0;   // the order never depends on the level's difficulty, so neighbouring windows line up
+  for (let k = 0; k < 6000 && order.length < 1500; k++) { if (pattern[k % pattern.length]) order.push(own[a++ % own.length]); else order.push(others[b++ % others.length]); }
+  const stride = Math.ceil(count * (D === 1 ? 2.4 : D === 2 ? 1.7 : 1.3)), out = [], seen = new Set(), start = ((posOf(level) - 1) * stride + crate * 29) % order.length;
+  for (let k = 0; k < order.length && out.length < count; k++) { const w = order[(start + k) % order.length]; if (ok(w) && !seen.has(w.w)) { seen.add(w.w); out.push(w); } }
+  return out;
 }
-function buildPuzzle(level, type, index, theme) {
+const scramble = (rng, word) => { for (let t = 0; t < 12; t++) { const s = shuffle(rng, [...word]).join(""); if (s !== word) return s; } return null; };
+/** Clue styles: plain definitions early; hard words get a first-letter nudge; from paper 6 some clues become "unscramble it" clues. */
+function styleClues(level, words, rng) {
+  for (const w of words) {
+    const base = w.clue; let style = "plain";
+    const jumbleP = level < 6 ? 0 : Math.min(0.4, 0.15 + (level - 6) * 0.02), hintP = level < 12 ? 0.35 : 0.2;
+    const roll = rng() ;
+    if (roll < jumbleP) { const sc = scramble(rng, w.answer); if (sc) { w.clue = `Unscramble ${sc}: ${base}`; style = "jumble"; } }
+    else if (roll < jumbleP + hintP && w.answer.length >= 4) { w.clue = `${base} (starts with ${w.answer[0]})`; style = "hint"; }
+    w.style = style;
+  }
+}
+function buildPuzzle(level, type, index, theme, used = new Set()) {
   const seed = level * 100003 + index * 7919 + 17, rng = makeRng(seed);
   if (type === "crossword") {
-    const target = clamp(4 + Math.floor((level + 1) / 2), 5, 14), size = clamp(9 + Math.floor(level / 6), 9, 13), seen = new Set(), pool = poolFor(level, theme).filter((w) => !seen.has(w.w) && seen.add(w.w));
-    for (let t = 0; t < 12; t++) { const cw = buildCrossword(seed + t * 31, pool, target, size); if (cw) return { type, data: cw, st: { g: Array.from({ length: cw.rows }, () => Array(cw.cols).fill("")) } }; }
+    const target = clamp(4 + Math.floor((level + 1) / 2), 5, 14), size = clamp(9 + Math.floor(level / 6), 9, 13), basePool = target * 2 + 4;
+    for (let t = 0; t < 18; t++) { const tgt = t < 12 ? target : target - 2, pool = t < 6 ? wordWindow(level, theme, index, basePool, size, undefined, used) : wordWindow(level, theme, index, basePool + 12 * (t - 5), size, undefined, used), cw = buildCrossword(seed + t * 31, pool, tgt, size); if (cw) { cw.words.forEach((w) => used.add(w.answer)); styleClues(level, cw.words, makeRng(seed + 99)); return { type, data: cw, st: { g: Array.from({ length: cw.rows }, () => Array(cw.cols).fill("")) } }; } }
     return null;
   }
   if (type === "sudoku") {
@@ -61,12 +83,11 @@ function buildPuzzle(level, type, index, theme) {
     return { type, data: d, st: { g: d.puzzle.map((r) => r.slice()), notes: {} } };
   }
   if (type === "wordsearch") {
-    const nWords = clamp(5 + Math.floor(level / 4), 5, 12), size = clamp(8 + Math.floor(level / 5), 8, 14), dirs = level <= 9 ? 2 : level <= 15 ? 3 : level <= 22 ? 6 : 8, own = WORDS[theme].filter((w) => w.w.length <= size && w.d <= clamp(1 + Math.floor(level / 14), 1, 3)).map((w) => w.w);
-    const words = [...new Set(own)].sort((a, b) => ((a.charCodeAt(0) * 31 + seed) % 97) - ((b.charCodeAt(0) * 31 + seed) % 97)).slice(0, nWords);
-    for (let t = 0; t < 8; t++) { const ws = buildWordSearch(seed + t * 13, words, size, dirs); if (ws) return { type, data: ws, st: { found: [] } }; }
+    const nWords = clamp(5 + Math.floor(level / 4), 5, 12), size = clamp(8 + Math.floor(level / 5), 8, 14), dirs = level <= 9 ? 2 : level <= 15 ? 3 : level <= 22 ? 6 : 8, words = wordWindow(level, theme, 40 + index, nWords, size, [true, true, false], used).map((w) => w.w);
+    for (let t = 0; t < 8; t++) { const ws = buildWordSearch(seed + t * 13, words, size, dirs); if (ws) { ws.words.forEach((w) => used.add(w.word)); return { type, data: ws, st: { found: [] } }; } }
     return null;
   }
-  const text = SAYINGS[rng.int(SAYINGS.length)], c = buildCipher(seed, text, clamp(4 - Math.floor((level - 11) / 4), 0, 4)); return { type: "cipher", data: c, st: { g: { ...c.given } } };
+  const text = SAYINGS[(level * 37 + index * 11) % SAYINGS.length], c = buildCipher(seed, text, clamp(4 - Math.floor((level - 11) / 4), 0, 4)); return { type: "cipher", data: c, st: { g: { ...c.given } } };
 }
 const secondsFor = (p) => {
   if (p.type === "crossword") return p.data.words.length * 28 + 45;
@@ -77,7 +98,7 @@ const secondsFor = (p) => {
 /** The time limit in seconds for a set of puzzles: the sum of fair per-puzzle times plus 15%, rounded up to 10 seconds. */
 export const timeLimitFor = (puzzles) => Math.ceil((puzzles.reduce((t, p) => t + secondsFor(p), 0) * 1.15) / 10) * 10;
 export function newIssue(level) {
-  const L = Math.max(1, Math.floor(level) || 1), crate = crateInfo(L), rng = makeRng(L * 31 + 5), puzzles = puzzlesFor(L).map((s, i) => { const p = buildPuzzle(L, s.type, i, crate.theme); if (!p) throw new Error(`could not build ${s.type} for issue ${L}`); return { id: i, ...p }; });
+  const L = Math.max(1, Math.floor(level) || 1), crate = crateInfo(L), rng = makeRng(L * 31 + 5), used = new Set(), puzzles = puzzlesFor(L).map((s, i) => { const p = buildPuzzle(L, s.type, i, crate.theme, used); if (!p) throw new Error(`could not build ${s.type} for issue ${L}`); return { id: i, ...p }; });
   const limit = timeLimitFor(puzzles), months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], year = crate.year + (crateOf(L) >= CRATES.length ? 10 * Math.floor(crateOf(L) / CRATES.length) : 0);
   return { v: 1, level: L, crate: crateOf(L), masthead: crate.name, theme: crate.theme, date: `${months[rng.int(12)]} ${1 + rng.int(28)}, ${year + posOf(L) - 1}`, vol: 1 + crateOf(L), no: posOf(L) + 100 * crateOf(L), headline: HEADLINES[crate.theme][rng.int(3)], boss: posOf(L) === 10, puzzles, timeLimit: limit, timeLeft: limit, hintsUsed: 0, relaxed: false, failed: false, done: false, won: false };
 }
