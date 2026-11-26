@@ -18,5 +18,11 @@ Crates of old newspapers. Each level is one paper; solve every puzzle on it befo
 - Client: `components/arcade/issues/{BackIssues,Puzzles}.tsx`, `issues.css`, `audio.ts`. Save: `backissues:v1` (profile + current paper). On-screen keyboard shows on touch devices; physical keyboard always works.
 - Browser check: `node scripts/backissues-e2e.mjs` (six viewports; plays real papers 1, 4, 7, 11, the timeout card, relaxed mode).
 
+## Look and feel (v2)
+- Type: Fraktur mastheads, Playfair headlines, Old Standard body, Special Elite typewriter entries (self-hosted woff2 in `public/fonts/arcade/issues-*`, OFL). Paper grain is an inline SVG noise image. No emoji; icons are `Icons.tsx`.
+- Motion (transforms/opacity, off in Calm and reduced-motion): letters pop as typed; a finished word/row/column/box ripples; word-search finds draw a highlighter stroke and strike the word; solving a puzzle slams a SOLVED stamp with a screen shake and paper scraps; papers unfold open; the home attic has a swinging bulb, dust and a crate that opens; the result card is a spinning front page with stars that stamp in one by one; the last 30s add a red vignette and the last 10s tick.
+- Touch: typewriter-key keyboard, haptic buzz on keys and completions (not in Calm).
+- A finished paper stays on screen behind its result card (saved papers with `done` are ignored on load).
+
 ## Ideas not built yet
 Crossword with real black-square grids, class-made papers (teacher clue sets), a daily paper, a rival "editor" ghost time, more puzzle types (nonogram, logic grid, spot-the-difference).

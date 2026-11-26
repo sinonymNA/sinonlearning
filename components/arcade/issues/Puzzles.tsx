@@ -4,6 +4,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cwSet, cwWrong, cwReveal, cwRevealWord, sdSet, sdNote, sdConflicts, sdReveal, sdIsGiven, wsSelect, wsReveal, cpSet, cpReveal, cpClashes } from "../../../arcade-server/issues/index.mjs";
 
+import { Icon } from "./Icons";
+import { play } from "./audio";
+
 export type PP = { st: any; pi: number; after: (r: any, snd?: string) => void; spend: (fn: () => any) => void; off: boolean; say: (t: string) => void };
 
 function useSize() {
@@ -11,11 +14,24 @@ function useSize() {
   const ref = useCallback((el: HTMLElement | null) => { ro.current?.disconnect(); if (!el) return; const go = () => setS({ w: el.clientWidth, h: el.clientHeight }); go(); ro.current = new ResizeObserver(go); ro.current.observe(el); }, []);
   return [ref, s] as const;
 }
+/** A ripple across a set of cells (a finished word, row, column or box). Cells read `w.m[key]` for their delay slot. */
+function useWave() {
+  const [w, setW] = useState<{ id: number; m: Record<string, number> }>({ id: 0, m: {} }), tm = useRef<any>(null);
+  const fire = useCallback((keys: string[]) => { setW((o) => ({ id: o.id + 1, m: Object.fromEntries(keys.map((k, i) => [k, i])) })); clearTimeout(tm.current); tm.current = setTimeout(() => setW((o) => ({ id: o.id, m: {} })), 1600); }, []);
+  useEffect(() => () => clearTimeout(tm.current), []);
+  return [w, fire] as const;
+}
+/** Watches a set of "units" (words, rows...) and fires `onNew` with the cells of any unit that just became complete. The first render only records what is already done. */
+function useUnits(units: { id: string; cells: string[]; ok: boolean }[], onNew: (cells: string[]) => void) {
+  const done = useRef<Set<string> | null>(null);
+  useEffect(() => { const cur = new Set(units.filter((u) => u.ok).map((u) => u.id)); if (done.current) { const fresh = units.filter((u) => u.ok && !done.current!.has(u.id)); if (fresh.length) onNew([...new Set(fresh.flatMap((u) => u.cells))]); } done.current = cur; });
+}
+const buzz = (ms = 8) => { try { if (!document.documentElement.classList.contains("calm")) navigator.vibrate?.(ms); } catch { /* unsupported */ } };
 const ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 function Keys({ onKey, onBack, off, dim }: { onKey: (c: string) => void; onBack: () => void; off: boolean; dim?: Set<string> }) {
   return (
     <div className="bi-keys" role="group" aria-label="Letters">
-      {ROWS.map((row, i) => <div key={i} className="bi-keyrow">{[...row].map((ch) => <button key={ch} disabled={off} className={dim?.has(ch) ? "dim" : ""} onPointerDown={(e) => { e.preventDefault(); onKey(ch); }} aria-label={ch}>{ch}</button>)}{i === 2 && <button className="wide" disabled={off} onPointerDown={(e) => { e.preventDefault(); onBack(); }} aria-label="Erase">⌫</button>}</div>)}
+      {ROWS.map((row, i) => <div key={i} className="bi-keyrow">{[...row].map((ch) => <button key={ch} disabled={off} className={dim?.has(ch) ? "dim" : ""} onPointerDown={(e) => { e.preventDefault(); buzz(); onKey(ch); }} aria-label={ch}>{ch}</button>)}{i === 2 && <button className="wide" disabled={off} onPointerDown={(e) => { e.preventDefault(); buzz(); onBack(); }} aria-label="Erase"><Icon.eraser /></button>}</div>)}
     </div>
   );
 }
@@ -29,12 +45,12 @@ function useKeys(fn: (e: KeyboardEvent) => boolean, deps: any[]) {
 export function Crossword({ st, pi, after, spend, off, say }: PP) {
   const p = st.puzzles[pi], d = p.data, g = p.st.g;
   const [rootRef, rs] = useSize(), [boardRef, bs] = useSize();
-  const [sel, setSel] = useState<[number, number]>(() => [d.words[0].r, d.words[0].c]), [dir, setDir] = useState<"across" | "down">(d.words[0].dir), [wrong, setWrong] = useState<string[]>([]), [list, setList] = useState(false);
+  const [sel, setSel] = useState<[number, number]>(() => [d.words[0].r, d.words[0].c]), [dir, setDir] = useState<"across" | "down">(d.words[0].dir), [wrong, setWrong] = useState<string[]>([]), [list, setList] = useState(false), [fresh, setFresh] = useState({ k: "", n: 0 }), [wv, fire] = useWave();
   const cover = useMemo(() => { const m: Record<string, number> = {}; d.words.forEach((w: any, i: number) => { for (let k = 0; k < w.len; k++) m[`${w.dir}:${w.r + (w.dir === "down" ? k : 0)},${w.c + (w.dir === "across" ? k : 0)}`] = i; }); return m; }, [d]);
   const order = useMemo(() => d.words.map((_: any, i: number) => i).sort((a: number, b: number) => (d.words[a].num - d.words[b].num) || (d.words[a].dir === "across" ? -1 : 1)), [d]);
   const wi = cover[`${dir}:${sel[0]},${sel[1]}`] ?? cover[`${dir === "across" ? "down" : "across"}:${sel[0]},${sel[1]}`], w = d.words[wi];
   const active = useMemo(() => { const s = new Set<string>(); if (w) for (let k = 0; k < w.len; k++) s.add(`${w.r + (w.dir === "down" ? k : 0)},${w.c + (w.dir === "across" ? k : 0)}`); return s; }, [w]);
-  const wide = rs.w > rs.h * 1.25, cell = Math.max(14, Math.min(54, Math.floor(Math.min((bs.w - 6) / d.cols, (bs.h - 6) / d.rows))));
+  const wide = rs.w > rs.h * 1.25, cell = Math.max(14, Math.min(72, Math.floor(Math.min((bs.w - 6) / d.cols, (bs.h - 6) / d.rows))));
   const pick = (r: number, c: number) => {
     if (!d.cells[r][c]) return; setWrong([]);
     if (sel[0] === r && sel[1] === c) { const o = dir === "across" ? "down" : "across"; if (cover[`${o}:${r},${c}`] !== undefined) setDir(o); }
@@ -42,12 +58,14 @@ export function Crossword({ st, pi, after, spend, off, say }: PP) {
   };
   const goWord = (wj: number) => { const x = d.words[wj]; setDir(x.dir); const free = [...Array(x.len).keys()].find((k) => !g[x.r + (x.dir === "down" ? k : 0)][x.c + (x.dir === "across" ? k : 0)]) ?? 0; setSel([x.r + (x.dir === "down" ? free : 0), x.c + (x.dir === "across" ? free : 0)]); setWrong([]); };
   const step = (n: number) => { const at = order.indexOf(wi); goWord(order[(at + n + order.length) % order.length]); };
-  const type = (ch: string) => { if (off) return; const r = cwSet(st, pi, sel[0], sel[1], ch); after(r, "key"); if (r.changed && w) { const k = dir === w.dir ? (dir === "across" ? sel[1] - w.c : sel[0] - w.r) : -1; if (k >= 0 && k < w.len - 1) setSel(dir === "across" ? [sel[0], sel[1] + 1] : [sel[0] + 1, sel[1]]); } setWrong([]); };
+  const type = (ch: string) => { if (off) return; const r = cwSet(st, pi, sel[0], sel[1], ch); after(r, "key"); setFresh((f) => ({ k: `${sel[0]},${sel[1]}`, n: f.n + 1 })); if (r.changed && w) { const k = dir === w.dir ? (dir === "across" ? sel[1] - w.c : sel[0] - w.r) : -1; if (k >= 0 && k < w.len - 1) setSel(dir === "across" ? [sel[0], sel[1] + 1] : [sel[0] + 1, sel[1]]); } setWrong([]); };
   const back = () => { if (off) return; if (g[sel[0]][sel[1]]) { after(cwSet(st, pi, sel[0], sel[1], ""), "erase"); return; } if (w && dir === w.dir) { const k = dir === "across" ? sel[1] - w.c : sel[0] - w.r; if (k > 0) { const nr = dir === "across" ? sel[0] : sel[0] - 1, nc = dir === "across" ? sel[1] - 1 : sel[1]; setSel([nr, nc]); after(cwSet(st, pi, nr, nc, ""), "erase"); } } };
   useKeys((e) => {
     if (off || list) return false; if (/^[a-zA-Z]$/.test(e.key)) { type(e.key); return true; } if (e.key === "Backspace") { back(); return true; } if (e.key === " " || e.key === "Tab") { if (e.key === "Tab") step(e.shiftKey ? -1 : 1); else { const o = dir === "across" ? "down" : "across"; if (cover[`${o}:${sel[0]},${sel[1]}`] !== undefined) setDir(o); } return true; }
     const mv: Record<string, [number, number]> = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }; const m = mv[e.key]; if (m) { let r = sel[0] + m[0], c = sel[1] + m[1]; while (r >= 0 && c >= 0 && r < d.rows && c < d.cols && !d.cells[r][c]) { r += m[0]; c += m[1]; } if (r >= 0 && c >= 0 && r < d.rows && c < d.cols) { setDir(m[0] ? "down" : "across"); setSel([r, c]); } return true; } return false;
   }, [sel, dir, off, list, g, wi]);
+  const units = d.words.map((x: any, i: number) => { const cells = Array.from({ length: x.len }, (_, k) => `${x.r + (x.dir === "down" ? k : 0)},${x.c + (x.dir === "across" ? k : 0)}`); return { id: `w${i}`, cells, ok: cells.every((k) => g[+k.split(",")[0]][+k.split(",")[1]] === d.cells[+k.split(",")[0]][+k.split(",")[1]]) }; });
+  useUnits(units, (cells) => { play("good"); buzz(14); fire(cells); });
   const nums = useMemo(() => { const m: Record<string, number> = {}; d.words.forEach((x: any) => { m[`${x.r},${x.c}`] = x.num; }); return m; }, [d]);
   const check = () => { const bad = cwWrong(st, pi); setWrong(bad.map(([r, c]: number[]) => `${r},${c}`)); say(bad.length ? `${bad.length} letter${bad.length === 1 ? " is" : "s are"} wrong` : "All the letters so far are right"); };
   const clueRow = (x: any, i: number) => <li key={i}><button className={i === wi ? "on" : ""} onClick={() => { goWord(i); setList(false); }}><b>{x.num}</b> {x.clue} <small>({x.len})</small></button></li>;
@@ -56,15 +74,15 @@ export function Crossword({ st, pi, after, spend, off, say }: PP) {
       <div className="bi-board" ref={boardRef}>
         <div className="bi-cw" style={{ gridTemplateColumns: `repeat(${d.cols}, ${cell}px)`, gridTemplateRows: `repeat(${d.rows}, ${cell}px)`, fontSize: cell * 0.6 }} role="grid" aria-label="Crossword">
           {d.cells.map((row: string[], r: number) => row.map((ch, c) => ch ? (
-            <button key={`${r},${c}`} data-r={r} data-c={c} className={`cw ${sel[0] === r && sel[1] === c ? "sel" : active.has(`${r},${c}`) ? "act" : ""} ${wrong.includes(`${r},${c}`) ? "bad" : ""} ${g[r][c] && g[r][c] === ch && p.st.g[r][c] ? "" : ""}`} onClick={() => pick(r, c)} aria-label={`Row ${r + 1} column ${c + 1}${g[r][c] ? `, ${g[r][c]}` : ", empty"}`}>
-              {nums[`${r},${c}`] && <i>{nums[`${r},${c}`]}</i>}<span>{g[r][c]}</span>
+            <button key={`${r},${c}`} data-r={r} data-c={c} className={`cw ${sel[0] === r && sel[1] === c ? "sel" : active.has(`${r},${c}`) ? "act" : ""} ${wrong.includes(`${r},${c}`) ? "bad" : ""} ${wv.m[`${r},${c}`] !== undefined ? "wv" : ""}`} style={{ ["--d" as any]: `${(wv.m[`${r},${c}`] || 0) * 55}ms` }} onClick={() => pick(r, c)} aria-label={`Row ${r + 1} column ${c + 1}${g[r][c] ? `, ${g[r][c]}` : ", empty"}`}>
+              {nums[`${r},${c}`] && <i>{nums[`${r},${c}`]}</i>}<span key={`${g[r][c]}${fresh.k === `${r},${c}` ? fresh.n : ""}${wv.m[`${r},${c}`] !== undefined ? "w" + wv.id : ""}`} className={fresh.k === `${r},${c}` && g[r][c] ? "pop" : ""}>{g[r][c]}</span>
             </button>) : <div key={`${r},${c}`} className="cw blank" />))}
         </div>
       </div>
       <div className="bi-side">
-        <div className="bi-clue"><button onClick={() => step(-1)} aria-label="Previous clue">‹</button><button className="txt" onClick={() => setList(true)} aria-label="All clues">{w ? <><b>{w.num} {w.dir === "across" ? "ACROSS" : "DOWN"}</b> {w.clue} <small>({w.len})</small></> : "Tap a square"}</button><button onClick={() => step(1)} aria-label="Next clue">›</button></div>
+        <div className="bi-clue"><button onClick={() => step(-1)} aria-label="Previous clue"><Icon.left /></button><button className="txt" onClick={() => setList(true)} aria-label="All clues">{w ? <><b>{w.num} {w.dir === "across" ? "ACROSS" : "DOWN"}</b> {w.clue} <small>({w.len})</small></> : "Tap a square"}</button><button onClick={() => step(1)} aria-label="Next clue"><Icon.right /></button></div>
         <Keys onKey={type} onBack={back} off={off} />
-        <div className="bi-tools"><button onClick={check}>CHECK</button><button disabled={off || !w} onClick={() => spend(() => cwReveal(st, pi, sel[0], sel[1]))}>💡 LETTER</button><button disabled={off || !w} onClick={() => spend(() => cwRevealWord(st, pi, wi))}>💡 WORD</button><button onClick={() => setList(true)}>CLUES</button></div>
+        <div className="bi-tools"><button onClick={check}><Icon.check />CHECK</button><button disabled={off || !w} onClick={() => spend(() => cwReveal(st, pi, sel[0], sel[1]))}><Icon.bulb />LETTER</button><button disabled={off || !w} onClick={() => spend(() => cwRevealWord(st, pi, wi))}><Icon.bulb />WORD</button><button onClick={() => setList(true)}><Icon.list />CLUES</button></div>
       </div>
       {list && (
         <div className="bi-sheet" role="dialog" aria-label="Clues" onClick={() => setList(false)}>
@@ -79,9 +97,13 @@ export function Crossword({ st, pi, after, spend, off, say }: PP) {
 export function Sudoku({ st, pi, after, spend, off }: PP) {
   const p = st.puzzles[pi], d = p.data, g = p.st.g, n = d.n, [bh, bw] = d.box;
   const [rootRef, rs] = useSize(), [boardRef, bs] = useSize();
-  const [sel, setSel] = useState<[number, number] | null>(null), [notes, setNotes] = useState(false);
-  const wide = rs.w > rs.h * 1.25, cell = Math.max(18, Math.min(64, Math.floor(Math.min((bs.w - 6) / n, (bs.h - 6) / n)))), bad = sdConflicts(st, pi);
-  const put = (v: number) => { if (off || !sel) return; const [r, c] = sel; if (sdIsGiven(p, r, c)) return; if (notes && v > 0) { after(sdNote(st, pi, r, c, v), "key"); return; } after(sdSet(st, pi, r, c, g[r][c] === v ? 0 : v), v ? "key" : "erase"); };
+  const [sel, setSel] = useState<[number, number] | null>(null), [notes, setNotes] = useState(false), [fresh, setFresh] = useState({ k: "", n: 0 }), [wv, fire] = useWave();
+  const wide = rs.w > rs.h * 1.25, cell = Math.max(18, Math.min(n <= 6 ? 112 : 80, Math.floor(Math.min((bs.w - 6) / n, (bs.h - 6) / n)))), bad = sdConflicts(st, pi);
+  const units = (() => { const out: { id: string; cells: string[]; ok: boolean }[] = []; const add = (id: string, cells: number[][]) => out.push({ id, cells: cells.map(([r, c]) => `${r},${c}`), ok: cells.every(([r, c]) => g[r][c] === d.solution[r][c]) });
+    for (let i = 0; i < n; i++) { add(`r${i}`, Array.from({ length: n }, (_, j) => [i, j])); add(`c${i}`, Array.from({ length: n }, (_, j) => [j, i])); }
+    for (let r0 = 0; r0 < n; r0 += bh) for (let c0 = 0; c0 < n; c0 += bw) { const cs: number[][] = []; for (let i = 0; i < bh; i++) for (let j = 0; j < bw; j++) cs.push([r0 + i, c0 + j]); add(`b${r0},${c0}`, cs); } return out; })();
+  useUnits(units, (cells) => { play("good"); buzz(14); fire(cells); });
+  const put = (v: number) => { if (off || !sel) return; const [r, c] = sel; if (sdIsGiven(p, r, c)) return; if (notes && v > 0) { after(sdNote(st, pi, r, c, v), "key"); return; } after(sdSet(st, pi, r, c, g[r][c] === v ? 0 : v), v ? "key" : "erase"); setFresh((f) => ({ k: `${r},${c}`, n: f.n + 1 })); };
   useKeys((e) => {
     if (off) return false; if (/^[1-9]$/.test(e.key) && +e.key <= n) { put(+e.key); return true; } if (e.key === "Backspace" || e.key === "Delete" || e.key === "0") { if (sel && g[sel[0]][sel[1]]) put(g[sel[0]][sel[1]]); return true; } if (e.key.toLowerCase() === "n") { setNotes((x) => !x); return true; }
     const mv: Record<string, [number, number]> = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }; const m = mv[e.key]; if (m) { const [r, c] = sel || [0, 0]; setSel([Math.max(0, Math.min(n - 1, r + (sel ? m[0] : 0))), Math.max(0, Math.min(n - 1, c + (sel ? m[1] : 0)))]); return true; } return false;
@@ -94,8 +116,8 @@ export function Sudoku({ st, pi, after, spend, off }: PP) {
           {g.map((row: number[], r: number) => row.map((v, c) => {
             const k = `${r},${c}`, nt = p.st.notes[k] || 0, peer = sel && (sel[0] === r || sel[1] === c || (Math.floor(sel[0] / bh) === Math.floor(r / bh) && Math.floor(sel[1] / bw) === Math.floor(c / bw)));
             return (
-              <button key={k} data-r={r} data-c={c} className={`sd ${sdIsGiven(p, r, c) ? "given" : ""} ${sel && sel[0] === r && sel[1] === c ? "sel" : peer ? "peer" : ""} ${bad.has(k) ? "bad" : ""} ${sv && v === sv ? "same" : ""} ${c % bw === bw - 1 && c < n - 1 ? "rb" : ""} ${r % bh === bh - 1 && r < n - 1 ? "bb" : ""}`} onClick={() => setSel([r, c])} aria-label={`Row ${r + 1} column ${c + 1}${v ? `, ${v}` : ", empty"}`}>
-                {v ? v : nt ? <em style={{ gridTemplateColumns: `repeat(${bw}, 1fr)`, fontSize: cell * 0.24 }}>{Array.from({ length: n }, (_, i) => <b key={i}>{nt & (1 << (i + 1)) ? i + 1 : ""}</b>)}</em> : ""}
+              <button key={k} data-r={r} data-c={c} className={`sd ${sdIsGiven(p, r, c) ? "given" : ""} ${sel && sel[0] === r && sel[1] === c ? "sel" : peer ? "peer" : ""} ${bad.has(k) ? "bad" : ""} ${sv && v === sv ? "same" : ""} ${wv.m[k] !== undefined ? "wv" : ""} ${c % bw === bw - 1 && c < n - 1 ? "rb" : ""} ${r % bh === bh - 1 && r < n - 1 ? "bb" : ""}`} style={{ ["--d" as any]: `${(wv.m[k] || 0) * 45}ms` }} onClick={() => setSel([r, c])} aria-label={`Row ${r + 1} column ${c + 1}${v ? `, ${v}` : ", empty"}`}>
+                {v ? <span key={`${v}${fresh.k === k ? fresh.n : ""}${wv.m[k] !== undefined ? "w" + wv.id : ""}`} className={fresh.k === k && !sdIsGiven(p, r, c) ? "pop" : ""}>{v}</span> : nt ? <em style={{ gridTemplateColumns: `repeat(${bw}, 1fr)`, fontSize: cell * 0.24 }}>{Array.from({ length: n }, (_, i) => <b key={i}>{nt & (1 << (i + 1)) ? i + 1 : ""}</b>)}</em> : ""}
               </button>
             );
           }))}
@@ -103,7 +125,7 @@ export function Sudoku({ st, pi, after, spend, off }: PP) {
       </div>
       <div className="bi-side">
         <div className="bi-pad" role="group" aria-label="Numbers">{Array.from({ length: n }, (_, i) => <button key={i} disabled={off} onPointerDown={(e) => { e.preventDefault(); put(i + 1); }} aria-label={`${i + 1}`}>{i + 1}</button>)}</div>
-        <div className="bi-tools"><button aria-pressed={notes} className={notes ? "on" : ""} onClick={() => setNotes(!notes)}>✎ NOTES</button><button disabled={off || !sel || !sv || sdIsGiven(p, sel![0], sel![1])} onClick={() => sel && put(g[sel[0]][sel[1]])}>⌫ ERASE</button><button disabled={off || !sel} onClick={() => sel && spend(() => sdReveal(st, pi, sel[0], sel[1]))}>💡 HINT</button></div>
+        <div className="bi-tools"><button aria-pressed={notes} className={notes ? "on" : ""} onClick={() => setNotes(!notes)}><Icon.pencil />NOTES</button><button disabled={off || !sel || !sv || sdIsGiven(p, sel![0], sel![1])} onClick={() => sel && put(g[sel[0]][sel[1]])}><Icon.eraser />ERASE</button><button disabled={off || !sel} onClick={() => sel && spend(() => sdReveal(st, pi, sel[0], sel[1]))}><Icon.bulb />HINT</button></div>
       </div>
     </div>
   );
@@ -112,28 +134,32 @@ export function Sudoku({ st, pi, after, spend, off }: PP) {
 // ======================================================================= word search
 export function WordSearch({ st, pi, after, spend, off }: PP) {
   const p = st.puzzles[pi], d = p.data, n = d.size, [rootRef, rs] = useSize(), [boardRef, bs] = useSize(), grid = useRef<HTMLDivElement>(null);
-  const [a, setA] = useState<[number, number] | null>(null), [b, setB] = useState<[number, number] | null>(null), [anchor, setAnchor] = useState<[number, number] | null>(null), [flash, setFlash] = useState(0);
-  const wide = rs.w > rs.h * 1.25, cell = Math.max(16, Math.min(56, Math.floor(Math.min((bs.w - 6) / n, (bs.h - 6) / n))));
+  const [a, setA] = useState<[number, number] | null>(null), [b, setB] = useState<[number, number] | null>(null), [anchor, setAnchor] = useState<[number, number] | null>(null), [flash, setFlash] = useState(0), [freshIdx, setFreshIdx] = useState(-1);
+  const wide = rs.w > rs.h * 1.25, cell = Math.max(16, Math.min(72, Math.floor(Math.min((bs.w - 6) / n, (bs.h - 6) / n))));
   const at = (e: React.PointerEvent): [number, number] | null => { const rc = grid.current!.getBoundingClientRect(), c = Math.floor((e.clientX - rc.left) / cell), r = Math.floor((e.clientY - rc.top) / cell); return r >= 0 && c >= 0 && r < n && c < n ? [r, c] : null; };
   const straight = (x: [number, number], y: [number, number]) => { const dr = y[0] - x[0], dc = y[1] - x[1]; return dr === 0 || dc === 0 || Math.abs(dr) === Math.abs(dc); };
   const line = (x: [number, number] | null, y: [number, number] | null) => { const s = new Set<string>(); if (!x || !y || !straight(x, y)) return s; const len = Math.max(Math.abs(y[0] - x[0]), Math.abs(y[1] - x[1])), sr = Math.sign(y[0] - x[0]), sc = Math.sign(y[1] - x[1]); for (let i = 0; i <= len; i++) s.add(`${x[0] + sr * i},${x[1] + sc * i}`); return s; };
   const foundCells = useMemo(() => { const s = new Set<string>(); p.st.found.forEach((f: any) => line([f.r1, f.c1], [f.r2, f.c2]).forEach((k) => s.add(k))); return s; }, [p.st.found.length]); // eslint-disable-line react-hooks/exhaustive-deps
-  const preview = line(a, b || a), anc = anchor ? `${anchor[0]},${anchor[1]}` : "";
+  const preview = line(a, b || a), pv = a && b && straight(a, b) && (a[0] !== b[0] || a[1] !== b[1]) ? [a, b] : null, anc = anchor ? `${anchor[0]},${anchor[1]}` : "";
   const down = (e: React.PointerEvent) => { if (off) return; const x = at(e); if (!x) return; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); setA(x); setB(x); };
   const move = (e: React.PointerEvent) => { if (!a) return; const x = at(e); if (x) setB(x); };
-  const finish = (x: [number, number], y: [number, number]) => { const r = wsSelect(st, pi, x[0], x[1], y[0], y[1]); after(r.found ? { ...r, changed: true } : { changed: false }, r.found ? "found" : "bad"); if (r.found) setFlash((f) => f + 1); return !!r.found; };
+  const finish = (x: [number, number], y: [number, number]) => { const r = wsSelect(st, pi, x[0], x[1], y[0], y[1]); after(r.found ? { ...r, changed: true } : { changed: false }, r.found ? "found" : "bad"); if (r.found) { setFlash((f) => f + 1); setFreshIdx(p.st.found.length - 1); buzz(16); } return !!r.found; };
   const up = () => { if (!a) return; const y = b || a; if (a[0] === y[0] && a[1] === y[1]) { if (anchor && !(anchor[0] === a[0] && anchor[1] === a[1])) { finish(anchor, a); setAnchor(null); } else setAnchor(a); } else { setAnchor(null); if (straight(a, y)) finish(a, y); } setA(null); setB(null); };
   const left = d.words.filter((w: any) => !p.st.found.some((f: any) => f.word === w.word));
   return (
     <div className={`bi-pz ${wide ? "wide" : ""}`} ref={rootRef}>
       <div className="bi-board" ref={boardRef}>
         <div ref={grid} className="bi-ws" style={{ gridTemplateColumns: `repeat(${n}, ${cell}px)`, gridTemplateRows: `repeat(${n}, ${cell}px)`, fontSize: cell * 0.58 }} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => { setA(null); setB(null); }} role="grid" aria-label="Word search">
-          {d.grid.map((row: string[], r: number) => row.map((ch, c) => { const k = `${r},${c}`; return <div key={k} data-r={r} data-c={c} className={`ws ${foundCells.has(k) ? "found" : ""} ${preview.has(k) ? "pre" : ""} ${k === anc ? "anchor" : ""}`}>{ch}</div>; }))}
+          {d.grid.map((row: string[], r: number) => row.map((ch, c) => { const k = `${r},${c}`; return <div key={k} data-r={r} data-c={c} className={`ws ${foundCells.has(k) ? "found" : ""} ${preview.has(k) && !pv ? "pre" : ""} ${k === anc ? "anchor" : ""}`}>{ch}</div>; }))}
+          <svg className="bi-hl" width={n * cell} height={n * cell} aria-hidden>
+            {p.st.found.map((f: any, i: number) => <line key={i} className={`hl c${i % 5} ${i === freshIdx ? "fresh" : ""}`} pathLength={1} x1={(f.c1 + 0.5) * cell} y1={(f.r1 + 0.5) * cell} x2={(f.c2 + 0.5) * cell} y2={(f.r2 + 0.5) * cell} strokeWidth={cell * 0.78} />)}
+            {pv && <line className="hl pv" x1={(pv[0][1] + 0.5) * cell} y1={(pv[0][0] + 0.5) * cell} x2={(pv[1][1] + 0.5) * cell} y2={(pv[1][0] + 0.5) * cell} strokeWidth={cell * 0.78} />}
+          </svg>
         </div>
       </div>
       <div className="bi-side">
-        <ul className="bi-words" aria-label="Words to find" key={flash}>{d.words.map((w: any) => { const f = p.st.found.some((x: any) => x.word === w.word); return <li key={w.word} className={f ? "done" : ""}>{w.word}</li>; })}</ul>
-        <div className="bi-tools"><button disabled={off || !left.length} onClick={() => spend(() => wsReveal(st, pi))}>💡 FIND ONE</button></div>
+        <ul className="bi-words" aria-label="Words to find" key={flash}>{d.words.map((w: any) => { const f = p.st.found.some((x: any) => x.word === w.word); return <li key={w.word} className={f ? "done" : ""}><span>{w.word}</span></li>; })}</ul>
+        <div className="bi-tools"><button disabled={off || !left.length} onClick={() => spend(() => wsReveal(st, pi))}><Icon.bulb />FIND ONE</button></div>
         <p className="bi-tip">Drag across a word, or tap its first and last letters. Words can run backwards{d.words.some((w: any) => w.dr !== 0 && w.dc !== 0) ? " and sideways" : ""}.</p>
       </div>
     </div>
@@ -142,25 +168,27 @@ export function WordSearch({ st, pi, after, spend, off }: PP) {
 
 // ======================================================================= cryptogram
 export function Cipher({ st, pi, after, spend, off }: PP) {
-  const p = st.puzzles[pi], d = p.data, g = p.st.g, [rootRef, rs] = useSize(), [boardRef, bs] = useSize(), [sel, setSel] = useState<string | null>(null);
+  const p = st.puzzles[pi], d = p.data, g = p.st.g, [rootRef, rs] = useSize(), [boardRef, bs] = useSize(), [sel, setSel] = useState<string | null>(null), [fresh, setFresh] = useState({ k: "", n: 0 }), [wv, fire] = useWave();
   const wide = rs.w > rs.h * 1.25, text: string = d.cipherText, words = text.split(" ");
   const w = useMemo(() => { for (let s = 44; s >= 14; s -= 2) { let rows = 1, x = 0; const W = bs.w - 12; for (const wd of words) { const len = wd.length * (s + 3); if (x && x + len > W) { rows++; x = 0; } x += len + s * 0.9; } if (rows * (s * 2.3 + 12) <= bs.h - 8) return s; } return 14; }, [text, bs.w, bs.h]); // eslint-disable-line react-hooks/exhaustive-deps
   const clash = cpClashes(st, pi), used = new Set<string>(Object.values(g) as string[]);
-  const type = (ch: string) => { if (off || !sel) return; after(cpSet(st, pi, sel, ch), "key"); };
+  const units = words.map((wd: string, i: number) => ({ id: `w${i}`, cells: [...wd].map((cl: string) => cl), ok: [...wd].every((cl: string) => cl in d.given || g[cl] === d.key[cl]) }));
+  useUnits(units, (cells) => { play("good"); buzz(14); fire(cells); });
+  const type = (ch: string) => { if (off || !sel) return; after(cpSet(st, pi, sel, ch), "key"); setFresh((f) => ({ k: sel, n: f.n + 1 })); };
   const back = () => { if (off || !sel) return; after(cpSet(st, pi, sel, ""), "erase"); };
   useKeys((e) => { if (off) return false; if (/^[a-zA-Z]$/.test(e.key)) { type(e.key); return true; } if (e.key === "Backspace") { back(); return true; } return false; }, [sel, off, g]);
   return (
     <div className={`bi-pz ${wide ? "wide" : ""}`} ref={rootRef}>
       <div className="bi-board" ref={boardRef}>
         <div className="bi-cp" style={{ fontSize: w * 0.62, gap: `${w * 0.5}px ${w * 0.9}px` }} role="group" aria-label="Cryptogram">
-          {words.map((wd: string, i: number) => <span key={i} className="cpw">{[...wd].map((cl, j) => { const given = cl in d.given, guess = g[cl] || "", right = given; return (
-            <button key={j} data-cl={cl} className={`cp ${sel === cl ? "sel" : ""} ${given ? "given" : ""} ${clash.has(cl) ? "bad" : ""} ${right ? "" : ""}`} style={{ width: w, height: w * 2.1 }} onClick={() => setSel(cl)} aria-label={`Cipher letter ${cl}${guess ? `, guessed ${guess}` : ""}`}><i>{cl}</i><span>{guess}</span></button>); })}</span>)}
+          {words.map((wd: string, i: number) => <span key={i} className="cpw">{[...wd].map((cl, j) => { const given = cl in d.given, guess = g[cl] || ""; return (
+            <button key={j} data-cl={cl} className={`cp ${sel === cl ? "sel" : ""} ${given ? "given" : ""} ${clash.has(cl) ? "bad" : ""} ${wv.m[cl] !== undefined ? "wv" : ""}`} style={{ width: w, height: w * 2.1, ["--d" as any]: `${(wv.m[cl] || 0) * 40}ms` }} onClick={() => setSel(cl)} aria-label={`Cipher letter ${cl}${guess ? `, guessed ${guess}` : ""}`}><i>{cl}</i><span key={`${guess}${fresh.k === cl ? fresh.n : ""}${wv.m[cl] !== undefined ? "w" + wv.id : ""}`} className={fresh.k === cl && guess ? "pop" : ""}>{guess}</span></button>); })}</span>)}
         </div>
       </div>
       <div className="bi-side">
         <div className="bi-clue"><span className="txt">{sel ? `Cipher letter ${sel}: ${g[sel] ? `you think ${g[sel]}` : "no guess yet"}` : "Tap a letter, then type what you think it stands for."}</span></div>
         <Keys onKey={type} onBack={back} off={off || !sel} dim={used} />
-        <div className="bi-tools"><button disabled={off || !sel || sel in d.given} onClick={() => sel && spend(() => cpReveal(st, pi, sel))}>💡 REVEAL</button></div>
+        <div className="bi-tools"><button disabled={off || !sel || sel in d.given} onClick={() => sel && spend(() => cpReveal(st, pi, sel))}><Icon.bulb />REVEAL</button></div>
       </div>
     </div>
   );

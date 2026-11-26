@@ -14,10 +14,13 @@ function click(c: AudioContext, d: AudioNode, t: number, vol: number, hp = 2500)
   const len = Math.floor(c.sampleRate * 0.03), buf = c.createBuffer(1, len, c.sampleRate), a = buf.getChannelData(0); for (let i = 0; i < len; i++) a[i] = (((i * 7919) % 200) / 100 - 1) * (1 - i / len);
   const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); s.buffer = buf; f.type = "highpass"; f.frequency.value = hp; g.gain.value = vol; s.connect(f).connect(g).connect(d); s.start(t);
 }
-export type Sfx = "key" | "erase" | "good" | "bad" | "stamp" | "found" | "bell" | "win" | "lose" | "hint" | "warn" | "tab";
+export type Sfx = "paper" | "star" | "tick" | "key" | "erase" | "good" | "bad" | "stamp" | "found" | "bell" | "win" | "lose" | "hint" | "warn" | "tab";
 export function play(name: Sfx) {
   if (muted()) return; const c = ac(); if (!c || !master) return; const t = c.currentTime + 0.003, d = master;
   switch (name) {
+    case "paper": { const len = Math.floor(c.sampleRate * 0.22), buf = c.createBuffer(1, len, c.sampleRate), a = buf.getChannelData(0); for (let i = 0; i < len; i++) a[i] = (((i * 48271) % 1000) / 500 - 1) * Math.sin((i / len) * Math.PI) * 0.6; const sr = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(); sr.buffer = buf; f.type = "bandpass"; f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(5200, t + 0.2); g.gain.value = 0.22; sr.connect(f).connect(g).connect(d); sr.start(t); note(c, d, 160, t + 0.16, 0.12, 0.12, "sine", 80); break; }
+    case "star": note(c, d, 110, t, 0.16, 0.28, "sine", 50); click(c, d, t, 0.25, 900); note(c, d, 1318, t + 0.04, 0.5, 0.07, "sine"); note(c, d, 1976, t + 0.04, 0.4, 0.04, "sine"); break;
+    case "tick": click(c, d, t, 0.16, 3500); note(c, d, 1400, t, 0.02, 0.03, "square"); break;
     case "key": click(c, d, t, 0.22); note(c, d, 900, t, 0.03, 0.04, "square", 600, 2500); break;
     case "erase": click(c, d, t, 0.14, 1500); note(c, d, 420, t, 0.05, 0.04, "triangle", 300); break;
     case "tab": note(c, d, 520, t, 0.05, 0.05, "triangle", 640); break;
