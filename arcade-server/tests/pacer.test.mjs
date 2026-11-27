@@ -96,3 +96,50 @@ test("find: words, phrases, prefixes, punctuation and curly quotes", () => {
   assert.equal(findMatches(doc, "").total, 0); assert.equal(findMatches(doc, "zebra").hits.length, 0);
   assert.equal(findMatches(doc, "the", { max: 1 }).capped, true);
 });
+
+import { createNarrator, segmentEnd, pickVoices, rateFor, approxWpm } from "../../lib/pacer/voice.mjs";
+import { parseYouTubeLink } from "../../lib/pacer/youtube.mjs";
+
+test("voice: rate mapping, voice ranking, segments", () => {
+  assert.equal(rateFor(170), 1); assert.equal(rateFor(20), 0.5); assert.equal(rateFor(2000), 3); assert.ok(approxWpm(1.5) > 240);
+  const mk = (name, lang = "en-US", extra = {}) => ({ name, lang, ...extra });
+  const ranked = pickVoices([mk("Fred"), mk("Microsoft Aria Online (Natural)"), mk("Compact Voice"), mk("Samantha"), mk("Amélie", "fr-FR"), mk("Zarvox")], "en-US").map((r) => r.voice.name);
+  assert.equal(ranked[0], "Microsoft Aria Online (Natural)"); assert.ok(!ranked.includes("Amélie")); assert.ok(ranked.indexOf("Samantha") < ranked.indexOf("Fred"));
+  const doc = tokenize([{ text: "One two three. " + Array.from({ length: 60 }, (_, i) => "word" + i).join(" ") + "." }]);
+  assert.equal(segmentEnd(doc, 0), 3);                       // first sentence
+  assert.ok(segmentEnd(doc, 3) < doc.words.length);           // a very long sentence is cut so voices do not stall
+});
+
+function fakeEnv() {
+  const spoken = [], timers = []; let clock = 0, id = 0;
+  class Utt { constructor(t) { this.text = t; } }
+  const synth = { speak: (u) => spoken.push(u), cancel: () => { spoken.length = 0; } };
+  const T = { now: () => clock, setTimeout: (f) => { f(); return 0; }, setInterval: (f, ms) => { timers.push({ id: ++id, f, ms }); return id; }, clearInterval: (h) => { const k = timers.findIndex((t) => t.id === h); if (k >= 0) timers.splice(k, 1); } };
+  const advance = (ms) => { for (let t = 0; t < ms; t += 70) { clock += 70; for (const x of [...timers]) x.f(); } };
+  return { spoken, synth, Utt, T, advance, timers, setClock: (c) => (clock = c) };
+}
+
+test("voice: boundary events drive the highlight, sentences chain, book end is reported", () => {
+  const e = fakeEnv(), doc = tokenize([{ text: "Alpha beta gamma. Delta epsilon." }]), seen = [], ends = []; let finished = false;
+  const n = createNarrator({ synth: e.synth, Utt: e.Utt, doc, getRate: () => 1, getVoice: () => null, onWord: (i) => seen.push(i), onSegmentEnd: (j) => { ends.push(j); return true; }, onEnd: () => (finished = true), timers: e.T });
+  n.start(0); assert.equal(e.spoken.length, 1); assert.equal(e.spoken[0].text, "Alpha beta gamma.");
+  const u = e.spoken[0]; u.onstart(); u.onboundary({ name: "word", charIndex: 6 }); u.onboundary({ name: "word", charIndex: 11 }); u.onboundary({ name: "sentence", charIndex: 0 });
+  assert.deepEqual(seen, [0, 1, 2]);
+  u.onend({}); assert.deepEqual(ends, [3]); assert.equal(e.spoken.at(-1).text, "Delta epsilon.");
+  e.spoken.at(-1).onstart(); e.spoken.at(-1).onend({}); assert.equal(finished, true); assert.equal(n.running, false);
+});
+
+test("voice: without boundary events a timer estimates the words, and stop() silences stale callbacks", () => {
+  const e = fakeEnv(), doc = tokenize([{ text: "one two three four five six seven eight nine ten." }]), seen = [];
+  const n = createNarrator({ synth: e.synth, Utt: e.Utt, doc, getRate: () => 1, getVoice: () => null, onWord: (i) => seen.push(i), onSegmentEnd: () => false, timers: e.T });
+  n.start(0); const u = e.spoken[0]; u.onstart(); e.advance(1500); assert.ok(seen.length > 2 && seen.at(-1) > 2, "estimated progress: " + seen.join());
+  assert.deepEqual(seen, [...seen].sort((a, b) => a - b));       // never goes backwards
+  n.stop(); const c = seen.length; u.onboundary({ name: "word", charIndex: 30 }); u.onend({}); e.advance(500); assert.equal(seen.length, c); assert.equal(e.timers.length, 0);
+});
+
+test("youtube: links in the shapes people paste", () => {
+  const ok = (s, k, id) => assert.deepEqual(parseYouTubeLink(s), { kind: k, id }, s);
+  ok("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "v", "dQw4w9WgXcQ"); ok("youtu.be/dQw4w9WgXcQ?t=42", "v", "dQw4w9WgXcQ"); ok("https://music.youtube.com/watch?v=dQw4w9WgXcQ&list=RDAMVMdQw4w9WgXcQ", "v", "dQw4w9WgXcQ");
+  ok("https://m.youtube.com/shorts/dQw4w9WgXcQ", "v", "dQw4w9WgXcQ"); ok("https://www.youtube.com/embed/dQw4w9WgXcQ", "v", "dQw4w9WgXcQ"); ok("https://www.youtube.com/playlist?list=PLabcdefghijklmnop", "p", "PLabcdefghijklmnop");
+  for (const bad of ["", "hello", "https://evil.com/watch?v=dQw4w9WgXcQ", "https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ", "javascript:alert(1)", "https://www.youtube.com/watch?v=short", "https://www.youtube.com/"]) assert.equal(parseYouTubeLink(bad), null, bad);
+});

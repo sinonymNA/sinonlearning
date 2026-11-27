@@ -180,3 +180,5 @@ User: a reader on the website that takes a PDF or EPUB and makes it autoscrollin
 User: upload my books and save progress on the site to read on phone/iPad. Done: opt-in Pacer account sync (extracted text in Postgres, per-user, quotas, newest-wins progress, settings/session merge, account bar + cloud badges + download-on-open + remove/sign-out dialogs). Verified with real Postgres, real signup, phone and iPad contexts. Not done: offline/PWA.
 
 User: look up words in Pacer and jump to that place. Done: find box (word/phrase, prefix while typing, snippets with chapter and %, Enter = next after your spot, `/` or F shortcut); engine test + 10 new e2e checks.
+
+User: read the words aloud in a non-robotic voice as Pacer goes, plus YouTube links as background music. Done: Sound panel (voice ranking/choice, voice-driven highlight with boundary events + timer fallback, wpm->rate), YouTube dock (video/playlist links, visible 200px+ player, follows reading, volume). Verified with fake speech/YouTube in headless Chromium; real voices and YouTube playback not verifiable here.

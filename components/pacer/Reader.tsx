@@ -5,6 +5,10 @@
 //   Pacer  your real page with a moving highlight that keeps you from drifting and rereading;
 //   Scroll the page glides under a fixed reading line.
 // The clock is real time (requestAnimationFrame), words get a little longer for long words and punctuation, and optional recall check-ins slow you down when you stop following.
+import MusicDock, { type MusicApi } from "./MusicDock";
+import Sound, { type VoiceOpt } from "./Sound";
+import { createNarrator, pickVoices, rateFor } from "../../lib/pacer/voice.mjs";
+import { loadAudio, saveAudio, type AudioPrefs } from "../../lib/pacer/audioStore";
 import { memo, useDeferredValue, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { tokenize, splitOrp, delayMs, chunkEnd, chunkText, buildFactorPrefix, timeLeftMs, sentenceStart, nextSentence, prevSentence, paragraphRange, rampWpm, adaptWpm, findMatches, sessionStats, paceLabel, MIN_WPM, MAX_WPM, HEAD, SENT } from "../../lib/pacer/engine.mjs";
 import type { Book } from "../../lib/pacer/extract";
@@ -33,6 +37,12 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const pos = useRef(clamp(startPos, 0, Math.max(0, N - 1))), playing = useRef(false), stats = useRef({ words: 0, active: 0, checks: [] as boolean[], sinceCheck: 0, streak: 0, ramped: 0 }), liveWpm = useRef(settings.wpm), saved = useRef(false);
   const [ui, setUi] = useState({ pos: pos.current, playing: false, wpm: settings.wpm, shown: "", si: pos.current, sj: pos.current + 1 });
   const [sw, setSw] = useState(() => (typeof window === "undefined" ? 1000 : window.innerWidth)), [ch, setCh] = useState(() => chapterOf(pos.current)), [drawer, setDrawer] = useState(false), [check, setCheck] = useState<null | { para: string; shown: boolean; note?: string }>(null), [done, setDone] = useState<null | ReturnType<typeof sessionStats>>(null), [help, setHelp] = useState(false), [find, setFind] = useState<null | { q: string }>(null), deferredQ = useDeferredValue(find?.q ?? "");
+  const [audio, setAudioState] = useState<AudioPrefs>(() => loadAudio()), [sound, setSound] = useState(false), [musicOn, setMusicOn] = useState(false), [musicPlaying, setMusicPlaying] = useState(false), [corner, setCorner] = useState(0), [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]), [voiceErr, setVoiceErr] = useState<string | null>(null);
+  const speechOk = typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
+  const music = useRef<MusicApi>(null), narr = useRef<ReturnType<typeof createNarrator> | null>(null), picked = useRef<SpeechSynthesisVoice | null>(null), pendingPlay = useRef(false), audioRef = useRef(audio); audioRef.current = audio;
+  const lang = typeof navigator !== "undefined" ? navigator.language || "en" : "en", ranked = useMemo(() => pickVoices(voices as any, lang), [voices, lang]);
+  const voiceLive = useRef(false); voiceLive.current = audio.voiceOn && speechOk && ranked.length > 0;
+  const setAudio = useCallback((fn: (a: AudioPrefs) => AudioPrefs) => setAudioState((a) => { const n = fn(a); saveAudio(n); return n; }), []);
   const scroller = useRef<HTMLDivElement>(null), page = useRef<HTMLDivElement>(null), spans = useRef<HTMLElement[]>([]), curEl = useRef<HTMLElement | null>(null), curPara = useRef<HTMLElement | null>(null), scrollTarget = useRef<number | null>(null);
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -49,7 +59,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const refreshUi = useCallback((extra: any = {}) => setUi((u) => ({ ...u, pos: pos.current, playing: playing.current, wpm: curWpm(), ...extra })), []); // eslint-disable-line react-hooks/exhaustive-deps
   const setFocusWord = useCallback((i: number) => { const j = chunkEnd(doc, i, S.current.chunk), s = chunkText(doc, i, j); setUi((u) => ({ ...u, shown: s, si: i, sj: j, pos: i })); return j; }, [doc]);
 
-  const goTo = useCallback((i: number) => { const t = clamp(i, 0, N - 1); const c = chapterOf(t); if (c !== ch) setCh(c); pos.current = t; if (S.current.mode === "focus") setFocusWord(t); else requestAnimationFrame(() => showPos(t, true)); refreshUi({ pos: t }); }, [N, chapterOf, ch, setFocusWord, showPos, refreshUi]);
+  const goTo = useCallback((i: number) => { const t = clamp(i, 0, N - 1); const c = chapterOf(t); if (c !== ch) setCh(c); pos.current = t; if (S.current.mode === "focus") setFocusWord(t); else requestAnimationFrame(() => showPos(t, true)); refreshUi({ pos: t }); if (playing.current && voiceLive.current) narr.current?.start(t); }, [N, chapterOf, ch, setFocusWord, showPos, refreshUi]);
 
   const finish = useCallback((reason: "end" | "exit") => {
     playing.current = false; const st = stats.current, r = sessionStats({ words: st.words, activeMs: st.active, checks: st.checks as any });
@@ -72,7 +82,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
     const loop = (now: number) => {
       const dt = Math.min(200, now - last); last = now;
       if (playing.current && !document.hidden) {
-        stats.current.active += dt; acc += dt; let g = 0; while (playing.current && acc >= delay && g++ < 6) { acc -= delay; step(); }
+        stats.current.active += dt; if (voiceLive.current) acc = 0; else { acc += dt; let g = 0; while (playing.current && acc >= delay && g++ < 6) { acc -= delay; step(); } }
         if (S.current.mode !== "focus" && scroller.current && curEl.current) { // glide the page so the current word stays on the reading line
           const sc = scroller.current, e = curEl.current, nx = spans.current[pos.current + 1 - (chWord[chapterOf(pos.current)] ?? 0)] as HTMLElement | undefined, top = sc.getBoundingClientRect().top, y0 = e.getBoundingClientRect().top - top + sc.scrollTop, y1 = nx ? nx.getBoundingClientRect().top - top + sc.scrollTop : y0, f = Math.min(1, acc / Math.max(1, delay)), y = y0 + (y1 - y0) * f * f * (3 - 2 * f);
           if (S.current.mode === "scroll" && !reduce) { const want = y - sc.clientHeight * 0.38, k = 1 - Math.exp(-dt / 180); sc.scrollTop += (want - sc.scrollTop) * k; }
@@ -86,6 +96,34 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
     return () => { cancelAnimationFrame(raf); clearInterval(t); document.removeEventListener("visibilitychange", vis); };
   }, [doc, N, chWord, chapterOf, finish, refreshUi, setFocusWord, showPos, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- read aloud: the voice is the clock while it is on
+  useEffect(() => {
+    if (!speechOk) return; const syn = window.speechSynthesis, load = () => setVoices(syn.getVoices()); load(); syn.addEventListener?.("voiceschanged", load); return () => syn.removeEventListener?.("voiceschanged", load);
+  }, [speechOk]);
+  useEffect(() => { picked.current = (audio.voiceName ? voices.find((v) => v.name === audio.voiceName) : null) || (ranked[0]?.voice as SpeechSynthesisVoice | undefined) || null; }, [voices, ranked, audio.voiceName]);
+  useEffect(() => {
+    if (!speechOk) return;
+    const n = createNarrator({
+      synth: window.speechSynthesis, Utt: window.SpeechSynthesisUtterance as any, doc, getRate: () => rateFor(curWpm()), getVoice: () => picked.current,
+      onWord: (i: number) => { const prev = pos.current, st = stats.current; if (i > prev) { const d = i - prev; st.words += d; st.sinceCheck += d; st.ramped += d; } const c = chapterOf(i); if (c !== chapterOf(prev)) setCh(c); pos.current = i; if (S.current.mode === "focus") setFocusWord(i); else showPos(i); },
+      onSegmentEnd: (j: number) => { const iv = S.current.checks; if (iv && stats.current.sinceCheck >= iv && (doc.flags[j - 1] & SENT)) { playing.current = false; const r = paragraphRange(doc, j - 1); setCheck({ para: doc.words.slice(Math.max(r.a, j - 90), j).join(" "), shown: false }); pos.current = j; if (S.current.mode === "focus") setFocusWord(j); refreshUi({ playing: false }); return false; } return true; },
+      onEnd: () => finish("end"),
+      onError: (e?: string) => { playing.current = false; refreshUi({ playing: false }); setVoiceErr(e === "not-allowed" ? "Your browser blocked the voice. Tap play again." : "The voice stopped working. Try another voice in Sound."); },
+    });
+    narr.current = n; return () => { n.stop(); narr.current = null; };
+  }, [doc, speechOk]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { const n = narr.current; if (!n) return; if (ui.playing && voiceLive.current) { setVoiceErr(null); n.start(pos.current); } else n.stop(); }, [ui.playing, audio.voiceOn, audio.voiceName, ranked.length]);  
+  useEffect(() => { if (!ui.playing || !voiceLive.current) return; const t = window.setTimeout(() => narr.current?.start(pos.current), 450); return () => clearTimeout(t); }, [settings.wpm]); // eslint-disable-line react-hooks/exhaustive-deps
+  // ---- background music follows reading
+  useEffect(() => { if (!musicOn) return; if (pendingPlay.current && music.current) { pendingPlay.current = false; music.current.play(); } }, [musicOn]);
+  useEffect(() => { if (!audioRef.current.follow || !musicOn) return; if (ui.playing) music.current?.play(); else music.current?.pause(); }, [ui.playing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const onMusic = (cmd: "play" | "pause" | "next" | "prev" | "open") => {
+    if (!audioRef.current.tracks.length) return;
+    if (!musicOn) { setMusicOn(true); if (cmd === "play" || cmd === "open") pendingPlay.current = true; return; }
+    if (cmd === "play") music.current?.play(); else if (cmd === "pause") music.current?.pause(); else if (cmd === "next") music.current?.next(); else if (cmd === "prev") music.current?.prev();
+  };
+  const tryVoice = () => { if (!speechOk) return; const syn = window.speechSynthesis; syn.cancel(); const u = new window.SpeechSynthesisUtterance("This is how I will read your book. Pick the voice that is easiest to follow."); if (picked.current) { u.voice = picked.current; u.lang = picked.current.lang; } u.rate = rateFor(S.current.wpm); syn.speak(u); };
+
   // ---- after a chapter (or mode) change the spans are new: collect them and put the highlight back
   useEffect(() => {
     spans.current = page.current ? Array.from(page.current.querySelectorAll<HTMLElement>("[data-i]")) : []; curEl.current = null; curPara.current = null;
@@ -97,7 +135,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
 
   useEffect(() => { const f = () => setSw(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   // ---- controls
-  const toggle = useCallback(() => { if (check || done) return; if (!playing.current && pos.current >= N - 1) goTo(0); playing.current = !playing.current; if (playing.current) saved.current = false; refreshUi({ playing: playing.current }); }, [check, done, N, goTo, refreshUi]);
+  const toggle = useCallback(() => { if (check || done) return; if (!playing.current && pos.current >= N - 1) goTo(0); playing.current = !playing.current; if (playing.current) { saved.current = false; if (voiceLive.current) narr.current?.prime(); const a = audioRef.current; if (a.follow && a.tracks.length) { if (!musicOn) { setMusicOn(true); pendingPlay.current = true; } else music.current?.play(); } } refreshUi({ playing: playing.current }); }, [check, done, N, goTo, refreshUi, musicOn]);
   const setWpm = useCallback((w: number) => { const v = clamp(Math.round(w), MIN_WPM, MAX_WPM); liveWpm.current = v; onSettings({ ...S.current, wpm: v }); }, [onSettings]);
   const openFind = () => { if (playing.current) { playing.current = false; refreshUi({ playing: false }); } setFind({ q: "" }); };
   const found = useMemo(() => findMatches(doc, deferredQ), [doc, deferredQ]);
@@ -137,6 +175,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
         <button className="pc-btn round" onClick={() => { finish("exit"); onExit(); }} aria-label="Back to the library">←</button>
         <div className="pc-title"><b>{book.title}</b><small>{book.chapters[ch]?.title && book.chapters[ch].title !== book.title ? book.chapters[ch].title : (book.author || "")}</small></div>
         {book.chapters.length > 1 && <select className="pc-select" value={ch} onChange={(e) => goTo(chWord[+e.target.value])} aria-label="Chapter">{book.chapters.map((c, i) => <option key={i} value={i}>{c.title.slice(0, 40)}</option>)}</select>}
+        <button className={`pc-btn round${audio.voiceOn || musicPlaying ? " on" : ""}`} onClick={() => setSound(true)} aria-label="Sound: read aloud and music">♪</button>
         <button className="pc-btn round" onClick={openFind} aria-label="Find a word or phrase">⌕</button>
         <button className="pc-btn round" onClick={() => setHelp(true)} aria-label="Help and shortcuts">?</button>
         <button className="pc-btn round" onClick={() => setDrawer((d) => !d)} aria-label="Settings" aria-expanded={drawer}>⚙</button>
@@ -178,6 +217,9 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
               <div className="pc-row" style={{ justifyContent: "flex-start" }}><button className="pc-btn" onClick={() => { setDone(null); stats.current = { words: 0, active: 0, checks: [], sinceCheck: 0, streak: 0, ramped: 0 }; goTo(0); }}>Read again</button><button className="pc-btn pri" onClick={onExit}>Back to the library</button></div>
             </div>
           </div>)}
+        {sound && <Sound audio={audio} setAudio={setAudio} voices={ranked.map((r: any) => ({ name: r.voice.name, label: r.label, lang: r.voice.lang }) as VoiceOpt)} speechOk={speechOk} wpm={settings.wpm} musicPlaying={musicPlaying} onMusic={onMusic} onTry={tryVoice} close={() => setSound(false)} />}
+        {voiceErr && <p className="pc-err" role="alert" style={{ position: "absolute", left: 12, right: 12, bottom: 8, zIndex: 15, margin: 0 }}>{voiceErr}</p>}
+        {musicOn && audio.tracks.length > 0 && <MusicDock ref={music} tracks={audio.tracks} idx={audio.idx} vol={audio.vol} corner={corner} onIndex={(i) => setAudio((a) => ({ ...a, idx: i }))} onPlaying={setMusicPlaying} onTitle={(i, t) => setAudio((a) => (a.tracks[i] && a.tracks[i].title !== t ? { ...a, tracks: a.tracks.map((x, k) => (k === i ? { ...x, title: t } : x)) } : a))} onCorner={() => setCorner((c) => (c + 1) % 4)} onClose={() => { setMusicOn(false); setMusicPlaying(false); }} />}
         {find && (
           <div className="pc-modal pc-find" role="dialog" aria-label="Find in the book" onClick={() => setFind(null)}>
             <div className="pc-card" onClick={(e) => e.stopPropagation()}>
@@ -200,7 +242,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
             <div className="pc-card" onClick={(e) => e.stopPropagation()}><h2>How to use Pacer</h2>
               <p><b>Focus</b> shows one word at a time; keep your eyes on the red letter. <b>Pacer</b> highlights each word on your real page. <b>Scroll</b> glides the page past a reading line.</p>
               <p className="mut">Choose a speed where you can still retell what you read. Turn on check-ins in settings to let Pacer tune the speed for you. Focus mode flashes words quickly; stop if it bothers your eyes.</p>
-              <p style={{ fontSize: ".9rem", lineHeight: 1.7 }}><b>/</b> or <b>F</b> find a word · <b>Space</b> play or pause · <b>↑ ↓</b> speed (Shift for ±50) · <b>← →</b> sentence back or forward · <b>1 2 3</b> mode · <b>[ ]</b> chapter · <b>Esc</b> pause · click any word to jump there</p>
+              <p style={{ fontSize: ".9rem", lineHeight: 1.7 }}><b>/</b> or <b>F</b> find a word · <b>♪</b> read aloud and music · <b>Space</b> play or pause · <b>↑ ↓</b> speed (Shift for ±50) · <b>← →</b> sentence back or forward · <b>1 2 3</b> mode · <b>[ ]</b> chapter · <b>Esc</b> pause · click any word to jump there</p>
               <button className="pc-btn pri" onClick={() => setHelp(false)}>Got it</button></div>
           </div>)}
       </main>

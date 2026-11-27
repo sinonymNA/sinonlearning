@@ -145,3 +145,4 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Pacer: pacer.test.mjs (10 tests: tokenizing, pivot letter, timing, sentence navigation, ramp/adapt, plain text, PDF layout cleanup, EPUB spine/DRM); pacer-e2e.mjs (139 checks, real PDF/EPUB/DRM/scanned files, six sizes, real-time pacing, check-ins, resume).
 - Pacer sync: pacer.test.mjs now 13 tests (validation, sanitizers, merge rules); scripts/pacer-sync-e2e.mjs (22 checks, real Postgres + signup); pacer-e2e.mjs 139 checks still green.
 - Pacer find: findMatches test in pacer.test.mjs (412 total); pacer-e2e.mjs 149 checks incl. find at six sizes.
+- Pacer sound: voice/youtube tests in pacer.test.mjs (416 total); scripts/pacer-sound-e2e.mjs (66 checks, fake speech + fake YouTube API, 3 sizes); pacer-e2e.mjs 147 checks green.
