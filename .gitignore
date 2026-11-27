@@ -59,3 +59,6 @@ reel_worker/*.mp4
 
 # CShapes raw source file (large; only needed for regenerating cshapes-2-0.geojson)
 public/data/historical/cshapes-raw.geojson
+
+# HD voice runtime copied from node_modules by scripts/copy-hd-assets.mjs
+public/pacer-hd/

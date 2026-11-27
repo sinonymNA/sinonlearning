@@ -98,4 +98,34 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], laptop: [1
   await p.click(".pc-sound >> text=Remove voice"); await p.waitForSelector(".pc-sound >> text=/Download/"); check(true, `${name}: the voice can be removed`);
   await ctx.close();
 }
+
+// ---- rain, the self-hosted HD runtime, and the cache writer
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }), p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
+  await ctx.addInitScript(() => { window.__ac = []; const AC = window.AudioContext; window.AudioContext = class extends AC { constructor(...a) { super(...a); window.__ac.push(this); } }; });
+  await p.goto(BASE, { waitUntil: "networkidle" }); await p.waitForSelector(".pc-drop"); await p.setInputFiles("input[type=file]", "/tmp/pacer-sound/b.txt"); await p.waitForSelector(".pc-page .w");
+  const state = () => p.evaluate(() => (window.__ac[0] ? window.__ac[0].state : "none"));
+  await p.click("[aria-label='Sound: read aloud and music']"); await p.click("section[aria-label=Rain] input[type=checkbox]");
+  check((await p.locator("section[aria-label=Rain] .pc-chips button").allInnerTexts()).join() === "Light,Steady,Heavy", "rain: strength choices are shown");
+  const box = await p.locator(".pc-sound .pc-card").boundingBox(); check(box.y >= 0 && box.y + box.height <= 844 + 1, "rain: the sound panel still fits a phone");
+  check((await state()) === "none", "rain: nothing starts until you read (it follows your reading)");
+  await p.click("section[aria-label=Rain] .pc-chips button >> text=Heavy"); await p.click(".pc-sound >> text=Done"); await p.click("[aria-label='Play']"); await p.waitForTimeout(1200);
+  check((await state()) === "running", "rain: starts when you press play"); await p.click("[aria-label='Pause']"); await p.waitForTimeout(2300); check((await state()) === "suspended", "rain: fades and stops using the CPU when you pause");
+  await p.click("[aria-label='Sound: read aloud and music']"); await p.click("section[aria-label=Rain] >> text=Play only while I read"); await p.waitForTimeout(1000); check((await state()) === "running", "rain: with follow off it plays straight away");
+  await p.click("section[aria-label=Rain] input[type=checkbox]"); await p.waitForTimeout(2300); check((await state()) === "suspended", "rain: turning it off stops it");
+  const saved = await p.evaluate(() => JSON.parse(localStorage.getItem("pacer:audio:v1"))); check(saved.rainLevel === 2 && saved.follow === false, "rain: strength and settings are remembered");
+  // self-hosted runtime (no cdnjs / jsdelivr)
+  for (const [path, min] of [["/pacer-hd/piper_phonemize.wasm", 500000], ["/pacer-hd/piper_phonemize.data", 17000000], ["/pacer-hd/ort/ort-wasm-simd.wasm", 9000000], ["/pacer-hd/ort/ort-wasm-simd-threaded.wasm", 9000000]]) { const r = await ctx.request.get(new URL(path, BASE).href); check(r.ok() && (await r.body()).length > min, `hd runtime: ${path} is served by this site`); }
+  // cache writer: write 3 chunks through a worker sync access handle, read back through the same API the voice library uses, then remove
+  const res = await p.evaluate(async () => {
+    const t = window.__pacerHdTools; if (!t) return { err: "no hook" }; const w = await t.openWriter("e2e-test.onnx"), parts = [1, 2, 3].map((n) => Uint8Array.from({ length: 700000 + n }, (_, i) => (i * n + 7) & 255)); for (const u of parts) await w.write(u);
+    const size = await w.close(), root = await navigator.storage.getDirectory(), dir = await root.getDirectoryHandle("piper"), file = await (await dir.getFileHandle("e2e-test.onnx")).getFile(), got = new Uint8Array(await file.arrayBuffer());
+    let same = got.length === parts.reduce((a, u) => a + u.length, 0), off = 0; for (const u of parts) { for (let i = 0; i < u.length && same; i += 997) if (got[off + i] !== u[i]) same = false; off += u.length; }
+    await dir.removeEntry("e2e-test.onnx"); let gone = false; try { await dir.getFileHandle("e2e-test.onnx"); } catch { gone = true; }
+    return { size, len: got.length, same, gone, path: t.voicePath("en_US-hfc_female-medium") };
+  });
+  check(res.same && res.size === res.len && res.gone, `cache writer: chunks written through a worker read back byte for byte, then removed (${JSON.stringify(res)})`);
+  check(res.path === "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx", "cache writer: voice ids map to the right file path");
+  check(errs.length === 0, `rain/hd: no page errors ${errs.join(";").slice(0, 200)}`); await ctx.close();
+}
 await browser.close(); console.log(ok.length + " ok"); if (errors.length) { console.log(errors.join("\n")); process.exit(1); } console.log("all passed");

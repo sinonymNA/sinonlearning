@@ -7,7 +7,7 @@ import { HD_VOICES, HD_MB } from "./hdVoice";
 import { HD_MAX_WPM, hdRate } from "../../lib/pacer/neural.mjs";
 import type { AudioPrefs, Track } from "../../lib/pacer/audioStore";
 
-export type HdInfo = { supported: boolean; canCache: boolean; state: "none" | "downloading" | "loading" | "ready" | "error"; pct: number };
+export type HdInfo = { supported: boolean; state: "none" | "downloading" | "loading" | "ready" | "error"; pct: number };
 
 export type VoiceOpt = { name: string; label: string; lang: string };
 
@@ -41,12 +41,22 @@ export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPla
                 {hd.state === "ready" ? <><button className="pc-btn" onClick={onTry}>Hear it</button><button className="pc-btn" onClick={() => onHd("remove")}>Remove voice</button></> : hd.state === "downloading" || hd.state === "loading" ? <span className="mut small" role="status">{hd.state === "downloading" ? `Downloading… ${Math.round(hd.pct * 100)}%` : "Getting it ready…"}</span> : <button className="pc-btn pri" onClick={() => onHd("download")}>{hd.state === "error" ? "Try again" : `Download (${HD_MB} MB)`}</button>}</div>
               {hd.state === "error" && <p className="pc-err small" role="alert">The HD voice could not be loaded. Check your connection (it comes from huggingface.co and cdn hosts), then try again. Until then Pacer uses this device&apos;s voice.</p>}
               <p className="mut small">Best on Wi-Fi. It runs on your device (the book never leaves it) and speaks a sentence ahead, so an older phone may pause between sentences. Speed follows your wpm setting ({wpm} wpm is {hdRate(wpm)}×, up to about {HD_MAX_WPM} wpm). Voices are from the open-source Piper project.</p>
-              {!hd.canCache && <p className="mut small"><b>Heads up:</b> this browser can&apos;t keep the voice saved, so it may download again each time you open Pacer. Use Wi-Fi.</p>}
             </>) : !speechOk ? <p className="mut">This browser has no built-in voices.</p> : (<>
               <p className="mut small">The voice sets the pace and the highlight follows it. Your speed setting ({wpm} wpm) becomes a voice speed of {rate}× (about {approxWpm(rate)} wpm){capped ? `; voices top out near ${MAX_VOICE_WPM} wpm` : ""}.</p>
               <div className="pc-row"><select className="pc-select wide" value={audio.voiceName} onChange={(e) => setAudio((a) => ({ ...a, voiceName: e.target.value }))} aria-label="Voice"><option value="">Best voice on this device</option>{voices.map((v) => <option key={v.name} value={v.name}>{v.name}{v.label ? ` (${v.label.toLowerCase()})` : ""}</option>)}</select><button className="pc-btn" onClick={onTry}>Hear it</button></div>
               {voices.length > 0 && !voices.some((v) => v.label === "Natural") && <p className="mut small"><b>Want it to sound less robotic?</b> Switch to the HD voice above, or download an Enhanced or Premium voice in your device settings (iPhone and iPad: Settings → Accessibility → Spoken Content → Voices).</p>}
             </>)}
+          </>)}
+        </section>
+
+        <section aria-label="Rain">
+          <h3>Rain</h3>
+          <label className="pc-toggle"><input type="checkbox" checked={audio.rain} onChange={(e) => setAudio((a) => ({ ...a, rain: e.target.checked }))} /><span>Rain sound</span></label>
+          {audio.rain && (<>
+            <div className="pc-chips" role="group" aria-label="Rain strength">{["Light", "Steady", "Heavy"].map((n, i) => <button key={n} className={audio.rainLevel === i ? "on" : ""} onClick={() => setAudio((a) => ({ ...a, rainLevel: i }))}>{n}</button>)}</div>
+            <label className="pc-vol"><span>Volume</span><input type="range" min={0} max={100} value={audio.rainVol} onChange={(e) => setAudio((a) => ({ ...a, rainVol: +e.target.value }))} aria-label="Rain volume" /><b>{audio.rainVol}</b></label>
+            <label className="pc-toggle"><input type="checkbox" checked={audio.follow} onChange={(e) => setAudio((x) => ({ ...x, follow: e.target.checked }))} /><span>Play only while I read</span></label>
+            <p className="mut small">Made on your device, so it works offline and needs no download. {audio.follow ? "It plays while you read and fades when you pause." : "It keeps playing until you turn it off."}</p>
           </>)}
         </section>
 
@@ -61,7 +71,7 @@ export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPla
               <button className="pc-x" onClick={() => setAudio((a) => { const tracks = a.tracks.filter((_, k) => k !== i); return { ...a, tracks, idx: Math.min(a.idx, Math.max(0, tracks.length - 1)) }; })} aria-label="Remove this link">✕</button></li>))}</ul>
             <div className="pc-row"><button className="pc-btn round" onClick={() => onMusic("prev")} aria-label="Previous track">⏮</button><button className="pc-btn pri" onClick={() => onMusic(musicPlaying ? "pause" : "play")}>{musicPlaying ? "Pause music" : "Play music"}</button><button className="pc-btn round" onClick={() => onMusic("next")} aria-label="Next track">⏭</button></div>
             <label className="pc-vol"><span>Volume</span><input type="range" min={0} max={100} value={audio.vol} onChange={(e) => setAudio((a) => ({ ...a, vol: +e.target.value }))} aria-label="Music volume" /><b>{audio.vol}</b></label>
-            <label className="pc-toggle"><input type="checkbox" checked={audio.follow} onChange={(e) => setAudio((a) => ({ ...a, follow: e.target.checked }))} /><span>Start and pause the music with my reading</span></label>
+            <label className="pc-toggle"><input type="checkbox" checked={audio.follow} onChange={(e) => setAudio((a) => ({ ...a, follow: e.target.checked }))} /><span>Start and pause the music and rain with my reading</span></label>
             <p className="mut small">Tip: keep music quieter than the voice (try 20 to 35) so you can follow the words. On iPhone and iPad the first time you may need to tap play inside the player, and music stops when the screen locks or you switch apps.</p>
           </>)}
         </section>

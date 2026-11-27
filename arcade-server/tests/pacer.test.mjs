@@ -166,3 +166,12 @@ test("hd voice: stop silences stale callbacks; synthesis failure is reported onc
   const bad = createNeuralNarrator({ synthesize: async () => { throw new Error("no model"); }, audio: fakeAudio(), doc, getRate: () => 1, onWord() {}, onError: (e) => errs.push(e), timers: { setInterval: () => 1, clearInterval: () => {} } });
   bad.start(0); await flush(); await flush(); assert.deepEqual(errs, ["synth"]); assert.equal(bad.running, false);
 });
+
+import { fillPink, rng, nextDropGap, RAIN_LEVELS, clampLevel } from "../../lib/pacer/rain.mjs";
+test("rain: noise stays in range and is not constant, drops get more frequent with strength", () => {
+  const a = fillPink(new Float32Array(48000), rng(3)), b = fillPink(new Float32Array(48000), rng(3)); let mn = 9, mx = -9, sum = 0;
+  for (const v of a) { mn = Math.min(mn, v); mx = Math.max(mx, v); sum += v; }
+  assert.ok(mn >= -1 && mx <= 1 && mx - mn > 0.2 && Math.abs(sum / a.length) < 0.05); assert.deepEqual(Array.from(a.slice(0, 20)), Array.from(b.slice(0, 20)), "seeded, so repeatable");
+  const mean = (lvl) => { const r = rng(5); let t = 0; for (let i = 0; i < 4000; i++) t += nextDropGap(lvl, r); return t / 4000; };
+  assert.ok(mean(0) > mean(1) && mean(1) > mean(2) && mean(2) > 0); assert.equal(clampLevel(9), RAIN_LEVELS.length - 1); assert.equal(clampLevel("x"), 0);
+});

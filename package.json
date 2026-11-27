@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-hd-assets.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/copy-hd-assets.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -14,6 +16,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
+    "@diffusionstudio/piper-wasm": "^1.0.0",
     "@mintplex-labs/piper-tts-web": "^1.0.5",
     "@react-pdf/renderer": "^4.5.1",
     "@types/canvas-confetti": "^1.9.0",

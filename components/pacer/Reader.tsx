@@ -8,6 +8,7 @@
 import MusicDock, { type MusicApi } from "./MusicDock";
 import Sound, { type VoiceOpt, type HdInfo } from "./Sound";
 import * as hd from "./hdVoice";
+import { Rain } from "./Rain";
 import { createNeuralNarrator, hdRate } from "../../lib/pacer/neural.mjs";
 import { createNarrator, pickVoices, rateFor } from "../../lib/pacer/voice.mjs";
 import { loadAudio, saveAudio, type AudioPrefs } from "../../lib/pacer/audioStore";
@@ -41,7 +42,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const [sw, setSw] = useState(() => (typeof window === "undefined" ? 1000 : window.innerWidth)), [ch, setCh] = useState(() => chapterOf(pos.current)), [drawer, setDrawer] = useState(false), [check, setCheck] = useState<null | { para: string; shown: boolean; note?: string }>(null), [done, setDone] = useState<null | ReturnType<typeof sessionStats>>(null), [help, setHelp] = useState(false), [find, setFind] = useState<null | { q: string }>(null), deferredQ = useDeferredValue(find?.q ?? "");
   const [audio, setAudioState] = useState<AudioPrefs>(() => loadAudio()), [sound, setSound] = useState(false), [musicOn, setMusicOn] = useState(false), [musicPlaying, setMusicPlaying] = useState(false), [corner, setCorner] = useState(0), [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]), [voiceErr, setVoiceErr] = useState<string | null>(null), [hdState, setHdState] = useState<HdInfo["state"]>("none"), [hdPct, setHdPct] = useState(0), [hdBusy, setHdBusy] = useState(false), [hdFor, setHdFor] = useState("");
   const speechOk = typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
-  const music = useRef<MusicApi>(null), narr = useRef<ReturnType<typeof createNarrator> | null>(null), picked = useRef<SpeechSynthesisVoice | null>(null), pendingPlay = useRef(false), audioRef = useRef(audio); audioRef.current = audio;
+  const music = useRef<MusicApi>(null), narr = useRef<ReturnType<typeof createNarrator> | null>(null), picked = useRef<SpeechSynthesisVoice | null>(null), pendingPlay = useRef(false), audioRef = useRef(audio); audioRef.current = audio; const rain = useRef<Rain | null>(null);
   const lang = typeof navigator !== "undefined" ? navigator.language || "en" : "en", ranked = useMemo(() => pickVoices(voices as any, lang), [voices, lang]);
   const hdUse = audio.hd && hdState === "ready" && hdFor === audio.hdVoice, hdAudio = useRef<HTMLAudioElement | null>(null);
   const voiceLive = useRef(false); voiceLive.current = audio.voiceOn && (hdUse || (speechOk && ranked.length > 0));
@@ -131,6 +132,9 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
     if (cmd === "remove") { await hd.removeVoice(id); setHdState("none"); return; }
     try { setHdState("downloading"); setHdPct(0); await hd.download(id, setHdPct); setHdState("loading"); await hd.prepare(id); setHdFor(id); setHdState("ready"); } catch { setHdState("error"); }
   };
+  // ---- rain
+  useEffect(() => { rain.current ??= new Rain(); rain.current.set({ on: audio.rain && (!audio.follow || ui.playing), vol: audio.rainVol / 100, level: audio.rainLevel }); }, [audio.rain, audio.follow, audio.rainVol, audio.rainLevel, ui.playing]);
+  useEffect(() => () => { rain.current?.dispose(); rain.current = null; }, []);
   // ---- background music follows reading
   useEffect(() => { if (!musicOn) return; if (pendingPlay.current && music.current) { pendingPlay.current = false; music.current.play(); } }, [musicOn]);
   useEffect(() => { if (!audioRef.current.follow || !musicOn) return; if (ui.playing) music.current?.play(); else music.current?.pause(); }, [ui.playing]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -155,7 +159,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
 
   useEffect(() => { const f = () => setSw(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   // ---- controls
-  const toggle = useCallback(() => { if (check || done) return; if (!playing.current && pos.current >= N - 1) goTo(0); playing.current = !playing.current; if (playing.current) { saved.current = false; if (voiceLive.current) narr.current?.prime(); const a = audioRef.current; if (a.follow && a.tracks.length) { if (!musicOn) { setMusicOn(true); pendingPlay.current = true; } else music.current?.play(); } } refreshUi({ playing: playing.current }); }, [check, done, N, goTo, refreshUi, musicOn]);
+  const toggle = useCallback(() => { if (check || done) return; if (!playing.current && pos.current >= N - 1) goTo(0); playing.current = !playing.current; if (playing.current) { saved.current = false; if (voiceLive.current) narr.current?.prime(); if (audioRef.current.rain) rain.current?.prime(); const a = audioRef.current; if (a.follow && a.tracks.length) { if (!musicOn) { setMusicOn(true); pendingPlay.current = true; } else music.current?.play(); } } refreshUi({ playing: playing.current }); }, [check, done, N, goTo, refreshUi, musicOn]);
   const setWpm = useCallback((w: number) => { const v = clamp(Math.round(w), MIN_WPM, MAX_WPM); liveWpm.current = v; onSettings({ ...S.current, wpm: v }); }, [onSettings]);
   const openFind = () => { if (playing.current) { playing.current = false; refreshUi({ playing: false }); } setFind({ q: "" }); };
   const found = useMemo(() => findMatches(doc, deferredQ), [doc, deferredQ]);
@@ -237,7 +241,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
               <div className="pc-row" style={{ justifyContent: "flex-start" }}><button className="pc-btn" onClick={() => { setDone(null); stats.current = { words: 0, active: 0, checks: [], sinceCheck: 0, streak: 0, ramped: 0 }; goTo(0); }}>Read again</button><button className="pc-btn pri" onClick={onExit}>Back to the library</button></div>
             </div>
           </div>)}
-        {sound && <Sound audio={audio} setAudio={setAudio} voices={ranked.map((r: any) => ({ name: r.voice.name, label: r.label, lang: r.voice.lang }) as VoiceOpt)} speechOk={speechOk} wpm={settings.wpm} musicPlaying={musicPlaying} hd={{ supported: hd.hdSupported(), canCache: hd.canCacheVoice(), state: hdState === "ready" && hdFor !== audio.hdVoice ? "none" : hdState, pct: hdPct }} onHd={onHd} onMusic={onMusic} onTry={tryVoice} close={() => setSound(false)} />}
+        {sound && <Sound audio={audio} setAudio={setAudio} voices={ranked.map((r: any) => ({ name: r.voice.name, label: r.label, lang: r.voice.lang }) as VoiceOpt)} speechOk={speechOk} wpm={settings.wpm} musicPlaying={musicPlaying} hd={{ supported: hd.hdSupported(), state: hdState === "ready" && hdFor !== audio.hdVoice ? "none" : hdState, pct: hdPct }} onHd={onHd} onMusic={onMusic} onTry={tryVoice} close={() => setSound(false)} />}
         {hdBusy && ui.playing && <p className="pc-busy" role="status" style={{ position: "absolute", left: 12, right: 12, top: 8, zIndex: 14, margin: 0, textAlign: "center" }}>Getting the next sentence…</p>}
         {voiceErr && <p className="pc-err" role="alert" style={{ position: "absolute", left: 12, right: 12, bottom: 8, zIndex: 15, margin: 0 }}>{voiceErr}</p>}
         {musicOn && audio.tracks.length > 0 && <MusicDock ref={music} tracks={audio.tracks} idx={audio.idx} vol={audio.vol} corner={corner} onIndex={(i) => setAudio((a) => ({ ...a, idx: i }))} onPlaying={setMusicPlaying} onTitle={(i, t) => setAudio((a) => (a.tracks[i] && a.tracks[i].title !== t ? { ...a, tracks: a.tracks.map((x, k) => (k === i ? { ...x, title: t } : x)) } : a))} onCorner={() => setCorner((c) => (c + 1) % 4)} onClose={() => { setMusicOn(false); setMusicPlaying(false); }} />}
