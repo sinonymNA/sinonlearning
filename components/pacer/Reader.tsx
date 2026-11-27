@@ -40,11 +40,11 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const pos = useRef(clamp(startPos, 0, Math.max(0, N - 1))), playing = useRef(false), stats = useRef({ words: 0, active: 0, checks: [] as boolean[], sinceCheck: 0, streak: 0, ramped: 0 }), liveWpm = useRef(settings.wpm), saved = useRef(false);
   const [ui, setUi] = useState({ pos: pos.current, playing: false, wpm: settings.wpm, shown: "", si: pos.current, sj: pos.current + 1 });
   const [sw, setSw] = useState(() => (typeof window === "undefined" ? 1000 : window.innerWidth)), [ch, setCh] = useState(() => chapterOf(pos.current)), [drawer, setDrawer] = useState(false), [check, setCheck] = useState<null | { para: string; shown: boolean; note?: string }>(null), [done, setDone] = useState<null | ReturnType<typeof sessionStats>>(null), [help, setHelp] = useState(false), [find, setFind] = useState<null | { q: string }>(null), deferredQ = useDeferredValue(find?.q ?? "");
-  const [audio, setAudioState] = useState<AudioPrefs>(() => loadAudio()), [sound, setSound] = useState(false), [musicOn, setMusicOn] = useState(false), [musicPlaying, setMusicPlaying] = useState(false), [corner, setCorner] = useState(0), [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]), [voiceErr, setVoiceErr] = useState<string | null>(null), [hdState, setHdState] = useState<HdInfo["state"]>("none"), [hdPct, setHdPct] = useState(0), [hdBusy, setHdBusy] = useState(false), [hdFor, setHdFor] = useState("");
+  const [audio, setAudioState] = useState<AudioPrefs>(() => loadAudio()), [sound, setSound] = useState(false), [musicOn, setMusicOn] = useState(false), [musicPlaying, setMusicPlaying] = useState(false), [corner, setCorner] = useState(0), [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]), [voiceErr, setVoiceErr] = useState<string | null>(null), [hdState, setHdState] = useState<HdInfo["state"]>("none"), [hdPct, setHdPct] = useState(0), [hdBusy, setHdBusy] = useState(false), [hdSpeed, setHdSpeed] = useState<number | null>(null);
   const speechOk = typeof window !== "undefined" && "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function";
   const music = useRef<MusicApi>(null), narr = useRef<ReturnType<typeof createNarrator> | null>(null), picked = useRef<SpeechSynthesisVoice | null>(null), pendingPlay = useRef(false), audioRef = useRef(audio); audioRef.current = audio; const rain = useRef<Rain | null>(null);
   const lang = typeof navigator !== "undefined" ? navigator.language || "en" : "en", ranked = useMemo(() => pickVoices(voices as any, lang), [voices, lang]);
-  const hdUse = audio.hd && hdState === "ready" && hdFor === audio.hdVoice, hdAudio = useRef<HTMLAudioElement | null>(null);
+  const hdUse = audio.hd && hdState === "ready", hdAudio = useRef<HTMLAudioElement | null>(null);
   const voiceLive = useRef(false); voiceLive.current = audio.voiceOn && (hdUse || (speechOk && ranked.length > 0));
   const setAudio = useCallback((fn: (a: AudioPrefs) => AudioPrefs) => setAudioState((a) => { const n = fn(a); saveAudio(n); return n; }), []);
   const scroller = useRef<HTMLDivElement>(null), page = useRef<HTMLDivElement>(null), spans = useRef<HTMLElement[]>([]), curEl = useRef<HTMLElement | null>(null), curPara = useRef<HTMLElement | null>(null), scrollTarget = useRef<number | null>(null);
@@ -123,14 +123,14 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   useEffect(() => { if (!ui.playing || !voiceLive.current || hdUse) return; const t = window.setTimeout(() => narr.current?.start(pos.current), 450); return () => clearTimeout(t); }, [settings.wpm]); // eslint-disable-line react-hooks/exhaustive-deps
   // ---- HD voice: load it when it was chosen and is already on this device (a download only ever happens when the person taps Download)
   useEffect(() => {
-    if (!audio.hd || !hd.hdSupported()) return; let dead = false; const id = audio.hdVoice;
-    hd.isStored(id).then((has) => { if (dead) return; if (!has) { setHdState("none"); return; } setHdState("loading"); hd.prepare(id).then(() => { if (!dead) { setHdFor(id); setHdState("ready"); } }).catch(() => !dead && setHdState("error")); });
+    if (!audio.hd || !hd.hdSupported()) return; let dead = false; hd.setVoice(audio.hdVoice);
+    hd.isStored().then((has) => { if (dead) return; if (!has) { setHdState("none"); return; } setHdState("loading"); hd.prepare().then(() => { if (!dead) setHdState("ready"); }).catch(() => !dead && setHdState("error")); });
     return () => { dead = true; };
-  }, [audio.hd, audio.hdVoice]);
+  }, [audio.hd]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { hd.setVoice(audio.hdVoice); }, [audio.hdVoice]);
   const onHd = async (cmd: "download" | "remove") => {
-    const id = audioRef.current.hdVoice;
-    if (cmd === "remove") { await hd.removeVoice(id); setHdState("none"); return; }
-    try { setHdState("downloading"); setHdPct(0); await hd.download(id, setHdPct); setHdState("loading"); await hd.prepare(id); setHdFor(id); setHdState("ready"); } catch { setHdState("error"); }
+    if (cmd === "remove") { await hd.removeVoice(); setHdState("none"); setHdSpeed(null); return; }
+    try { setHdState("downloading"); setHdPct(0); await hd.download(setHdPct); setHdState("ready"); } catch { setHdState("error"); }
   };
   // ---- rain
   useEffect(() => { rain.current ??= new Rain(); rain.current.set({ on: audio.rain && (!audio.follow || ui.playing), vol: audio.rainVol / 100, level: audio.rainLevel }); }, [audio.rain, audio.follow, audio.rainVol, audio.rainLevel, ui.playing]);
@@ -145,7 +145,12 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   };
   const tryVoice = async () => {
     const line = "This is how I will read your book. Pick the voice that is easiest to follow.";
-    if (hdUse) { try { const u = await hd.synthesize(line), a = (hdAudio.current ??= new Audio()); a.src = u; a.playbackRate = hdRate(S.current.wpm); await a.play(); } catch { setVoiceErr("Could not play the sample."); } return; }
+    if (hdUse) {
+      try {
+        const t0 = performance.now(), u = await hd.synthesize(line), took = (performance.now() - t0) / 1000, a = (hdAudio.current ??= new Audio()); a.src = u; a.playbackRate = hdRate(S.current.wpm);
+        a.onloadedmetadata = () => { if (isFinite(a.duration) && took > 0) setHdSpeed(Math.round((a.duration / took) * 10) / 10); }; await a.play();
+      } catch { setVoiceErr("Could not play the sample."); } return;
+    }
     if (!speechOk) return; const syn = window.speechSynthesis; syn.cancel(); const u = new window.SpeechSynthesisUtterance(line); if (picked.current) { u.voice = picked.current; u.lang = picked.current.lang; } u.rate = rateFor(S.current.wpm); syn.speak(u); };
 
   // ---- after a chapter (or mode) change the spans are new: collect them and put the highlight back
@@ -241,7 +246,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
               <div className="pc-row" style={{ justifyContent: "flex-start" }}><button className="pc-btn" onClick={() => { setDone(null); stats.current = { words: 0, active: 0, checks: [], sinceCheck: 0, streak: 0, ramped: 0 }; goTo(0); }}>Read again</button><button className="pc-btn pri" onClick={onExit}>Back to the library</button></div>
             </div>
           </div>)}
-        {sound && <Sound audio={audio} setAudio={setAudio} voices={ranked.map((r: any) => ({ name: r.voice.name, label: r.label, lang: r.voice.lang }) as VoiceOpt)} speechOk={speechOk} wpm={settings.wpm} musicPlaying={musicPlaying} hd={{ supported: hd.hdSupported(), state: hdState === "ready" && hdFor !== audio.hdVoice ? "none" : hdState, pct: hdPct }} onHd={onHd} onMusic={onMusic} onTry={tryVoice} close={() => setSound(false)} />}
+        {sound && <Sound audio={audio} setAudio={setAudio} voices={ranked.map((r: any) => ({ name: r.voice.name, label: r.label, lang: r.voice.lang }) as VoiceOpt)} speechOk={speechOk} wpm={settings.wpm} musicPlaying={musicPlaying} hd={{ supported: hd.hdSupported(), state: hdState, pct: hdPct, speed: hdSpeed }} onHd={onHd} onMusic={onMusic} onTry={tryVoice} close={() => setSound(false)} />}
         {hdBusy && ui.playing && <p className="pc-busy" role="status" style={{ position: "absolute", left: 12, right: 12, top: 8, zIndex: 14, margin: 0, textAlign: "center" }}>Getting the next sentence…</p>}
         {voiceErr && <p className="pc-err" role="alert" style={{ position: "absolute", left: 12, right: 12, bottom: 8, zIndex: 15, margin: 0 }}>{voiceErr}</p>}
         {musicOn && audio.tracks.length > 0 && <MusicDock ref={music} tracks={audio.tracks} idx={audio.idx} vol={audio.vol} corner={corner} onIndex={(i) => setAudio((a) => ({ ...a, idx: i }))} onPlaying={setMusicPlaying} onTitle={(i, t) => setAudio((a) => (a.tracks[i] && a.tracks[i].title !== t ? { ...a, tracks: a.tracks.map((x, k) => (k === i ? { ...x, title: t } : x)) } : a))} onCorner={() => setCorner((c) => (c + 1) % 4)} onClose={() => { setMusicOn(false); setMusicPlaying(false); }} />}

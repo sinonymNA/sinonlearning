@@ -69,7 +69,7 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], "ipad-l": 
   await ctx.close();
 }
 
-// ---- HD voice (fake Piper: returns real silent WAV clips whose length follows the text, so the real audio element, ended events and timing all run)
+// ---- HD voice (fake Kokoro: returns real silent WAV clips whose length follows the text, so the real audio element, ended events and timing all run)
 for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], laptop: [1366, 768] })) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h } }), p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
   await ctx.addInitScript(() => {
@@ -81,8 +81,8 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], laptop: [1
   await p.goto(BASE, { waitUntil: "networkidle" }); await p.waitForSelector(".pc-drop"); await p.setInputFiles("input[type=file]", "/tmp/pacer-sound/b.txt"); await p.waitForSelector(".pc-page .w");
   await p.click("[aria-label='Sound: read aloud and music']"); await p.waitForSelector(".pc-sound");
   await p.click(".pc-sound .pc-toggle input >> nth=0"); await p.click("input[name=vt] >> nth=1");
-  check(/63 MB/.test(await p.locator(".pc-sound").innerText()) && (await p.locator("select[aria-label='HD voice'] option").count()) >= 4, `${name}: HD voice option states the download size and offers voices`);
-  await p.click(".pc-sound >> text=/Download \\(63 MB\\)/"); await p.waitForSelector(".pc-sound >> text=Hear it"); check(true, `${name}: HD voice downloads and becomes ready`);
+  check(/90 MB/.test(await p.locator(".pc-sound").innerText()) && (await p.locator("select[aria-label='HD voice'] option").count()) >= 4, `${name}: HD voice option states the download size and offers voices`);
+  await p.click(".pc-sound >> text=/Download \\(90 MB\\)/"); await p.waitForSelector(".pc-sound >> text=Hear it"); check(true, `${name}: HD voice downloads and becomes ready`);
   const box = await p.locator(".pc-sound .pc-card").boundingBox(); check(box.x >= 0 && box.x + box.width <= w + 1 && box.y >= 0 && box.y + box.height <= h + 1, `${name}: the sound panel with the HD section fits the screen`);
   await p.click(".pc-sound >> text=Done"); const p0 = +(await p.locator(".pc-scrub").inputValue());
   await p.click("[aria-label='Play']"); await p.waitForTimeout(4500);
@@ -115,17 +115,12 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], laptop: [1
   await p.click("section[aria-label=Rain] input[type=checkbox]"); await p.waitForTimeout(2300); check((await state()) === "suspended", "rain: turning it off stops it");
   const saved = await p.evaluate(() => JSON.parse(localStorage.getItem("pacer:audio:v1"))); check(saved.rainLevel === 2 && saved.follow === false, "rain: strength and settings are remembered");
   // self-hosted runtime (no cdnjs / jsdelivr)
-  for (const [path, min] of [["/pacer-hd/piper_phonemize.wasm", 500000], ["/pacer-hd/piper_phonemize.data", 17000000], ["/pacer-hd/ort/ort-wasm-simd.wasm", 9000000], ["/pacer-hd/ort/ort-wasm-simd-threaded.wasm", 9000000]]) { const r = await ctx.request.get(new URL(path, BASE).href); check(r.ok() && (await r.body()).length > min, `hd runtime: ${path} is served by this site`); }
-  // cache writer: write 3 chunks through a worker sync access handle, read back through the same API the voice library uses, then remove
-  const res = await p.evaluate(async () => {
-    const t = window.__pacerHdTools; if (!t) return { err: "no hook" }; const w = await t.openWriter("e2e-test.onnx"), parts = [1, 2, 3].map((n) => Uint8Array.from({ length: 700000 + n }, (_, i) => (i * n + 7) & 255)); for (const u of parts) await w.write(u);
-    const size = await w.close(), root = await navigator.storage.getDirectory(), dir = await root.getDirectoryHandle("piper"), file = await (await dir.getFileHandle("e2e-test.onnx")).getFile(), got = new Uint8Array(await file.arrayBuffer());
-    let same = got.length === parts.reduce((a, u) => a + u.length, 0), off = 0; for (const u of parts) { for (let i = 0; i < u.length && same; i += 997) if (got[off + i] !== u[i]) same = false; off += u.length; }
-    await dir.removeEntry("e2e-test.onnx"); let gone = false; try { await dir.getFileHandle("e2e-test.onnx"); } catch { gone = true; }
-    return { size, len: got.length, same, gone, path: t.voicePath("en_US-hfc_female-medium") };
-  });
-  check(res.same && res.size === res.len && res.gone, `cache writer: chunks written through a worker read back byte for byte, then removed (${JSON.stringify(res)})`);
-  check(res.path === "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx", "cache writer: voice ids map to the right file path");
+  for (const [path, min] of [["/pacer-hd/ort/ort-wasm-simd-threaded.jsep.wasm", 9000000], ["/pacer-hd/ort/ort-wasm-simd-threaded.jsep.mjs", 20000], ["/pacer-hd/kokoro/voices/af_heart.bin", 400000], ["/pacer-hd/kokoro/voices/bm_george.bin", 400000]]) { const r = await ctx.request.get(new URL(path, BASE).href); check(r.ok() && (await r.body()).length > min, `hd runtime: ${path} is served by this site`); }
+  // the real Kokoro worker boots, asks Hugging Face for the right model files, and reports a failed download cleanly (Hugging Face is blocked here, so the answer is faked as 404)
+  const seen = []; ctx.on("request", (r) => { const u = r.url(); if (/huggingface|jsdelivr|cdnjs|unpkg/.test(u)) seen.push(u); }); await ctx.route(/huggingface\.co/, (r) => r.fulfill({ status: 404, body: "nope" }));
+  const msg = await p.evaluate(async () => { try { await window.__pacerHdTools.prepare(); return "resolved"; } catch (e) { return String(e.message); } });
+  check(/config\.json/.test(msg) && seen.some((u) => /onnx-community\/Kokoro-82M-v1\.0-ONNX\/resolve\/main\/config\.json/.test(u)), `hd worker: boots and requests the Kokoro model files (${msg.slice(0, 90)})`);
+  check(!seen.some((u) => /jsdelivr|cdnjs|unpkg/.test(u)), "hd worker: nothing is fetched from a CDN");
   check(errs.length === 0, `rain/hd: no page errors ${errs.join(";").slice(0, 200)}`); await ctx.close();
 }
 await browser.close(); console.log(ok.length + " ok"); if (errors.length) { console.log(errors.join("\n")); process.exit(1); } console.log("all passed");
