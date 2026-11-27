@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Users, QrCode, Rocket, Gamepad2, Joystick } from "lucide-react";
+import { Users, QrCode, Rocket, Gamepad2, Joystick, BookOpenText } from "lucide-react";
 
 export type ToolStatus = "Live" | "Prototype" | "Planned" | "Coming Later";
 
@@ -12,6 +12,14 @@ export interface Tool {
 }
 
 export const tools: Tool[] = [
+  {
+    name: "Pacer",
+    status: "Live",
+    description:
+      "Open any PDF or EPUB and read it at a pace you choose: one word at a time, a moving highlight, or a smooth auto-scroll. Train your speed with recall check-ins. Files never leave your device.",
+    icon: BookOpenText,
+    href: "/pacer",
+  },
   {
     name: "Classroom Arcade",
     status: "Live",
