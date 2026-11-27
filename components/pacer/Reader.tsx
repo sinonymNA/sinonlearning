@@ -5,8 +5,8 @@
 //   Pacer  your real page with a moving highlight that keeps you from drifting and rereading;
 //   Scroll the page glides under a fixed reading line.
 // The clock is real time (requestAnimationFrame), words get a little longer for long words and punctuation, and optional recall check-ins slow you down when you stop following.
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { tokenize, splitOrp, delayMs, chunkEnd, chunkText, buildFactorPrefix, timeLeftMs, sentenceStart, nextSentence, prevSentence, paragraphRange, rampWpm, adaptWpm, sessionStats, paceLabel, MIN_WPM, MAX_WPM, HEAD, SENT } from "../../lib/pacer/engine.mjs";
+import { memo, useDeferredValue, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { tokenize, splitOrp, delayMs, chunkEnd, chunkText, buildFactorPrefix, timeLeftMs, sentenceStart, nextSentence, prevSentence, paragraphRange, rampWpm, adaptWpm, findMatches, sessionStats, paceLabel, MIN_WPM, MAX_WPM, HEAD, SENT } from "../../lib/pacer/engine.mjs";
 import type { Book } from "../../lib/pacer/extract";
 import type { Settings, Session } from "../../lib/pacer/store";
 import Settings_ from "./ReaderSettings";
@@ -32,7 +32,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const S = useRef(settings); S.current = settings;
   const pos = useRef(clamp(startPos, 0, Math.max(0, N - 1))), playing = useRef(false), stats = useRef({ words: 0, active: 0, checks: [] as boolean[], sinceCheck: 0, streak: 0, ramped: 0 }), liveWpm = useRef(settings.wpm), saved = useRef(false);
   const [ui, setUi] = useState({ pos: pos.current, playing: false, wpm: settings.wpm, shown: "", si: pos.current, sj: pos.current + 1 });
-  const [sw, setSw] = useState(() => (typeof window === "undefined" ? 1000 : window.innerWidth)), [ch, setCh] = useState(() => chapterOf(pos.current)), [drawer, setDrawer] = useState(false), [check, setCheck] = useState<null | { para: string; shown: boolean; note?: string }>(null), [done, setDone] = useState<null | ReturnType<typeof sessionStats>>(null), [help, setHelp] = useState(false);
+  const [sw, setSw] = useState(() => (typeof window === "undefined" ? 1000 : window.innerWidth)), [ch, setCh] = useState(() => chapterOf(pos.current)), [drawer, setDrawer] = useState(false), [check, setCheck] = useState<null | { para: string; shown: boolean; note?: string }>(null), [done, setDone] = useState<null | ReturnType<typeof sessionStats>>(null), [help, setHelp] = useState(false), [find, setFind] = useState<null | { q: string }>(null), deferredQ = useDeferredValue(find?.q ?? "");
   const scroller = useRef<HTMLDivElement>(null), page = useRef<HTMLDivElement>(null), spans = useRef<HTMLElement[]>([]), curEl = useRef<HTMLElement | null>(null), curPara = useRef<HTMLElement | null>(null), scrollTarget = useRef<number | null>(null);
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
@@ -99,14 +99,18 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   // ---- controls
   const toggle = useCallback(() => { if (check || done) return; if (!playing.current && pos.current >= N - 1) goTo(0); playing.current = !playing.current; if (playing.current) saved.current = false; refreshUi({ playing: playing.current }); }, [check, done, N, goTo, refreshUi]);
   const setWpm = useCallback((w: number) => { const v = clamp(Math.round(w), MIN_WPM, MAX_WPM); liveWpm.current = v; onSettings({ ...S.current, wpm: v }); }, [onSettings]);
+  const openFind = () => { if (playing.current) { playing.current = false; refreshUi({ playing: false }); } setFind({ q: "" }); };
+  const found = useMemo(() => findMatches(doc, deferredQ), [doc, deferredQ]);
+  const goFound = (i: number) => { setFind(null); goTo(i); };
+  const nextHit = found.hits.findIndex((h) => h >= pos.current);
   const back = () => goTo(prevSentence(doc, pos.current)), fwd = () => goTo(nextSentence(doc, pos.current));
   const setMode = (m: Settings["mode"]) => { const was = playing.current; playing.current = false; onSettings({ ...S.current, mode: m }); window.setTimeout(() => { if (was) { playing.current = true; refreshUi({ playing: true }); } }, 60); };
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement; if (/INPUT|SELECT|TEXTAREA/.test(t?.tagName) && (t as HTMLInputElement).type !== "range" && e.key !== "Escape") return; if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const k = e.key; if (k === " " || k === "k") { if (t?.tagName === "BUTTON") return; e.preventDefault(); toggle(); } else if (k === "ArrowUp") { e.preventDefault(); setWpm(S.current.wpm + (e.shiftKey ? 50 : 10)); } else if (k === "ArrowDown") { e.preventDefault(); setWpm(S.current.wpm - (e.shiftKey ? 50 : 10)); }
+      const k = e.key; if (find) { if (k === "Escape") { e.preventDefault(); setFind(null); } return; } if (k === " " || k === "k") { if (t?.tagName === "BUTTON") return; e.preventDefault(); toggle(); } else if (k === "ArrowUp") { e.preventDefault(); setWpm(S.current.wpm + (e.shiftKey ? 50 : 10)); } else if (k === "ArrowDown") { e.preventDefault(); setWpm(S.current.wpm - (e.shiftKey ? 50 : 10)); }
       else if (k === "ArrowLeft") { e.preventDefault(); goTo(prevSentence(doc, pos.current)); } else if (k === "ArrowRight") { e.preventDefault(); goTo(nextSentence(doc, pos.current)); } else if (k === "1") setMode("focus"); else if (k === "2") setMode("pacer"); else if (k === "3") setMode("scroll");
-      else if (k === "[") goTo(chWord[Math.max(0, chapterOf(pos.current) - 1)]); else if (k === "]") goTo(chWord[Math.min(chWord.length - 1, chapterOf(pos.current) + 1)]); else if (k === "Escape") { if (drawer) setDrawer(false); else if (playing.current) toggle(); } else if (k === "?") setHelp((h) => !h);
+      else if (k === "[") goTo(chWord[Math.max(0, chapterOf(pos.current) - 1)]); else if (k === "]") goTo(chWord[Math.min(chWord.length - 1, chapterOf(pos.current) + 1)]); else if (k === "/" || k === "f") { e.preventDefault(); openFind(); } else if (k === "Escape") { if (find) setFind(null); else if (drawer) setDrawer(false); else if (playing.current) toggle(); } else if (k === "?") setHelp((h) => !h);
     };
     window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key);
   });
@@ -133,6 +137,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
         <button className="pc-btn round" onClick={() => { finish("exit"); onExit(); }} aria-label="Back to the library">←</button>
         <div className="pc-title"><b>{book.title}</b><small>{book.chapters[ch]?.title && book.chapters[ch].title !== book.title ? book.chapters[ch].title : (book.author || "")}</small></div>
         {book.chapters.length > 1 && <select className="pc-select" value={ch} onChange={(e) => goTo(chWord[+e.target.value])} aria-label="Chapter">{book.chapters.map((c, i) => <option key={i} value={i}>{c.title.slice(0, 40)}</option>)}</select>}
+        <button className="pc-btn round" onClick={openFind} aria-label="Find a word or phrase">⌕</button>
         <button className="pc-btn round" onClick={() => setHelp(true)} aria-label="Help and shortcuts">?</button>
         <button className="pc-btn round" onClick={() => setDrawer((d) => !d)} aria-label="Settings" aria-expanded={drawer}>⚙</button>
       </header>
@@ -173,12 +178,29 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
               <div className="pc-row" style={{ justifyContent: "flex-start" }}><button className="pc-btn" onClick={() => { setDone(null); stats.current = { words: 0, active: 0, checks: [], sinceCheck: 0, streak: 0, ramped: 0 }; goTo(0); }}>Read again</button><button className="pc-btn pri" onClick={onExit}>Back to the library</button></div>
             </div>
           </div>)}
+        {find && (
+          <div className="pc-modal pc-find" role="dialog" aria-label="Find in the book" onClick={() => setFind(null)}>
+            <div className="pc-card" onClick={(e) => e.stopPropagation()}>
+              <h2>Find your spot</h2>
+              <p className="mut" style={{ margin: "0 0 8px" }}>Type a word or a few words you remember. Tap a result to jump there.</p>
+              <input className="pc-input" autoFocus value={find.q} onChange={(e) => setFind({ q: e.target.value })} placeholder="e.g. lantern or the old bridge" aria-label="Words to find" enterKeyHint="search"
+                onKeyDown={(e) => { if (e.key === "Enter" && found.hits.length) goFound(found.hits[nextHit >= 0 ? nextHit : 0]); }} />
+              <p className="pc-fcount" role="status">{!deferredQ.trim() ? "" : found.total === 0 ? "No matches. Try fewer or different words." : `${found.total.toLocaleString()} match${found.total === 1 ? "" : "es"}${found.capped ? ` (showing the first ${found.hits.length}; add more words to narrow it)` : ""}. Enter jumps to the next one after your spot.`}</p>
+              <ul className="pc-fres">{found.hits.map((h, k) => {
+                const a = Math.max(0, h - 7), b = Math.min(N, h + found.len + 9), c = chapterOf(h), t = book.chapters[c]?.title;
+                return (<li key={h}><button className={k === nextHit ? "next" : ""} onClick={() => goFound(h)}>
+                  <small>{t && t !== book.title ? `${t.slice(0, 40)} · ` : ""}{Math.round((100 * h) / Math.max(1, N - 1))}% in{k === nextHit ? " · next after your spot" : ""}</small>
+                  <span>{a > 0 ? "… " : ""}{doc.words.slice(a, h).join(" ")} <mark>{doc.words.slice(h, h + found.len).join(" ")}</mark> {doc.words.slice(h + found.len, b).join(" ")}{b < N ? " …" : ""}</span></button></li>);
+              })}</ul>
+              <button className="pc-btn" onClick={() => setFind(null)}>Close</button>
+            </div>
+          </div>)}
         {help && (
           <div className="pc-modal" role="dialog" aria-label="Help" onClick={() => setHelp(false)}>
             <div className="pc-card" onClick={(e) => e.stopPropagation()}><h2>How to use Pacer</h2>
               <p><b>Focus</b> shows one word at a time; keep your eyes on the red letter. <b>Pacer</b> highlights each word on your real page. <b>Scroll</b> glides the page past a reading line.</p>
               <p className="mut">Choose a speed where you can still retell what you read. Turn on check-ins in settings to let Pacer tune the speed for you. Focus mode flashes words quickly; stop if it bothers your eyes.</p>
-              <p style={{ fontSize: ".9rem", lineHeight: 1.7 }}><b>Space</b> play or pause · <b>↑ ↓</b> speed (Shift for ±50) · <b>← →</b> sentence back or forward · <b>1 2 3</b> mode · <b>[ ]</b> chapter · <b>Esc</b> pause · click any word to jump there</p>
+              <p style={{ fontSize: ".9rem", lineHeight: 1.7 }}><b>/</b> or <b>F</b> find a word · <b>Space</b> play or pause · <b>↑ ↓</b> speed (Shift for ±50) · <b>← →</b> sentence back or forward · <b>1 2 3</b> mode · <b>[ ]</b> chapter · <b>Esc</b> pause · click any word to jump there</p>
               <button className="pc-btn pri" onClick={() => setHelp(false)}>Got it</button></div>
           </div>)}
       </main>

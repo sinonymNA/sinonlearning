@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import JSZip from "jszip";
 import { DOMParser } from "@xmldom/xmldom";
-import { SENT, CLAUSE, PARA, HEAD, tokenize, orpIndex, splitOrp, factorFor, beatMs, delayMs, buildFactorPrefix, timeLeftMs, chunkEnd, chunkText, sentenceStart, nextSentence, prevSentence, paragraphRange, rampWpm, adaptWpm, sessionStats, paceLabel } from "../../lib/pacer/engine.mjs";
+import { SENT, CLAUSE, PARA, HEAD, tokenize, orpIndex, splitOrp, factorFor, beatMs, delayMs, buildFactorPrefix, timeLeftMs, chunkEnd, chunkText, sentenceStart, nextSentence, prevSentence, paragraphRange, rampWpm, adaptWpm, sessionStats, paceLabel, findMatches, normWord } from "../../lib/pacer/engine.mjs";
 import { textToParas, pagesToParas } from "../../lib/pacer/text.mjs";
 import { parseEpub, xhtmlToParas } from "../../lib/pacer/epub.mjs";
 
@@ -83,4 +83,16 @@ test("two devices agree: the newest reading position wins, cloud-only books appe
   const m = mergeLibraries(local, cloud), by = Object.fromEntries(m.map((x) => [x.id, x])); assert.equal(by.a.pos, 40, "the phone read further more recently"); assert.equal(by.a.wpm, 300); assert.equal(by.b.pos, 5, "this device's newer position is kept"); assert.equal(by.c.cloud, true); assert.equal(by.a.cloud, true); assert.equal(m.length, 3);
   const onlyLocal = mergeLibraries([{ id: "z", title: "Z", words: 9, pos: 1, wpm: 250, at: 1, updated: 1, cloud: true }], []); assert.equal(onlyLocal[0].cloud, false, "a book the server no longer has is not marked synced");
   assert.deepEqual(mergeSessions([{ t: 1, title: "A" }, { t: 2, title: "A" }], [{ t: 2, title: "A" }, { t: 3, title: "B" }]).map((x) => x.t), [1, 2, 3]);
+});
+
+test("find: words, phrases, prefixes, punctuation and curly quotes", () => {
+  const doc = tokenize([{ text: "The old bridge was quiet. “Lantern,” she said, and the lantern-light shook." }, { text: "A lanterns festival. Bridge, old." }]);
+  assert.equal(normWord("“Lantern,”"), "lantern");
+  assert.deepEqual(findMatches(doc, "old bridge").hits, [1]);              // consecutive words only
+  assert.equal(findMatches(doc, "bridge old").total, 1);                   // the other order is a different place
+  assert.equal(findMatches(doc, "  THE  OLD ").hits[0], 0);                // case/space insensitive, last word may be a prefix
+  const l = findMatches(doc, "lant"); assert.equal(l.total, 3);            // lantern, lantern-light, lanterns
+  assert.equal(findMatches(doc, "l").total, 0);                            // a single letter is exact only
+  assert.equal(findMatches(doc, "").total, 0); assert.equal(findMatches(doc, "zebra").hits.length, 0);
+  assert.equal(findMatches(doc, "the", { max: 1 }).capped, true);
 });

@@ -178,3 +178,5 @@ User: full upgrade of the Shelf Stocker visuals and shop (like Meowdoku). Done: 
 User: a reader on the website that takes a PDF or EPUB and makes it autoscrolling text for learning to read fast with adjustable speeds. Done: Pacer at /pacer (see PACER.md): client-only PDF/EPUB/text/paste reader, Focus/Pacer/Scroll modes, 60-1200 wpm, ramp and recall check-ins, resume and progress, four themes; linked from tools, footer and sitemap.
 
 User: upload my books and save progress on the site to read on phone/iPad. Done: opt-in Pacer account sync (extracted text in Postgres, per-user, quotas, newest-wins progress, settings/session merge, account bar + cloud badges + download-on-open + remove/sign-out dialogs). Verified with real Postgres, real signup, phone and iPad contexts. Not done: offline/PWA.
+
+User: look up words in Pacer and jump to that place. Done: find box (word/phrase, prefix while typing, snippets with chapter and %, Enter = next after your spot, `/` or F shortcut); engine test + 10 new e2e checks.

@@ -77,6 +77,13 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": sizes["iphone-p"], lap
   await p.setInputFiles("input[type=file]", `${DIR}/book.pdf`); await p.waitForSelector(".pc-page .w", { timeout: 30000 }); const pdf = await text();
   check(/Alphaword begins/.test(pdf) && !/RUNNING HEADER/.test(pdf) && !/Page \d+ of \d+/.test(pdf), `${name}: a real PDF opens, and its running header and page numbers are removed`); check(/Part One: The Orchard/.test(pdf), `${name}: the PDF heading is kept`);
   const nWords = await p.locator(".pc-scrub").getAttribute("max"); check(+nWords > 1200 && +nWords < 2400, `${name}: the PDF's whole text is there (${nWords} words)`); check(!/\w-\s\w/.test(pdf.slice(0, 2000).replace(/ - /g, " ")), `${name}: no stray line-break hyphens`);
+  // find a word and jump to it
+  await p.keyboard.press("/"); await p.waitForSelector(".pc-find input"); await p.keyboard.type("omegaw");
+  await p.waitForSelector(".pc-fres li"); check((await p.locator(".pc-fres li").count()) === 1 && /Omegaword/.test(await p.locator(".pc-fres mark").innerText()), `${name}: find shows the one match with the word highlighted (prefix typing works)`);
+  const box = await p.locator(".pc-find .pc-card").boundingBox(); check(box.x >= 0 && box.x + box.width <= w + 1 && box.y >= 0 && box.y + box.height <= h + 1, `${name}: the find box fits the screen`);
+  await p.keyboard.press("Enter"); await p.waitForSelector(".pc-find", { state: "detached" }); await p.waitForTimeout(400);
+  check((await scrubVal(p)) > +nWords * 0.9, `${name}: Enter jumps to the match near the end of the book`);
+  await p.keyboard.press("/"); await p.waitForSelector(".pc-find input"); await p.keyboard.type("zzzznothing"); await p.waitForTimeout(300); check(/No matches/.test(await p.locator(".pc-fcount").innerText()), `${name}: find says plainly when nothing matches`); await p.keyboard.press("Escape"); await p.waitForSelector(".pc-find", { state: "detached" });
   await p.click("[aria-label='Back to the library']"); await p.waitForSelector(".pc-books");
   // EPUB: chapters with titles from the book's own table of contents
   await p.setInputFiles("input[type=file]", `${DIR}/book.epub`); await p.waitForSelector(".pc-select"); const opts = await p.locator(".pc-select option").allInnerTexts(); check(JSON.stringify(opts) === JSON.stringify(["The Lamp", "The Road", "The Door"]), `${name}: an EPUB opens with its chapter list (${opts.join(" | ")})`); check(/The Lantern Book/.test(await p.locator(".pc-title").innerText()), `${name}: the EPUB title is read`);

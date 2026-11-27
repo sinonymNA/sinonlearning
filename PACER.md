@@ -32,3 +32,7 @@ Sign in with a Margins account (same login on every device) and Pacer saves each
 - Routes: `/api/pacer/{library,books/[id],progress,state}`. Client: `lib/pacer/cloud.ts`, merge in `Pacer.tsx` `refreshCloud`.
 - Check: `node scripts/pacer-sync-e2e.mjs` against a server with a real database (use `next dev`; production builds force SSL for pg). Phone and iPad contexts, newest-wins, ownership, cross-origin refusal.
 - Not done: offline service worker / installable PWA, scanned or DRM books.
+
+## Find your spot
+
+The magnifier button (or `/` / `F`) opens a search box. Type a word or a few consecutive words (the last word can be partial); results show the surrounding sentence, chapter and percent through the book, with the first match after your current position marked. Tap one, or press Enter, to jump there. Engine: `findMatches` in `lib/pacer/engine.mjs` (tested).
