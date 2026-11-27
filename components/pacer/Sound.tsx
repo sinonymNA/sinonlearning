@@ -7,7 +7,7 @@ import { HD_VOICES, HD_MB } from "./hdVoice";
 import { HD_MAX_WPM, hdRate } from "../../lib/pacer/neural.mjs";
 import type { AudioPrefs, Track } from "../../lib/pacer/audioStore";
 
-export type HdInfo = { supported: boolean; state: "none" | "downloading" | "loading" | "ready" | "error"; pct: number; speed: number | null };
+export type HdInfo = { supported: boolean; state: "none" | "downloading" | "loading" | "ready" | "error"; pct: number };
 
 export type VoiceOpt = { name: string; label: string; lang: string };
 
@@ -37,11 +37,10 @@ export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPla
               <label className="pc-toggle"><input type="radio" name="vt" checked={audio.hd} onChange={() => setAudio((a) => ({ ...a, hd: true }))} /><span>HD voice (more natural, one-time download of about {HD_MB} MB)</span></label>
             </div>)}
             {audio.hd && hd.supported ? (<>
-              <div className="pc-row"><select className="pc-select wide" value={audio.hdVoice} onChange={(e) => setAudio((a) => ({ ...a, hdVoice: e.target.value }))} aria-label="HD voice" >{HD_VOICES.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select>
+              <div className="pc-row"><select className="pc-select wide" value={audio.hdVoice} onChange={(e) => setAudio((a) => ({ ...a, hdVoice: e.target.value }))} aria-label="HD voice" disabled={hd.state === "downloading" || hd.state === "loading"}>{HD_VOICES.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select>
                 {hd.state === "ready" ? <><button className="pc-btn" onClick={onTry}>Hear it</button><button className="pc-btn" onClick={() => onHd("remove")}>Remove voice</button></> : hd.state === "downloading" || hd.state === "loading" ? <span className="mut small" role="status">{hd.state === "downloading" ? `Downloading… ${Math.round(hd.pct * 100)}%` : "Getting it ready…"}</span> : <button className="pc-btn pri" onClick={() => onHd("download")}>{hd.state === "error" ? "Try again" : `Download (${HD_MB} MB)`}</button>}</div>
-              {hd.state === "error" && <p className="pc-err small" role="alert">The HD voice could not be loaded. Check your connection (the voice model comes from huggingface.co), then try again. Until then Pacer uses this device&apos;s voice.</p>}
-              {hd.state === "ready" && hd.speed !== null && <p className={`small ${hd.speed >= 1.3 ? "mut" : "pc-err"}`} role="status">{hd.speed >= 1.3 ? `Speed check: this device makes speech about ${hd.speed}× faster than it plays, so reading will be smooth.` : hd.speed >= 0.9 ? `Speed check: this device only just keeps up (${hd.speed}×). Expect short waits between sentences, especially at higher speeds.` : `Speed check: this device is too slow for the HD voice (${hd.speed}×), so it will pause often. The device voice will read more smoothly.`}</p>}
-              <p className="mut small">Best on Wi-Fi. It runs on your device (the book never leaves it) and speaks a sentence ahead, so an older phone may pause between sentences. Speed follows your wpm setting ({wpm} wpm is {hdRate(wpm)}×, up to about {HD_MAX_WPM} wpm). The voice is Kokoro, an open-source model (Apache 2.0).</p>
+              {hd.state === "error" && <p className="pc-err small" role="alert">The HD voice could not be loaded. Check your connection (it comes from huggingface.co and cdn hosts), then try again. Until then Pacer uses this device&apos;s voice.</p>}
+              <p className="mut small">Best on Wi-Fi. It runs on your device (the book never leaves it) and speaks a sentence ahead, so an older phone may pause between sentences. Speed follows your wpm setting ({wpm} wpm is {hdRate(wpm)}×, up to about {HD_MAX_WPM} wpm). Voices are from the open-source Piper project.</p>
             </>) : !speechOk ? <p className="mut">This browser has no built-in voices.</p> : (<>
               <p className="mut small">The voice sets the pace and the highlight follows it. Your speed setting ({wpm} wpm) becomes a voice speed of {rate}× (about {approxWpm(rate)} wpm){capped ? `; voices top out near ${MAX_VOICE_WPM} wpm` : ""}.</p>
               <div className="pc-row"><select className="pc-select wide" value={audio.voiceName} onChange={(e) => setAudio((a) => ({ ...a, voiceName: e.target.value }))} aria-label="Voice"><option value="">Best voice on this device</option>{voices.map((v) => <option key={v.name} value={v.name}>{v.name}{v.label ? ` (${v.label.toLowerCase()})` : ""}</option>)}</select><button className="pc-btn" onClick={onTry}>Hear it</button></div>

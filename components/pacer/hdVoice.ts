@@ -1,61 +1,75 @@
-// Loader for the HD voice: the Kokoro model (82M parameters, an audiobook-style voice) running in a Web Worker in the browser.
-// The model file (about 90 MB) comes from huggingface.co once and is kept in the browser's cache; the runtime and voice files are served by this site (/pacer-hd).
-// No reading text is ever sent anywhere: synthesis runs on the device.
+// Loader for the HD voice (Piper running in the browser). The library and its WebAssembly are only fetched when someone turns the HD voice on.
+// The voice file comes from huggingface.co; the runtime is served by this site (/pacer-hd). No reading text is ever sent anywhere: synthesis runs on the device.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const HD_VOICES = [
-  { id: "af_heart", label: "Heart, US female (recommended)" },
-  { id: "af_bella", label: "Bella, US female" },
-  { id: "af_nicole", label: "Nicole, US female" },
-  { id: "bf_emma", label: "Emma, British female" },
-  { id: "am_michael", label: "Michael, US male" },
-  { id: "bm_fable", label: "Fable, British male" },
-  { id: "bm_george", label: "George, British male" },
+  { id: "en_US-hfc_female-medium", label: "US female (hfc_female)" },
+  { id: "en_US-lessac-medium", label: "US female (lessac)" },
+  { id: "en_US-amy-medium", label: "US female (amy)" },
+  { id: "en_US-ryan-medium", label: "US male (ryan)" },
+  { id: "en_US-joe-medium", label: "US male (joe)" },
+  { id: "en_GB-alba-medium", label: "British female (alba)" },
 ] as const;
-export const HD_MB = 90;
-export const VOICE_ID_RE = /^[a-z]{2}_[a-z]+$/;
-export const DEFAULT_VOICE = "af_heart";
+export const HD_MB = 63;
+export const VOICE_ID_RE = /^[a-z]{2}_[A-Z]{2}-[a-z0-9_]+-(x_low|low|medium|high)$/;
 
 const fake = (): any => (process.env.NODE_ENV !== "production" && typeof globalThis !== "undefined" ? (globalThis as any).__pacerHdFake : undefined); // test hook, never in production builds
-export const hdSupported = () => !!fake() || (typeof Worker !== "undefined" && typeof WebAssembly === "object" && typeof caches !== "undefined");
+let mod: any = null;
+const lib = async () => (mod ??= await import("@mintplex-labs/piper-tts-web"));
 
-const CACHE = "transformers-cache"; // where transformers.js keeps the model
-export async function isStored(): Promise<boolean> {
+export const hdSupported = () => !!fake() || (typeof navigator !== "undefined" && !!(navigator as any).storage?.getDirectory && typeof WebAssembly === "object");
+
+const HF = "https://huggingface.co/diffusionstudio/piper-voices/resolve/main";
+/** "en_US-hfc_female-medium" -> "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx" (the Piper voices repository layout). */
+export function voicePath(id: string): string { const m = /^([a-z]{2})_([A-Z]{2})-(.+)-(x_low|low|medium|high)$/.exec(id); if (!m) throw new Error("bad voice id"); return `${m[1]}/${m[1]}_${m[2]}/${m[3]}/${m[4]}/${id}.onnx`; }
+const names = (id: string) => [`${id}.onnx.json`, `${id}.onnx`]; // the small file first
+const opfsDir = async (create: boolean) => (await (navigator as any).storage.getDirectory()).getDirectoryHandle("piper", { create });
+
+// Writing to the on-device cache from a worker with a sync access handle works in every browser that has OPFS (Safari too), unlike createWritable on the main thread.
+const WRITER = `let h, at = 0; onmessage = async (e) => { const m = e.data; try {
+  if (m.op === "open") { const root = await navigator.storage.getDirectory(), dir = await root.getDirectoryHandle("piper", { create: true }), f = await dir.getFileHandle(m.name, { create: true }); h = await f.createSyncAccessHandle(); h.truncate(0); at = 0; postMessage({ op: "opened" }); }
+  else if (m.op === "chunk") { const u = new Uint8Array(m.buf); h.write(u, { at }); at += u.byteLength; postMessage({ op: "ack" }); }
+  else if (m.op === "close") { h.flush(); h.close(); postMessage({ op: "closed", size: at }); } } catch (err) { postMessage({ op: "error", message: String(err && err.message || err) }); } };`;
+export type Writer = { write: (u8: Uint8Array) => Promise<void>; close: () => Promise<number>; abort: () => void };
+export async function openWriter(name: string): Promise<Writer> {
+  const url = URL.createObjectURL(new Blob([WRITER], { type: "text/javascript" })), w = new Worker(url); let pending: { ok: (m: any) => void; no: (e: Error) => void } | null = null;
+  w.onmessage = (e) => { const m = e.data; if (m.op === "error") pending?.no(new Error(m.message)); else pending?.ok(m); pending = null; }; w.onerror = (e) => { pending?.no(new Error(e.message || "worker failed")); pending = null; };
+  const call = (msg: any, transfer: Transferable[] = []) => new Promise<any>((ok, no) => { pending = { ok, no }; w.postMessage(msg, transfer); });
+  const end = () => { w.terminate(); URL.revokeObjectURL(url); };
+  try { await call({ op: "open", name }); } catch (e) { end(); throw e; }
+  return { write: async (u8) => { const copy = u8.slice().buffer; await call({ op: "chunk", buf: copy }, [copy]); }, close: async () => { const m = await call({ op: "close" }); end(); return m.size as number; }, abort: end };
+}
+async function fetchToCache(url: string, name: string, onProgress?: (loaded: number, total: number) => void): Promise<void> {
+  const res = await fetch(url); if (!res.ok || !res.body) throw new Error(`download failed (${res.status})`); const total = +(res.headers.get("Content-Length") || 0), reader = res.body.getReader(), out = await openWriter(name); let got = 0;
+  try { for (;;) { const { done, value } = await reader.read(); if (done) break; await out.write(value); got += value.length; onProgress?.(got, total); } const size = await out.close(); if (size !== got || (total && got !== total)) throw new Error("the downloaded file is incomplete"); } catch (e) { out.abort(); throw e; }
+}
+
+export async function isStored(id: string): Promise<boolean> {
   const f = fake(); if (f) return !!f.stored;
-  try { const c = await caches.open(CACHE); return (await c.keys()).some((r) => /model_quantized\.onnx/.test(r.url)); } catch { return false; }
+  try { const d = await opfsDir(false); for (const n of names(id)) { const fh = await d.getFileHandle(n); if ((await fh.getFile()).size < 100) return false; } return true; } catch { return false; }
 }
+/** Download a voice into the on-device cache (awaited, size-checked, works on Safari). The library then finds the files and does not fetch them again. */
+export async function download(id: string, onProgress: (frac: number) => void): Promise<void> {
+  const f = fake(); if (f) { f.stored = true; onProgress(1); return; }
+  const base = `${HF}/${voicePath(id)}`; if (!(await (navigator as any).storage.getDirectory())) throw new Error("no storage");
+  try { await fetchToCache(`${base}.json`, `${id}.onnx.json`); await fetchToCache(base, `${id}.onnx`, (l, t) => onProgress(t ? Math.min(1, l / t) : 0)); } catch (e) { await removeVoice(id); throw e; }
+}
+export async function removeVoice(id: string): Promise<void> {
+  session = null; const f = fake(); if (f) { f.stored = false; return; }
+  try { const d = await opfsDir(false); for (const n of names(id)) { try { await d.removeEntry(n); } catch { /* already gone */ } } } catch { /* nothing stored */ }
+}
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") (window as any).__pacerHdTools = { openWriter, voicePath }; // dev/test hook only
 
-let worker: Worker | null = null, readyP: Promise<void> | null = null, voice = DEFAULT_VOICE, nextId = 1; const waiting = new Map<number, { ok: (b: Blob) => void; no: (e: Error) => void }>();
-export const setVoice = (id: string) => { if (VOICE_ID_RE.test(id)) voice = id; };
-function fail(e: Error) { waiting.forEach((w) => w.no(e)); waiting.clear(); }
-/** Start the worker and load the model (downloads it the first time). Safe to call again. */
-export function prepare(onProgress?: (frac: number) => void): Promise<void> {
-  if (fake()) return Promise.resolve(); if (readyP) return readyP;
-  readyP = new Promise<void>((ok, no) => {
-    try { worker = new Worker(new URL("./kokoro.worker.ts", import.meta.url), { type: "module" }); } catch (e) { readyP = null; no(e as Error); return; }
-    worker.onmessage = (e) => {
-      const m = e.data;
-      if (m.op === "progress") onProgress?.(Math.min(1, m.frac)); else if (m.op === "ready") { onProgress?.(1); ok(); }
-      else if (m.op === "audio") { waiting.get(m.id)?.ok(m.blob); waiting.delete(m.id); }
-      else if (m.op === "error") { const err = new Error(m.message); if (m.id && waiting.has(m.id)) { waiting.get(m.id)!.no(err); waiting.delete(m.id); } else { readyP = null; worker?.terminate(); worker = null; no(err); } }
-    };
-    worker.onerror = (e) => { const err = new Error(e.message || "voice worker failed"); readyP = null; worker?.terminate(); worker = null; fail(err); no(err); };
-    worker.postMessage({ op: "init" });
-  });
-  return readyP;
+let session: { id: string; s: any } | null = null;
+/** The runtime files are served by this site (copied into public/pacer-hd by scripts/copy-hd-assets.mjs), not fetched from cdnjs / jsdelivr. */
+const SELF_HOSTED = { onnxWasm: "/pacer-hd/ort/", piperData: "/pacer-hd/piper_phonemize.data", piperWasm: "/pacer-hd/piper_phonemize.wasm" };
+/** Load the voice into memory (a few seconds). Cheap to call again for the same voice. */
+export async function prepare(id: string, onProgress?: (frac: number) => void): Promise<void> {
+  if (session?.id === id || fake()) return; const t = await lib();
+  session = { id, s: await t.TtsSession.create({ voiceId: id, wasmPaths: SELF_HOSTED, progress: (p: any) => onProgress?.(p?.total ? p.loaded / p.total : 0) }) };
 }
-/** Download the model (first time) and get it ready. */
-export const download = async (onProgress: (frac: number) => void) => { if (fake()) { fake().stored = true; onProgress(1); return; } await prepare(onProgress); };
-export async function removeVoice(): Promise<void> {
-  readyP = null; worker?.terminate(); worker = null; const f = fake(); if (f) { f.stored = false; return; }
-  try { await caches.delete(CACHE); } catch { /* nothing stored */ }
-}
-const clean = (t: string) => t.replace(/[\u2018\u2019]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, " ").trim();
+const clean = (t: string) => t.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[–—]/g, ", ").replace(/\s+/g, " ").trim();
 /** Speak one segment: returns a blob URL for a WAV the audio element can play. The caller revokes it. */
 export async function synthesize(text: string): Promise<string> {
   const f = fake(); if (f) return URL.createObjectURL(await f.synth(text));
-  await prepare(); const w = worker; if (!w) throw new Error("voice not ready"); const id = nextId++;
-  const blob = await new Promise<Blob>((ok, no) => { waiting.set(id, { ok, no }); w.postMessage({ op: "gen", id, text: clean(text), voice }); });
-  return URL.createObjectURL(blob);
+  if (!session) throw new Error("voice not ready"); const wav: Blob = await session.s.predict(clean(text)); return URL.createObjectURL(wav);
 }
-
-if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") (window as any).__pacerHdTools = { prepare, synthesize, removeVoice, isStored }; // dev/test hook only
