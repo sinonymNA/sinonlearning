@@ -4,13 +4,15 @@
 // whole class the same board; coins buy shop decorations. Built for feel and smoothness: flat cached sprites moved with GPU transforms, one Web Animations arc per item (lift, tilt,
 // glide, drop, squash), dust and sparkle particles made imperatively (no React re-renders), synthesized sound and haptics. React re-renders only when the game state changes. Rules live in arcade-server/shelf.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
-import { newGame, newDailyGame, whyNot, move, undo as undoMove, addCart, hint as getHint, hasMoves, looksStuck, bayDone, isLocked, doneCount, topRun, newProfile, normalizeProfile, completeLevel, completeDaily, totalStars, specFor, deptOf, posOf as levelPos, dayKey, dailyLevel, buyDecor, equipDecor, DEPTS, DEPT_COUNT, SUBJECTS, MAX_EXTRA } from "../../../arcade-server/shelf/index.mjs";
+import { newGame, newDailyGame, whyNot, move, undo as undoMove, addCart, hint as getHint, hasMoves, looksStuck, bayDone, isLocked, doneCount, topRun, newProfile, normalizeProfile, completeLevel, completeDaily, totalStars, specFor, deptOf, posOf as levelPos, dayKey, dailyLevel, buyDecor, equipDecor, clearFresh, DEFAULTS as DECOR_DEFAULTS, DEPTS, DEPT_COUNT, SUBJECTS, MAX_EXTRA } from "../../../arcade-server/shelf/index.mjs";
 import { PrefsProvider, PrefsButtons, usePrefs } from "../prefs";
-import { itemUrl, iconUrl, stampUrl, padlockUrl, coinUrl, SPR_W, SPR_H, SHIRT_NAMES } from "./sprites";
+import { itemUrl, iconUrl, stampUrl, padlockUrl, coinUrl, setItemSkin, SPR_W, SPR_H, SHIRT_NAMES } from "./sprites";
+import { petArt, cornerArt, FX_LOOK } from "./closetArt";
+import Room from "./Room";
+import Lights from "./Lights";
 import { play, setAudioOptions } from "./audio";
-import Scene from "./Scene";
 import Home from "./Home";
-import Decor from "./Decor";
+import Closet from "./Closet";
 import "./shelf.css";
 
 export const GAME_NAME = "Shelf Stocker";
@@ -60,7 +62,7 @@ function Inner() {
   const [, bump] = useReducer((x: number) => x + 1, 0);
   const [size, setSize] = useState({ w: 320, h: 400 });
   const [sel, setSel] = useState<number | null>(null);
-  const [panel, setPanel] = useState(false), [introOpen, setIntro] = useState<number | null>(null), [picker, setPicker] = useState(false), [decorOpen, setDecorOpen] = useState(false), [busy, setBusy] = useState(false);
+  const [panel, setPanel] = useState(false), [introOpen, setIntro] = useState<number | null>(null), [picker, setPicker] = useState(false), [decorOpen, setDecorOpen] = useState(false), [closetTab, setClosetTab] = useState<string | undefined>(undefined), [cheer, setCheer] = useState(0), [busy, setBusy] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [msg, setMsg] = useState<{ text: string; kind: string } | null>(null);
   const [hintBays, setHintBays] = useState<number[]>([]);
@@ -89,13 +91,13 @@ function Inner() {
   const posOf = (L: Lay, g: any, id: number, selB: number | null) => { for (let b = 0; b < g.bays.length; b++) { const i = g.bays[b].items.findIndex((n: any) => n.id === id); if (i >= 0) { const n = selRun(g, selB), lifted = selB === b && i >= g.bays[b].items.length - n; return itemXY(L, b, i, lifted ? liftFor(L) : 0); } } return null; };
 
   // ---- feel: particles, wobble, haptics (all imperative, no React renders)
-  const burst = (x: number, y: number, kind: "dust" | "spark" | "flake", n = 5, colour = "#fff") => {
-    const layer = fx.current; if (!layer || reduce) return;
+  const burst = (x: number, y: number, kind: "dust" | "spark" | "flake", n = 5, colour = "#fff", themed = false) => {
+    const layer = fx.current; if (!layer || reduce) return; const look = themed ? FX_LOOK[S.current?.profile.decor.equipped.fx || "stamp"] || FX_LOOK.stamp : null; if (look) n = look.n;
     for (let i = 0; i < n; i++) {
       const d = document.createElement("i"), a = kind === "dust" ? Math.PI + (i % 2 ? 0.2 : -0.2) + (i - n / 2) * 0.35 : (i / n) * Math.PI * 2, dist = (kind === "dust" ? 18 : 30) + (i % 3) * 8;
-      d.className = `sh-p ${kind}`; d.style.left = `${x}px`; d.style.top = `${y}px`; if (kind === "spark") d.style.color = colour; if (kind === "flake") d.style.background = i % 2 ? "#ffd23f" : colour; if (kind === "spark") d.textContent = "✦";
+      d.className = `sh-p ${kind}`; d.style.left = `${x}px`; d.style.top = `${y}px`; if (kind === "spark") d.style.color = look ? look.colors[i % look.colors.length] : colour; if (kind === "flake") d.style.background = i % 2 ? "#ffd23f" : colour; if (kind === "spark") d.textContent = look ? look.glyph : "✦";
       layer.appendChild(d);
-      const dx = kind === "dust" ? (i % 2 ? 1 : -1) * dist * (0.5 + (i % 3) * 0.3) : Math.cos(a) * dist * (kind === "flake" ? 1.4 : 1), dy = kind === "dust" ? -4 - (i % 3) * 5 : kind === "flake" ? -34 - (i % 4) * 12 : Math.sin(a) * dist - 8;
+      const dx = kind === "dust" ? (i % 2 ? 1 : -1) * dist * (0.5 + (i % 3) * 0.3) : Math.cos(a) * dist * (kind === "flake" ? 1.4 : 1), dy = kind === "dust" ? -4 - (i % 3) * 5 : kind === "flake" ? -34 - (i % 4) * 12 : look?.fall ? 30 + (i % 4) * 12 : Math.sin(a) * dist - 8;
       d.animate([{ transform: "translate(-50%,-50%) scale(.5)", opacity: kind === "dust" ? 0.8 : 1 }, { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${kind === "dust" ? 1.5 : 1}) rotate(${kind === "flake" ? (i % 2 ? 260 : -260) : 0}deg)`, opacity: 0 }], { duration: kind === "dust" ? 420 : kind === "flake" ? 760 : 640, easing: "cubic-bezier(.2,.7,.3,1)", fill: "forwards" }).onfinish = () => d.remove();
     }
   };
@@ -126,7 +128,7 @@ function Inner() {
     }, wait);
     if (p.revealed !== null) unwrap(p.revealed, reduce ? 0 : 330);
     p.unwrapped.forEach((id, i) => unwrap(id, (reduce ? 0 : landed + 160) + i * 110));
-    p.finished.forEach((fb, fi) => later(() => { setStamped((c) => new Set([...c, fb])); play("stamp", doneCount(g) - 1 + fi); haptic([10, 30, 12]); const items = g.bays[fb]?.items || []; items.forEach((n: any, i: number) => { const el = els.current.get(n.id), b = posOf(L, g, n.id, null); if (el && b && !reduce) el.animate([{ transform: T(b.x, b.y) }, { transform: T(b.x, b.y - 16 * L.u, 0, 1.04, 1.04) }, { transform: T(b.x, b.y) }], { duration: 420, delay: i * 55, easing: "cubic-bezier(.3,1.5,.5,1)" }); }); burst(L.cx[fb], rimY(L, fb, g.cap), "spark", 8, "#ffd23f"); }, reduce ? 0 : landed));
+    p.finished.forEach((fb, fi) => later(() => { setStamped((c) => new Set([...c, fb])); play("stamp", doneCount(g) - 1 + fi); haptic([10, 30, 12]); const items = g.bays[fb]?.items || []; items.forEach((n: any, i: number) => { const el = els.current.get(n.id), b = posOf(L, g, n.id, null); if (el && b && !reduce) el.animate([{ transform: T(b.x, b.y) }, { transform: T(b.x, b.y - 16 * L.u, 0, 1.04, 1.04) }, { transform: T(b.x, b.y) }], { duration: 420, delay: i * 55, easing: "cubic-bezier(.3,1.5,.5,1)" }); }); burst(L.cx[fb], rimY(L, fb, g.cap), "spark", 8, "#ffd23f", true); setCheer((c) => c + 1); }, reduce ? 0 : landed));
     p.unlocked.forEach((ub) => later(() => { play("unlock"); burst(L.cx[ub], rimY(L, ub, g.cap) + 60 * L.u, "spark", 9, "#ffd23f"); wobble(ub, 5); flash("Padlock open!", "info", 1800); }, reduce ? 0 : landed + 220));
   });
   // lifted items bob gently while you decide where to put them
@@ -236,10 +238,12 @@ function Inner() {
   const setSetting = (k: keyof Settings) => { const x = S.current!; x.settings[k] = !x.settings[k]; if (k === "sfx" || k === "music") setAudioOptions({ sfx: x.settings.sfx, music: x.settings.music }); bump(); save(); };
   const doBuy = (id: string) => { const x = S.current!, r = buyDecor(x.profile, id); if (r.ok) { play("coin"); save(); bump(); } };
   const doEquip = (id: string) => { const x = S.current!; if (equipDecor(x.profile, id).ok) { play("tap"); save(); bump(); } };
+  const doVisit = (slot: string) => { const x = S.current; if (x && x.profile.decor.fresh.some((i: string) => i.startsWith(`${slot}:`))) { clearFresh(x.profile, slot); save(); bump(); } };
 
   if (!s || !st || !lay) return <div className="sh-root"><div className="sh-loading">OPENING THE SHOP…</div></div>;
   const today = dayKey(new Date()), homeDept = deptOf(s.profile.level), dailyDept = deptOf(dailyLevel(today)), sp = specFor(st.level), u = lay.u, w = lay.w, canCart = st.extra < MAX_EXTRA && s.profile.carts > 0, run = sel !== null ? selRun(st, sel) : 0, [bgA, bgB] = DEPT_BG[dept];
-  const eq = s.profile.decor.equipped, mo = new Date().getMonth(), season = !s.settings.seasons ? "" : [11, 0, 1].includes(mo) ? "season-winter" : [8, 9, 10].includes(mo) ? "season-autumn" : [2, 3, 4].includes(mo) ? "season-spring" : "";
+  const eq: Record<string, string> = { ...DECOR_DEFAULTS, ...s.profile.decor.equipped }, mo = new Date().getMonth(), season = !s.settings.seasons ? "" : [11, 0, 1].includes(mo) ? "season-winter" : [8, 9, 10].includes(mo) ? "season-autumn" : [2, 3, 4].includes(mo) ? "season-spring" : "";
+  setItemSkin(eq.skin);   // every item picture from here on wears the equipped look
   const dn = doneCount(st), bag = st.bays.find((b: any) => b.bag);
   const coachOn = view === "play" && !st.daily && levelPos(st.level) <= 3 && !s.profile.coached[st.level] && st.moves === 0 && !st.done && intro === null && !result && !picker;
   if (coachOn && (!coachRef.current || coachRef.current.key !== `${st.level}:${round}`)) coachRef.current = { key: `${st.level}:${round}`, move: getHint(st) };
@@ -254,10 +258,12 @@ function Inner() {
     : d === 6 ? [<img key="a" src={itemUrl("gift", 8)} alt="" />, <img key="l" className="lk" src={padlockUrl()} alt="" />, <img key="b" src={itemUrl("gift", 3)} alt="" />] : d === 7 ? [<img key="a" src={itemUrl("shirt", 0)} alt="" />, <img key="b" src={itemUrl("book", 0)} alt="" />, <img key="c" className="lk" src={iconUrl("bag")} alt="" />] : [<img key="a" src={itemUrl("toy", 3, false, false, 3, 3)} alt="" />, <img key="l" className="lk" src={padlockUrl()} alt="" />, <img key="b" src={itemUrl("shoe", 5, false, false, 2)} alt="" />];
 
   return (
-    <div className={`sh-root v-${view} fin-${eq.finish} ${season} ${prefs.calm ? "sh-calm" : ""}`} style={{ ["--bgA" as any]: bgA, ["--bgB" as any]: bgB }}>
-      <Scene dept={view === "home" ? homeDept : dept} />
+    <div className={`sh-root v-${view} fin-${eq.finish} tag-${eq.tag} ${season} ${prefs.calm ? "sh-calm" : ""}`} style={{ ["--bgA" as any]: bgA, ["--bgB" as any]: bgB }}>
+      <Room id={eq.theme} dept={view === "home" ? homeDept : dept} />
+      <Lights id={eq.lights === "scene" ? "none" : eq.lights} />
+      {view === "play" && <div className="pl-deco" aria-hidden>{eq.rug !== "none" && <div className={`sh-rug ${eq.rug} pl-rug`} />}{eq.plant !== "none" && <img className="pl-corner" src={cornerArt(eq.plant)} alt="" draggable={false} />}{eq.pet !== "none" && <img key={cheer} className={`pl-pet ${cheer ? "cheer" : ""}`} src={petArt(eq.pet)} alt="" draggable={false} />}</div>}
       {view === "home" && <Home profile={s.profile} level={Math.max(1, s.profile.level)} dept={homeDept} resume={!st.done && st.moves > 0 ? { sub: st.daily ? `Daily Delivery · ${st.moves} moves in` : `Level ${st.level} · ${st.moves} moves in` } : null}
-        dailyDone={!!s.profile.daily.done[today]} dailySub={deptName(dailyDept)} streak={s.profile.daily.last === today || s.profile.daily.last === prevDayOf(today) ? s.profile.daily.streak : 0} onPlay={playNow} onDaily={startDaily} onLevels={() => setPicker(true)} onDecor={() => setDecorOpen(true)} onHelp={() => setIntro(homeDept)} onSettings={() => setPanel((v) => !v)} />}
+        dailyDone={!!s.profile.daily.done[today]} dailySub={deptName(dailyDept)} streak={s.profile.daily.last === today || s.profile.daily.last === prevDayOf(today) ? s.profile.daily.streak : 0} onPlay={playNow} onDaily={startDaily} onLevels={() => setPicker(true)} onDecor={() => { setClosetTab(undefined); setDecorOpen(true); }} onHelp={() => setIntro(homeDept)} onSettings={() => setPanel((v) => !v)} />}
       {view === "play" && <header className="sh-top">
         <button className="sh-btn round" onClick={goHome} aria-label="Back to the home screen">←</button>
         <button key={`lv${round}`} className="sh-level sh-sign-level" onClick={() => setPicker(true)} aria-label={`${headerTop}${st.daily ? "" : `, level ${st.level}`}. Pick a level`}><small>{headerTop}</small><b>{st.daily ? "TODAY" : `LEVEL ${st.level}`}</b></button>
@@ -341,7 +347,7 @@ function Inner() {
           </div>
         </div>
       )}
-      {decorOpen && <Decor profile={s.profile} onBuy={doBuy} onEquip={doEquip} onClose={() => setDecorOpen(false)} />}
+      {decorOpen && <Closet profile={s.profile} dept={view === "home" ? homeDept : dept} startSlot={closetTab} onBuy={doBuy} onEquip={doEquip} onVisit={doVisit} onClose={() => { setDecorOpen(false); setClosetTab(undefined); }} />}
       {result && (
         <div className="sh-modal" role="dialog" aria-label="Level complete">
           <div className="sh-card">
@@ -354,6 +360,7 @@ function Inner() {
             {result.boss && <p className="sh-new"><b>Stock Take cleared!</b> Bonus supplies delivered.</p>}
             {result.nextDept && <p className="sh-new">Next up: <b>{result.nextDept}</b></p>}
             {(result.reward.hint > 0 || result.reward.cart > 0 || result.reward.coins > 0) && <div className="sh-chips">{result.reward.coins > 0 && <span><img className="cn" src={coinUrl()} alt="" draggable={false} />+{result.reward.coins} coins</span>}{result.reward.hint > 0 && <span>+{result.reward.hint} hint</span>}{result.reward.cart > 0 && <span>+{result.reward.cart} cart</span>}</div>}
+            {(result.reward.unlocked || []).length > 0 && <div className="sh-unlock" aria-label="New closet items"><b>NEW IN YOUR CLOSET</b>{result.reward.unlocked.map((it: any) => <button key={it.id} onClick={() => { setClosetTab(it.slot); setResult(null); setDecorOpen(true); }}>{it.name}</button>)}</div>}
             <div className="sh-row"><button className="sh-btn" onClick={() => (result.daily ? restart() : open(result.level, true))}>REPLAY</button>{result.daily ? <button className="sh-btn go big" onClick={goHome}>HOME</button> : <button className="sh-btn go big" onClick={next}>NEXT LEVEL ▶</button>}</div>
           </div>
         </div>

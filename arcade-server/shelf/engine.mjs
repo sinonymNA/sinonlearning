@@ -4,6 +4,7 @@
 //   Shoe Wall (pairs: left, right, left, right) / Gift Corner (padlocked shelves open when you finish a shelf) / Customer Orders (pack exactly what the order asks for) / Mixed Day (two rules at once)
 // Carts are temporary: they take anything and must be empty when you finish. Wrapped (mystery) items never move with a run, so they cannot give their colour away.
 // Pure ESM, JSON state, seeded RNG (a level number always makes the same puzzle). No Date.now/Math.random.
+import { newDecor, normalizeDecor, grantUnlocks } from "./decor.mjs";
 import { makeRng } from "../gridiron/rng.mjs";
 import { PICKS } from "./levels.mjs";
 
@@ -310,25 +311,26 @@ export function newDailyGame(day) {
 /** 3 stars within 10% of the best known solution, 2 within 40%, else 1. "Perfect" means you matched it. */
 export const starsFor = (st) => (st.moves <= Math.ceil(st.par * 1.1) ? 3 : st.moves <= Math.ceil(st.par * 1.4) ? 2 : 1);
 export const isPerfect = (st) => st.moves <= st.par;
-export const newProfile = () => ({ v: 1, level: 1, solved: 0, hints: 3, carts: 2, coins: 0, stars: {}, best: {}, seen: {}, perfect: {}, coached: {}, daily: { last: "", streak: 0, best: 0, done: {} }, decor: { owned: ["sign:wood", "awning:none", "plant:none", "pet:none", "rug:none", "finish:oak"], equipped: { sign: "wood", awning: "none", plant: "none", pet: "none", rug: "none", finish: "oak" } } });
+export const newProfile = () => ({ v: 1, level: 1, solved: 0, hints: 3, carts: 2, coins: 0, stars: {}, best: {}, seen: {}, perfect: {}, coached: {}, daily: { last: "", streak: 0, best: 0, done: {} }, decor: newDecor() });
 export const totalStars = (p) => Object.values(p.stars || {}).reduce((a, b) => a + b, 0);
 export function normalizeProfile(p = {}) {
-  const d = newProfile(), o = { ...d, ...p, stars: { ...(p.stars || {}) }, best: { ...(p.best || {}) }, seen: { ...(p.seen || {}) }, perfect: { ...(p.perfect || {}) }, coached: { ...(p.coached || {}) }, daily: { ...d.daily, ...(p.daily || {}), done: { ...(p.daily?.done || {}) } }, decor: { owned: [...new Set([...d.decor.owned, ...(p.decor?.owned || [])])], equipped: { ...d.decor.equipped, ...(p.decor?.equipped || {}) } } };
-  for (const k of ["hints", "carts"]) o[k] = Math.min(MAX_POWERUPS, Math.max(0, +o[k] || 0)); o.coins = Math.max(0, Math.floor(+o.coins || 0)); o.level = Math.max(1, Math.floor(o.level) || 1); return o;
+  const d = newProfile(), o = { ...d, ...p, stars: { ...(p.stars || {}) }, best: { ...(p.best || {}) }, seen: { ...(p.seen || {}) }, perfect: { ...(p.perfect || {}) }, coached: { ...(p.coached || {}) }, daily: { ...d.daily, ...(p.daily || {}), done: { ...(p.daily?.done || {}) } }, decor: normalizeDecor(p.decor) };
+  for (const k of ["hints", "carts"]) o[k] = Math.min(MAX_POWERUPS, Math.max(0, +o[k] || 0)); o.coins = Math.max(0, Math.floor(+o.coins || 0)); o.level = Math.max(1, Math.floor(o.level) || 1); grantUnlocks(o); return o;
 }
 /** Apply a won level. Stars only go up; the first clear opens the next level, pays coins, and earns a hint every 2nd clear and a cart every 4th; a boss ("Stock Take") pays a bonus. */
 export function completeLevel(p, st) {
   const stars = starsFor(st), perfect = isPerfect(st), first = !(p.stars[st.level] > 0); p.stars[st.level] = Math.max(p.stars[st.level] || 0, stars); p.best[st.level] = Math.min(p.best[st.level] || 1e9, st.moves);
   const newPerfect = perfect && !p.perfect[st.level]; if (perfect) p.perfect[st.level] = true;
   p.level = Math.max(p.level, st.level + 1); const reward = { hint: 0, cart: 0, coins: 0 }, give = (key, n) => { const got = Math.min(n, MAX_POWERUPS - p[key]); p[key] += got; return got; };
-  if (first) { p.solved++; reward.coins += 4 + stars * 3 + (st.boss ? 25 : 0); if (p.solved % 2 === 0) reward.hint += give("hints", 1); if (p.solved % 4 === 0) reward.cart += give("carts", 1); if (st.boss) { reward.hint += give("hints", 1); reward.cart += give("carts", 1); } }
-  if (newPerfect) reward.coins += 6; p.coins += reward.coins;
+  if (first) { p.solved++; reward.coins += 6 + stars * 4 + (st.boss ? 40 : 0); if (p.solved % 2 === 0) reward.hint += give("hints", 1); if (p.solved % 4 === 0) reward.cart += give("carts", 1); if (st.boss) { reward.hint += give("hints", 1); reward.cart += give("carts", 1); } }
+  if (newPerfect) reward.coins += 8; p.coins += reward.coins;
+  reward.unlocked = grantUnlocks(p);   // closet items whose rule this win just met
   return { stars, first, perfect, newPerfect, boss: !!st.boss, reward };
 }
 /** Finish a Daily Delivery: pays once per day, a streak builds on consecutive days. */
 export function completeDaily(p, st, day) {
-  const d = p.daily, first = !d.done[day], stars = starsFor(st), perfect = isPerfect(st); if (!first) return { first: false, stars, perfect, streak: d.streak, reward: { coins: 0, hint: 0, cart: 0 } };
+  const d = p.daily, first = !d.done[day], stars = starsFor(st), perfect = isPerfect(st); if (!first) return { first: false, stars, perfect, streak: d.streak, reward: { coins: 0, hint: 0, cart: 0, unlocked: [] } };
   d.streak = d.last === prevDay(day) ? d.streak + 1 : 1; d.best = Math.max(d.best, d.streak); d.last = day; d.done[day] = stars; d.done = Object.fromEntries(Object.keys(d.done).sort().slice(-60).map((k) => [k, d.done[k]]));
-  const reward = { coins: 15 + stars * 3 + Math.min(d.streak, 7) * 3 + (perfect ? 6 : 0), hint: 0, cart: 0 }; p.coins += reward.coins; if (d.streak % 2 === 0 && p.hints < MAX_POWERUPS) { p.hints++; reward.hint = 1; } if (d.streak % 3 === 0 && p.carts < MAX_POWERUPS) { p.carts++; reward.cart = 1; }
-  p.solved++; return { first: true, stars, perfect, streak: d.streak, reward };
+  const reward = { coins: 20 + stars * 4 + Math.min(d.streak, 7) * 3 + (perfect ? 8 : 0), hint: 0, cart: 0 }; p.coins += reward.coins; if (d.streak % 2 === 0 && p.hints < MAX_POWERUPS) { p.hints++; reward.hint = 1; } if (d.streak % 3 === 0 && p.carts < MAX_POWERUPS) { p.carts++; reward.cart = 1; }
+  p.solved++; reward.unlocked = grantUnlocks(p); return { first: true, stars, perfect, streak: d.streak, reward };
 }

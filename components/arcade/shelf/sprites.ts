@@ -47,9 +47,33 @@ function shirtBody(g: G, base: string, variant: number) {
   g.fillStyle = "#fff8ee"; g.beginPath(); g.ellipse(100, 6, 21, 11, 0, 0, Math.PI); g.fill(); g.fillStyle = dark; g.beginPath(); g.ellipse(100, 6, 14, 6.5, 0, 0, Math.PI); g.fill();   // the collar
 }
 /** One item sprite. kind "shirt" (v = colour 0-9) or "book" (v = subject 0-7). `hidden` draws the mystery wrapping (no hint of what is inside); `glyph` adds a symbol on shirts. */
+let SKIN = "classic";
+/** The equipped item look (closet). Changing it changes every item image from then on (images are cached per skin). */
+export const setItemSkin = (s: string) => { SKIN = s || "classic"; };
+/** Post-process a finished item sprite for the equipped look. All drawn once and cached, never per frame. */
+function skinned(src: HTMLCanvasElement, skin: string): HTMLCanvasElement {
+  if (skin === "classic") return src;
+  const W = src.width, H = src.height, out = document.createElement("canvas"); out.width = W; out.height = H; const g = out.getContext("2d")!;
+  if (skin === "pastel") { g.filter = "saturate(.62) brightness(1.18) contrast(.92)"; g.drawImage(src, 0, 0); }
+  else if (skin === "film") { g.filter = "sepia(.5) saturate(1.15) contrast(1.05)"; g.drawImage(src, 0, 0); }
+  else if (skin === "midnight") { g.filter = "saturate(1.15) brightness(.78) hue-rotate(-14deg)"; g.drawImage(src, 0, 0); g.filter = "none"; g.globalCompositeOperation = "source-atop"; g.fillStyle = "rgba(40,50,140,.2)"; g.fillRect(0, 0, W, H); }
+  else if (skin === "gold") { g.filter = "sepia(1) saturate(2.4) hue-rotate(-14deg) brightness(1.12) contrast(1.05)"; g.drawImage(src, 0, 0); g.filter = "none"; g.globalCompositeOperation = "source-atop"; const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, "rgba(255,255,255,.28)"); gr.addColorStop(.5, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(120,70,0,.2)"); g.fillStyle = gr; g.fillRect(0, 0, W, H); }
+  else if (skin === "pixel") {
+    const px = 7, sw = Math.round(W / px), sh = Math.round(H / px), t = document.createElement("canvas"); t.width = sw; t.height = sh; const tg = t.getContext("2d")!; tg.drawImage(src, 0, 0, sw, sh);
+    const d = tg.getImageData(0, 0, sw, sh), a = d.data; for (let i = 0; i < a.length; i += 4) { a[i + 3] = a[i + 3] > 110 ? 255 : 0; for (let k = 0; k < 3; k++) a[i + k] = Math.round(a[i + k] / 42) * 42; } tg.putImageData(d, 0, 0);
+    g.imageSmoothingEnabled = false; g.drawImage(t, 0, 0, W, H);
+  } else if (skin === "sticker") {
+    const sil = document.createElement("canvas"); sil.width = W; sil.height = H; const sg = sil.getContext("2d")!; sg.drawImage(src, 0, 0); sg.globalCompositeOperation = "source-in"; sg.fillStyle = "#fff"; sg.fillRect(0, 0, W, H);
+    const k = 0.95, ox = (W - W * k) / 2, oy = (H - H * k) / 2; g.shadowColor = "rgba(43,35,66,.3)"; g.shadowBlur = 4; for (let a = 0; a < 16; a++) g.drawImage(sil, ox + Math.cos((a * Math.PI) / 8) * 5, oy + Math.sin((a * Math.PI) / 8) * 5, W * k, H * k); g.shadowBlur = 0; g.drawImage(src, ox, oy, W * k, H * k);
+  } else if (skin === "glow") { const k = 0.96, ox = (W - W * k) / 2, oy = (H - H * k) / 2; g.shadowColor = "rgba(255,255,255,.95)"; g.shadowBlur = 16; g.drawImage(src, ox, oy, W * k, H * k); g.shadowBlur = 0; g.drawImage(src, ox, oy, W * k, H * k); }
+  else g.drawImage(src, 0, 0);
+  return out;
+}
+/** An item picture in a given skin without changing the equipped one (for shop previews). */
+export function itemUrlIn(skin: string, kind: Kind, v: number, x = 0, cap = 0): string { const prev = SKIN; SKIN = skin; try { return itemUrl(kind, v, false, false, x, cap); } finally { SKIN = prev; } }
 export type Kind = "shirt" | "book" | "toy" | "jar" | "tin" | "shoe" | "gift";
 export function itemUrl(kind: Kind, v: number, hidden = false, glyph = false, x = 0, cap = 0): string {
-  const key = `i:${kind}:${v}:${hidden}:${glyph}:${hidden ? 0 : x}:${hidden ? 0 : cap}`, hit = cache.get(key); if (hit) return hit;
+  const key = `i:${SKIN}:${kind}:${v}:${hidden}:${glyph}:${hidden ? 0 : x}:${hidden ? 0 : cap}`, hit = cache.get(key); if (hit) return hit;
   const { c, g } = mk(SPR_W, SPR_H);
   if (hidden) {
     if (kind !== "book") {   // a boxed product: a purple gift box with a gold ribbon, a bow and a big "?"
@@ -114,7 +138,7 @@ export function itemUrl(kind: Kind, v: number, hidden = false, glyph = false, x 
     g.fillStyle = "#fff8ee"; rr(g, 52, 16, 74, 38, 7); g.fill(); g.strokeStyle = "#f6d46a"; g.lineWidth = 2; rr(g, 52, 16, 74, 38, 7); g.stroke();
     emblem(g, v, 89, 35, 22, base); g.fillStyle = "#e5484d"; g.fillRect(132, 58, 7, 13);                              // plate with the subject emblem, and a ribbon bookmark
   }
-  const url = c.toDataURL(); cache.set(key, url); return url;
+  const url = skinned(c, SKIN).toDataURL(); cache.set(key, url); return url;
 }
 /** Small icons for shelf signs: "hanger", "books", "cart", or a subject emblem ("s0".."s7"). Dark ink on transparent. */
 export function iconUrl(name: string, col = INK): string {

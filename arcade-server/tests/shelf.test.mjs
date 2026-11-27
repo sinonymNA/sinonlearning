@@ -127,8 +127,8 @@ test("Daily Delivery: the same board for the same day, different days differ, de
   for (let i = 0; i < 3; i++) assert.ok(newDailyGame("2027-01-0" + (i + 1)).bays.length > 2);
 });
 test("coins: levels pay coins on the first clear, bosses pay more, a first perfect pays a bonus", () => {
-  const p = normalizeProfile({}); const a = completeLevel(p, { level: 1, moves: 9, par: 8 }); assert.equal(a.reward.coins, 4 + 3 * 3); const b = completeLevel(p, { level: 2, moves: 8, par: 8 }); assert.equal(b.reward.coins, 4 + 9 + 6, "perfect adds 6");
-  const q = normalizeProfile({}); const boss = completeLevel(q, { level: 10, moves: 5, par: 5, boss: true }); assert.ok(boss.reward.coins >= 4 + 9 + 25); assert.equal(completeLevel(q, { level: 10, moves: 5, par: 5, boss: true }).reward.coins, 0, "replays pay nothing");
+  const p = normalizeProfile({}); const a = completeLevel(p, { level: 1, moves: 9, par: 8 }); assert.equal(a.reward.coins, 6 + 4 * 3); const b = completeLevel(p, { level: 2, moves: 8, par: 8 }); assert.equal(b.reward.coins, 6 + 12 + 8, "perfect adds 8");
+  const q = normalizeProfile({}); const boss = completeLevel(q, { level: 10, moves: 5, par: 5, boss: true }); assert.ok(boss.reward.coins >= 6 + 12 + 40); assert.equal(completeLevel(q, { level: 10, moves: 5, par: 5, boss: true }).reward.coins, 0, "replays pay nothing");
   assert.ok(normalizeProfile({ coins: 12.7 }).coins === 12); assert.ok(p.decor.owned.includes("sign:wood") && p.decor.equipped.finish === "oak");
 });
 test("looksStuck: a board with no moves, or no way out, is flagged; a fresh level is not", () => {
@@ -137,9 +137,9 @@ test("looksStuck: a board with no moves, or no way out, is flagged; a fresh leve
 
 import { DECOR, SLOTS, buyDecor, equipDecor, isEquipped, decorById } from "../shelf/index.mjs";
 test("decor: free defaults are owned and equipped, buying spends coins and equips, you cannot buy twice or without coins, equipping needs ownership", () => {
-  const p = normalizeProfile({}); assert.ok(DECOR.length >= 20 && SLOTS.length === 6); for (const s of SLOTS) assert.ok(DECOR.some((d) => d.slot === s.id && d.price === 0), `a free default for ${s.id}`);
+  const p = normalizeProfile({}); assert.ok(DECOR.length >= 120 && SLOTS.length === 11); for (const s of SLOTS) assert.ok(DECOR.some((d) => d.slot === s.id && d.price === 0), `a free default for ${s.id}`);
   assert.ok(isEquipped(p, "sign:wood") && isEquipped(p, "finish:oak")); assert.deepEqual(buyDecor(p, "pet:cat"), { ok: false, reason: "poor" }); p.coins = 200;
-  assert.equal(buyDecor(p, "pet:cat").ok, true); assert.equal(p.coins, 90); assert.ok(isEquipped(p, "pet:cat")); assert.equal(buyDecor(p, "pet:cat").reason, "owned"); assert.equal(buyDecor(p, "nope").reason, "unknown");
+  assert.equal(buyDecor(p, "pet:cat").ok, true); assert.equal(p.coins, 110); assert.ok(isEquipped(p, "pet:cat")); assert.equal(buyDecor(p, "pet:cat").reason, "owned"); assert.equal(buyDecor(p, "nope").reason, "unknown");
   assert.equal(equipDecor(p, "pet:dog").ok, false, "not owned"); assert.equal(equipDecor(p, "pet:none").ok, true); assert.ok(!isEquipped(p, "pet:cat")); assert.equal(equipDecor(p, "pet:cat").ok, true); assert.equal(decorById("rug:round").price, 45);
   const old = normalizeProfile({ coins: 5, decor: { owned: ["plant:fern"], equipped: { plant: "fern" } } }); assert.ok(old.decor.owned.includes("plant:fern") && old.decor.owned.includes("sign:wood") && old.decor.equipped.plant === "fern");
 });
