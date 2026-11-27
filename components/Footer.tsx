@@ -29,6 +29,7 @@ const columns = [
       { label: "Explore Student Resources", href: "/students" },
       { label: "Join a Classroom Arcade game", href: "/arcade/join" },
       { label: "Pacer — Speed Reader", href: "/pacer" },
+      { label: "Pacer Walk — Interval Walking", href: "/pacer/walk" },
       { label: "Simulations & Games", href: "/simulations" },
       { label: "Digital Textbooks", href: "/textbooks" },
     ],

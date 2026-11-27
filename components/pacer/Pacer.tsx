@@ -11,13 +11,24 @@ import { paceLabel } from "../../lib/pacer/engine.mjs";
 import { mergeLibraries, mergeSessions } from "../../lib/pacer/validate.mjs";
 import { fetchLibrary, uploadBook, downloadBook, deleteCloud, pushProgress, pushState, signOut, type Account, type CloudLib } from "../../lib/pacer/cloud";
 import Reader from "./Reader";
+import WalkHome from "./walk/WalkHome";
+import WalkRunner from "./walk/WalkRunner";
+import WalkFinish from "./walk/WalkFinish";
+import "./walk/walk.css";
+import { loadWalk, saveWalk, type WalkData } from "./walk/store";
+import { walk, useWalk, type WalkResult } from "../../lib/pacer/walkSession";
 
 const ago = (t: number) => { const d = Math.round((Date.now() - t) / 86400000); return d < 1 ? "today" : d === 1 ? "yesterday" : `${d} days ago`; };
 
-export default function Pacer() {
+export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
   const [account, setAccount] = useState<Account | null | undefined>(undefined), [syncOn, setSyncOn] = useState(false), [usage, setUsage] = useState<CloudLib["usage"]>(undefined), [note, setNote] = useState<string | null>(null), [ask, setAsk] = useState<null | { kind: "remove"; id: string; title: string; cloud: boolean } | { kind: "signout" }>(null), [s, setS] = useState<Saved | null>(null), [book, setBook] = useState<Book | null>(null), [startPos, setStartPos] = useState(0), [busy, setBusy] = useState<string | null>(null), [error, setError] = useState<string | null>(null), [paste, setPaste] = useState(false), [text, setText] = useState(""), [over, setOver] = useState(false);
   const ref = useRef<Saved | null>(null); ref.current = s; const fileIn = useRef<HTMLInputElement>(null);
   const acc = useRef<Account | null | undefined>(undefined); acc.current = account; const lastPush = useRef<Record<string, number>>({}), stateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ws = useWalk(), [screen, setScreen] = useState<"library" | "walk">(initialScreen === "walk" ? "walk" : "library"), [wd, setWdState] = useState<WalkData | null>(null), [result, setResult] = useState<WalkResult | null>(null);
+  useEffect(() => { setWdState(loadWalk()); }, []);
+  const setWd = useCallback((fn: (d: WalkData) => WalkData) => setWdState((prev) => { const n = fn(prev as WalkData); saveWalk(n); return n; }), []);
+  useEffect(() => { if (ws.status === "finished") { const r = walk.end(); if (r) setResult(r); } }, [ws.status]);
+  const onWalkEnd = useCallback((r: WalkResult | null) => { if (r) setResult(r); }, []);
   const commit = useCallback((fn: (x: Saved) => Saved) => { const n = fn(ref.current || loadSaved()); ref.current = n; setS(n); save(n); }, []);
   const refreshCloud = useCallback(async () => {
     const c = await fetchLibrary(); if (!c) { setAccount(null); return; } setSyncOn(c.sync); setAccount(c.user); setUsage(c.usage);
@@ -66,8 +77,11 @@ export default function Pacer() {
   const onSession = useCallback((se: Session) => { commit((x) => ({ ...x, sessions: [...x.sessions, se] })); if (acc.current && ref.current) pushState(ref.current.settings, ref.current.sessions, ref.current.settingsAt || Date.now()); }, [commit]);
   const setSettings = useCallback((n: Settings) => { commit((x) => ({ ...x, settings: n, settingsAt: Date.now() })); if (acc.current) { if (stateTimer.current) clearTimeout(stateTimer.current); stateTimer.current = setTimeout(() => { if (ref.current) pushState(ref.current.settings, ref.current.sessions, ref.current.settingsAt); }, 1500); } }, [commit]);
 
-  if (!s) return <div className="pc-root" style={{ minHeight: "100vh" }} />;
-  if (book) return <Reader key={book.id} book={book} startPos={startPos} settings={s.settings} onSettings={setSettings} onExit={() => setBook(null)} onProgress={onProgress} onSession={onSession} />;
+  if (!s || !wd) return <div className="pc-root" style={{ minHeight: "100vh" }} />;
+  const overlay = result ? <WalkFinish result={result} data={wd} setData={setWd} bookTitle={wd.meta?.book || ""} theme={s.settings.theme === "night" ? "night" : "paper"} onClose={() => setResult(null)} /> : null;
+  if (ws.status !== "idle" && !book) return <><WalkRunner theme={s.settings.theme === "night" ? "night" : "paper"} onEnd={onWalkEnd} />{overlay}</>;
+  if (book) return <><Reader key={book.id} book={book} startPos={startPos} settings={s.settings} onSettings={setSettings} onExit={() => setBook(null)} onProgress={onProgress} onSession={onSession} onWalkEnd={onWalkEnd} />{overlay}</>;
+  if (screen === "walk") return <><WalkHome library={s.library} data={wd} setData={setWd} onStart={(id) => { if (id) openSaved(id); }} onBack={() => setScreen("library")} />{overlay}</>;
   const sess = s.sessions.slice(-12), maxW = Math.max(300, ...sess.map((x) => x.wpm)), last = s.sessions[s.sessions.length - 1];
   return (
     <div className="pc-root pc-sans pc-lib" data-theme={s.settings.theme === "night" ? "night" : "paper"}>
@@ -86,6 +100,8 @@ export default function Pacer() {
           </div>
           <p className="pc-priv">🔒 {account ? "Books you open are saved privately to your account, so you can pick up on any device. Only you can open them. Save only files you have the right to read." : "Your file stays on this device unless you sign in to sync. Pacer reads it in your browser and remembers your place here."} Copy-protected (DRM) books and scanned PDFs without real text cannot be opened.</p>
         </section>
+
+        <section className="pc-walkcard" aria-label="Interval walk"><div><h2>Walk while you read</h2><p>Interval walking, the Japanese way: 3 minutes brisk, 3 minutes easy, 30 minutes. Tones tell you when to switch, your book is read aloud, and your steps from Apple Health turn into calories.</p></div><button className="pc-btn pri" onClick={() => setScreen("walk")}>Open Pacer Walk</button></section>
 
         {syncOn && account === null && (
           <section className="pc-sync" aria-label="Sync across devices"><div><h2>Read on your phone and iPad too</h2><p>Make a free account and Pacer keeps your books and your place on every device. Start on your laptop, pick up on your phone.</p></div>
@@ -117,6 +133,7 @@ export default function Pacer() {
           <p className="pc-note"><b>An honest note:</b> nobody reads a hard chapter at 1,000 words a minute and remembers it. Pacer is built to find the fastest speed that still keeps the story, then nudge it up a little each day. Turn on recall check-ins and it will tune the speed for you.</p>
         </section>
       </main>
+      {overlay}
       {ask && (
         <div className="pc-modal pc-modal-lib" role="dialog" aria-label={ask.kind === "remove" ? "Remove book" : "Sign out"} onClick={() => setAsk(null)}>
           <div className="pc-card" onClick={(e) => e.stopPropagation()}>

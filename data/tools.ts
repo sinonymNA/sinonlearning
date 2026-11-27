@@ -16,7 +16,7 @@ export const tools: Tool[] = [
     name: "Pacer",
     status: "Live",
     description:
-      "Open any PDF or EPUB and read it at a pace you choose: one word at a time, a moving highlight, or a smooth auto-scroll. Train your speed with recall check-ins. Files never leave your device.",
+      "Open any PDF or EPUB and read it at a pace you choose: one word at a time, a moving highlight, or a smooth auto-scroll. Train your speed with recall check-ins. Files never leave your device. Includes Pacer Walk: interval walking with tone cues while your book is read aloud.",
     icon: BookOpenText,
     href: "/pacer",
   },
