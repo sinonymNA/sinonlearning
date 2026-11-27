@@ -59,3 +59,7 @@ An opt-in alternative to the device voices, chosen in the Sound panel. It runs t
 ## Rain
 
 A synthesized rain sound (`lib/pacer/rain.mjs` pure noise maths, `components/pacer/Rain.ts` the Web Audio graph): two layers of filtered pink noise plus random little drops, three strengths (Light, Steady, Heavy), its own volume. Nothing to download, works offline. It plays while you read and fades when you pause (switch "Play only while I read" off to keep it running). It is started inside the Play tap so iOS allows it, and the audio context is suspended after a fade-out so it does not use the CPU. Checked by unit tests and `pacer-sound-e2e.mjs` (an AudioContext is created, runs while reading, suspends on pause); how it actually sounds has not been listened to by the author.
+
+### Why the HD voice is Piper and not Kokoro
+
+Kokoro (a more audiobook-like model) was tried and removed: on the target device it was far too slow to keep ahead of reading. Piper is lighter on processing, though its voices are flatter. The voice list is led by male voices; Piper's voices are separate ~63 MB downloads, so each is tried one at a time. Heavier "high" Piper voices exist but were left out for the same speed reason. Making a voice deeper without slowing it down would need a pitch-shifting step, which has not been built.

@@ -148,3 +148,4 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Pacer sound: voice/youtube tests in pacer.test.mjs (416 total); scripts/pacer-sound-e2e.mjs (66 checks, fake speech + fake YouTube API, 3 sizes); pacer-e2e.mjs 147 checks green.
 - Pacer HD voice: neural.mjs tests (418 total); pacer-sound-e2e.mjs 88 checks incl. fake-Piper HD path at two sizes.
 - Pacer rain + HD fixes: rain noise test (419 total); pacer-sound-e2e.mjs 103 checks (rain on/off/follow, self-hosted runtime files served, cache writer round trip).
+- After reverting to Piper: pacer-sound-e2e.mjs and unit tests rerun (see below).

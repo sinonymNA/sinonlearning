@@ -186,3 +186,5 @@ User: read the words aloud in a non-robotic voice as Pacer goes, plus YouTube li
 User: wanted the lighter voice model, and music without a visible video. Done: HD voice via Piper in the browser (opt-in, ~63 MB, fallback to device voice; neural.mjs + hdVoice.ts), found that Piper low = medium size. NOT done: tiny/hidden YouTube player (conflicts with YouTube rules; offered alternatives). Real model not verifiable here.
 
 User: add a rain noise and make the fixes. Done: synthesized rain (3 strengths, volume, follows reading); HD voice fixes: runtime self-hosted under /pacer-hd (no cdnjs/jsdelivr), own awaited size-checked cache writer that works on Safari, removed the re-download warning. Still unverified: real Piper download/quality/iPad, per-voice licences, how the rain sounds.
+
+User: Kokoro too slow; go back to Piper, try deeper male voices. Done: reverted the Kokoro commit (Piper restored), voice list now led by 9 male voices (ryan default), per-voice download note. Kokoro kept out; pitch shifting not built.

@@ -2,12 +2,17 @@
 // The voice file comes from huggingface.co; the runtime is served by this site (/pacer-hd). No reading text is ever sent anywhere: synthesis runs on the device.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const HD_VOICES = [
-  { id: "en_US-hfc_female-medium", label: "US female (hfc_female)" },
-  { id: "en_US-lessac-medium", label: "US female (lessac)" },
-  { id: "en_US-amy-medium", label: "US female (amy)" },
   { id: "en_US-ryan-medium", label: "US male (ryan)" },
   { id: "en_US-joe-medium", label: "US male (joe)" },
-  { id: "en_GB-alba-medium", label: "British female (alba)" },
+  { id: "en_US-john-medium", label: "US male (john)" },
+  { id: "en_US-bryce-medium", label: "US male (bryce)" },
+  { id: "en_US-hfc_male-medium", label: "US male (hfc_male)" },
+  { id: "en_US-kusal-medium", label: "US male (kusal)" },
+  { id: "en_US-norman-medium", label: "US male (norman)" },
+  { id: "en_GB-alan-medium", label: "British male (alan)" },
+  { id: "en_GB-northern_english_male-medium", label: "Northern English male" },
+  { id: "en_US-hfc_female-medium", label: "US female (hfc_female)" },
+  { id: "en_US-lessac-medium", label: "US female (lessac)" },
 ] as const;
 export const HD_MB = 63;
 export const VOICE_ID_RE = /^[a-z]{2}_[A-Z]{2}-[a-z0-9_]+-(x_low|low|medium|high)$/;
