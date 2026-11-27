@@ -143,3 +143,26 @@ test("youtube: links in the shapes people paste", () => {
   ok("https://m.youtube.com/shorts/dQw4w9WgXcQ", "v", "dQw4w9WgXcQ"); ok("https://www.youtube.com/embed/dQw4w9WgXcQ", "v", "dQw4w9WgXcQ"); ok("https://www.youtube.com/playlist?list=PLabcdefghijklmnop", "p", "PLabcdefghijklmnop");
   for (const bad of ["", "hello", "https://evil.com/watch?v=dQw4w9WgXcQ", "https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ", "javascript:alert(1)", "https://www.youtube.com/watch?v=short", "https://www.youtube.com/"]) assert.equal(parseYouTubeLink(bad), null, bad);
 });
+
+import { createNeuralNarrator, hdRate } from "../../lib/pacer/neural.mjs";
+function fakeAudio() { const a = { src: "", currentTime: 0, duration: 4, playbackRate: 1, plays: 0, paused: false, onended: null, onerror: null, play() { a.plays++; a.paused = false; return Promise.resolve(); }, pause() { a.paused = true; } }; return a; }
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+test("hd voice: synthesizes ahead, places words across the clip, chains sentences, reports the end", async () => {
+  const doc = tokenize([{ text: "Alpha beta gamma delta. Epsilon zeta." }]), audio = fakeAudio(), asked = [], seen = [], revoked = []; let ended = false, clock = [], id = 0;
+  const T = { setInterval: (f) => { clock.push({ id: ++id, f }); return id; }, clearInterval: (h) => { clock = clock.filter((c) => c.id !== h); } };
+  const n = createNeuralNarrator({ synthesize: async (t) => { asked.push(t); return "blob:" + asked.length; }, audio, doc, getRate: () => 1.5, onWord: (i) => seen.push(i), onSegmentEnd: () => true, onEnd: () => (ended = true), revoke: (u) => revoked.push(u), timers: T });
+  n.start(0); await flush(); await flush();
+  assert.equal(audio.src, "blob:1"); assert.equal(audio.playbackRate, 1.5); assert.deepEqual(asked, ["Alpha beta gamma delta.", "Epsilon zeta."], "next sentence is prefetched while the first plays");
+  audio.currentTime = 2; clock.forEach((c) => c.f()); assert.ok(seen.at(-1) >= 1 && seen.at(-1) <= 3, "midway through the clip: " + seen.join());
+  audio.onended(); await flush(); await flush(); assert.equal(audio.src, "blob:2"); assert.ok(revoked.includes("blob:1"));
+  audio.onended(); assert.equal(ended, true); assert.equal(n.running, false); assert.equal(hdRate(165), 1); assert.ok(hdRate(2000) <= 2.2);
+});
+
+test("hd voice: stop silences stale callbacks; synthesis failure is reported once", async () => {
+  const doc = tokenize([{ text: "One two three. Four five six." }]), audio = fakeAudio(), seen = [], errs = [];
+  const n = createNeuralNarrator({ synthesize: async () => "blob:x", audio, doc, getRate: () => 1, onWord: (i) => seen.push(i), onError: (e) => errs.push(e), timers: { setInterval: () => 1, clearInterval: () => {} } });
+  n.start(0); await flush(); await flush(); const old = audio.onended; n.stop(); assert.equal(audio.paused, true); const c = seen.length; old && old(); await flush(); assert.equal(seen.length, c);
+  const bad = createNeuralNarrator({ synthesize: async () => { throw new Error("no model"); }, audio: fakeAudio(), doc, getRate: () => 1, onWord() {}, onError: (e) => errs.push(e), timers: { setInterval: () => 1, clearInterval: () => {} } });
+  bad.start(0); await flush(); await flush(); assert.deepEqual(errs, ["synth"]); assert.equal(bad.running, false);
+});

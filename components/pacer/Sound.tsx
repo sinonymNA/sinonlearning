@@ -3,12 +3,16 @@
 import { useState } from "react";
 import { approxWpm, rateFor, MAX_VOICE_WPM } from "../../lib/pacer/voice.mjs";
 import { parseYouTubeLink } from "../../lib/pacer/youtube.mjs";
+import { HD_VOICES, HD_MB } from "./hdVoice";
+import { HD_MAX_WPM, hdRate } from "../../lib/pacer/neural.mjs";
 import type { AudioPrefs, Track } from "../../lib/pacer/audioStore";
+
+export type HdInfo = { supported: boolean; canCache: boolean; state: "none" | "downloading" | "loading" | "ready" | "error"; pct: number };
 
 export type VoiceOpt = { name: string; label: string; lang: string };
 
-export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPlaying, onMusic, onTry, close }: {
-  audio: AudioPrefs; setAudio: (fn: (a: AudioPrefs) => AudioPrefs) => void; voices: VoiceOpt[]; speechOk: boolean; wpm: number; musicPlaying: boolean;
+export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPlaying, hd, onHd, onMusic, onTry, close }: {
+  audio: AudioPrefs; setAudio: (fn: (a: AudioPrefs) => AudioPrefs) => void; voices: VoiceOpt[]; speechOk: boolean; wpm: number; musicPlaying: boolean; hd: HdInfo; onHd: (cmd: "download" | "remove") => void;
   onMusic: (cmd: "play" | "pause" | "next" | "prev" | "open") => void; onTry: () => void; close: () => void;
 }) {
   const [link, setLink] = useState(""), [err, setErr] = useState<string | null>(null);
@@ -26,11 +30,23 @@ export default function Sound({ audio, setAudio, voices, speechOk, wpm, musicPla
 
         <section aria-label="Read aloud">
           <h3>Read aloud</h3>
-          {!speechOk ? <p className="mut">This browser has no built-in voices, so read-aloud is not available here. Try Safari, Chrome or Edge.</p> : (<>
+          {!speechOk && !hd.supported ? <p className="mut">This browser cannot read aloud. Try Safari, Chrome or Edge.</p> : (<>
             <label className="pc-toggle"><input type="checkbox" checked={audio.voiceOn} onChange={(e) => setAudio((a) => ({ ...a, voiceOn: e.target.checked }))} /><span>Read the words out loud as I go</span></label>
-            <p className="mut small">The voice sets the pace and the highlight follows it. Your speed setting ({wpm} wpm) becomes a voice speed of {rate}× (about {approxWpm(rate)} wpm){capped ? `; voices top out near ${MAX_VOICE_WPM} wpm` : ""}.</p>
-            <div className="pc-row"><select className="pc-select wide" value={audio.voiceName} onChange={(e) => setAudio((a) => ({ ...a, voiceName: e.target.value }))} aria-label="Voice"><option value="">Best voice on this device</option>{voices.map((v) => <option key={v.name} value={v.name}>{v.name}{v.label ? ` (${v.label.toLowerCase()})` : ""}</option>)}</select><button className="pc-btn" onClick={onTry}>Hear it</button></div>
-            {voices.length > 0 && !voices.some((v) => v.label === "Natural") && <p className="mut small"><b>Want it to sound less robotic?</b> Your device only has basic voices. On iPhone and iPad: Settings → Accessibility → Spoken Content → Voices, then download an Enhanced or Premium one. On Windows, use Microsoft Edge and pick a voice marked Natural. On Mac, download a voice in System Settings → Accessibility → Spoken Content.</p>}
+            {hd.supported && (<div className="pc-hd" role="group" aria-label="Voice type">
+              <label className="pc-toggle"><input type="radio" name="vt" checked={!audio.hd} onChange={() => setAudio((a) => ({ ...a, hd: false }))} /><span>This device&apos;s voices</span></label>
+              <label className="pc-toggle"><input type="radio" name="vt" checked={audio.hd} onChange={() => setAudio((a) => ({ ...a, hd: true }))} /><span>HD voice (more natural, one-time download of about {HD_MB} MB)</span></label>
+            </div>)}
+            {audio.hd && hd.supported ? (<>
+              <div className="pc-row"><select className="pc-select wide" value={audio.hdVoice} onChange={(e) => setAudio((a) => ({ ...a, hdVoice: e.target.value }))} aria-label="HD voice" disabled={hd.state === "downloading" || hd.state === "loading"}>{HD_VOICES.map((v) => <option key={v.id} value={v.id}>{v.label}</option>)}</select>
+                {hd.state === "ready" ? <><button className="pc-btn" onClick={onTry}>Hear it</button><button className="pc-btn" onClick={() => onHd("remove")}>Remove voice</button></> : hd.state === "downloading" || hd.state === "loading" ? <span className="mut small" role="status">{hd.state === "downloading" ? `Downloading… ${Math.round(hd.pct * 100)}%` : "Getting it ready…"}</span> : <button className="pc-btn pri" onClick={() => onHd("download")}>{hd.state === "error" ? "Try again" : `Download (${HD_MB} MB)`}</button>}</div>
+              {hd.state === "error" && <p className="pc-err small" role="alert">The HD voice could not be loaded. Check your connection (it comes from huggingface.co and cdn hosts), then try again. Until then Pacer uses this device&apos;s voice.</p>}
+              <p className="mut small">Best on Wi-Fi. It runs on your device (the book never leaves it) and speaks a sentence ahead, so an older phone may pause between sentences. Speed follows your wpm setting ({wpm} wpm is {hdRate(wpm)}×, up to about {HD_MAX_WPM} wpm). Voices are from the open-source Piper project.</p>
+              {!hd.canCache && <p className="mut small"><b>Heads up:</b> this browser can&apos;t keep the voice saved, so it may download again each time you open Pacer. Use Wi-Fi.</p>}
+            </>) : !speechOk ? <p className="mut">This browser has no built-in voices.</p> : (<>
+              <p className="mut small">The voice sets the pace and the highlight follows it. Your speed setting ({wpm} wpm) becomes a voice speed of {rate}× (about {approxWpm(rate)} wpm){capped ? `; voices top out near ${MAX_VOICE_WPM} wpm` : ""}.</p>
+              <div className="pc-row"><select className="pc-select wide" value={audio.voiceName} onChange={(e) => setAudio((a) => ({ ...a, voiceName: e.target.value }))} aria-label="Voice"><option value="">Best voice on this device</option>{voices.map((v) => <option key={v.name} value={v.name}>{v.name}{v.label ? ` (${v.label.toLowerCase()})` : ""}</option>)}</select><button className="pc-btn" onClick={onTry}>Hear it</button></div>
+              {voices.length > 0 && !voices.some((v) => v.label === "Natural") && <p className="mut small"><b>Want it to sound less robotic?</b> Switch to the HD voice above, or download an Enhanced or Premium voice in your device settings (iPhone and iPad: Settings → Accessibility → Spoken Content → Voices).</p>}
+            </>)}
           </>)}
         </section>
 

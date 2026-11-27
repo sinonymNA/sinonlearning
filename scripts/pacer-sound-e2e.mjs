@@ -68,4 +68,34 @@ for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], "ipad-l": 
   check(errs.length === 0, `${name}: no page errors ${errs.join(";").slice(0, 200)}`);
   await ctx.close();
 }
+
+// ---- HD voice (fake Piper: returns real silent WAV clips whose length follows the text, so the real audio element, ended events and timing all run)
+for (const [name, [w, h]] of Object.entries({ "iphone-p": [390, 844], laptop: [1366, 768] })) {
+  const ctx = await browser.newContext({ viewport: { width: w, height: h } }), p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
+  await ctx.addInitScript(() => {
+    window.__synth = []; window.__plays = [];
+    window.__pacerHdFake = { get stored() { return localStorage.getItem("fakeHdStored") === "1"; }, set stored(v) { localStorage.setItem("fakeHdStored", v ? "1" : "0"); }, synth: async (text) => { window.__synth.push(text); const sr = 8000, n = Math.round(sr * Math.max(0.5, text.length * 0.045)), b = new ArrayBuffer(44 + n * 2), v = new DataView(b), W = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+      W(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); W(8, "WAVE"); W(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); W(36, "data"); v.setUint32(40, n * 2, true); return new Blob([b], { type: "audio/wav" }); } };
+    const play = HTMLMediaElement.prototype.play; HTMLMediaElement.prototype.play = function () { window.__plays.push({ rate: this.playbackRate, silent: this.src.startsWith("data:") }); return play.call(this); };
+  });
+  await p.goto(BASE, { waitUntil: "networkidle" }); await p.waitForSelector(".pc-drop"); await p.setInputFiles("input[type=file]", "/tmp/pacer-sound/b.txt"); await p.waitForSelector(".pc-page .w");
+  await p.click("[aria-label='Sound: read aloud and music']"); await p.waitForSelector(".pc-sound");
+  await p.click(".pc-sound .pc-toggle input >> nth=0"); await p.click("input[name=vt] >> nth=1");
+  check(/63 MB/.test(await p.locator(".pc-sound").innerText()) && (await p.locator("select[aria-label='HD voice'] option").count()) >= 4, `${name}: HD voice option states the download size and offers voices`);
+  await p.click(".pc-sound >> text=/Download \\(63 MB\\)/"); await p.waitForSelector(".pc-sound >> text=Hear it"); check(true, `${name}: HD voice downloads and becomes ready`);
+  const box = await p.locator(".pc-sound .pc-card").boundingBox(); check(box.x >= 0 && box.x + box.width <= w + 1 && box.y >= 0 && box.y + box.height <= h + 1, `${name}: the sound panel with the HD section fits the screen`);
+  await p.click(".pc-sound >> text=Done"); const p0 = +(await p.locator(".pc-scrub").inputValue());
+  await p.click("[aria-label='Play']"); await p.waitForTimeout(4500);
+  const synth = await p.evaluate(() => window.__synth), plays = await p.evaluate(() => window.__plays);
+  check(synth.length >= 2 && /^[A-Za-z ]+\.$/.test(synth[0]), `${name}: sentences are synthesized one at a time, the next while one plays (${synth.length} asked)`);
+  check(plays.some((x) => x.silent) && plays.some((x) => !x.silent), `${name}: the audio element is unlocked by the tap, then plays real clips`);
+  const p1 = +(await p.locator(".pc-scrub").inputValue()); check(p1 > p0 + 6, `${name}: the highlight follows the HD voice (${p0} -> ${p1})`);
+  await p.click("[aria-label='Pause']"); await p.waitForTimeout(300); const p2 = +(await p.locator(".pc-scrub").inputValue()); await p.waitForTimeout(900); check(+(await p.locator(".pc-scrub").inputValue()) === p2, `${name}: pausing stops the HD voice and the highlight`);
+  for (let i = 0; i < 4; i++) await p.keyboard.press("ArrowUp"); await p.click("[aria-label='Play']"); await p.waitForTimeout(1500); const r = (await p.evaluate(() => window.__plays)).at(-1).rate; check(r > 1.3, `${name}: a higher wpm plays the clips faster (rate ${r})`);
+  await p.click("[aria-label='Pause']");
+  await p.reload({ waitUntil: "networkidle" }); await p.waitForSelector(".pc-book"); await p.click(".pc-book"); await p.waitForSelector(".pc-page .w"); await p.click("[aria-label='Sound: read aloud and music']"); await p.waitForSelector(".pc-sound >> text=Hear it", { timeout: 8000 });
+  check(true, `${name}: after a reload an already-downloaded HD voice loads by itself`); check(errs.length === 0, `${name}: no page errors ${errs.join(";").slice(0, 200)}`);
+  await p.click(".pc-sound >> text=Remove voice"); await p.waitForSelector(".pc-sound >> text=/Download/"); check(true, `${name}: the voice can be removed`);
+  await ctx.close();
+}
 await browser.close(); console.log(ok.length + " ok"); if (errors.length) { console.log(errors.join("\n")); process.exit(1); } console.log("all passed");

@@ -182,3 +182,5 @@ User: upload my books and save progress on the site to read on phone/iPad. Done:
 User: look up words in Pacer and jump to that place. Done: find box (word/phrase, prefix while typing, snippets with chapter and %, Enter = next after your spot, `/` or F shortcut); engine test + 10 new e2e checks.
 
 User: read the words aloud in a non-robotic voice as Pacer goes, plus YouTube links as background music. Done: Sound panel (voice ranking/choice, voice-driven highlight with boundary events + timer fallback, wpm->rate), YouTube dock (video/playlist links, visible 200px+ player, follows reading, volume). Verified with fake speech/YouTube in headless Chromium; real voices and YouTube playback not verifiable here.
+
+User: wanted the lighter voice model, and music without a visible video. Done: HD voice via Piper in the browser (opt-in, ~63 MB, fallback to device voice; neural.mjs + hdVoice.ts), found that Piper low = medium size. NOT done: tiny/hidden YouTube player (conflicts with YouTube rules; offered alternatives). Real model not verifiable here.
