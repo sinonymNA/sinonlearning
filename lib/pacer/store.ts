@@ -3,13 +3,13 @@ import type { Book } from "./extract";
 
 export type Settings = { mode: "focus" | "pacer" | "scroll"; wpm: number; chunk: number; smart: boolean; font: "serif" | "sans" | "mono"; size: number; width: "narrow" | "medium" | "wide"; theme: "paper" | "sepia" | "night" | "contrast"; dim: boolean; ramp: boolean; rampMax: number; checks: 0 | 250 | 500 | 1000 };
 export const DEFAULTS: Settings = { mode: "pacer", wpm: 250, chunk: 1, smart: true, font: "serif", size: 24, width: "medium", theme: "paper", dim: false, ramp: false, rampMax: 400, checks: 0 };
-export type LibItem = { id: string; title: string; author?: string; words: number; pos: number; wpm: number; updated: number };
+export type LibItem = { id: string; title: string; author?: string; words: number; pos: number; wpm: number; updated: number; at?: number; cloud?: boolean; local?: boolean };
 export type Session = { t: number; title: string; words: number; wpm: number; recall: number | null; minutes: number };
-export type Saved = { settings: Settings; library: LibItem[]; sessions: Session[] };
+export type Saved = { settings: Settings; library: LibItem[]; sessions: Session[]; settingsAt: number; autoSync: boolean };
 const KEY = "pacer:v1";
 export function loadSaved(): Saved {
-  try { const j = JSON.parse(localStorage.getItem(KEY) || "null"); if (j) return { settings: { ...DEFAULTS, ...(j.settings || {}) }, library: Array.isArray(j.library) ? j.library : [], sessions: Array.isArray(j.sessions) ? j.sessions.slice(-60) : [] }; } catch { /* private mode or corrupt */ }
-  return { settings: { ...DEFAULTS }, library: [], sessions: [] };
+  try { const j = JSON.parse(localStorage.getItem(KEY) || "null"); if (j) return { settings: { ...DEFAULTS, ...(j.settings || {}) }, library: Array.isArray(j.library) ? j.library : [], sessions: Array.isArray(j.sessions) ? j.sessions.slice(-60) : [], settingsAt: +j.settingsAt || 0, autoSync: j.autoSync !== false }; } catch { /* private mode or corrupt */ }
+  return { settings: { ...DEFAULTS }, library: [], sessions: [], settingsAt: 0, autoSync: true };
 }
 export function save(s: Saved) { try { localStorage.setItem(KEY, JSON.stringify({ ...s, sessions: s.sessions.slice(-60) })); } catch { /* storage blocked */ } }
 

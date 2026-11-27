@@ -42,7 +42,7 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   const mobile = w < 900; const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: mobile, isMobile: mobile }); await seed({ mode: "pacer", wpm: 250 })(ctx);
   const p = await ctx.newPage(); p.on("pageerror", (e) => errors.push(`[${name}] pageerror ${e.message}`)); p.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push(`[${name}] console ${m.text()}`); });
   await p.goto(BASE, { waitUntil: "networkidle" }); await p.waitForSelector(".pc-drop");
-  check((await p.locator("h1").innerText()) === "Pacer" && /never leaves this device/.test(await p.locator(".pc-priv").innerText()), `${name}: the library explains Pacer and says files never leave the device`);
+  check((await p.locator("h1").innerText()) === "Pacer" && /stays on this device/.test(await p.locator(".pc-priv").innerText()), `${name}: the library explains Pacer and says files stay on the device unless you sign in`);
   check((await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)), `${name}: the library has no sideways scroll`); if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/pacer-${name}-library.png` });
 
   // ---- the sample, in Pacer mode: real-time pacing and speed control
@@ -65,7 +65,7 @@ for (const [name, [w, h]] of Object.entries(sizes)) {
   await p.click("[aria-label='Settings']"); await p.waitForSelector(".pc-drawer"); await p.click(".pc-drawer button:has-text('Night')"); check((await p.locator(".pc-root").getAttribute("data-theme")) === "night", `${name}: the Night theme applies`); f = await fitOf(p); check(f.sw && f.sh, `${name}: the settings drawer does not break the layout`); if (name === "iphone-p" || name === "laptop") await p.screenshot({ path: `${SHOTS}/pacer-${name}-settings.png` }); await p.click(".pc-drawer button:has-text('Done')");
   // ---- leave, the session is remembered, resume works
   await p.click("[aria-label='Back to the library']"); await p.waitForSelector(".pc-books"); const saved = await p.evaluate(() => JSON.parse(localStorage.getItem("pacer:v1"))); check(saved.library.length === 1 && saved.library[0].pos > 0 && saved.sessions.length >= 1, `${name}: the book, the place and the session are saved (pos ${saved.library[0]?.pos})`);
-  await p.reload({ waitUntil: "networkidle" }); await p.waitForSelector(".pc-book"); await p.click(".pc-book"); await p.waitForSelector(".pc-page .w"); check(Math.abs((await scrubVal(p)) - saved.library[0].pos) <= 1, `${name}: after a reload the book is still there and resumes where you were`); await p.click("[aria-label='Back to the library']"); await p.click(".pc-x"); await p.waitForTimeout(300); check((await p.locator(".pc-book").count()) === 0, `${name}: a book can be removed from the device`);
+  await p.reload({ waitUntil: "networkidle" }); await p.waitForSelector(".pc-book"); await p.click(".pc-book"); await p.waitForSelector(".pc-page .w"); check(Math.abs((await scrubVal(p)) - saved.library[0].pos) <= 1, `${name}: after a reload the book is still there and resumes where you were`); await p.click("[aria-label='Back to the library']"); await p.click(".pc-x"); await p.click(".pc-card .pc-btn.pri"); await p.waitForTimeout(300); check((await p.locator(".pc-book").count()) === 0, `${name}: a book can be removed from the device`);
   await ctx.close();
 }
 // ---- real files (laptop and phone)

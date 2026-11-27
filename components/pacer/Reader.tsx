@@ -20,7 +20,7 @@ const Para = memo(function Para({ words, from, to, head, cls }: { words: string[
   return head ? <h3 className={cls} data-p>{kids}</h3> : <p className={cls} data-p>{kids}</p>;
 });
 
-export default function Reader({ book, startPos, settings, onSettings, onExit, onProgress, onSession }: { book: Book; startPos: number; settings: Settings; onSettings: (s: Settings) => void; onExit: () => void; onProgress: (pos: number, wpm: number) => void; onSession: (s: Session) => void }) {
+export default function Reader({ book, startPos, settings, onSettings, onExit, onProgress, onSession }: { book: Book; startPos: number; settings: Settings; onSettings: (s: Settings) => void; onExit: () => void; onProgress: (pos: number, wpm: number, force?: boolean) => void; onSession: (s: Session) => void }) {
   const flat = useMemo(() => {
     const paras: { text: string; kind: string }[] = [], chPara: number[] = []; for (const c of book.chapters) { chPara.push(paras.length); for (const p of c.paras) if (p.text.trim()) paras.push(p); }
     const doc = tokenize(paras), chWord = chPara.map((pi) => doc.paraStart[Math.min(pi, doc.paraStart.length - 1)] ?? 0); return { doc, chPara, chWord, paraCount: paras.length };
@@ -54,7 +54,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   const finish = useCallback((reason: "end" | "exit") => {
     playing.current = false; const st = stats.current, r = sessionStats({ words: st.words, activeMs: st.active, checks: st.checks as any });
     if (!saved.current && st.words >= 30) { saved.current = true; onSession({ t: Date.now(), title: book.title, words: r.words, wpm: r.wpm, recall: r.recall, minutes: r.minutes }); }
-    onProgress(reason === "end" ? 0 : pos.current, S.current.wpm); if (reason === "end") { setDone(r); refreshUi({ playing: false }); }
+    onProgress(reason === "end" ? 0 : pos.current, S.current.wpm, true); if (reason === "end") { setDone(r); refreshUi({ playing: false }); }
   }, [book.title, onProgress, onSession, refreshUi]);
 
   // ---- the clock
@@ -93,7 +93,7 @@ export default function Reader({ book, startPos, settings, onSettings, onExit, o
   }, [ch, settings.mode, settings.size, settings.font, settings.width, settings.dim]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (settings.mode === "focus") setFocusWord(pos.current); }, [settings.chunk]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!playing.current) refreshUi({ wpm: settings.wpm }); liveWpm.current = settings.wpm; }, [settings.wpm]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const sv = window.setInterval(() => onProgress(pos.current, S.current.wpm), 4000), leave = () => onProgress(pos.current, S.current.wpm); window.addEventListener("pagehide", leave); return () => { clearInterval(sv); window.removeEventListener("pagehide", leave); leave(); }; }, [onProgress]);
+  useEffect(() => { const sv = window.setInterval(() => onProgress(pos.current, S.current.wpm), 4000), leave = () => onProgress(pos.current, S.current.wpm, true); window.addEventListener("pagehide", leave); return () => { clearInterval(sv); window.removeEventListener("pagehide", leave); leave(); }; }, [onProgress]);
 
   useEffect(() => { const f = () => setSw(window.innerWidth); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
   // ---- controls

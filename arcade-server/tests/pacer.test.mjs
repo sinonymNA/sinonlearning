@@ -65,3 +65,22 @@ test("EPUB: a copy-protected book gives a friendly error, so does a non-EPUB", a
   await assert.rejects(async () => parseEpub(await makeEpub({ drm: true }), { JSZip, DOMParser }), /copy-protected/); const z = new JSZip(); z.file("hello.txt", "hi"); await assert.rejects(async () => parseEpub(await z.generateAsync({ type: "uint8array" }), { JSZip, DOMParser }), /valid EPUB/);
 });
 test("xhtmlToParas keeps nested inline text together and splits blocks", () => { const d = new DOMParser().parseFromString(xhtml("x", "<p>One <b>bold <i>word</i></b> here.</p><ul><li>Item a</li><li>Item b</li></ul>"), "application/xhtml+xml"); assert.deepEqual(xhtmlToParas(d).map((p) => p.text), ["One bold word here.", "Item a", "Item b"]); });
+
+import { validateBook, sanitizeSettings, sanitizeSessions, mergeLibraries, mergeSessions, LIMITS } from "../../lib/pacer/validate.mjs";
+const goodBook = { id: "abc123", title: "A Book", author: "Me", chapters: [{ title: "One", paras: [{ text: "Some real words to read here today.", kind: "p" }, { text: "Heading", kind: "h", pg: 2 }] }], extra: "dropped" };
+test("sync validation: a good book is rebuilt clean, bad ids, empty books and malformed parts are refused, unknown fields dropped", () => {
+  const v = validateBook(goodBook); assert.ok(v.ok); assert.equal(v.book.words, 8); assert.equal(v.book.extra, undefined); assert.equal(v.book.chapters[0].paras[1].pg, 2);
+  for (const bad of [null, {}, { ...goodBook, id: "../etc" }, { ...goodBook, id: "A B" }, { ...goodBook, title: "  " }, { ...goodBook, chapters: [] }, { ...goodBook, chapters: [{ title: "x", paras: [{ text: 5 }] }] }, { ...goodBook, chapters: [{ title: "x", paras: [{ text: "hi", kind: "p" }] }] }]) assert.equal(validateBook(bad).ok, false);
+  const w = validateBook({ ...goodBook, chapters: [{ title: "x", paras: [{ text: "<script>alert(1)</script> text words here now", kind: "z" }] }] }); assert.ok(w.ok && w.book.chapters[0].paras[0].kind === "p", "unknown kinds become paragraphs; text stays plain text for React to escape");
+  assert.ok(LIMITS.maxBookBytes < LIMITS.maxTotalBytes);
+});
+test("sync validation: settings and sessions from the wire are forced into allowed values", () => {
+  assert.deepEqual(sanitizeSettings({ mode: "evil", wpm: 99999, chunk: 9, font: "comic", theme: "x", checks: 7, size: 1 }), { mode: "pacer", wpm: 1200, chunk: 3, smart: true, font: "serif", size: 16, width: "medium", theme: "paper", dim: false, ramp: false, rampMax: 400, checks: 0 });
+  const s = sanitizeSessions([{ t: 5, title: "x".repeat(500), words: 100, wpm: 9999, recall: 150, minutes: 2 }, { t: 0 }, null]); assert.equal(s.length, 1); assert.equal(s[0].title.length, 200); assert.equal(s[0].wpm, 3000); assert.equal(s[0].recall, 100); assert.equal(sanitizeSessions("nope").length, 0);
+});
+test("two devices agree: the newest reading position wins, cloud-only books appear, sessions merge without duplicates", () => {
+  const local = [{ id: "a", title: "A", words: 100, pos: 10, wpm: 250, at: 1000, updated: 1000 }, { id: "b", title: "B", words: 50, pos: 5, wpm: 200, at: 10, updated: 10 }], cloud = [{ id: "a", title: "A", words: 100, pos: 40, wpm: 300, at: 2000 }, { id: "c", title: "C", words: 70, pos: 0, wpm: 250, at: 5 }, { id: "b", title: "B", words: 50, pos: 1, wpm: 100, at: 3 }];
+  const m = mergeLibraries(local, cloud), by = Object.fromEntries(m.map((x) => [x.id, x])); assert.equal(by.a.pos, 40, "the phone read further more recently"); assert.equal(by.a.wpm, 300); assert.equal(by.b.pos, 5, "this device's newer position is kept"); assert.equal(by.c.cloud, true); assert.equal(by.a.cloud, true); assert.equal(m.length, 3);
+  const onlyLocal = mergeLibraries([{ id: "z", title: "Z", words: 9, pos: 1, wpm: 250, at: 1, updated: 1, cloud: true }], []); assert.equal(onlyLocal[0].cloud, false, "a book the server no longer has is not marked synced");
+  assert.deepEqual(mergeSessions([{ t: 1, title: "A" }, { t: 2, title: "A" }], [{ t: 2, title: "A" }, { t: 3, title: "B" }]).map((x) => x.t), [1, 2, 3]);
+});
