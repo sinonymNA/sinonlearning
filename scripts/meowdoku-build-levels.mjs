@@ -1,8 +1,8 @@
-// Pre-builds the Meowdoku level table (so the game never waits on the generator). Usage: node scripts/meowdoku-build-levels.mjs [count=100]
+// Pre-builds the Meowdoku level table (so the game never waits on the generator). Usage: node scripts/meowdoku-build-levels.mjs [count=200]
 // Every puzzle has exactly one solution and can be solved with the hint techniques up to the level's tier (levels 1-4 need only "one spot left"). Takes a few minutes for 200 levels.
 import fs from "node:fs";
 import { generate, encodePuzzle, countSolutions, logicSolvable, tierFor, puzzleTier } from "../arcade-server/meowdoku/engine.mjs";
-const count = +(process.argv[2] || 100), out = [], t0 = Date.now();
+const count = +(process.argv[2] || 200), out = [], t0 = Date.now();
 for (let level = 1; level <= count; level++) {
   const p = generate(level); if (countSolutions(p.regions, 2) !== 1 || !logicSolvable(p, tierFor(level)) || puzzleTier(p) > tierFor(level)) throw new Error("bad puzzle " + level);
   out.push(encodePuzzle(p)); if (level % 20 === 0) console.log(`level ${level}/${count} (${Math.round((Date.now() - t0) / 1000)}s)`);

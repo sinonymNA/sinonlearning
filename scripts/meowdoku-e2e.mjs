@@ -11,6 +11,35 @@ const mark = (p, r, c) => cell(p, r, c).evaluate((e) => (e.querySelector("img") 
 const dbl = async (p, r, c) => { const b = await cell(p, r, c).boundingBox(); await p.mouse.dblclick(b.x + b.width / 2, b.y + b.height / 2, { delay: 40 }); };   // two real taps, ~40ms apart
 const seed = (level) => () => localStorage.setItem("meowdoku:v1", JSON.stringify({ profile: { v: 1, level: window.__L, score: 12345, hints: 3, winks: 3, solved: 0, bestStreak: 0, streak: 0, seenHelp: true }, game: null, secs: 0, settings: { auto: true, shapes: true, mode: "x" } }));
 // Upgrade checks: Daily Puzzle, Endless, power-ups (Sweep, Sardine), shop, combo, ripple, win banner. The saved game holds the solution, so the test can play it.
+const hex2rgb = (h) => { const n = parseInt(h.slice(1), 16); return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`; };
+const closetCheck = async (name, w, h) => {
+  const c = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 900, isMobile: w < 900 });
+  await c.addInitScript(() => { if (!localStorage.getItem("meowdoku:v1")) localStorage.setItem("meowdoku:v1", JSON.stringify({ profile: { v: 1, level: 21, score: 500, hints: 3, winks: 3, sweeps: 2, sardines: 1, yarn: 300, solved: 20, bestStreak: 0, streak: 0, seenHelp: true, stars: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [i + 1, 3])) }, game: null, secs: 0, settings: { auto: false, shapes: false, mode: "cat" } })); });
+  const q = await c.newPage(); q.on("pageerror", (e) => errors.push(`[${name}/closet] pageerror ${e.message}`)); q.on("console", (m) => { if (m.type() === "error") errors.push(`[${name}/closet] console ${m.text()}`); });
+  const save = () => q.evaluate(() => JSON.parse(localStorage.getItem("meowdoku:v1")));
+  await q.goto(BASE, { waitUntil: "networkidle" }); await q.waitForSelector(".hm");
+  check((await q.locator(".hm-new").innerText()) === "3", `${name}: the home screen shows 3 NEW items (the scenes for the two cleared worlds and the 60-star Heart Fish)`);
+  await q.click(".hm-shop"); await q.waitForSelector(".cl-sheet"); await q.waitForTimeout(350);
+  const fitOf = () => q.evaluate(() => { const r = document.querySelector(".cl-sheet").getBoundingClientRect(), g = document.querySelector(".cl-grid, .cl-power"), cards = [...document.querySelectorAll(".cl-card")].slice(0, 6).map((e) => e.getBoundingClientRect()), tabs = document.querySelector(".cl-tabs"); return { ok: r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1, sw: document.documentElement.scrollWidth <= innerWidth + 1 && document.documentElement.scrollHeight <= innerHeight + 1, gridW: g.scrollWidth <= g.clientWidth + 1, cardsIn: cards.every((b) => b.right <= innerWidth + 1 && b.left >= -1), tabsN: tabs.children.length }; });
+  let f = await fitOf(); check(f.ok && f.sw && f.tabsN === 10, `${name}: the shop fills the screen, no page scroll, 10 tabs (${f.tabsN})`);
+  await q.click('.cl-tabs button:has-text("CATS")'); await q.waitForTimeout(200); f = await fitOf(); check(f.gridW && f.cardsIn, `${name}: the cat cards stay inside the screen`); check((await q.locator(".cl-card").count()) >= 24, `${name}: 24 cats in the shop`);
+  const tuxSrc = await q.locator('.cl-card[data-id="tuxedo"] img.px').getAttribute("src");
+  await q.locator('.cl-card[data-id="tabby"]').click(); check(/BUY 60/.test(await q.locator(".cl-act").innerText()), `${name}: tapping a cat previews it and offers BUY 60`); const heroSrc = await q.locator(".cl-hero > img").getAttribute("src"); check(heroSrc !== tuxSrc, `${name}: the preview wears the tapped cat before buying`);
+  check(((await save()).profile.closet?.equip?.breed ?? "tuxedo") === "tuxedo", `${name}: previewing does not equip`);
+  await q.click(".cl-act .cg-btn.go"); await q.waitForTimeout(150); check(+(await q.locator(".cl-yarn b").innerText()) === 240, `${name}: buying costs exactly 60 yarn`); await q.click(".cl-act .cg-btn.go"); const sv = await save(); check(sv.profile.closet.equip.breed === "tabby" && sv.profile.closet.owned["breed:tabby"], `${name}: the cat is bought and worn`);
+  await q.locator('.cl-card[data-id="royal"]').click(); check(/LOCKED/.test(await q.locator(".cl-act").innerText()) && /World 10/.test(await q.locator(".cl-req").innerText()), `${name}: an earned cat shows what to do (Clear World 10) and cannot be bought`);
+  await q.click('.cl-tabs button:has-text("COLORS")'); await q.locator('.cl-card[data-id="candy"]').click(); await q.click(".cl-act .cg-btn.go"); await q.click(".cl-act .cg-btn.go");
+  await q.click('.cl-tabs button:has-text("MARKS")'); await q.locator('.cl-card[data-id="paw"]').click(); await q.click(".cl-act .cg-btn.go"); await q.click(".cl-act .cg-btn.go");
+  await q.click('.cl-tabs button:has-text("FRAMES")'); await q.locator('.cl-card[data-id="wood"]').click(); await q.click(".cl-act .cg-btn.go"); await q.click(".cl-act .cg-btn.go");
+  const eq = (await save()).profile.closet.equip; check(eq.palette === "candy" && eq.mark === "paw" && eq.frame === "wood", `${name}: colours, mark and frame equipped (${JSON.stringify(eq)})`);
+  if (name === "iphone-p" || name === "laptop") await q.screenshot({ path: `${SHOTS}/meowdoku-${name}-closet.png` });
+  await q.click(".cl-top .cg-btn.round"); await q.click(".hm-btn.primary"); await q.waitForSelector(".mp-scroll"); await q.click('.mp-node[data-level="1"]'); await q.waitForSelector(".cg-board");
+  const g = (await save()).game; check((await q.locator(".cg-board.frame-wood").count()) === 1, `${name}: the board wears the wooden frame`);
+  const bg = await q.locator("#cg-0-0").evaluate((e) => getComputedStyle(e).backgroundColor), candy = ["#ff4d8d", "#ffb000", "#7bd957", "#2ec4f1", "#a463f2", "#ff6f3c", "#00c9a7", "#ffd93b", "#ef476f", "#8338ec"].map(hex2rgb); check(candy.includes(bg), `${name}: the squares use the Candy Pop colours (${bg})`);
+  await cell(q, 0, g.solution[0]).click(); await q.waitForTimeout(80); const catSrc = await q.locator(".cg-cell.cat img").first().getAttribute("src"); check(catSrc !== tuxSrc && !!catSrc, `${name}: the cat on the board is the bought Orange Tabby`);
+  await q.click(".cg-mode button:has-text('X')"); const r1 = g.solution[0] === 0 ? 1 : 0; const rr = g.n > 2 ? 1 : 0; await cell(q, rr, g.solution[0] === 0 ? 3 : 0).click(); await q.waitForTimeout(80); check((await q.locator(".cg-cell img.mk").count()) >= 1, `${name}: the X mark is a paw print`); void r1;
+  await c.close();
+};
 const upgrades = async (name, w, h) => {
   const c = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 900, isMobile: w < 900 });
   await c.addInitScript(() => { if (!localStorage.getItem("meowdoku:v1")) localStorage.setItem("meowdoku:v1", JSON.stringify({ profile: { v: 1, level: 15, score: 500, hints: 3, winks: 3, sweeps: 2, sardines: 1, yarn: 100, solved: 14, bestStreak: 0, streak: 0, seenHelp: true, stars: {} }, game: null, secs: 0, settings: { auto: false, shapes: false, mode: "x" } })); });
@@ -34,9 +63,9 @@ const upgrades = async (name, w, h) => {
   check((await q.locator(".cg-fish img.lost").count()) === before + 1, `${name}: a rule-breaking cat costs a fish`);
   await pw("SARDINE").click(); check((await q.locator(".cg-fish img.lost").count()) === before && (await cnt("SARDINE")) === 0, `${name}: the Sardine gives the fish back`);
   await pw("SARDINE").click(); check(/No Sardines left/.test(await q.locator(".cg-say p").innerText()) && (await q.locator(".cg-say button", { hasText: "OPEN SHOP" }).count()) === 1, `${name}: with none left it points you to the shop`);
-  await q.click(".cg-say button:has-text('OPEN SHOP')"); await q.waitForSelector(".sh-items"); const yarn0 = +(await q.locator(".sh-bank b").innerText()); await q.click("[aria-label^='Buy Sardine']");
-  check(+(await q.locator(".sh-bank b").innerText()) === yarn0 - 35 && /x1/.test(await q.locator(".sh-items li", { hasText: "Sardine" }).innerText()), `${name}: the shop spends yarn and gives the power-up (${yarn0} -> ${yarn0 - 35})`); if (name === "iphone-p" || name === "laptop") await q.screenshot({ path: `${SHOTS}/meowdoku-${name}-shop.png` });
-  await q.click(".sh-items ~ .cg-row button"); // leave the shop
+  await q.click(".cg-say button:has-text('OPEN SHOP')"); await q.waitForSelector(".cl-power"); const yarn0 = +(await q.locator(".cl-yarn b").innerText()); await q.click("[aria-label^='Buy Sardine']");
+  check(+(await q.locator(".cl-yarn b").innerText()) === yarn0 - 35 && /×1/.test(await q.locator(".cl-power li", { hasText: "Sardine" }).innerText()), `${name}: the shop spends yarn and gives the power-up (${yarn0} -> ${yarn0 - 35})`); if (name === "iphone-p" || name === "laptop") await q.screenshot({ path: `${SHOTS}/meowdoku-${name}-shop.png` });
+  await q.click(".cl-top .cg-btn.round"); // leave the shop
   // finish the level: take off the wrong cat (a tap in CAT mode toggles it), then place the rest
   await put(3, g.solution[0]); for (let r = 0; r < g.n; r++) if ((await mark(q, r, g.solution[r])) !== "cat") await put(r, g.solution[r]);
   await q.waitForSelector(".cg-banner", { timeout: 4000 }).then(() => check(true, `${name}: a win banner slams in`), () => check(false, `${name}: a win banner slams in`));
@@ -70,12 +99,12 @@ const only = arg("only", ""); for (const [name, [w, h]] of Object.entries(sizes)
   if (["iphone-p", "laptop", "iphone-l", "tiny"].includes(name)) await p.screenshot({ path: `${SHOTS}/meowdoku-${name}-home.png` });
   await p.click(".hm-btn.primary"); await p.waitForSelector(".mp-scroll");
   // the world map: 10 named worlds, 100 levels, only level 1 open, the map opens on it
-  const names = await p.locator(".mp-sign h2").allInnerTexts(); check(names.length === 10 && names[9] === "Whisker Village" && names[0] === "The Royal Catdom", `${name}: the map has the 10 worlds (Whisker Village at the bottom, Royal Catdom at the top)`);
-  check((await p.locator(".mp-node").count()) === 100, `${name}: 100 level nodes`); check((await p.locator(".mp-node:not([disabled])").count()) === 1, `${name}: only level 1 is open at the start`);
+  const names = await p.locator(".mp-sign h2").allInnerTexts(); check(names.length === 20 && names[19] === "Whisker Village" && names[0] === "Cosmic Catnap", `${name}: the map has the 20 worlds (Whisker Village at the bottom, Royal Catdom at the top)`);
+  check((await p.locator(".mp-node").count()) === 200, `${name}: 200 level nodes`); check((await p.locator(".mp-node:not([disabled])").count()) === 1, `${name}: only level 1 is open at the start`);
   const here = await p.locator(".mp-node.here").boundingBox(), vp = p.viewportSize(); check(here && here.y >= 40 && here.y + here.height <= vp.height && here.width >= 44, `${name}: the map opens on your level, in view, tap target ${here && Math.round(here.width)}px`);
   check(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.querySelector(".mp-scroll").scrollWidth <= innerWidth + 1), `${name}: the map has no sideways scroll`);
   const fill = await p.evaluate(() => ({ props: document.querySelectorAll(".mp-prop").length, npcs: document.querySelectorAll(".mp-npc").length, roads: document.querySelectorAll(".mp-road .r").length, onRoad: [...document.querySelectorAll(".mp-node")].length }));
-  check(fill.props >= 150 && fill.npcs >= 14 && fill.roads === 10, `${name}: the map is filled with scenery (${fill.props} props, ${fill.npcs} cats to meet, a road in all 10 worlds)`);
+  check(fill.props >= 300 && fill.npcs >= 28 && fill.roads === 20, `${name}: the map is filled with scenery (${fill.props} props, ${fill.npcs} cats to meet, a road in all 20 worlds)`);
   await p.evaluate(() => document.querySelector(".mp-area:last-of-type .mp-npc, .mp-area:last-child .mp-npc")?.scrollIntoView({ block: "center" })); await p.locator(".mp-area:last-child .mp-npc").first().click({ force: true }); check((await p.locator(".mp-say").count()) === 1 && (await p.locator(".mp-say").innerText()).length > 8, `${name}: tapping a cat on the map makes it talk`);
   await p.evaluate(() => document.querySelector(".mp-node.here").scrollIntoView({ block: "center" }));
   if (name === "iphone-p" || name === "laptop") { await p.screenshot({ path: `${SHOTS}/meowdoku-${name}-map.png` }); }
@@ -118,6 +147,14 @@ const only = arg("only", ""); for (const [name, [w, h]] of Object.entries(sizes)
   await p.click("[aria-label='Back to the map']"); await p.waitForSelector(".mp-scroll"); check(/[123] of 3 stars/.test(await p.locator('.mp-node[data-level="1"]').getAttribute("aria-label")), `${name}: a cleared level shows its stars on the map`); check((await p.locator('.mp-node[data-level="3"]:not([disabled])').count()) === 1 && (await p.locator('.mp-node[data-level="4"][disabled]').count()) === 1, `${name}: clearing levels unlocks the next one`);
   await p.waitForTimeout(4600); await p.reload({ waitUntil: "networkidle" }); await p.waitForSelector(".hm"); await p.click(".hm-btn.primary"); await p.waitForSelector(".mp-scroll"); check((await p.locator(".mp-node.here").getAttribute("data-level")) === "3", `${name}: progress is saved (the map opens on level 3)`); check((await p.locator(".cg-card.wide").count()) === 0, `${name}: the how-to card does not come back`);
   await ctx.close();
+  // the closet: opens, fits, buys, equips, and the board really wears it
+  await closetCheck(name, w, h);
+  // a 10x10 board (level 150) must fit too
+  { const c3 = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 900, isMobile: w < 900 }); await c3.addInitScript(() => localStorage.setItem("meowdoku:v1", JSON.stringify({ profile: { v: 1, level: 150, score: 1, hints: 3, winks: 3, solved: 149, bestStreak: 0, streak: 0, seenHelp: true }, game: null, secs: 0, settings: { auto: false, shapes: true, mode: "x" } })));
+    const t = await c3.newPage(); t.on("pageerror", (e) => errors.push(`[${name}/10x10] pageerror ${e.message}`)); await t.goto(BASE, { waitUntil: "networkidle" }); await t.waitForSelector(".hm"); await t.click(".hm-btn.primary"); await t.waitForSelector(".mp-scroll"); await t.click('.mp-node[data-level="150"]'); await t.waitForSelector(".cg-board");
+    check((await t.locator(".cg-cell").count()) === 100, `${name}: level 150 is a 10x10 board`); const o = await t.evaluate(() => { const b = document.querySelector(".cg-board").getBoundingClientRect(); return { bw: b.width, bb: b.bottom, h: innerHeight, sw: document.documentElement.scrollWidth, w: innerWidth, sh: document.documentElement.scrollHeight, colors: new Set([...document.querySelectorAll(".cg-cell")].map((e) => e.style.background)).size }; });
+    check(o.sw <= o.w + 1 && o.sh <= o.h + 1 && o.bb <= o.h + 1, `${name} 10x10: fits without scrolling (${Math.round(o.bw / 10)}px cells)`); check(o.bw / 10 >= (name === "tiny" ? 22 : 26), `${name} 10x10: cells are at least ${name === "tiny" ? 22 : 26}px`); check(o.colors === 10, `${name} 10x10: ten different colours (${o.colors})`);
+    await c3.close(); }
   // a 9x9 board (level 31) must fit too, including the touch target size
   const c2 = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 900, isMobile: w < 900 }); await c2.addInitScript(() => localStorage.setItem("meowdoku:v1", JSON.stringify({ profile: { v: 1, level: 66, score: 12345, hints: 3, winks: 3, solved: 65, bestStreak: 0, streak: 0, seenHelp: true, stars: {} }, game: null, secs: 0, settings: { auto: true, shapes: true, mode: "x" } })));
   const q = await c2.newPage(); q.on("pageerror", (e) => errors.push(`[${name}/9x9] pageerror ${e.message}`)); await q.goto(BASE, { waitUntil: "networkidle" }); await q.waitForSelector(".hm"); await q.click(".hm-btn.primary"); await q.waitForSelector(".mp-scroll"); await q.click('.mp-node[data-level="66"]'); await q.waitForSelector(".cg-board");

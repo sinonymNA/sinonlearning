@@ -3,7 +3,6 @@
 // The Meowdoku home screen: title, a cat to say hi to, and the ways to play (Campaign map, Daily Puzzle, Endless, Shop).
 import { useEffect, useState } from "react";
 import { propUrl, starUrl, yarnUrl, calendarUrl, flameUrl, loopUrl, cloudUrl, sparkUrl } from "./mapArt";
-import { catUrl } from "./sprites";
 
 const TIPS = [
   "Hold and swipe to draw a whole line of X's.",
@@ -19,7 +18,7 @@ const TIPS = [
 export type HomeProps = {
   logo: string; area: any; areaIndex: number; stars: number; yarn: number; streak: number; level: number; finished: boolean;
   resume: { title: string; sub: string } | null; daily: { name: string; n: number; done: boolean; stars: number }; endlessBest: number;
-  onPlay: () => void; onResume: () => void; onDaily: () => void; onEndless: () => void; onShop: () => void; onHelp: () => void; onSettings: () => void; backHref: string;
+  onPlay: () => void; onResume: () => void; onDaily: () => void; onEndless: () => void; onShop: () => void; cat: (mood: "normal" | "happy") => string; fresh: number; onHelp: () => void; onSettings: () => void; backHref: string;
 };
 
 export default function Home(p: HomeProps) {
@@ -45,7 +44,7 @@ export default function Home(p: HomeProps) {
 
       <section className="hm-scene" aria-hidden>
         <div className="hm-bubble" key={tip}><span>{petted > 4 ? "Purrrrr..." : TIPS[tip]}</span></div>
-        <button className="hm-cat" onClick={pet} tabIndex={-1}><img src={catUrl(mood)} alt="" draggable={false} /></button>
+        <button className="hm-cat" onClick={pet} tabIndex={-1}><img src={p.cat(mood)} alt="" draggable={false} /></button>
         <div className="hm-ground"><div className="hm-props">{[0, 1, 2, 3, 0, 2].map((k, i) => { const q = propUrl(p.areaIndex, k); return <img key={i} src={q.src} alt="" draggable={false} style={{ width: `calc(${q.w}px * 2)` }} />; })}</div></div>
       </section>
 
@@ -62,7 +61,7 @@ export default function Home(p: HomeProps) {
         </div>
         <div className="hm-stats">
           <span title="Stars"><img src={starUrl(true)} alt="" draggable={false} /><b>{p.stars}</b><small>STARS</small></span>
-          <button className="hm-shop" onClick={p.onShop} aria-label={`Shop, ${p.yarn} yarn`}><img src={yarnUrl()} alt="" draggable={false} /><b>{p.yarn}</b><small>SHOP</small></button>
+          <button className="hm-shop" onClick={p.onShop} aria-label={`Shop and closet, ${p.yarn} yarn${p.fresh ? `, ${p.fresh} new` : ""}`}><img src={yarnUrl()} alt="" draggable={false} /><b>{p.yarn}</b><small>CLOSET</small>{p.fresh > 0 && <em className="hm-new" aria-label={`${p.fresh} new items`}>{p.fresh}</em>}</button>
           <span title="Best daily streak"><img src={flameUrl()} alt="" draggable={false} /><b>{p.streak}</b><small>STREAK</small></span>
         </div>
       </nav>

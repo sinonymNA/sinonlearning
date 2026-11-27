@@ -1,5 +1,6 @@
 // Meowdoku game modes beyond the campaign: the Daily Puzzle, Endless play, the shop, and the board-level power-ups (Sweep, Sardine).
 // Pure ESM. Dates are passed in as "YYYY-MM-DD" strings and seeds as numbers, so everything is deterministic and testable.
+import { grantUnlocks } from "./closet.mjs";
 import { generateWith, newGame, puzzleFor, transformPuzzle, blocked, setCell, beginStroke, endStroke, levelScore, starsFor, ITEMS, MAX_POWERUPS, STYLES } from "./engine.mjs";
 import { makeRng } from "../gridiron/rng.mjs";
 
@@ -60,6 +61,7 @@ export function completeDaily(p, st, seconds, day) {
   const pts = levelScore(st, seconds), yarn = 15 + stars * 5 + Math.min(d.streak, 7) * 3;
   p.score += pts; p.yarn += yarn; p.solved++; p.bestCombo = Math.max(p.bestCombo || 0, st.bestCombo || 0);
   const reward = { yarn, hint: give(p, "hint", 1), sardine: d.streak % 3 === 0 ? give(p, "sardine", 1) : 0, sweep: d.streak % 2 === 0 ? give(p, "sweep", 1) : 0, wink: d.streak % 7 === 0 ? give(p, "helper", 1) : 0 };
+  reward.unlocked = grantUnlocks(p);
   return { first: true, stars, streak: d.streak, reward, points: pts };
 }
 export const ENDLESS_PAID_PER_DAY = 5;
@@ -69,7 +71,7 @@ export function completeEndless(p, st, seconds, day, diff) {
   const key = `${st.n}-${diff}`, prev = e.best[key], record = !prev || seconds < prev; if (record) e.best[key] = seconds;
   const paid = e.today < ENDLESS_PAID_PER_DAY && st.helps === 0, yarn = paid ? 3 + st.n + stars * 2 : 0, pts = paid ? levelScore(st, seconds) : 0;
   e.wins++; if (paid) { e.today++; p.yarn += yarn; p.score += pts; } p.bestCombo = Math.max(p.bestCombo || 0, st.bestCombo || 0);
-  return { stars, yarn, points: pts, record, prev: prev || 0, paid, left: Math.max(0, ENDLESS_PAID_PER_DAY - e.today) };
+  return { stars, yarn, points: pts, record, prev: prev || 0, paid, left: Math.max(0, ENDLESS_PAID_PER_DAY - e.today), unlocked: grantUnlocks(p) };
 }
 
 // ---------------------------------------------------------------- shop

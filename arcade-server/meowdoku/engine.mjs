@@ -1,16 +1,17 @@
 // Meowdoku engine: place one cat in every row, every column and every colour region, and no two cats may touch (corners count).
 // Pure ESM, JSON state, seeded RNG (a level number always makes the same puzzle). No Date.now/Math.random: callers pass elapsed seconds.
 import { makeRng } from "../gridiron/rng.mjs";
+import { newCloset, normalizeCloset, grantUnlocks } from "./closet.mjs";
 
 export const MAX_FISH = 3;
-export const LEVEL_COUNT = 100;
+export const LEVEL_COUNT = 200;
 export const MAX_POWERUPS = 9;
-/** Board size by level: 5x5 for the first levels, growing to 9x9. */
-export const sizeFor = (level) => (level <= 2 ? 4 : level <= 8 ? 5 : level <= 20 ? 6 : level <= 40 ? 7 : level <= 65 ? 8 : 9);
+/** Board size by level: 4x4 to start, growing to 9x9 by level 66, and 10x10 for the last 70 levels (the Beyond worlds). */
+export const sizeFor = (level) => (level <= 2 ? 4 : level <= 8 ? 5 : level <= 20 ? 6 : level <= 40 ? 7 : level <= 65 ? 8 : level <= 130 ? 9 : 10);
 /** The hardest technique tier a level may need: levels 1-4 only ever need "one spot left"; the ladder opens slowly after that. */
 export const tierFor = (level) => (level <= 6 ? 0 : level <= 25 ? 1 : level <= 55 ? 2 : 3);
 /** ...and the easiest it may be, so the ladder keeps climbing instead of staying flat. */
-export const minTierFor = (level) => (level <= 8 ? 0 : level <= 40 ? 1 : 2);
+export const minTierFor = (level) => (level <= 8 ? 0 : level <= 40 ? 1 : level <= 110 ? 2 : 3);
 const key = (r, c) => `${r},${c}`;
 
 // ---------------------------------------------------------------- puzzles
@@ -184,7 +185,9 @@ function candidates(st, useX = false) {
   const b = blocked(st), cs = cats(st), rows = new Set(cs.map(([r]) => r)), colsU = new Set(cs.map(([, c]) => c)), regs = new Set(cs.map(([r, c]) => st.regions[r][c]));
   return Array.from({ length: st.n }, (_, r) => Array.from({ length: st.n }, (_, c) => st.marks[r][c] !== 2 && !(useX && st.marks[r][c] === 1) && !b[r][c] && !rows.has(r) && !colsU.has(c) && !regs.has(st.regions[r][c])));
 }
-const REG_NAME = ["green", "red", "pink", "orange", "purple", "yellow", "blue", "teal", "tan"];
+let REG_NAME = ["green", "red", "pink", "orange", "purple", "yellow", "blue", "teal", "tan", "silver"];
+/** The client sets this to the names of the equipped colour set (closet.mjs colorNames) so hints always match what the player sees. */
+export const setRegionNames = (names) => { REG_NAME = names && names.length ? names : ["green", "red", "pink", "orange", "purple", "yellow", "blue", "teal", "tan", "silver"]; };
 export const regionName = (g) => REG_NAME[g] ?? `colour ${g + 1}`;
 /** A hint that teaches: a cat that is forced (and why), or cells that can be crossed out (and why), else a gentle nudge toward a real cat. */
 export function hint(st, useX = false, maxTier = 3) {
@@ -246,11 +249,11 @@ export const ITEMS = {
   sweep: { key: "sweeps", name: "Sweep", price: 30, text: "Crosses out every spot your cats already rule out." },
   sardine: { key: "sardines", name: "Sardine", price: 35, text: "Gives you a fish back." },
 };
-export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, sweeps: 2, sardines: 1, yarn: 0, solved: 0, bestStreak: 0, streak: 0, seenHelp: false, stars: {}, fast: {}, daily: { last: "", streak: 0, best: 0, done: {} }, endless: { wins: 0, day: "", today: 0, best: {} }, bestCombo: 0 });
+export const newProfile = () => ({ v: 1, level: 1, score: 0, hints: 3, winks: 3, sweeps: 2, sardines: 1, yarn: 0, solved: 0, bestStreak: 0, streak: 0, seenHelp: false, stars: {}, fast: {}, daily: { last: "", streak: 0, best: 0, done: {} }, endless: { wins: 0, day: "", today: 0, best: {} }, bestCombo: 0, closet: newCloset() });
 /** Old saves keep working: fill in anything a newer version added. */
 export function normalizeProfile(p) {
   const d = newProfile(), o = { ...d, ...p, stars: { ...(p.stars || {}) }, fast: { ...(p.fast || {}) }, daily: { ...d.daily, ...(p.daily || {}), done: { ...(p.daily?.done || {}) } }, endless: { ...d.endless, ...(p.endless || {}), best: { ...(p.endless?.best || {}) } } };
-  for (const k of ["hints", "winks", "sweeps", "sardines"]) o[k] = Math.min(MAX_POWERUPS, Math.max(0, +o[k] || 0)); o.yarn = Math.max(0, Math.floor(+o.yarn || 0)); return o;
+  for (const k of ["hints", "winks", "sweeps", "sardines"]) o[k] = Math.min(MAX_POWERUPS, Math.max(0, +o[k] || 0)); o.yarn = Math.max(0, Math.floor(+o.yarn || 0)); o.closet = normalizeCloset(p.closet); grantUnlocks(o); return o;
 }
 /** 1 to 3 stars: a clean level (no wrong cat, no help) is 3; each of those costs one star, never below 1. */
 export const starsFor = (st) => Math.max(1, 3 - (st.mistakes > 0 ? 1 : 0) - (st.helps > 0 ? 1 : 0));
@@ -266,9 +269,10 @@ export function completeLevel(p, st, seconds) {
     p.score += pts; p.solved++; p.streak = st.mistakes === 0 ? p.streak + 1 : 0; p.bestStreak = Math.max(p.bestStreak, p.streak);
     reward.hint = give(p, "hint", 1); reward.wink = give(p, "helper", p.solved % 3 === 0 ? 1 : 0); reward.sweep = give(p, "sweep", p.solved % 4 === 0 ? 1 : 0);
     if (st.level % 10 === 0) { reward.sardine = give(p, "sardine", 1); reward.sweep += give(p, "sweep", 1); }   // a finale chest
-    reward.yarn = stars * 4 + 6 + (st.level % 10 === 0 ? 30 : 0);
+    reward.yarn = stars * 5 + 8 + (st.level % 10 === 0 ? 40 : 0);
   }
   if (newSpeedy) reward.yarn += 5; p.yarn += reward.yarn;
+  reward.unlocked = grantUnlocks(p);   // closet items whose rule this win just met
   return { points: pts, reward, stars, first, speedy, newSpeedy };
 }
 
@@ -289,6 +293,6 @@ export function transformPuzzle(p, k, rng) {
 export function puzzleFor(level) {
   if (!LEVELS.length) return generate(level);
   if (level >= 1 && level <= LEVELS.length) return decode(LEVELS[level - 1]);
-  const hard = Math.max(0, LEVELS.findIndex((l) => l.startsWith("9:"))), base = decode(LEVELS[hard + ((level - 1 - hard) % (LEVELS.length - hard))]);   // recycle the 9x9 levels
+  const top = Math.max(...LEVELS.map((l) => +l.split(":")[0])), hard = Math.max(0, LEVELS.findIndex((l) => l.startsWith(`${top}:`))), base = decode(LEVELS[hard + ((level - 1 - hard) % (LEVELS.length - hard))]);   // past the last level, recycle the biggest boards
   return transformPuzzle(base, level * 5 + 1, makeRng((level * 31 + 7) >>> 0));
 }

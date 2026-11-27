@@ -38,6 +38,33 @@ const waterfall = (): Prop => ({ w: 22, h: 40, draw: (g) => { R(g, 0, 0, 22, 10,
 const catnip = (): Prop => ({ w: 22, h: 30, draw: (g) => { R(g, 10, 12, 2, 18, "#2f9e4f"); for (const [x, y, w] of [[2, 18, 8], [12, 15, 8], [3, 24, 7], [12, 22, 8]]) ell(g, x + w / 2, y, w / 2, 3, "#4cc36a"); for (const [x, y] of [[8, 6], [12, 4], [10, 9]]) ell(g, x + 1, y, 2.5, 2.5, "#b57bff"); } });
 const hollow = (): Prop => ({ w: 34, h: 40, draw: (g) => { R(g, 9, 16, 16, 24, "#6b4423"); ell(g, 17, 14, 16, 13, "#1f5a3a"); ell(g, 17, 30, 4, 6, "#1c1630"); ell(g, 10, 12, 5, 4, "#2f7d52"); } });
 
+
+// ---- the Beyond worlds (11-20)
+const pumpkin = (): Prop => ({ w: 28, h: 26, draw: (g) => { ell(g, 14, 15, 12, 10, "#ff8a1a", "#d96a0a"); ell(g, 8, 15, 5, 9, "#ff9a2a"); ell(g, 20, 15, 5, 9, "#ff9a2a"); R(g, 12, 3, 4, 5, "#3f7a2a"); px(g, 16, 5, "#3f7a2a", 3, 2); px(g, 8, 13, "#2a1606", 3, 3); px(g, 17, 13, "#2a1606", 3, 3); R(g, 10, 19, 9, 2, "#2a1606"); px(g, 12, 18, "#2a1606", 1, 1); px(g, 16, 18, "#2a1606", 1, 1); } });
+const hay = (): Prop => ({ w: 30, h: 24, draw: (g) => { ell(g, 15, 13, 14, 10, "#e8c050", "#c89a30"); for (let i = 0; i < 8; i++) px(g, 4 + i * 3, 6 + (i % 3) * 4, "#b88a20", 2, 1); R(g, 2, 12, 26, 2, "#8a5a1a"); } });
+const scarecrow = (): Prop => ({ w: 26, h: 40, draw: (g) => { R(g, 12, 12, 3, 28, "#6b4423"); R(g, 2, 17, 22, 3, "#6b4423"); ell(g, 13, 9, 6, 6, "#f5d38a"); tri(g, [5, 6], [13, 0], [21, 6], "#5a3410"); R(g, 4, 6, 18, 2, "#5a3410"); px(g, 10, 9, "#1c1630", 2, 2); px(g, 15, 9, "#1c1630", 2, 2); R(g, 8, 20, 11, 10, "#e5484d"); px(g, 0, 17, "#e8c050", 3, 2); px(g, 23, 17, "#e8c050", 3, 2); } });
+const cloudIsland = (): Prop => ({ w: 40, h: 28, draw: (g) => { tri(g, [6, 14], [34, 14], [20, 27], "#c89a6a"); ell(g, 20, 12, 17, 7, "#7ad07a", "#4f9a3a"); ell(g, 9, 17, 8, 4, "#fff"); ell(g, 30, 17, 8, 4, "#fff"); ell(g, 20, 19, 9, 4, "#fff", "#e0e8ff"); } });
+const rainbow = (): Prop => ({ w: 36, h: 20, draw: (g) => { ["#ff595e", "#ffca3a", "#8ac926", "#4cc3ff", "#9b7fdc"].forEach((c, k) => { for (let a = 0; a <= 180; a += 4) { const r = 17 - k * 2.4, x = 18 - Math.cos((a * Math.PI) / 180) * r, y = 19 - Math.sin((a * Math.PI) / 180) * r; px(g, x, y, c, 2, 2); } }); } });
+const mouseHouse = (): Prop => ({ w: 30, h: 30, draw: (g) => { R(g, 3, 12, 24, 17, "#b58a5a"); tri(g, [0, 13], [15, 1], [30, 13], "#8a4a2a"); ell(g, 15, 25, 4, 4.5, "#3a2410"); R(g, 11, 25, 8, 4, "#3a2410"); px(g, 6, 16, "#ffe08a", 4, 4); px(g, 20, 16, "#ffe08a", 4, 4); px(g, 14, 7, "#fff3b0", 2, 2); } });
+const cheese = (): Prop => ({ w: 26, h: 20, draw: (g) => { tri(g, [1, 18], [25, 18], [25, 4], "#ffd23f"); R(g, 1, 14, 24, 5, "#f0b800"); for (const [x, y] of [[16, 10], [20, 14], [10, 15], [21, 7]]) ell(g, x, y, 1.8, 1.8, "#c98a00"); } });
+const sakuraTree = (): Prop => ({ w: 36, h: 42, draw: (g) => { R(g, 16, 18, 4, 24, "#6b4423"); R(g, 12, 26, 5, 2, "#6b4423"); for (const [x, y, r] of [[10, 13, 9], [26, 13, 9], [18, 8, 10], [18, 17, 9]]) ell(g, x, y, r, r * 0.85, "#ffb3d0", "#ff8fb3"); for (const [x, y] of [[8, 11], [22, 7], [28, 15], [14, 18], [19, 12]]) px(g, x, y, "#fff", 2, 2); } });
+const torii = (): Prop => ({ w: 36, h: 32, draw: (g) => { R(g, 5, 8, 4, 24, "#d9342b"); R(g, 27, 8, 4, 24, "#d9342b"); R(g, 1, 4, 34, 4, "#d9342b"); R(g, 0, 2, 36, 3, "#1c1630"); R(g, 5, 12, 26, 3, "#d9342b"); } });
+const stall = (c: string): Prop => ({ w: 34, h: 32, draw: (g) => { for (let i = 0; i < 6; i++) R(g, 2 + i * 5, 4, 5, 8, i % 2 ? "#fff" : c); for (let i = 0; i < 6; i++) ell(g, 4.5 + i * 5, 12, 2.5, 1.8, i % 2 ? "#fff" : c); R(g, 4, 12, 2, 18, "#6b4423"); R(g, 28, 12, 2, 18, "#6b4423"); R(g, 3, 22, 28, 4, "#a0642d"); for (const [x, col] of [[8, "#9ad8ff"], [13, "#c4d0e0"], [18, "#ff8a6a"], [23, "#9ad8ff"]] as [number, string][]) ell(g, x, 20, 2.6, 1.6, col); } });
+const barrel = (): Prop => ({ w: 20, h: 24, draw: (g) => { ell(g, 10, 12, 9, 11, "#a0642d", "#7a4a1e"); R(g, 2, 6, 16, 2, "#4a3a2a"); R(g, 1, 16, 18, 2, "#4a3a2a"); } });
+const manor = (): Prop => ({ w: 40, h: 46, draw: (g) => { R(g, 4, 20, 32, 26, "#4a3a6a"); tri(g, [1, 21], [20, 4], [39, 21], "#2a1a4a"); R(g, 27, 6, 5, 14, "#2a1a4a"); for (const [x, y] of [[8, 26], [26, 26], [8, 35], [26, 35]]) px(g, x, y, "#ffe08a", 5, 5); ell(g, 20, 41, 3.5, 4.5, "#1c1630"); R(g, 16, 41, 8, 5, "#1c1630"); px(g, 13, 10, "#1c1630", 6, 1); } });
+const ghost = (): Prop => ({ w: 20, h: 26, draw: (g) => { ell(g, 10, 10, 8, 9, "#f4f8ff", "#cfd8f0"); R(g, 2, 10, 16, 12, "#f4f8ff"); for (const x of [2, 7, 12]) tri(g, [x, 21], [x + 3, 25], [x + 6, 21], "#f4f8ff"); px(g, 6, 9, "#1c1630", 2, 3); px(g, 12, 9, "#1c1630", 2, 3); px(g, 8, 14, "#1c1630", 4, 2); } });
+const tomb = (): Prop => ({ w: 18, h: 26, draw: (g) => { R(g, 2, 8, 14, 18, "#a8b0c0"); ell(g, 9, 9, 7, 7, "#a8b0c0"); R(g, 8, 10, 2, 9, "#6a7488"); R(g, 5, 13, 8, 2, "#6a7488"); R(g, 0, 24, 18, 2, "#5a4a3a"); } });
+const candyCane = (): Prop => ({ w: 16, h: 36, draw: (g) => { for (let y = 8; y < 36; y++) R(g, 3, y, 5, 1, Math.floor(y / 3) % 2 ? "#fff" : "#e5352f"); for (let a = 180; a <= 360; a += 15) { const x = 8 + Math.cos((a * Math.PI) / 180) * 5, y = 8 + Math.sin((a * Math.PI) / 180) * 5; px(g, x, y, Math.floor(a / 30) % 2 ? "#fff" : "#e5352f", 3, 3); } } });
+const lollipop = (): Prop => ({ w: 22, h: 36, draw: (g) => { R(g, 10, 16, 2, 20, "#f5e6c8"); ell(g, 11, 10, 10, 10, "#ff6fa5"); ell(g, 11, 10, 7, 7, "#ffd23f"); ell(g, 11, 10, 4, 4, "#ff6fa5"); ell(g, 11, 10, 1.6, 1.6, "#fff"); } });
+const gumdrop = (): Prop => ({ w: 22, h: 20, draw: (g) => { ell(g, 11, 12, 10, 8, "#5fe0b0", "#34b888"); R(g, 1, 12, 20, 6, "#5fe0b0"); for (const [x, y] of [[6, 9], [11, 6], [15, 10], [9, 14], [16, 15]]) px(g, x, y, "#fff", 1, 1); } });
+const cabinet = (): Prop => ({ w: 24, h: 38, draw: (g) => { R(g, 2, 2, 20, 36, "#2a1a5a"); R(g, 4, 5, 16, 12, "#0a0a1a"); R(g, 5, 6, 14, 10, "#00e5ff"); for (const [x, y] of [[8, 9], [14, 9], [8, 12], [14, 12], [11, 10]]) px(g, x, y, "#0a0a1a", 2, 2); R(g, 6, 22, 12, 4, "#ff2fd4"); px(g, 8, 28, "#ffd23f", 3, 3); px(g, 14, 28, "#4cc3ff", 3, 3); R(g, 2, 36, 20, 2, "#ff2fd4"); } });
+const neonSign = (): Prop => ({ w: 34, h: 20, draw: (g) => { R(g, 1, 1, 32, 2, "#ff2fd4"); R(g, 1, 17, 32, 2, "#ff2fd4"); R(g, 1, 1, 2, 18, "#ff2fd4"); R(g, 31, 1, 2, 18, "#ff2fd4"); for (let x = 6; x < 28; x += 5) R(g, x, 6, 3, 8, x % 2 ? "#00e5ff" : "#ffe94a"); } });
+const fern = (): Prop => ({ w: 32, h: 36, draw: (g) => { for (let k = -3; k <= 3; k++) for (let i = 0; i < 12; i++) { const x = 16 + k * (i * 1.1) + (k * i * 0.2), y = 34 - i * 2.6 + Math.abs(k) * i * 0.35; px(g, x, y, i % 2 ? "#2f9e4f" : "#4cc36a", 2, 2); } R(g, 15, 24, 2, 12, "#6b4423"); } });
+const bones = (): Prop => ({ w: 38, h: 22, draw: (g) => { R(g, 2, 17, 34, 3, "#f5e6c8"); for (let i = 0; i < 5; i++) for (let a = 0; a <= 180; a += 20) { const x = 5 + i * 7 + Math.cos((a * Math.PI) / 180) * 3, y = 17 - Math.sin((a * Math.PI) / 180) * 12; px(g, x, y, "#f5e6c8", 2, 2); } ell(g, 3, 17, 3, 3, "#f5e6c8"); ell(g, 35, 17, 3, 3, "#f5e6c8"); } });
+const egg = (): Prop => ({ w: 20, h: 24, draw: (g) => { ell(g, 10, 14, 8, 10, "#f4ecd0", "#d8c898"); for (const [x, y] of [[7, 11], [13, 15], [9, 18], [12, 8]]) ell(g, x, y, 1.8, 1.8, "#5fae4a"); } });
+const planet = (c: string): Prop => ({ w: 32, h: 24, draw: (g) => { ell(g, 16, 12, 9, 9, c, "#00000044"); for (let a = 0; a < 360; a += 6) { const x = 16 + Math.cos((a * Math.PI) / 180) * 15, y = 12 + Math.sin((a * Math.PI) / 180) * 4; if (a > 180 || Math.hypot(x - 16, (y - 12) * 2.2) > 9) px(g, x, y, "#fff3b0", 2, 1); } px(g, 12, 8, "#ffffff88", 3, 2); } });
+const ufo = (): Prop => ({ w: 36, h: 24, draw: (g) => { ell(g, 18, 9, 7, 6, "#9ad8ff", "#5ab0e8"); ell(g, 18, 15, 16, 5, "#c4cce0", "#8a93ae"); for (const x of [8, 14, 20, 26]) px(g, x, 16, "#ffd23f", 2, 2); tri(g, [10, 20], [26, 20], [18, 24], "#ffe94a55"); } });
+
 const PROPS: Prop[][] = [
   [cottage(), flower("#ff8fb3"), flower("#ffd23f"), pine(false)],
   [yarn("#ff7ab5"), yarn("#7ab8ff"), yarn("#ffd23f"), flower("#ffffff")],
@@ -49,6 +76,16 @@ const PROPS: Prop[][] = [
   [pine(true), cabin(), snowman(), pine(true)],
   [tower(), lantern(), moon(), lantern()],
   [castle(), fountain(), crown(), fountain()],
+  [pumpkin(), hay(), scarecrow(), pumpkin()],
+  [cloudIsland(), rainbow(), cloud(), cloudIsland()],
+  [mouseHouse(), cheese(), lantern(), mouseHouse()],
+  [sakuraTree(), torii(), lantern(), sakuraTree()],
+  [stall("#e5484d"), stall("#4cc3ff"), barrel(), stall("#ffd23f")],
+  [manor(), ghost(), tomb(), ghost()],
+  [candyCane(), lollipop(), gumdrop(), candyCane()],
+  [cabinet(), neonSign(), tower(), cabinet()],
+  [fern(), bones(), egg(), fern()],
+  [planet("#ff9fd0"), ufo(), moon(), planet("#7ab8ff")],
 ];
 export const PROP_COUNT = 4;
 /** One prop image for an area (data URL) plus its size. */
@@ -92,6 +129,11 @@ const PAL: Pal[] = [
   { g1: "#c4743a", g2: "#e8b373", f1: "#ff8fb3", f2: "#ffffff", r: "#a0642d" }, { g1: "#e8c878", g2: "#ffe6a8", f1: "#ff8fb3", f2: "#ffffff", r: "#8fe0ff" },
   { g1: "#b88246", g2: "#d8b27a", f1: "#ffd23f", f2: "#e8703a", r: "#8a5a2b" }, { g1: "#cfe0ff", g2: "#ffffff", f1: "#8fd0ff", f2: "#ffffff", r: "#9fb4d8" },
   { g1: "#3a3a7a", g2: "#5a5aa0", f1: "#ffd23f", f2: "#ff9f1c", r: "#4a4a7a" }, { g1: "#e8c14a", g2: "#f5d36a", f1: "#ff4d6d", f2: "#ffffff", r: "#d8d8e8" },
+  { g1: "#c4742a", g2: "#e8a050", f1: "#ff8a1a", f2: "#3f7a2a", r: "#8a5a2b" }, { g1: "#cfe8ff", g2: "#ffffff", f1: "#ff9ec4", f2: "#7ab8ff", r: "#bfd0e8" },
+  { g1: "#c4a468", g2: "#e0c48a", f1: "#ffd23f", f2: "#e8a020", r: "#a08258" }, { g1: "#7ac07a", g2: "#a8e0a0", f1: "#ffb3d0", f2: "#ffffff", r: "#c8c8d8" },
+  { g1: "#d8b88a", g2: "#f0d4a8", f1: "#e5484d", f2: "#4cc3ff", r: "#b89868" }, { g1: "#4a3a6a", g2: "#6a5a8a", f1: "#9aff7a", f2: "#ffe08a", r: "#5a4a7a" },
+  { g1: "#ffe0e8", g2: "#ffffff", f1: "#e5352f", f2: "#5fe0b0", r: "#ffc0d0" }, { g1: "#2a1a5a", g2: "#3a2a7a", f1: "#00e5ff", f2: "#ff2fd4", r: "#4a3a8a" },
+  { g1: "#c8a860", g2: "#e0c888", f1: "#4a9a3a", f2: "#f5e6c8", r: "#9a7a48" }, { g1: "#2a1a6a", g2: "#4a3a9a", f1: "#ff9fd0", f2: "#ffe08a", r: "#5a4a9a" },
 ];
 const tuft = (p: Pal): Prop => ({ w: 11, h: 9, draw: (g) => { for (const [x, h, c] of [[1, 5, p.g1], [4, 8, p.g2], [7, 6, p.g1], [9, 4, p.g2]] as [number, number, string][]) R(g, x, 9 - h, 2, h, c); } });
 const bloom = (p: Pal): Prop => ({ w: 11, h: 11, draw: (g) => { for (const [x, y] of [[5, 1], [1, 5], [9, 5], [5, 9]]) ell(g, x, y, 1.9, 1.9, p.f1); ell(g, 5, 5, 2, 2, p.f2); R(g, 5, 7, 1, 4, p.g1); } });
@@ -100,14 +142,14 @@ const bush = (p: Pal): Prop => ({ w: 20, h: 13, draw: (g) => { ell(g, 6, 8, 5.5,
 const gem = (p: Pal): Prop => ({ w: 10, h: 10, draw: (g) => { tri(g, [5, 0], [0, 5], [10, 5], p.f2); tri(g, [0, 5], [10, 5], [5, 10], p.f1); } });
 /** Small decor sprites for a world (tufts, blooms, pebbles, bushes, gems). */
 export function decorUrl(area: number, i: number): { src: string; w: number; h: number } {
-  const p = PAL[area % 10], list = [tuft(p), bloom(p), pebble(p), bush(p), tuft(p), gem(p)], k = i % list.length, key = `d${area}:${k}`, d = list[k], hit = cache.get(key);
+  const p = PAL[area % PAL.length], list = [tuft(p), bloom(p), pebble(p), bush(p), tuft(p), gem(p)], k = i % list.length, key = `d${area}:${k}`, d = list[k], hit = cache.get(key);
   if (hit) return { src: hit, w: d.w, h: d.h };
   const c = cv(d.w, d.h), g = c.getContext("2d")!; d.draw(g); outline(c); const src = c.toDataURL(); cache.set(key, src); return { src, w: d.w, h: d.h };
 }
 /** A 24x24 repeating ground texture for a world: a few specks in the world's colours (the CSS tiles it). */
 export function tileUrl(area: number): string {
   const key = `tile${area}`, hit = cache.get(key); if (hit) return hit;
-  const p = PAL[area % 10], c = cv(24, 24), g = c.getContext("2d")!; let s = 1234 + area * 77; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const p = PAL[area % PAL.length], c = cv(24, 24), g = c.getContext("2d")!; let s = 1234 + area * 77; const rnd = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
   for (let i = 0; i < 16; i++) { const x = Math.floor(rnd() * 22), y = Math.floor(rnd() * 22), k = i % 3; g.globalAlpha = 0.5; px(g, x, y, k === 0 ? p.g2 : k === 1 ? p.g1 : "#ffffff", k === 1 ? 2 : 1, k === 2 ? 1 : 2); }
   if (area === 5) { g.globalAlpha = 0.35; for (let x = 0; x < 24; x += 6) px(g, x, 8 + (x % 12 ? 0 : 2), "#ffffff", 4, 1); }   // wave ripples on the shores
   if (area === 6) { g.globalAlpha = 0.25; for (let y = 0; y < 24; y += 4) px(g, 0, y, "#5a3d1d", 24, 1); }                               // cardboard corrugation

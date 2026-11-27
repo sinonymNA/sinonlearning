@@ -137,7 +137,8 @@ test("opening each pack charges that pack's price; unknown packs are rejected", 
   const cat = await handleEconomy(ctx, { type: "catalog" });
   assert.equal(cat.packs.length, 6);
   assert.ok(cat.shop.deal && cat.shop.spotlight);
-  await assert.rejects(() => handleEconomy(ctx, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need \d+/);
+  const poor = studentCtx(new MemoryStore(), "kid-poor");   // a fresh account (the leftover above depends on the day's deal, so it cannot be relied on to be too little)
+  await assert.rejects(() => handleEconomy(poor, { type: "open_pack", requestId: "req-poor-0002", packId: "legend" }), /need \d+/);
 });
 
 test("Snack Pack is a specialty pack: drops ONLY Snack Squad, every other pack never drops them, all 16 are obtainable", () => {

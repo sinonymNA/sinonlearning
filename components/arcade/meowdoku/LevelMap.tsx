@@ -6,14 +6,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AREAS, AREA_SIZE, LEVEL_COUNT, isFinale } from "../../../arcade-server/meowdoku/index.mjs";
 import { makeRng } from "../../../arcade-server/gridiron/rng.mjs";
 import { propUrl, decorUrl, tileUrl, starUrl, lockUrl, crownUrl, boltUrl, flagUrl } from "./mapArt";
-import { catUrl, npcCatUrl } from "./sprites";
+import { npcCatUrl } from "./sprites";
 import { tone } from "../prefs";
 
 const ROW = 88, TOP = 40, BOTTOM = 52, TRACK_H = TOP + (AREA_SIZE - 1) * ROW + BOTTOM, COL_MAX = 560;
 const nodeXPct = (area: number, i: number) => 50 + 25 * Math.sin(i * 0.95 + area * 1.9);
 const nodeY = (i: number) => TRACK_H - BOTTOM - i * ROW;
 type Pt = [number, number];
-const PROP_N = [4, 4, 4, 4, 4, 4, 4, 4, 4, 4];
+const PROP_N = Array(20).fill(4);
 
 /** What each world's cats say when you tap them. */
 const TALK: string[][] = [
@@ -27,8 +27,18 @@ const TALK: string[][] = [
   ["Brrr! Anyone have a scarf?", "The lake is frozen. I slipped.", "Expert puzzles are Daily on Sundays."],
   ["Look at all the lanterns!", "The rooftops are my kingdom.", "Chain clean cats for a COMBO."],
   ["All hail the cat king!", "This crown is a bit tight.", "You made it. Meow-velous!"],
+  ["That pumpkin is bigger than me.", "Scarecrow? More like scare-CAT.", "Ten by ten is a lot of squares!"],
+  ["Don't look down. I'm kidding. Look!", "Napping on a cloud. Perfect.", "Hard puzzles need hard thinking."],
+  ["Mind the cheese. It's a trap. Maybe.", "Everything here is mouse-sized!", "Count the squares. Then count again."],
+  ["The blossoms smell wonderful.", "Shh, the koi are sleeping.", "Rule one cat out, the rest follow."],
+  ["Fresh fish! Cheap fish! Fish!", "I'm just here for the sardines.", "Haggling is a puzzle too."],
+  ["Boo! ...Did I scare you?", "That wasn't me. It was a hairball.", "Spooky puzzles. Cosy answers."],
+  ["Is that lighthouse made of gingerbread?", "I licked the harbor. Minty.", "Sweet, sticky, solvable."],
+  ["INSERT COIN. Just kidding.", "My high score is a secret.", "Glowing grids, glowing cats."],
+  ["Is that dinosaur... purring?", "I found a fossil! It's a fishbone.", "Ancient puzzles, modern cats."],
+  ["Zzzz... oh. Hello.", "That moon is very comfy.", "You've come so far. Meow-nificent!"],
 ];
-const FX = ["petal", "petal", "bubble", "glow", "crumb", "bubble", "dust", "snow", "glow", "spark"];
+const FX = ["petal", "petal", "bubble", "glow", "crumb", "bubble", "dust", "snow", "glow", "spark", "crumb", "bubble", "crumb", "petal", "bubble", "glow", "snow", "spark", "dust", "glow"];
 
 /** Distance from a point to a polyline. */
 function distToPath(x: number, y: number, pts: Pt[]) {
@@ -85,7 +95,7 @@ function layoutScene(ai: number, W: number) {
   return { pts, items, npcs, colL, colW };
 }
 
-export default function LevelMap({ profile, onPlay, arrived = 0 }: { profile: any; onPlay: (level: number) => void; arrived?: number }) {
+export default function LevelMap({ profile, onPlay, arrived = 0, meUrl }: { profile: any; onPlay: (level: number) => void; arrived?: number; meUrl: string }) {
   const cur = useRef<HTMLButtonElement>(null), wrap = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(390), [talk, setTalk] = useState<{ id: string; text: string } | null>(null), timer = useRef<ReturnType<typeof setTimeout> | null>(null), nextLine = useRef(0);
   const frontier = Math.min(profile.level, LEVEL_COUNT), stars: Record<number, number> = profile.stars || {};
@@ -116,7 +126,7 @@ export default function LevelMap({ profile, onPlay, arrived = 0 }: { profile: an
                   return (
                     <button key={level} ref={here ? cur : undefined} data-level={level} role="listitem" disabled={locked} aria-label={locked ? `Level ${level}, locked` : `Level ${level}, ${st} of 3 stars${profile.fast?.[level] ? ", speedy" : ""}${here ? ", your next level" : ""}${finale ? ", area finale" : ""}`}
                       className={`mp-node ${locked ? "locked" : st ? "done" : "now"} ${here ? "here" : ""} ${finale ? "finale" : ""}`} style={{ left: px, top: py }} onClick={() => !locked && onPlay(level)}>
-                      {here && <img className={`mp-me ${arrived === level ? "arrive" : ""}`} src={catUrl("happy")} alt="" draggable={false} />}
+                      {here && <img className={`mp-me ${arrived === level ? "arrive" : ""}`} src={meUrl} alt="" draggable={false} />}
                       {finale && !locked && <img className="mp-crown" src={crownUrl()} alt="" draggable={false} />}
                       {i === 4 && <img className="mp-flag" src={flagUrl()} alt="" draggable={false} />}
                       {locked ? <img className="mp-lock" src={lockUrl()} alt="" draggable={false} /> : <b>{level}</b>}

@@ -8,19 +8,22 @@ import {
   newGame, toggleX, toggleCat, markX, setCell, setMark, undo as undoMove, retract, clearBoard, beginStroke, endStroke, cats, conflictCells, blocked, smartHint, wink, completeLevel, totalStars,
   areaOf, areaIndex, AREAS, entersNewArea, LEVEL_COUNT, MAX_FISH, regionName, normalizeProfile, DIFF_KEYS,
   dailySpec, newDailyGame, newEndlessGame, completeDaily, completeEndless, buy, sweepBoard, feedFish, dayKey, prevDay, parFor,
+  setRegionNames, colorNames, colorsFor, buyItem, equipItem, clearFresh, itemOf,
 } from "../../../arcade-server/meowdoku/index.mjs";
 import { PrefsProvider, PrefsButtons, usePrefs, sfx, tone } from "../prefs";
-import { catUrl, fishUrl, makeLogo } from "./sprites";
+import { catUrl, makeLogo } from "./sprites";
 import { starUrl, yarnUrl, flameUrl, boltUrl, broomUrl, bulbUrl } from "./mapArt";
 import LevelMap from "./LevelMap";
 import Home from "./Home";
-import { EndlessSheet, ShopSheet, itemIcon } from "./Sheets";
+import { EndlessSheet, itemIcon } from "./Sheets";
+import Closet from "./Closet";
+import { catUrlFor, fishSkinUrl, markUrl } from "./closetArt";
 import "./meowdoku.css";
 
 export const GAME_NAME = "Meowdoku";
 const KEY = "meowdoku:v1", OLD_KEY = "catgrid:v1", LOGO = "/arcade/meowdoku-logo.png";
 const COLORS = ["#9ed36a", "#e8706f", "#f6b3d2", "#ffab5e", "#9b7fdc", "#ecc84a", "#8fb4e0", "#5fcab8", "#c9a27a"];
-const SHAPES = ["●", "▲", "■", "◆", "★", "♥", "✚", "⬟", "▼"];
+const SHAPES = ["●", "▲", "■", "◆", "★", "♥", "✚", "⬟", "▼", "◉"];
 const DOUBLE_MS = 380;
 type Settings = { auto: boolean; shapes: boolean; mode: "x" | "cat"; endless: { n: number; diff: string } };
 type Saved = { profile: any; game: any; secs: number; settings: Settings };
@@ -73,7 +76,7 @@ function Inner() {
   const { prefs } = usePrefs();
   const [, bump] = useReducer((x: number) => x + 1, 0);
   const [view, setView] = useState<"home" | "map" | "play">("home");
-  const [sheet, setSheet] = useState<null | "endless" | "shop">(null);
+  const [sheet, setSheet] = useState<null | "endless" | "shop">(null), [closetTab, setClosetTab] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState<string | null>(null);
   const [today, setToday] = useState("");
   const [rip, setRip] = useState<{ id: number; r: number; c: number } | null>(null);
@@ -215,6 +218,9 @@ function Inner() {
   };
   const next = () => { const x = S.current!, st = x.game; if (st.mode === "endless") { const e = x.settings.endless; startEndless(e.n, e.diff); return; } const l = st.level + 1; if (l > LEVEL_COUNT) goMap(); else openLevel(l); };
   const doBuy = (item: string) => { const x = S.current!, r = buy(x.profile, item); if (r.ok) { sfx("good"); tone(760, 0.06, "square", 0.08); bump(); save(); } };
+  const doBuyItem = (slot: string, id: string) => { const x = S.current!, r = buyItem(x.profile, slot, id); if (r.ok) { sfx("good"); tone(760, 0.06, "square", 0.08); window.setTimeout(() => tone(980, 0.08, "square", 0.08), 90); bump(); save(); } else sfx("bad"); };
+  const doEquip = (slot: string, id: string) => { const x = S.current!, r = equipItem(x.profile, slot, id); if (r.ok) { tone(640, 0.05, "triangle", 0.09); bump(); save(); } };
+  const doVisit = (slot: string) => { const x = S.current; if (x && x.profile.closet.fresh.some((k: string) => k.startsWith(`${slot}:`))) { clearFresh(x.profile, slot); bump(); save(); } };
   const setting = (k: "auto" | "shapes") => { const x = S.current!; x.settings[k] = !x.settings[k]; bump(); save(); };
   const setMode = (m: "x" | "cat") => { S.current!.settings.mode = m; last.current = null; bump(); save(); };
   const closeHelp = () => { S.current!.profile.seenHelp = true; setHelp(false); save(); };
@@ -231,6 +237,10 @@ function Inner() {
   };
 
   if (!s) return <div className="cg-root"><div className="cg-loading">LOADING…</div></div>;
+  const eq = s.profile.closet.equip as Record<string, string>, PAL: string[] = colorsFor(s.profile);
+  setRegionNames(colorNames(PAL));   // hints always name the colours the player actually sees
+  const cat = (m: "normal" | "oops" | "happy") => catUrlFor(eq, m), fish = (lost = false) => fishSkinUrl(eq.fish, lost);
+  const bdItem: any = itemOf("backdrop", eq.backdrop), bdCss: string = bdItem?.css || "";
   const st = s.game, n = st.n, bad = conflictCells(st), placed = cats(st).length, block = s.settings.auto ? blocked(st) : null, catMode = s.settings.mode === "cat", mode = st.mode || "campaign";
   const inPlay = view === "play", camp = mode === "campaign";
   const themeIdx = view !== "play" ? areaIndex(Math.min(s.profile.level, LEVEL_COUNT)) : camp ? areaIndex(st.level) : (mode === "daily" ? (+((st.day || "0-0-0").split("-")[2]) || 0) : n + (DIFF_KEYS.indexOf(st.diff) + 1) * 2) % AREAS.length;
@@ -247,7 +257,7 @@ function Inner() {
   const backTo = () => (inPlay ? (camp ? goMap() : goHome()) : goHome());
 
   return (
-    <div className={`cg-root ${prefs.calm ? "cg-calm" : ""} v-${view}`} style={{ ["--bgA" as any]: area.bgA, ["--bgB" as any]: area.bgB, ["--accent" as any]: area.accent, ["--ground" as any]: area.ground }}>
+    <div className={`cg-root ${prefs.calm ? "cg-calm" : ""} v-${view}`} style={{ ["--bgA" as any]: area.bgA, ["--bgB" as any]: area.bgB, ["--accent" as any]: area.accent, ["--ground" as any]: area.ground, ...(inPlay && bdCss ? { background: bdCss } : {}) }}>
       {view !== "home" && (
         <header className="cg-top">
           <button className="cg-btn round" onClick={backTo} aria-label={inPlay && camp ? "Back to the map" : "Back to the home screen"}>←</button>
@@ -274,18 +284,18 @@ function Inner() {
       )}
 
       {view === "home" && (
-        <Home logo={LOGO} area={area} areaIndex={themeIdx} stars={totalStars(s.profile)} yarn={s.profile.yarn} streak={streakNow} level={s.profile.level} finished={s.profile.level > LEVEL_COUNT}
+        <Home cat={(m) => cat(m)} fresh={s.profile.closet.fresh.length} logo={LOGO} area={area} areaIndex={themeIdx} stars={totalStars(s.profile)} yarn={s.profile.yarn} streak={streakNow} level={s.profile.level} finished={s.profile.level > LEVEL_COUNT}
           resume={resume} daily={{ name: spec.name, n: spec.n, done: doneToday, stars: s.profile.daily.done[dayNow] || 0 }} endlessBest={s.profile.endless.wins}
           onPlay={goMap} onResume={() => { resetPlay(); setView("play"); bump(); }} onDaily={startDaily} onEndless={() => setSheet("endless")} onShop={() => setSheet("shop")} onHelp={() => setHelp(true)} onSettings={() => setPanel((v) => !v)} backHref="/arcade" />
       )}
-      {view === "map" && <LevelMap profile={s.profile} onPlay={openLevel} arrived={arrived} />}
+      {view === "map" && <LevelMap profile={s.profile} onPlay={openLevel} arrived={arrived} meUrl={cat("happy")} />}
 
       {inPlay && (
       <main className="cg-main">
         <section className="cg-side">
           <div className="cg-world-tag" aria-hidden><small>{tag}</small></div>
           <div className="cg-fish" aria-label={`${st.fish} of ${fishSlots} fish left`}>
-            {Array.from({ length: fishSlots }, (_, i) => <img key={`${i}:${i >= st.fish}`} src={fishUrl(i >= st.fish)} alt="" className={`${i >= st.fish ? "lost" : ""} ${fishHit === i ? "hit" : ""} ${gain === i ? "gain" : ""}`} draggable={false} />)}
+            {Array.from({ length: fishSlots }, (_, i) => <img key={`${i}:${i >= st.fish}`} src={fish(i >= st.fish)} alt="" className={`${i >= st.fish ? "lost" : ""} ${fishHit === i ? "hit" : ""} ${gain === i ? "gain" : ""}`} draggable={false} />)}
             {st.combo >= 2 && !st.done && <span className="cg-combo" key={st.combo} aria-label={`Combo ${st.combo}`}>COMBO ×{st.combo}</span>}
           </div>
           <ul className="cg-rules" aria-label="Rules">
@@ -293,11 +303,11 @@ function Inner() {
             <li><span><b>1 cat</b> in every colour</span></li>
             <li><span>Cats <b>can&apos;t touch</b>, even corners</span></li>
           </ul>
-          <div className="cg-slots" aria-label={`${placed} of ${n} cats placed`}>{Array.from({ length: n }, (_, i) => <span key={i} className={i < placed ? "on" : ""}>{i < placed && <img src={catUrl("normal")} alt="" draggable={false} />}</span>)}</div>
+          <div className="cg-slots" aria-label={`${placed} of ${n} cats placed`}>{Array.from({ length: n }, (_, i) => <span key={i} className={i < placed ? "on" : ""}>{i < placed && <img src={cat("normal")} alt="" draggable={false} />}</span>)}</div>
           <div className="cg-mode" role="group" aria-label="What a single tap does">
             <span className="lbl">TAP =</span>
             <button className={!catMode ? "on" : ""} aria-pressed={!catMode} onClick={() => setMode("x")}>✖ X</button>
-            <button className={catMode ? "on" : ""} aria-pressed={catMode} onClick={() => setMode("cat")}><img src={catUrl("normal")} alt="" draggable={false} /> CAT</button>
+            <button className={catMode ? "on" : ""} aria-pressed={catMode} onClick={() => setMode("cat")}><img src={cat("normal")} alt="" draggable={false} /> CAT</button>
             <button className="mini" onClick={doUndo} disabled={st.done || !st.history.length} aria-label="Undo">↩<span> UNDO</span></button>
             <button className="mini" onClick={doClear} disabled={st.done || !st.history.length} aria-label="Clear the board">⌫<span> CLEAR</span></button>
             <small>Double-tap = {catMode ? "✖ X" : "CAT"} · Swipe = X&apos;s</small>
@@ -306,28 +316,28 @@ function Inner() {
             {say ? (<><p>{say.text}</p>{say.apply && <button className="cg-btn go" onClick={say.apply}>{say.kind === "cat" || say.kind === "nudge" ? "PUT THE CAT" : say.kind === "badx" ? "REMOVE X" : say.kind === "shop" ? "OPEN SHOP" : "CROSS THEM OUT"}</button>}</>) : <p className="mute">{catMode ? "Tap puts a cat. Double-tap marks an X. Swipe to draw X's." : "Tap marks an X. Double-tap puts a cat. Swipe to draw X's."}</p>}
           </div>
           <div className="cg-powers">
-            <button className="cg-pw" onClick={useHelper} disabled={st.done} aria-label={`Cat Helper, ${s.profile.winks} left`}><img src={catUrl(mood === "oops" ? "oops" : "happy")} alt="" draggable={false} /><span>HELPER</span><i>{s.profile.winks}</i></button>
+            <button className="cg-pw" onClick={useHelper} disabled={st.done} aria-label={`Cat Helper, ${s.profile.winks} left`}><img src={cat(mood === "oops" ? "oops" : "happy")} alt="" draggable={false} /><span>HELPER</span><i>{s.profile.winks}</i></button>
             <button className="cg-pw" onClick={useHint} disabled={st.done} aria-label={`Hint, ${s.profile.hints} left`}><img src={bulbUrl()} alt="" draggable={false} /><span>HINT</span><i>{s.profile.hints}</i></button>
             <button className="cg-pw" onClick={useSweep} disabled={st.done} aria-label={`Sweep, ${s.profile.sweeps} left`}><img src={broomUrl()} alt="" draggable={false} /><span>SWEEP</span><i>{s.profile.sweeps}</i></button>
-            <button className="cg-pw" onClick={useSardine} disabled={st.done} aria-label={`Sardine, ${s.profile.sardines} left`}><img src={fishUrl()} alt="" draggable={false} /><span>SARDINE</span><i>{s.profile.sardines}</i></button>
+            <button className="cg-pw" onClick={useSardine} disabled={st.done} aria-label={`Sardine, ${s.profile.sardines} left`}><img src={fish()} alt="" draggable={false} /><span>SARDINE</span><i>{s.profile.sardines}</i></button>
           </div>
         </section>
 
         <section className="cg-stage">
-          <div ref={boardRef} className={`cg-board ${st.won ? "won" : ""}`} key={`${st.level}:${round}`} role="grid" aria-label={`${n} by ${n} cat grid`} style={{ ["--n" as any]: n }} onKeyDown={onKey}
+          <div ref={boardRef} className={`cg-board frame-${eq.frame} ${st.won ? "won" : ""}`} key={`${st.level}:${round}`} role="grid" aria-label={`${n} by ${n} cat grid`} style={{ ["--n" as any]: n }} onKeyDown={onKey}
             onPointerDown={onBoardDown} onPointerMove={onBoardMove} onPointerUp={onBoardUp} onPointerCancel={onBoardUp}>
             {st.regions.map((row: number[], r: number) => row.map((g: number, c: number) => {
               const m = st.marks[r][c], isBad = bad.has(`${r},${c}`), key = `${r},${c}`, firstOfRegion = s.settings.shapes && st.regions.flat().indexOf(g) === r * n + c, catIndex = m === 2 ? ci++ : 0, ripD = rd(r, c);
               return (
                 <button key={key} id={`cg-${r}-${c}`} data-rc={key} role="gridcell" tabIndex={focus[0] === r && focus[1] === c ? 0 : -1} className={`cg-cell ${m === 2 ? "cat" : ""} ${isBad ? "bad" : ""} ${shake === key ? "shake" : ""} ${hl.has(key) ? "hint" : ""} ${ripD ? "rip" : ""}`}
-                  style={{ background: COLORS[g], borderTopWidth: edge(r, c, -1, 0), borderBottomWidth: edge(r, c, 1, 0), borderLeftWidth: edge(r, c, 0, -1), borderRightWidth: edge(r, c, 0, 1), ["--d" as any]: `${(r + c) * 32}ms`, ["--i" as any]: catIndex, ["--rd" as any]: ripD ?? undefined }}
+                  style={{ background: PAL[g], borderTopWidth: edge(r, c, -1, 0), borderBottomWidth: edge(r, c, 1, 0), borderLeftWidth: edge(r, c, 0, -1), borderRightWidth: edge(r, c, 0, 1), ["--d" as any]: `${(r + c) * 32}ms`, ["--i" as any]: catIndex, ["--rd" as any]: ripD ?? undefined }}
                   onFocus={() => setFocus([r, c])}
                   aria-label={`Row ${r + 1}, column ${c + 1}, ${regionName(g)} area, ${m === 2 ? "cat" : m === 1 ? "marked X" : "empty"}`}>
                   {firstOfRegion && <i className="shape" aria-hidden>{SHAPES[g]}</i>}
-                  {m === 1 && <span className="x" aria-hidden />}
+                  {m === 1 && (eq.mark === "x" ? <span className="x" aria-hidden /> : <img className="mk" src={markUrl(eq.mark)} alt="" aria-hidden draggable={false} />)}
                   {m === 0 && block?.[r][c] && <span className="dot" aria-hidden />}
-                  {m === 2 && <img src={catUrl(isBad ? "oops" : st.won ? "happy" : "normal")} alt="" draggable={false} />}
-                  {puffAt.has(key) && <span className="puff" aria-hidden>{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ ["--a" as any]: `${i * 51}deg` }} />)}</span>}
+                  {m === 2 && <img src={cat(isBad ? "oops" : st.won ? "happy" : "normal")} alt="" draggable={false} />}
+                  {puffAt.has(key) && <span className={`puff fx-${eq.fx}`} aria-hidden>{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ ["--a" as any]: `${i * 51}deg` }} />)}</span>}
                 </button>
               );
             }))}
@@ -337,11 +347,11 @@ function Inner() {
       </main>
       )}
 
-      {confetti && <div className="cg-confetti" aria-hidden>{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ ["--x" as any]: `${(i * 37) % 100}%`, ["--d" as any]: `${(i % 7) * 90}ms`, ["--c" as any]: COLORS[i % COLORS.length], ["--r" as any]: `${(i * 53) % 360}deg` }} />)}</div>}
+      {confetti && <div className="cg-confetti" aria-hidden>{Array.from({ length: 28 }, (_, i) => <i key={i} style={{ ["--x" as any]: `${(i * 37) % 100}%`, ["--d" as any]: `${(i % 7) * 90}ms`, ["--c" as any]: PAL[i % PAL.length], ["--r" as any]: `${(i * 53) % 360}deg` }} />)}</div>}
 
-      {busy && <div className="cg-modal cg-busy" role="status"><div className="cg-card"><img className="cg-hero" src={catUrl("happy")} alt="" draggable={false} /><h2>{busy}</h2><div className="cg-dots" aria-hidden><i /><i /><i /></div></div></div>}
+      {busy && <div className="cg-modal cg-busy" role="status"><div className="cg-card"><img className="cg-hero" src={cat("happy")} alt="" draggable={false} /><h2>{busy}</h2><div className="cg-dots" aria-hidden><i /><i /><i /></div></div></div>}
       {sheet === "endless" && <EndlessSheet profile={s.profile} last={s.settings.endless} today={dayNow} onStart={startEndless} onClose={() => setSheet(null)} />}
-      {sheet === "shop" && <ShopSheet profile={s.profile} onBuy={doBuy} onClose={() => setSheet(null)} />}
+      {sheet === "shop" && <Closet profile={s.profile} level={s.profile.level} startSlot={closetTab} onBuy={doBuyItem} onBuyPower={doBuy} onEquip={doEquip} onVisit={doVisit} onClose={() => { setSheet(null); setClosetTab(undefined); }} />}
 
       {help && (
         <div className="cg-modal" role="dialog" aria-label="How to play" onClick={closeHelp}>
@@ -358,12 +368,12 @@ function Inner() {
       {result && (
         <div className="cg-modal" role="dialog" aria-label={result.won ? "Level complete" : "Out of fish"}>
           <div className="cg-card">
-            <img className="cg-hero" src={catUrl(result.won ? "happy" : "oops")} alt="" draggable={false} />
+            <img className="cg-hero" src={cat(result.won ? "happy" : "oops")} alt="" draggable={false} />
             {result.won ? (<>
               <h2>{result.finished ? "YOU DID IT!" : result.mode === "daily" ? "DAILY DONE!" : result.mode === "endless" ? "SOLVED!" : `LEVEL ${result.level} DONE!`}</h2>
               <div className="cg-starrow" aria-label={`${result.stars} of 3 stars`}>{[1, 2, 3].map((k) => <img key={k} src={starUrl(k <= result.stars)} alt="" style={{ animationDelay: `${k * 160}ms` }} draggable={false} />)}</div>
               {result.speedy && <p className="cg-speedy"><img src={boltUrl()} alt="" draggable={false} /> SPEEDY! Under {mmss(parFor(result.n))}</p>}
-              {result.finished && <p>All 100 levels cleared. The Royal Catdom is yours!</p>}
+              {result.finished && <p>All {LEVEL_COUNT} levels cleared. The whole Catdom is yours!</p>}
               {result.newArea && <p className="cg-newarea"><b>NEW WORLD: {result.newArea.name}</b><br /><span className="mute">{result.newArea.blurb}</span></p>}
               {result.mode === "daily" && result.first && <p className="cg-streak"><img src={flameUrl()} alt="" draggable={false} /> <b>{result.streak}</b> day streak{result.streak > 1 ? "!" : ". Come back tomorrow!"}</p>}
               {result.mode === "daily" && !result.first && <p className="mute">You already finished today&apos;s puzzle. Replays earn no extra rewards.</p>}
@@ -371,6 +381,7 @@ function Inner() {
               {result.mode === "endless" && !result.paid && <p className="mute">{result.points === 0 && result.yarn === 0 ? "No yarn this time (help was used, or today's yarn is all earned)." : ""}</p>}
               <ul className="cg-sum"><li><span>{result.mode === "campaign" ? "Board" : result.label || "Board"}</span><b>{result.n}×{result.n}</b></li><li><span>Time</span><b>{mmss(result.secs)}</b></li><li><span>Fish left</span><b>{result.fish}</b></li>{result.bestCombo >= 3 && <li><span>Best combo</span><b>×{result.bestCombo}</b></li>}{result.helps > 0 && <li><span>Helps used</span><b>{result.helps}</b></li>}{result.first || result.paid ? <li className="tot"><span>Points</span><b>+{result.points}</b></li> : <li><span>Replay</span><b>stars only</b></li>}</ul>
               {chips(result.reward ?? { yarn: result.yarn }).length > 0 && <div className="cg-chips" aria-label="Rewards">{chips(result.reward ?? { yarn: result.yarn }).map(([k, v, label]: any) => <span key={k}><img src={k === "yarn" ? yarnUrl() : itemIcon(k)} alt="" draggable={false} />+{v} {label}</span>)}</div>}
+              {(result.reward?.unlocked ?? result.unlocked ?? []).length > 0 && <div className="cg-unlock" aria-label="New closet items"><b>NEW IN YOUR CLOSET</b>{(result.reward?.unlocked ?? result.unlocked).map((it: any) => <button key={`${it.slot}:${it.id}`} onClick={() => { setClosetTab(it.slot); setResult(null); setSheet("shop"); }}>{it.name}</button>)}</div>}
               <div className="cg-row"><button className="cg-btn" onClick={camp ? goMap : goHome}>{camp ? "MAP" : "HOME"}</button>{!result.finished && (result.mode === "campaign" || result.mode === "endless") && <button className="cg-btn go big" onClick={next}>{result.mode === "endless" ? "AGAIN ▶" : "NEXT LEVEL ▶"}</button>}</div>
             </>) : (<>
               <h2>OUT OF FISH</h2><p>Cats that break a rule cost a fish. Try the same puzzle again, or use a hint or a Sardine.</p>
