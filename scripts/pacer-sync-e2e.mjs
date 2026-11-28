@@ -66,5 +66,31 @@ check(((await (await phone.request.get(URL_ + "/api/pacer/library")).json()).boo
 // state sync
 const st = await phone.request.put(URL_ + "/api/pacer/state", { data: { settings: { wpm: 333 }, sessions: [], at: Date.now() }, headers: { origin: URL_ } });
 check(st.ok(), "state: settings saved");
+
+// F: a book added BEFORE signing in is uploaded once you sign in; a failing upload stays visible and can be retried; a second device gets the full text
+{
+  fs.writeFileSync("/tmp/pacer-sync/early.txt", "Zephyrword opens the early book. " + Array.from({ length: 40 }, (_, p) => Array.from({ length: 40 }, (_, i) => WORDS[(p * 7 + i * 3) % WORDS.length]).join(" ") + ".").join("\n\n") + "\n\nOmegaendword closes it.");
+  fs.writeFileSync("/tmp/pacer-sync/second.txt", "Second book text. " + Array.from({ length: 30 }, (_, p) => Array.from({ length: 30 }, (_, i) => WORDS[(p * 5 + i) % WORDS.length]).join(" ") + ".").join("\n\n"));
+  const em = `late${stamp}@example.com`, phone = await browser.newContext({ viewport: { width: 390, height: 844 } }), p = await phone.newPage();
+  await p.goto(PAGE, { waitUntil: "networkidle" }); await p.setInputFiles("input[type=file]", "/tmp/pacer-sync/early.txt"); await p.waitForSelector(".pc-page .w"); await p.click("[aria-label='Back to the library']"); await p.waitForSelector(".pc-books");
+  check(/On this device only/.test(await p.locator(".pc-st").first().innerText()), "F: signed out, the book is honestly marked as on this device only");
+  check((await signup(phone, em)).ok(), "F: sign up after the book was already added"); await p.reload({ waitUntil: "load" });
+  await p.waitForFunction(() => /Synced/.test(document.querySelector(".pc-st")?.textContent || ""), null, { timeout: 15000 }); check(true, "F: after signing in, the old book uploads by itself");
+  const lib1 = (await (await phone.request.get(URL_ + "/api/pacer/library")).json()).books; check(lib1.length === 1 && lib1[0].words > 1500, "F: the server really holds the book");
+  // upload failure (what a host body-size limit looks like: a 413 with an HTML body)
+  await p.route("**/api/pacer/books/*", (r) => (r.request().method() === "PUT" ? r.fulfill({ status: 413, contentType: "text/html", body: "<html>Request Entity Too Large</html>" }) : r.continue()));
+  await p.setInputFiles("input[type=file]", "/tmp/pacer-sync/second.txt"); await p.waitForSelector(".pc-page .w"); await p.waitForTimeout(1500); await p.click("[aria-label='Back to the library']"); await p.waitForSelector(".pc-books");
+  await p.waitForFunction(() => /Not saved to your account/.test(document.body.innerText), null, { timeout: 8000 }); check(/too big/.test(await p.locator(".pc-books").innerText()), "F: a failed upload stays on screen next to the book, with the reason");
+  check(/not in your account yet/.test(await p.locator("body").innerText()), "F: and a summary says how many books are not in the account");
+  await p.unroute("**/api/pacer/books/*"); await p.click("text=Retry"); await p.waitForFunction(() => (document.body.innerText.match(/Synced/g) || []).length >= 2, null, { timeout: 10000 }); check(true, "F: Retry works once the problem is gone");
+  check((await (await phone.request.get(URL_ + "/api/pacer/library")).json()).books.length === 2, "F: both books are on the server");
+  // second device
+  const ipad = await browser.newContext({ viewport: { width: 820, height: 1180 } }), ip = await ipad.newPage(); await login(ipad, em); await ip.goto(PAGE, { waitUntil: "networkidle" }); await ip.waitForSelector(".pc-book");
+  check((await ip.locator(".pc-book").count()) === 2, "F: the iPad lists both books"); await ip.locator(".pc-book", { hasText: "early" }).click(); await ip.waitForSelector(".pc-page .w", { timeout: 20000 });
+  const text = await ip.evaluate(() => document.querySelector(".pc-page").innerText); check(/Zephyrword/.test(text), "F: opening it on the iPad shows the real words");
+  await ip.fill("input[type=range]", "0").catch(() => {}); const max = +(await ip.locator("input[type=range]").first().getAttribute("max")); check(max > 1500, `F: the whole book is there (${max} words)`);
+  await ip.click("[aria-label='Back to the library']"); await ip.waitForSelector(".pc-books"); await ip.click("summary:has-text('Sync details')"); await ip.waitForFunction(() => /account holds 2 books/.test(document.body.innerText), null, { timeout: 8000 }); check(true, "F: Sync details says what the account holds");
+  await phone.close(); await ipad.close();
+}
 await browser.close(); await (await request.newContext()).dispose();
 console.log(ok.length + " ok"); if (errors.length) { console.log(errors.join("\n")); process.exit(1); } console.log("all passed");

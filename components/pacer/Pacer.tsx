@@ -9,7 +9,7 @@ import { loadSaved, save, putBook, getBook, delBook, type Saved, type Settings, 
 import { SAMPLE_TEXT, SAMPLE_TITLE } from "../../lib/pacer/sample";
 import { paceLabel } from "../../lib/pacer/engine.mjs";
 import { mergeLibraries, mergeSessions } from "../../lib/pacer/validate.mjs";
-import { fetchLibrary, uploadBook, downloadBook, deleteCloud, pushProgress, pushState, signOut, type Account, type CloudLib } from "../../lib/pacer/cloud";
+import { fetchLibrary, diagnose, uploadBook, downloadBook, deleteCloud, pushProgress, pushState, signOut, type Account, type CloudLib } from "../../lib/pacer/cloud";
 import Reader from "./Reader";
 import WalkHome from "./walk/WalkHome";
 import WalkRunner from "./walk/WalkRunner";
@@ -21,7 +21,7 @@ import { walk, useWalk, type WalkResult } from "../../lib/pacer/walkSession";
 const ago = (t: number) => { const d = Math.round((Date.now() - t) / 86400000); return d < 1 ? "today" : d === 1 ? "yesterday" : `${d} days ago`; };
 
 export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
-  const [account, setAccount] = useState<Account | null | undefined>(undefined), [syncOn, setSyncOn] = useState(false), [usage, setUsage] = useState<CloudLib["usage"]>(undefined), [note, setNote] = useState<string | null>(null), [ask, setAsk] = useState<null | { kind: "remove"; id: string; title: string; cloud: boolean } | { kind: "signout" }>(null), [s, setS] = useState<Saved | null>(null), [book, setBook] = useState<Book | null>(null), [startPos, setStartPos] = useState(0), [busy, setBusy] = useState<string | null>(null), [error, setError] = useState<string | null>(null), [paste, setPaste] = useState(false), [text, setText] = useState(""), [over, setOver] = useState(false);
+  const [account, setAccount] = useState<Account | null | undefined>(undefined), [syncOn, setSyncOn] = useState(false), [serverBooks, setServerBooks] = useState<number | null>(null), [diag, setDiag] = useState<string | null>(null), [usage, setUsage] = useState<CloudLib["usage"]>(undefined), [note, setNote] = useState<string | null>(null), [ask, setAsk] = useState<null | { kind: "remove"; id: string; title: string; cloud: boolean } | { kind: "signout" }>(null), [s, setS] = useState<Saved | null>(null), [book, setBook] = useState<Book | null>(null), [startPos, setStartPos] = useState(0), [busy, setBusy] = useState<string | null>(null), [error, setError] = useState<string | null>(null), [paste, setPaste] = useState(false), [text, setText] = useState(""), [over, setOver] = useState(false);
   const ref = useRef<Saved | null>(null); ref.current = s; const fileIn = useRef<HTMLInputElement>(null);
   const acc = useRef<Account | null | undefined>(undefined); acc.current = account; const lastPush = useRef<Record<string, number>>({}), stateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ws = useWalk(), [screen, setScreen] = useState<"library" | "walk">(initialScreen === "walk" ? "walk" : "library"), [wd, setWdState] = useState<WalkData | null>(null), [result, setResult] = useState<WalkResult | null>(null);
@@ -31,7 +31,7 @@ export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
   const onWalkEnd = useCallback((r: WalkResult | null) => { if (r) setResult(r); }, []);
   const commit = useCallback((fn: (x: Saved) => Saved) => { const n = fn(ref.current || loadSaved()); ref.current = n; setS(n); save(n); }, []);
   const refreshCloud = useCallback(async () => {
-    const c = await fetchLibrary(); if (!c) { setAccount(null); return; } setSyncOn(c.sync); setAccount(c.user); setUsage(c.usage);
+    const c = await fetchLibrary(); if (!c) { setAccount(null); return; } setSyncOn(c.sync); setAccount(c.user); setUsage(c.usage); setServerBooks(c.user ? c.books.length : null);
     if (!c.user) { commit((x) => ({ ...x, library: x.library.filter((l) => l.local !== false).map((l) => ({ ...l, cloud: false })) })); return; }
     let pushUp: { id: string; pos: number; wpm: number; at: number }[] = [], pushSettings = false;
     commit((x) => {
@@ -44,18 +44,27 @@ export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
     for (const u of pushUp) pushProgress(u.id, u.pos, u.wpm, u.at); if (pushSettings && ref.current) pushState(ref.current.settings, ref.current.sessions, ref.current.settingsAt || Date.now());
   }, [commit]);
   useEffect(() => { const sv = loadSaved(); ref.current = sv; setS(sv); refreshCloud(); const onVis = () => { if (!document.hidden) refreshCloud(); }; document.addEventListener("visibilitychange", onVis); return () => document.removeEventListener("visibilitychange", onVis); }, [refreshCloud]);
-  const syncUp = useCallback(async (b: Book) => {
+  const uploading = useRef(false);
+  /** Save one book to the account and check the server really has it. Failures are kept on the book, so they stay visible. */
+  const syncUp = useCallback(async (b: Book): Promise<boolean> => {
     const it = ref.current?.library.find((l) => l.id === b.id); setNote(`Saving “${b.title}” to your account…`);
-    const r = await uploadBook(b, it?.pos ?? 0, it?.wpm ?? ref.current?.settings.wpm ?? 250, it?.at ?? 0);
-    if (r.ok) { commit((x) => ({ ...x, library: x.library.map((l) => (l.id === b.id ? { ...l, cloud: true } : l)) })); setNote(null); fetchLibrary().then((c) => c && setUsage(c.usage)); } else setNote(r.error);
+    const r = await uploadBook(b, it?.pos ?? 0, it?.wpm ?? ref.current?.settings.wpm ?? 250, it?.at ?? 0); let err: string | null = r.ok ? null : r.error;
+    if (r.ok) { const c = await fetchLibrary(); if (c) { setUsage(c.usage); setServerBooks(c.books.length); const hit = c.books.find((x) => x.id === b.id); if (!hit || hit.words !== b.words) err = "The account did not keep the book. Try again."; } }
+    commit((x) => ({ ...x, library: x.library.map((l) => (l.id === b.id ? { ...l, cloud: !err, syncErr: err || undefined } : l)) })); setNote(null); return !err;
   }, [commit]);
+  /** Upload every book that is only on this device (books added before signing in, or when an upload failed). */
+  const syncPending = useCallback(async (force = false) => {
+    const st = ref.current; if (uploading.current || !acc.current || !st || (!force && !st.autoSync)) return; uploading.current = true;
+    try { for (const l of st.library.filter((x) => x.local !== false && !x.cloud && (force || !x.syncErr))) { const b = await getBook(l.id); if (!b) continue; const ok = await syncUp(b); if (!ok && /signed out/i.test(ref.current?.library.find((x) => x.id === l.id)?.syncErr || "")) break; } } finally { uploading.current = false; }
+  }, [syncUp]);
+  useEffect(() => { if (account && s) syncPending(); }, [account, s?.library, s?.autoSync, syncPending]); // eslint-disable-line react-hooks/exhaustive-deps
+  const checkSync = async () => { setDiag("Checking…"); const d = await diagnose(); setServerBooks(d.user ? d.serverBooks : null); setDiag(!d.reachable ? "Cannot reach the server. Check your connection." : !d.sync ? "The server has no database for sync (ask the site owner to set DATABASE_URL)." : d.user ? `Signed in as ${d.user}. The account holds ${d.serverBooks} book${d.serverBooks === 1 ? "" : "s"}; this device has ${ref.current?.library.filter((l) => l.local !== false).length ?? 0}.` : "This device is signed out, so nothing can sync. Sign in again."); };
 
   const openBook = useCallback(async (b: Book, pos = 0) => {
     await putBook(b);
     commit((x) => { const lib = x.library.filter((l) => l.id !== b.id); const prev = x.library.find((l) => l.id === b.id); lib.unshift({ id: b.id, title: b.title, author: b.author, words: b.words, pos: prev?.pos ?? pos, wpm: prev?.wpm ?? x.settings.wpm, updated: Date.now(), at: prev?.at, cloud: prev?.cloud, local: true }); return { ...x, library: lib.slice(0, 80) }; });
-    if (acc.current && ref.current?.autoSync && !ref.current.library.find((l) => l.id === b.id)?.cloud) syncUp(b);
     setStartPos(ref.current?.library.find((l) => l.id === b.id)?.pos ?? pos); setBook(b);
-  }, [commit, syncUp]);
+  }, [commit]);
   const pickFile = async (f: File | undefined) => {
     if (!f) return; setError(null); setBusy("Opening your file…");
     try { const b = await readFile(f, (m) => setBusy(m)); setBusy(null); await openBook(b); } catch (e: any) { setBusy(null); setError(e?.message || "That file could not be read."); }
@@ -69,7 +78,7 @@ export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
     commit((x) => ({ ...x, library: everywhere || !x.library.find((l) => l.id === id)?.cloud ? x.library.filter((l) => l.id !== id) : x.library.map((l) => (l.id === id ? { ...l, local: false } : l)) })); setAsk(null); if (everywhere) fetchLibrary().then((c) => c && setUsage(c.usage));
   };
   const doSignOut = async (wipe: boolean) => { if (wipe) for (const l of ref.current?.library || []) await delBook(l.id); await signOut(); commit((x) => ({ ...x, library: wipe ? [] : x.library.filter((l) => l.local !== false).map((l) => ({ ...l, cloud: false })) })); setAccount(null); setAsk(null); setUsage(undefined); };
-  const saveToAccount = async (id: string) => { const b = await getBook(id); if (b) syncUp(b); };
+  const saveToAccount = async (id: string) => { commit((x) => ({ ...x, library: x.library.map((l) => (l.id === id ? { ...l, syncErr: undefined } : l)) })); const b = await getBook(id); if (b) syncUp(b); };
   const onProgress = useCallback((pos: number, wpm: number, force?: boolean) => {
     if (!book) return; const now = Date.now(); commit((x) => ({ ...x, library: x.library.map((l) => (l.id === book.id ? { ...l, pos, wpm, updated: now, at: now } : l)) }));
     const it = ref.current?.library.find((l) => l.id === book.id); if (acc.current && it?.cloud && (force || now - (lastPush.current[book.id] || 0) > 6000)) { lastPush.current[book.id] = now; pushProgress(book.id, pos, wpm, now); }
@@ -110,12 +119,13 @@ export default function Pacer({ initialScreen }: { initialScreen?: "walk" }) {
           <section className="pc-sync on" aria-label="Your account"><div><b>☁ {account.name}</b><p>Your books and your place sync across your devices.{usage ? ` ${usage.books} of ${usage.maxBooks} books · ${(usage.bytes / 1048576).toFixed(1)} of ${Math.round(usage.maxBytes / 1048576)} MB used.` : ""}</p></div>
             <label className="pc-toggle"><input type="checkbox" checked={s.autoSync} onChange={(e) => commit((x) => ({ ...x, autoSync: e.target.checked }))} /><span>Save new books to my account</span></label><button className="pc-btn" onClick={() => setAsk({ kind: "signout" })}>Sign out</button></section>)}
         {note && <p className="pc-busy" role="status" style={{ margin: 0 }}>{note}</p>}
-        {account && s.library.some((l) => l.local !== false && !l.cloud) && <p className="pc-note" style={{ margin: 0 }}>{s.library.filter((l) => l.local !== false && !l.cloud).length} book(s) are only on this device. Use “Save to account” on a book below to read it anywhere.</p>}
+        {account && s.library.some((l) => l.local !== false && !l.cloud) && <p className="pc-note" style={{ margin: 0 }}>{s.library.filter((l) => l.local !== false && !l.cloud).length} book(s) on this device are not in your account yet{s.library.some((l) => l.syncErr) ? ", and some could not be saved (see the book list)" : s.autoSync ? ". Saving them now" : ". Turn on “Save new books to my account”, or use Sync now"}. <button className="pc-btn" style={{ minHeight: 30, padding: "0 10px" }} onClick={() => syncPending(true)}>Sync now</button></p>}
+        {account && <details className="pc-syncdetails"><summary onClick={() => { if (diag === null) checkSync(); }}>Sync details</summary><p className="pc-note" style={{ margin: "6px 0" }}>{diag || "…"} <button className="pc-btn" style={{ minHeight: 30, padding: "0 10px" }} onClick={checkSync}>Check again</button></p></details>}
 
         {s.library.length > 0 && (
           <section aria-label="Your books"><h2>Continue reading</h2>
             <ul className="pc-books">{s.library.map((l) => (
-              <li key={l.id}><button className="pc-book" onClick={() => openSaved(l.id)}><b>{l.title}</b><small>{l.author ? `${l.author} · ` : ""}{l.words.toLocaleString()} words · {l.wpm} wpm · {ago(l.updated)}</small><small className="pc-st">{l.cloud ? (l.local === false ? "☁ In your account (tap to download)" : "☁ Synced") : "On this device only"}</small><i><u style={{ width: `${Math.round((100 * l.pos) / Math.max(1, l.words))}%` }} /></i></button>{account && !l.cloud && l.local !== false && <button className="pc-save" onClick={() => saveToAccount(l.id)}>Save to account</button>}<button className="pc-x" onClick={() => setAsk({ kind: "remove", id: l.id, title: l.title, cloud: !!l.cloud })} aria-label={`Remove ${l.title}`}>✕</button></li>))}</ul>
+              <li key={l.id}><button className="pc-book" onClick={() => openSaved(l.id)}><b>{l.title}</b><small>{l.author ? `${l.author} · ` : ""}{l.words.toLocaleString()} words · {l.wpm} wpm · {ago(l.updated)}</small><small className="pc-st">{l.cloud ? (l.local === false ? "☁ In your account (tap to download)" : "☁ Synced") : l.syncErr ? `⚠ Not saved to your account: ${l.syncErr}` : account && s.autoSync && l.local !== false ? "Saving to your account…" : "On this device only"}</small><i><u style={{ width: `${Math.round((100 * l.pos) / Math.max(1, l.words))}%` }} /></i></button>{account && !l.cloud && l.local !== false && <button className="pc-save" onClick={() => saveToAccount(l.id)}>{l.syncErr ? "Retry" : "Save to account"}</button>}<button className="pc-x" onClick={() => setAsk({ kind: "remove", id: l.id, title: l.title, cloud: !!l.cloud })} aria-label={`Remove ${l.title}`}>✕</button></li>))}</ul>
           </section>)}
 
         {sess.length > 0 && (

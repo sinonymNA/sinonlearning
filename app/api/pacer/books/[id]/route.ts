@@ -8,11 +8,12 @@ import { isRateLimited } from "@/lib/rateLimit";
 export const dynamic = "force-dynamic";
 type Ctx = { params: Promise<{ id: string }> };
 
-/** The stored (gzipped) book text. The browser unzips it transparently. */
+/** The stored book text, as plain JSON (the host compresses it in transit). */
 export async function GET(req: NextRequest, { params }: Ctx) {
   const a = await requireUser(req); if ("res" in a) return a.res; const { id } = await params;
   const data = await getBookData(a.user.id, id); if (!data) return NextResponse.json({ error: "Not found." }, { status: 404, headers: noStore });
-  return new Response(new Uint8Array(data), { headers: { "Content-Type": "application/json", "Content-Encoding": "gzip", ...noStore } });
+  let text: string; try { text = gunzipSync(data, { maxOutputLength: LIMITS.maxInflated }).toString("utf8"); } catch { return NextResponse.json({ error: "The stored book could not be read." }, { status: 500, headers: noStore }); }
+  return new Response(text, { headers: { "Content-Type": "application/json; charset=utf-8", ...noStore } });
 }
 /** Upload an extracted book: a gzipped JSON body (or plain JSON). Checked, size-limited and saved under the signed-in user only. */
 export async function PUT(req: NextRequest, { params }: Ctx) {

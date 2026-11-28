@@ -19,8 +19,14 @@ export async function uploadBook(b: Book, pos: number, wpm: number, at: number):
   try {
     const { body, type } = await pack(JSON.stringify({ id: b.id, title: b.title, author: b.author, added: b.added, chapters: b.chapters }));
     const r = await fetch(`/api/pacer/books/${b.id}`, { method: "PUT", body, headers: { "Content-Type": type, "x-pacer-pos": String(pos), "x-pacer-wpm": String(wpm), "x-pacer-at": String(at) }, credentials: "same-origin" });
-    if (r.ok) return { ok: true }; const j = await r.json().catch(() => ({})); return { ok: false, error: j.error || "Could not save that book to your account." };
+    if (r.ok) return { ok: true }; const j = await r.json().catch(() => ({}));
+    return { ok: false, error: j.error || (r.status === 413 ? "The host refused the upload because it is too big." : r.status === 401 ? "You are signed out. Sign in again." : r.status === 403 ? "The server refused the upload." : r.status === 429 ? "Too many uploads. Try again in a while." : r.status >= 500 ? "The server had a problem. Try again." : `Could not save that book to your account (${r.status}).`) };
   } catch { return { ok: false, error: "You seem to be offline. The book is saved on this device." }; }
+}
+/** For the "Sync details" panel: what the server says about this device's login. */
+export async function diagnose(): Promise<{ reachable: boolean; status: number; user: string | null; sync: boolean; serverBooks: number }> {
+  try { const r = await fetch("/api/pacer/library", { cache: "no-store", credentials: "same-origin" }); if (!r.ok) return { reachable: true, status: r.status, user: null, sync: false, serverBooks: 0 }; const j = await r.json(); return { reachable: true, status: r.status, user: j.user?.name ?? null, sync: !!j.sync, serverBooks: (j.books || []).length }; }
+  catch { return { reachable: false, status: 0, user: null, sync: false, serverBooks: 0 }; }
 }
 export async function downloadBook(id: string): Promise<Book | null> {
   try { const r = await fetch(`/api/pacer/books/${id}`, { cache: "no-store", credentials: "same-origin" }); if (!r.ok) return null; const j = await r.json(); return { id: j.id, title: j.title, author: j.author, chapters: j.chapters, words: j.words, added: j.added || Date.now() } as Book; } catch { return null; }

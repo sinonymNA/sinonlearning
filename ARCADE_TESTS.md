@@ -150,3 +150,4 @@ A "⚡ Skip pack animation" switch (remembered in the browser) sits under every 
 - Pacer rain + HD fixes: rain noise test (419 total); pacer-sound-e2e.mjs 103 checks (rain on/off/follow, self-hosted runtime files served, cache writer round trip).
 - After reverting to Piper: pacer-sound-e2e.mjs and unit tests rerun (see below).
 - Pacer Walk: walk.test.mjs (7) and stride.test.mjs (9) in arcade:test; scripts/pacer-walk-e2e.mjs 62 checks (4 sizes, full walk, pause/skip/lock, finish calc, book read-along, weight/goal, backup/restore, resume).
+- Pacer sync e2e now 34 checks incl. scenario F (book added before sign-in, failing upload, retry, second device reads the text).

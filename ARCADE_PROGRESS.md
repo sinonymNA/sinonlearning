@@ -190,3 +190,5 @@ User: add a rain noise and make the fixes. Done: synthesized rain (3 strengths, 
 User: Kokoro too slow; go back to Piper, try deeper male voices. Done: reverted the Kokoro commit (Piper restored), voice list now led by 9 male voices (ryan default), per-voice download note. Kokoro kept out; pitch shifting not built.
 
 User: fitness tracker, then (changed) a Japanese interval walking tool as a Pacer add-on with tone cues, height/weight calories, Apple Health steps before/after, running while the book reads aloud. Done: Pacer Walk (/pacer/walk + reader integration): engine+tests, one-file cue track, shared session, banner, pocket lock, finish calc, history, weight trend/goal, backup/restore, resume. Not done / unverified: real phones (lock screen, iOS audio mixing), account sync, GPS tracking (engine exists, unwired).
+
+User: books from the phone were not on the iPad (same account). Done: device-only books now auto-upload after sign-in, uploads are verified, failures stay visible with Retry/Sync now/Sync details, downloads are plain JSON. Root cause on their device not confirmed (likely books added before sign-in or an upload that failed quietly).
